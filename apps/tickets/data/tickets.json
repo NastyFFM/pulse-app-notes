@@ -1,0 +1,145 @@
+{
+  "nextId": 13,
+  "prefix": "TICK",
+  "statuses": [
+    "Open",
+    "In Progress",
+    "Review",
+    "Done"
+  ],
+  "priorities": [
+    "Low",
+    "Medium",
+    "High",
+    "Critical"
+  ],
+  "types": [
+    "Bug",
+    "Feature",
+    "Task",
+    "Improvement"
+  ],
+  "tickets": [
+    {
+      "id": 1,
+      "title": "Beispiel-Bug: Login funktioniert nicht",
+      "description": "Beim Login erscheint ein Fehler 500.",
+      "status": "Review",
+      "priority": "High",
+      "type": "Bug",
+      "assignee": "",
+      "created": 1710208000000,
+      "updated": 1773433735614
+    },
+    {
+      "id": 2,
+      "title": "Dark Mode implementieren",
+      "description": "Ein Dark Mode Toggle in den Einstellungen hinzufuegen.",
+      "status": "Open",
+      "priority": "Medium",
+      "type": "Feature",
+      "assignee": "Chris",
+      "created": 1710208000000,
+      "updated": 1773433734748
+    },
+    {
+      "id": 3,
+      "title": "Performance optimieren",
+      "description": "Ladezeiten der Hauptseite reduzieren.",
+      "status": "Done",
+      "priority": "High",
+      "type": "Improvement",
+      "assignee": "Claude",
+      "created": 1710208000000,
+      "updated": 1773674998960
+    },
+    {
+      "id": 5,
+      "title": "Test",
+      "description": "Test",
+      "type": "Bug",
+      "priority": "Medium",
+      "status": "In Progress",
+      "assignee": "",
+      "created": 1773286037967,
+      "updated": 1773514833116
+    },
+    {
+      "id": 6,
+      "title": "asdasd",
+      "description": "asd",
+      "type": "Bug",
+      "priority": "Medium",
+      "status": "Done",
+      "assignee": "",
+      "created": 1773286129673,
+      "updated": 1773421038288
+    },
+    {
+      "id": 7,
+      "title": "Einkaufen gehen",
+      "description": "",
+      "type": "Task",
+      "priority": "Medium",
+      "status": "Done",
+      "assignee": "",
+      "created": 1773402330810,
+      "updated": 1773405609308
+    },
+    {
+      "id": 8,
+      "title": "Auto Waschen",
+      "description": "",
+      "type": "Task",
+      "priority": "Medium",
+      "status": "Review",
+      "assignee": "",
+      "created": 1773402393041,
+      "updated": 1773405607266
+    },
+    {
+      "id": 9,
+      "title": "qewfrqwrqwfr",
+      "description": "qwrqwrr",
+      "type": "Bug",
+      "priority": "Medium",
+      "status": "In Progress",
+      "assignee": "",
+      "created": 1773405614729,
+      "updated": 1773433733877
+    },
+    {
+      "id": 10,
+      "title": "qwdwqd",
+      "description": "qwdqwdqwd",
+      "type": "Bug",
+      "priority": "Medium",
+      "status": "Open",
+      "assignee": "qwdqwd",
+      "created": 1773433740404,
+      "updated": 1773433740404
+    },
+    {
+      "id": 11,
+      "title": "Brötchen kaufen",
+      "description": "",
+      "type": "Task",
+      "priority": "Medium",
+      "status": "Open",
+      "assignee": "",
+      "created": 1773433800703,
+      "updated": 1773433800703
+    },
+    {
+      "id": 12,
+      "title": "Spazieren gehen",
+      "description": "Nachmittagsspaziergang um 17 Uhr",
+      "type": "Task",
+      "priority": "Medium",
+      "status": "Open",
+      "assignee": "",
+      "created": 1773688800000,
+      "updated": 1773688800000
+    }
+  ]
+}

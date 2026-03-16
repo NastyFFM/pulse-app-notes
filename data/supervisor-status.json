@@ -1,0 +1,22 @@
+{
+  "running": true,
+  "startedAt": 1773697714681,
+  "uptimeSeconds": 1560,
+  "managedAgents": {
+    "test": {
+      "pid": 28002,
+      "runningSince": "2026-03-16T22:09:04.798Z",
+      "runningFor": "330s"
+    }
+  },
+  "restartCounts": {
+    "test": {
+      "lastHour": 2,
+      "circuitBroken": false
+    },
+    "agent-chat-orchestrator": {
+      "lastHour": 1,
+      "circuitBroken": false
+    }
+  }
+}

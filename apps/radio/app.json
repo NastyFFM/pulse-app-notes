@@ -1,0 +1,7 @@
+{
+  "id": "radio",
+  "name": "Internet Radio",
+  "icon": "📻",
+  "color": "#EC4899",
+  "description": "Internet Radio Player mit Sender-Suche und Favoriten"
+}

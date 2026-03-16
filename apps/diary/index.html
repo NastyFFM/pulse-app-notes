@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tagebuch</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1a1a2e;
+    color: #e2e8f0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .header {
+    background: #16213e;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #2d3748;
+    flex-shrink: 0;
+  }
+  .header h1 { font-size: 20px; font-weight: 700; color: #8B5CF6; }
+  .header-actions { margin-left: auto; display: flex; gap: 8px; }
+  .btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: #8B5CF6; color: white; }
+  .btn-primary:hover { background: #7C3AED; }
+  .btn-secondary { background: #2d3748; color: #e2e8f0; }
+  .btn-secondary:hover { background: #4a5568; }
+  .btn-danger { background: #EF4444; color: white; }
+  .btn-danger:hover { background: #DC2626; }
+
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Left panel - entries list */
+  .entries-panel {
+    width: 320px;
+    flex-shrink: 0;
+    background: #16213e;
+    border-right: 1px solid #2d3748;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .month-nav {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #2d3748;
+    flex-shrink: 0;
+  }
+  .month-nav span { font-weight: 600; font-size: 15px; }
+  .month-nav button {
+    background: #2d3748;
+    border: none;
+    color: #e2e8f0;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .month-nav button:hover { background: #4a5568; }
+
+  .search-bar {
+    padding: 10px 16px;
+    border-bottom: 1px solid #2d3748;
+    flex-shrink: 0;
+  }
+  .search-input {
+    width: 100%;
+    padding: 8px 12px;
+    background: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-size: 13px;
+    outline: none;
+  }
+  .search-input:focus { border-color: #8B5CF6; }
+  .search-input::placeholder { color: #718096; }
+
+  .entries-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .entry-card {
+    background: #1e2a4a;
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 2px solid transparent;
+  }
+  .entry-card:hover { background: #243352; }
+  .entry-card.active { border-color: #8B5CF6; }
+  .entry-card .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .entry-card .card-date {
+    font-size: 12px;
+    color: #8B5CF6;
+    font-weight: 600;
+  }
+  .entry-card .card-mood { font-size: 18px; }
+  .entry-card .card-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #e2e8f0;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .entry-card .card-preview {
+    font-size: 12px;
+    color: #718096;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .no-entries {
+    text-align: center;
+    color: #4a5568;
+    padding: 40px 20px;
+    font-size: 14px;
+  }
+
+  /* Right panel - editor */
+  .editor-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .editor-toolbar {
+    padding: 14px 20px;
+    background: #1e2a4a;
+    border-bottom: 1px solid #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .date-input {
+    background: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+    color: #e2e8f0;
+    padding: 6px 12px;
+    font-size: 14px;
+    outline: none;
+  }
+  .date-input:focus { border-color: #8B5CF6; }
+
+  .title-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 20px;
+    font-weight: 700;
+    color: #e2e8f0;
+    min-width: 0;
+  }
+  .title-input::placeholder { color: #4a5568; }
+
+  .mood-picker {
+    display: flex;
+    gap: 4px;
+  }
+  .mood-btn {
+    font-size: 22px;
+    background: none;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 4px 6px;
+    transition: all 0.15s;
+    opacity: 0.4;
+  }
+  .mood-btn:hover { opacity: 0.8; transform: scale(1.15); }
+  .mood-btn.active { opacity: 1; border-color: #8B5CF6; transform: scale(1.15); }
+
+  .content-textarea {
+    flex: 1;
+    background: #1e2a4a;
+    border: none;
+    outline: none;
+    color: #e2e8f0;
+    font-size: 15px;
+    line-height: 1.8;
+    padding: 20px;
+    resize: none;
+    font-family: inherit;
+  }
+  .content-textarea::placeholder { color: #4a5568; }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #4a5568;
+    gap: 12px;
+  }
+  .empty-state .icon { font-size: 64px; }
+  .empty-state p { font-size: 16px; }
+
+  .status-bar {
+    padding: 6px 20px;
+    background: #16213e;
+    border-top: 1px solid #2d3748;
+    font-size: 12px;
+    color: #718096;
+    display: flex;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .status-bar .saved { color: #10B981; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span style="font-size:24px">📖</span>
+  <h1>Tagebuch</h1>
+  <div class="header-actions">
+    <button class="btn btn-primary" onclick="newEntry()">+ Neuer Eintrag</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="entries-panel">
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">&larr;</button>
+      <span id="monthLabel"></span>
+      <button onclick="changeMonth(1)">&rarr;</button>
+    </div>
+    <div class="search-bar">
+      <input class="search-input" type="text" placeholder="Einträge durchsuchen..." oninput="filterText=this.value;renderList()" id="searchInput">
+    </div>
+    <div class="entries-list" id="entriesList"></div>
+  </div>
+
+  <div class="editor-panel" id="editorPanel">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">📖</div>
+      <p>Wähle einen Eintrag oder erstelle einen neuen</p>
+      <button class="btn btn-primary" onclick="newEntry()">+ Neuer Eintrag</button>
+    </div>
+
+    <div id="editor" style="display:none; flex-direction:column; height:100%;">
+      <div class="editor-toolbar">
+        <input class="date-input" type="date" id="dateInput" onchange="onDateChange(this.value)">
+        <input class="title-input" id="titleInput" placeholder="Titel für heute..." oninput="onFieldChange()">
+        <div class="mood-picker" id="moodPicker"></div>
+        <button class="btn btn-danger" onclick="deleteEntry()" title="Löschen">🗑️</button>
+      </div>
+      <textarea class="content-textarea" id="contentInput" placeholder="Was hast du heute erlebt? Was bewegt dich?" oninput="onFieldChange()"></textarea>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span id="countStatus">0 Einträge</span>
+  <span id="saveStatus"></span>
+</div>
+
+<script>
+const DATA_URL = '/api/apps/diary/data/diary.json';
+const MOODS = [
+  { key: 'great', emoji: '😄', label: 'Super' },
+  { key: 'happy', emoji: '🙂', label: 'Gut' },
+  { key: 'neutral', emoji: '😐', label: 'Okay' },
+  { key: 'sad', emoji: '😢', label: 'Traurig' },
+  { key: 'angry', emoji: '😠', label: 'Wütend' }
+];
+
+let entries = [];
+let currentId = null;
+let saveTimer = null;
+let filterText = '';
+let viewYear, viewMonth;
+
+// Init to current month
+const now = new Date();
+viewYear = now.getFullYear();
+viewMonth = now.getMonth();
+
+function getMoodEmoji(key) {
+  const m = MOODS.find(m => m.key === key);
+  return m ? m.emoji : '';
+}
+
+async function loadEntries() {
+  try {
+    const r = await fetch(DATA_URL + '?t=' + Date.now());
+    const data = await r.json();
+    entries = data.entries || [];
+    renderList();
+    updateCount();
+  } catch(e) {}
+}
+
+function renderList() {
+  const list = document.getElementById('entriesList');
+  const q = filterText.toLowerCase();
+
+  let filtered = entries.filter(e => {
+    if (q && !e.title.toLowerCase().includes(q) && !e.content.toLowerCase().includes(q)) return false;
+    if (!q) {
+      const d = new Date(e.date);
+      if (d.getFullYear() !== viewYear || d.getMonth() !== viewMonth) return false;
+    }
+    return true;
+  });
+
+  filtered.sort((a, b) => b.date.localeCompare(a.date));
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="no-entries">Keine Einträge in diesem Monat</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(e => {
+    const active = e.id === currentId ? 'active' : '';
+    const d = new Date(e.date + 'T00:00:00');
+    const dateStr = d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: 'short' });
+    return `
+      <div class="entry-card ${active}" onclick="selectEntry('${e.id}')">
+        <div class="card-header">
+          <span class="card-date">${dateStr}</span>
+          <span class="card-mood">${getMoodEmoji(e.mood)}</span>
+        </div>
+        <div class="card-title">${escHtml(e.title || 'Ohne Titel')}</div>
+        <div class="card-preview">${escHtml(e.content || '')}</div>
+      </div>`;
+  }).join('');
+
+  updateMonthLabel();
+}
+
+function updateMonthLabel() {
+  const label = new Date(viewYear, viewMonth).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+  document.getElementById('monthLabel').textContent = label;
+}
+
+function changeMonth(dir) {
+  viewMonth += dir;
+  if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+  if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+  updateMonthLabel();
+  renderList();
+}
+
+function selectEntry(id) {
+  currentId = id;
+  const entry = entries.find(e => e.id === id);
+  if (!entry) return;
+
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('editor').style.display = 'flex';
+
+  document.getElementById('dateInput').value = entry.date;
+  document.getElementById('titleInput').value = entry.title || '';
+  document.getElementById('contentInput').value = entry.content || '';
+  renderMoodPicker(entry.mood);
+  renderList();
+}
+
+function renderMoodPicker(activeMood) {
+  document.getElementById('moodPicker').innerHTML = MOODS.map(m =>
+    `<button class="mood-btn ${m.key === activeMood ? 'active' : ''}"
+            onclick="setMood('${m.key}')" title="${m.label}">${m.emoji}</button>`
+  ).join('');
+}
+
+function setMood(key) {
+  const entry = entries.find(e => e.id === currentId);
+  if (!entry) return;
+  entry.mood = key;
+  renderMoodPicker(key);
+  scheduleSave();
+  renderList();
+}
+
+function onDateChange(val) {
+  const entry = entries.find(e => e.id === currentId);
+  if (!entry) return;
+  entry.date = val;
+  entry.updated = new Date().toISOString();
+  scheduleSave();
+  renderList();
+}
+
+function onFieldChange() {
+  const entry = entries.find(e => e.id === currentId);
+  if (!entry) return;
+  entry.title = document.getElementById('titleInput').value;
+  entry.content = document.getElementById('contentInput').value;
+  entry.updated = new Date().toISOString();
+  scheduleSave();
+  renderList();
+}
+
+function newEntry() {
+  const id = Date.now().toString();
+  const today = new Date().toISOString().split('T')[0];
+  const entry = {
+    id,
+    date: today,
+    title: '',
+    content: '',
+    mood: 'neutral',
+    created: new Date().toISOString(),
+    updated: new Date().toISOString()
+  };
+  entries.unshift(entry);
+
+  // Navigate to current month
+  const d = new Date();
+  viewYear = d.getFullYear();
+  viewMonth = d.getMonth();
+
+  selectEntry(id);
+  saveNow();
+  document.getElementById('titleInput').focus();
+}
+
+function deleteEntry() {
+  if (!currentId) return;
+  if (!confirm('Eintrag löschen?')) return;
+  entries = entries.filter(e => e.id !== currentId);
+  currentId = null;
+  document.getElementById('emptyState').style.display = 'flex';
+  document.getElementById('editor').style.display = 'none';
+  saveNow();
+  renderList();
+  updateCount();
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  document.getElementById('saveStatus').textContent = 'Nicht gespeichert...';
+  document.getElementById('saveStatus').className = '';
+  saveTimer = setTimeout(saveNow, 800);
+}
+
+async function saveNow() {
+  try {
+    await fetch(DATA_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entries }, null, 2)
+    });
+    document.getElementById('saveStatus').textContent = '✓ Gespeichert';
+    document.getElementById('saveStatus').className = 'saved';
+    updateCount();
+  } catch(e) {
+    document.getElementById('saveStatus').textContent = '⚠ Fehler beim Speichern';
+  }
+}
+
+function updateCount() {
+  document.getElementById('countStatus').textContent = `${entries.length} Eintrag${entries.length !== 1 ? 'e' : ''}`;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Init
+updateMonthLabel();
+loadEntries();
+setInterval(loadEntries, 2000);
+</script>
+</body>
+</html>

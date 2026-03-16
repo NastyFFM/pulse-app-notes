@@ -1,0 +1,7 @@
+{
+  "id": "diary",
+  "name": "Tagebuch",
+  "icon": "📖",
+  "color": "#8B5CF6",
+  "description": "Tägliche Tagebucheinträge mit Stimmung und Datum"
+}

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Browser</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f0f1a; color: #e2e8f0; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 14px; }
+
+  .header {
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .header h1 { font-size: 1.2rem; font-weight: 600; color: #c7d2fe; }
+  .header .icon { font-size: 1.4rem; }
+
+  .breadcrumb {
+    padding: 10px 24px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
+    font-size: 13px; color: rgba(255,255,255,0.5);
+  }
+  .breadcrumb span { cursor: pointer; color: #818cf8; }
+  .breadcrumb span:hover { text-decoration: underline; }
+  .breadcrumb .sep { color: rgba(255,255,255,0.2); margin: 0 2px; }
+  .breadcrumb .current { color: #e2e8f0; cursor: default; }
+  .breadcrumb .current:hover { text-decoration: none; }
+
+  .file-list { padding: 8px 0; }
+
+  .file-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 24px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .file-row:hover { background: rgba(99, 102, 241, 0.08); }
+  .file-row .file-icon { font-size: 1.1rem; width: 24px; text-align: center; flex-shrink: 0; }
+  .file-row .file-name { flex: 1; color: #e2e8f0; }
+  .file-row.is-dir .file-name { color: #a5b4fc; font-weight: 500; }
+  .file-row .file-size { color: rgba(255,255,255,0.35); font-size: 12px; min-width: 70px; text-align: right; }
+  .file-row .file-type { color: rgba(255,255,255,0.25); font-size: 11px; min-width: 50px; text-align: right; text-transform: uppercase; }
+
+  .empty { padding: 40px 24px; text-align: center; color: rgba(255,255,255,0.3); font-style: italic; }
+
+  .stats {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    padding: 8px 24px;
+    background: rgba(15,15,26,0.95);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 12px; color: rgba(255,255,255,0.35);
+    display: flex; gap: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="icon">📁</span>
+  <h1>File Browser</h1>
+</div>
+<div class="breadcrumb" id="breadcrumb"></div>
+<div class="file-list" id="fileList"></div>
+<div class="stats" id="stats"></div>
+
+<script>
+const BASE = '/app/filebrowser/api/files';
+let tree = null;
+let currentPath = [];
+
+function getIcon(name, type) {
+  if (type === 'dir') return '📂';
+  const ext = name.split('.').pop().toLowerCase();
+  const icons = {
+    html: '🌐', js: '⚡', json: '📋', md: '📄', css: '🎨',
+    png: '🖼️', jpg: '🖼️', svg: '🖼️', txt: '📄', sh: '⚙️'
+  };
+  return icons[ext] || '📄';
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function getExt(name) {
+  const parts = name.split('.');
+  return parts.length > 1 ? parts.pop() : '';
+}
+
+function getNode(pathArr) {
+  let node = tree;
+  for (const seg of pathArr) {
+    if (!node.children) return null;
+    node = node.children.find(c => c.name === seg);
+    if (!node) return null;
+  }
+  return node;
+}
+
+function renderBreadcrumb() {
+  const bc = document.getElementById('breadcrumb');
+  let html = '<span onclick="navigateTo(-1)">~</span>';
+  currentPath.forEach((seg, i) => {
+    html += '<span class="sep">/</span>';
+    if (i === currentPath.length - 1) {
+      html += `<span class="current">${seg}</span>`;
+    } else {
+      html += `<span onclick="navigateTo(${i})">${seg}</span>`;
+    }
+  });
+  bc.innerHTML = html;
+}
+
+function renderList() {
+  const node = getNode(currentPath);
+  const list = document.getElementById('fileList');
+  const stats = document.getElementById('stats');
+
+  if (!node || !node.children || node.children.length === 0) {
+    list.innerHTML = '<div class="empty">Empty directory</div>';
+    stats.innerHTML = '';
+    return;
+  }
+
+  // Sort: dirs first, then files, alphabetical
+  const sorted = [...node.children].sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  const dirs = sorted.filter(c => c.type === 'dir').length;
+  const files = sorted.filter(c => c.type === 'file');
+  const totalSize = files.reduce((s, f) => s + (f.size || 0), 0);
+
+  list.innerHTML = sorted.map(item => {
+    const icon = getIcon(item.name, item.type);
+    const size = item.type === 'file' ? formatSize(item.size || 0) : `${(item.children||[]).length} items`;
+    const ext = item.type === 'file' ? getExt(item.name) : '';
+    const cls = item.type === 'dir' ? 'file-row is-dir' : 'file-row';
+    return `<div class="${cls}" onclick="openItem('${item.name}', '${item.type}')">
+      <span class="file-icon">${icon}</span>
+      <span class="file-name">${item.name}</span>
+      <span class="file-type">${ext}</span>
+      <span class="file-size">${size}</span>
+    </div>`;
+  }).join('');
+
+  stats.innerHTML = `<span>${dirs} folders</span><span>${files.length} files</span><span>${formatSize(totalSize)}</span>`;
+}
+
+function navigateTo(index) {
+  if (index === -1) currentPath = [];
+  else currentPath = currentPath.slice(0, index + 1);
+  renderBreadcrumb();
+  renderList();
+}
+
+function openItem(name, type) {
+  if (type === 'dir') {
+    currentPath.push(name);
+    renderBreadcrumb();
+    renderList();
+  }
+}
+
+async function loadData() {
+  try {
+    const r = await fetch(BASE);
+    const data = await r.json();
+    tree = data.tree;
+    renderBreadcrumb();
+    renderList();
+  } catch(e) {
+    document.getElementById('fileList').innerHTML = '<div class="empty">Failed to load file data</div>';
+  }
+}
+
+loadData();
+
+// Poll for updates
+setInterval(async () => {
+  try {
+    const r = await fetch(BASE);
+    const data = await r.json();
+    tree = data.tree;
+    renderList();
+  } catch {}
+}, 5000);
+</script>
+</body>
+</html>

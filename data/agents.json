@@ -1,0 +1,43 @@
+{
+  "agents": [
+    {
+      "id": "agent-modifier",
+      "type": "modifier",
+      "model": "sonnet",
+      "status": "running",
+      "lastHeartbeat": "2026-03-16T22:14:32.630Z",
+      "lastActivity": "2026-03-13T19:40:44.820Z",
+      "startedAt": "2026-03-13T19:40:37.621Z",
+      "currentTask": null,
+      "queueDepth": 0,
+      "errorCount": 0,
+      "tasksCompleted": 1
+    },
+    {
+      "id": "agent-chat-orchestrator",
+      "type": "chat",
+      "model": "sonnet",
+      "status": "running",
+      "lastHeartbeat": "2026-03-16T22:13:43.305Z",
+      "lastActivity": "2026-03-13T20:03:47.252Z",
+      "startedAt": "2026-03-13T20:03:47.252Z",
+      "currentTask": null,
+      "queueDepth": 0,
+      "errorCount": 0,
+      "tasksCompleted": 0
+    },
+    {
+      "id": "test",
+      "type": "unknown",
+      "model": "sonnet",
+      "status": "dead",
+      "lastHeartbeat": "2026-03-16T13:57:59.317Z",
+      "lastActivity": "2026-03-15T13:44:23.118Z",
+      "startedAt": "2026-03-15T13:44:23.118Z",
+      "currentTask": null,
+      "queueDepth": 0,
+      "errorCount": 0,
+      "tasksCompleted": 0
+    }
+  ]
+}

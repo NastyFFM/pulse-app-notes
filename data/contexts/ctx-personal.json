@@ -1,0 +1,19 @@
+{
+  "id": "ctx-personal",
+  "name": "Persoenlich",
+  "icon": "🏠",
+  "created": "2026-03-15T14:00:00Z",
+  "widgets": [
+    {
+      "instanceId": "wi-cal-001",
+      "typeId": "calendar-view",
+      "label": "Mein Kalender",
+      "dataSource": "contexts/ctx-personal/calendar.json",
+      "position": { "x": 100, "y": 100 },
+      "size": { "w": 500, "h": 450 },
+      "config": {}
+    }
+  ],
+  "connections": [],
+  "aiNode": { "position": { "x": 350, "y": 20 } }
+}

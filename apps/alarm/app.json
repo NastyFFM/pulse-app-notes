@@ -1,0 +1,7 @@
+{
+  "id": "alarm",
+  "name": "Wecker",
+  "icon": "⏰",
+  "color": "#F59E0B",
+  "description": "Wecker mit mehreren Alarmen und Stoppuhr"
+}

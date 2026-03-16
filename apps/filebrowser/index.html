@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Browser</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f0f1a; color: #e2e8f0; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 14px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  .header {
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .header h1 { font-size: 1.2rem; font-weight: 600; color: #c7d2fe; }
+  .header .icon { font-size: 1.4rem; }
+  .header .spacer { flex: 1; }
+  .refresh-btn {
+    background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.4);
+    color: #c7d2fe; padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    font-size: 13px; font-family: inherit; display: flex; align-items: center; gap: 6px;
+    transition: all 0.2s;
+  }
+  .refresh-btn:hover { background: rgba(99, 102, 241, 0.35); }
+  .refresh-btn.spinning .refresh-icon { animation: spin 0.8s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .breadcrumb {
+    padding: 10px 24px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
+    font-size: 13px; color: rgba(255,255,255,0.5);
+  }
+  .breadcrumb span { cursor: pointer; color: #818cf8; }
+  .breadcrumb span:hover { text-decoration: underline; }
+  .breadcrumb .sep { color: rgba(255,255,255,0.2); margin: 0 2px; }
+  .breadcrumb .current { color: #e2e8f0; cursor: default; }
+  .breadcrumb .current:hover { text-decoration: none; }
+
+  .main-content { display: flex; flex: 1; overflow: hidden; position: relative; }
+
+  .file-list-pane { overflow-y: auto; padding: 8px 0; min-width: 200px; }
+
+  /* Drag divider */
+  .drag-divider {
+    width: 6px; cursor: col-resize; background: rgba(255,255,255,0.04);
+    flex-shrink: 0; position: relative; z-index: 10;
+    display: none;
+  }
+  .drag-divider:hover, .drag-divider.dragging { background: rgba(99, 102, 241, 0.4); }
+  .drag-divider::after {
+    content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 2px; height: 30px; background: rgba(255,255,255,0.15); border-radius: 1px;
+  }
+  .drag-divider.visible { display: block; }
+
+  .file-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 24px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .file-row:hover { background: rgba(99, 102, 241, 0.08); }
+  .file-row.active { background: rgba(99, 102, 241, 0.15); border-left: 3px solid #818cf8; }
+  .file-row .file-icon { font-size: 1.1rem; width: 24px; text-align: center; flex-shrink: 0; }
+  .file-row .file-name { flex: 1; color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-row.is-dir .file-name { color: #a5b4fc; font-weight: 500; }
+  .file-row .file-size { color: rgba(255,255,255,0.35); font-size: 12px; min-width: 70px; text-align: right; }
+  .file-row .file-type { color: rgba(255,255,255,0.25); font-size: 11px; min-width: 50px; text-align: right; text-transform: uppercase; }
+
+  .empty { padding: 40px 24px; text-align: center; color: rgba(255,255,255,0.3); font-style: italic; }
+
+  /* Preview pane */
+  .preview-pane {
+    width: 0; overflow: hidden;
+    background: #12121f; display: flex; flex-direction: column;
+    transition: none;
+  }
+  .preview-pane.open { min-width: 250px; }
+
+  .preview-header {
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .preview-header .preview-filename { flex: 1; color: #c7d2fe; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .preview-header .close-btn {
+    background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer;
+    font-size: 18px; padding: 2px 6px; border-radius: 4px;
+  }
+  .preview-header .close-btn:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+
+  .view-toggle {
+    display: flex; gap: 2px; background: rgba(255,255,255,0.05); border-radius: 6px; padding: 2px;
+  }
+  .view-toggle button {
+    background: none; border: none; color: rgba(255,255,255,0.4);
+    padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-family: inherit;
+  }
+  .view-toggle button.active { background: rgba(99, 102, 241, 0.3); color: #c7d2fe; }
+  .view-toggle button:hover { color: #e2e8f0; }
+
+  .preview-content { flex: 1; overflow: auto; padding: 16px; }
+
+  /* Code view */
+  .code-view {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-all;
+    color: #cbd5e1;
+  }
+  .code-view .line { display: flex; }
+  .code-view .line-num {
+    color: rgba(255,255,255,0.15); min-width: 45px; text-align: right;
+    padding-right: 12px; user-select: none; flex-shrink: 0;
+  }
+  .code-view .line-content { flex: 1; }
+
+  /* Rendered markdown */
+  .rendered-view { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.7; color: #e2e8f0; }
+  .rendered-view h1 { font-size: 1.6rem; color: #c7d2fe; margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .rendered-view h2 { font-size: 1.3rem; color: #a5b4fc; margin: 20px 0 8px; }
+  .rendered-view h3 { font-size: 1.1rem; color: #818cf8; margin: 16px 0 6px; }
+  .rendered-view p { margin: 8px 0; }
+  .rendered-view ul, .rendered-view ol { padding-left: 24px; margin: 8px 0; }
+  .rendered-view li { margin: 4px 0; }
+  .rendered-view code { background: rgba(99, 102, 241, 0.15); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 0.9em; }
+  .rendered-view pre { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin: 12px 0; overflow-x: auto; }
+  .rendered-view pre code { background: none; padding: 0; }
+  .rendered-view blockquote { border-left: 3px solid #818cf8; padding-left: 12px; color: rgba(255,255,255,0.6); margin: 8px 0; }
+  .rendered-view a { color: #818cf8; }
+  .rendered-view strong { color: #f1f5f9; }
+  .rendered-view hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 16px 0; }
+
+  /* HTML rendered view */
+  .html-frame { width: 100%; height: 100%; border: none; background: #fff; border-radius: 6px; }
+
+  /* Media previews */
+  .media-preview { display: flex; align-items: center; justify-content: center; height: 100%; }
+  .media-preview img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
+  .media-preview video { max-width: 100%; max-height: 100%; border-radius: 6px; }
+  .media-preview audio { width: 100%; }
+  .media-preview .audio-wrapper {
+    text-align: center; width: 100%;
+  }
+  .media-preview .audio-wrapper .audio-icon { font-size: 4rem; margin-bottom: 16px; }
+  .media-preview .audio-wrapper .audio-name { color: #c7d2fe; font-size: 1.1rem; margin-bottom: 16px; }
+
+  /* Syntax highlighting */
+  .syn-keyword { color: #c084fc; }
+  .syn-string { color: #86efac; }
+  .syn-comment { color: rgba(255,255,255,0.25); font-style: italic; }
+  .syn-number { color: #fbbf24; }
+  .syn-tag { color: #f472b6; }
+  .syn-attr { color: #818cf8; }
+
+  .stats {
+    padding: 8px 24px;
+    background: rgba(15,15,26,0.95);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 12px; color: rgba(255,255,255,0.35);
+    display: flex; gap: 16px; flex-shrink: 0;
+  }
+
+  /* No-select during drag */
+  body.dragging { cursor: col-resize !important; user-select: none; }
+  body.dragging * { cursor: col-resize !important; }
+  body.dragging iframe { pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="icon">📁</span>
+  <h1>File Browser</h1>
+  <div class="spacer"></div>
+  <button class="refresh-btn" onclick="refreshFiles()" id="refreshBtn">
+    <span class="refresh-icon">🔄</span> Aktualisieren
+  </button>
+</div>
+<div class="breadcrumb" id="breadcrumb"></div>
+<div class="main-content" id="mainContent">
+  <div class="file-list-pane" id="fileList"></div>
+  <div class="drag-divider" id="dragDivider"></div>
+  <div class="preview-pane" id="previewPane">
+    <div class="preview-header">
+      <span class="preview-filename" id="previewFilename"></span>
+      <div class="view-toggle" id="viewToggle" style="display:none">
+        <button onclick="setViewMode('code')" id="btnCode">Code</button>
+        <button onclick="setViewMode('rendered')" id="btnRendered">Vorschau</button>
+      </div>
+      <button class="close-btn" onclick="closePreview()">&times;</button>
+    </div>
+    <div class="preview-content" id="previewContent"></div>
+  </div>
+</div>
+<div class="stats" id="stats"></div>
+
+<script>
+const BASE = '/app/filebrowser/api/files';
+const READ_BASE = '/app/filebrowser/api/read-file';
+const SERVE_BASE = '/app/filebrowser/api/serve/';
+let tree = null;
+let currentPath = [];
+let activeFile = null;
+let currentViewMode = 'code';
+let currentFileContent = '';
+let currentFileName = '';
+
+const TEXT_PREVIEWABLE = ['md', 'js', 'html', 'css', 'json', 'txt', 'sh', 'py'];
+const MEDIA_IMAGE = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico'];
+const MEDIA_VIDEO = ['mp4', 'webm', 'mov'];
+const MEDIA_AUDIO = ['mp3', 'wav', 'ogg', 'm4a', 'flac'];
+const DUAL_VIEW = ['md', 'html'];
+
+function isPreviewable(ext) {
+  return TEXT_PREVIEWABLE.includes(ext) || MEDIA_IMAGE.includes(ext) || MEDIA_VIDEO.includes(ext) || MEDIA_AUDIO.includes(ext);
+}
+
+function getIcon(name, type) {
+  if (type === 'dir') return '📂';
+  const ext = name.split('.').pop().toLowerCase();
+  const icons = {
+    html: '🌐', js: '⚡', json: '📋', md: '📄', css: '🎨',
+    png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', svg: '🖼️', webp: '🖼️',
+    mp3: '🎵', wav: '🎵', ogg: '🎵', m4a: '🎵', flac: '🎵',
+    mp4: '🎬', webm: '🎬', mov: '🎬',
+    txt: '📄', sh: '⚙️', py: '🐍'
+  };
+  return icons[ext] || '📄';
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function getExt(name) {
+  const parts = name.split('.');
+  return parts.length > 1 ? parts.pop().toLowerCase() : '';
+}
+
+function getNode(pathArr) {
+  let node = tree;
+  for (const seg of pathArr) {
+    if (!node.children) return null;
+    node = node.children.find(c => c.name === seg);
+    if (!node) return null;
+  }
+  return node;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// --- Drag resizer ---
+let isDragging = false;
+const divider = document.getElementById('dragDivider');
+const mainContent = document.getElementById('mainContent');
+const fileListPane = document.getElementById('fileList');
+const previewPane = document.getElementById('previewPane');
+let splitRatio = 0.45; // file list gets 45%, preview gets rest
+
+divider.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  document.body.classList.add('dragging');
+  divider.classList.add('dragging');
+  e.preventDefault();
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const rect = mainContent.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const ratio = Math.max(0.15, Math.min(0.85, x / rect.width));
+  splitRatio = ratio;
+  applySplit();
+});
+
+document.addEventListener('mouseup', () => {
+  if (isDragging) {
+    isDragging = false;
+    document.body.classList.remove('dragging');
+    divider.classList.remove('dragging');
+  }
+});
+
+function applySplit() {
+  if (!previewPane.classList.contains('open')) return;
+  fileListPane.style.width = (splitRatio * 100) + '%';
+  fileListPane.style.flex = 'none';
+  previewPane.style.width = ((1 - splitRatio) * 100 - 1) + '%';
+  previewPane.style.flex = 'none';
+}
+
+// --- Syntax highlighting ---
+function highlightJS(code) {
+  return code.split('\n').map(line => {
+    let h = escapeHtml(line);
+    h = h.replace(/(\/\/.*)$/, '<span class="syn-comment">$1</span>');
+    h = h.replace(/(\/\*.*?\*\/)/g, '<span class="syn-comment">$1</span>');
+    h = h.replace(/('[^']*?'|"[^"]*?")/g, '<span class="syn-string">$1</span>');
+    h = h.replace(/\b(const|let|var|function|return|if|else|for|while|class|import|export|from|async|await|try|catch|new|this|throw|switch|case|break|default|typeof|instanceof)\b/g, '<span class="syn-keyword">$1</span>');
+    h = h.replace(/\b(\d+\.?\d*)\b/g, '<span class="syn-number">$1</span>');
+    return h;
+  }).join('\n');
+}
+
+function highlightHTML(code) {
+  return code.split('\n').map(line => {
+    let h = escapeHtml(line);
+    h = h.replace(/(&lt;!--.*?--&gt;)/g, '<span class="syn-comment">$1</span>');
+    h = h.replace(/(&lt;\/?)([\w-]+)/g, '$1<span class="syn-tag">$2</span>');
+    h = h.replace(/\s([\w-]+)=/g, ' <span class="syn-attr">$1</span>=');
+    h = h.replace(/(".*?")/g, '<span class="syn-string">$1</span>');
+    return h;
+  }).join('\n');
+}
+
+function highlightCode(content, ext) {
+  if (ext === 'js') return highlightJS(content);
+  if (ext === 'html' || ext === 'css') return highlightHTML(content);
+  if (ext === 'json') {
+    let h = escapeHtml(content);
+    h = h.replace(/(".*?")\s*:/g, '<span class="syn-attr">$1</span>:');
+    h = h.replace(/:(\s*".*?")/g, ':<span class="syn-string">$1</span>');
+    h = h.replace(/:\s*(\d+)/g, ': <span class="syn-number">$1</span>');
+    return h;
+  }
+  return escapeHtml(content);
+}
+
+function renderCodeView(content, ext) {
+  const highlighted = highlightCode(content, ext);
+  const lines = highlighted.split('\n');
+  return '<div class="code-view">' + lines.map((line, i) =>
+    `<div class="line"><span class="line-num">${i + 1}</span><span class="line-content">${line || ' '}</span></div>`
+  ).join('') + '</div>';
+}
+
+function renderMarkdown(md) {
+  let html = md;
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) =>
+    `<pre><code>${escapeHtml(code.trim())}</code></pre>`
+  );
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+  html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+  html = html.replace(/^---+$/gm, '<hr>');
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = '<p>' + html + '</p>';
+  html = html.replace(/<p><(h[123]|ul|ol|pre|blockquote|hr)/g, '<$1');
+  html = html.replace(/<\/(h[123]|ul|ol|pre|blockquote)><\/p>/g, '</$1>');
+  return html;
+}
+
+function setViewMode(mode) {
+  currentViewMode = mode;
+  document.getElementById('btnCode').classList.toggle('active', mode === 'code');
+  document.getElementById('btnRendered').classList.toggle('active', mode === 'rendered');
+  renderPreviewContent();
+}
+
+function renderPreviewContent() {
+  const ext = getExt(currentFileName);
+  const container = document.getElementById('previewContent');
+
+  if (currentViewMode === 'rendered') {
+    if (ext === 'md') {
+      container.innerHTML = '<div class="rendered-view">' + renderMarkdown(currentFileContent) + '</div>';
+    } else if (ext === 'html') {
+      container.innerHTML = '<iframe class="html-frame" sandbox="allow-scripts"></iframe>';
+      const frame = container.querySelector('iframe');
+      frame.srcdoc = currentFileContent;
+    }
+  } else {
+    container.innerHTML = renderCodeView(currentFileContent, ext);
+  }
+}
+
+function getServePath(name) {
+  const filePath = [...currentPath, name].join('/');
+  return SERVE_BASE + encodeURIComponent(filePath);
+}
+
+function renderMediaPreview(name, ext) {
+  const url = getServePath(name);
+  const container = document.getElementById('previewContent');
+
+  if (MEDIA_IMAGE.includes(ext)) {
+    container.innerHTML = `<div class="media-preview"><img src="${url}" alt="${escapeHtml(name)}" /></div>`;
+  } else if (MEDIA_VIDEO.includes(ext)) {
+    container.innerHTML = `<div class="media-preview"><video src="${url}" controls autoplay muted></video></div>`;
+  } else if (MEDIA_AUDIO.includes(ext)) {
+    container.innerHTML = `<div class="media-preview"><div class="audio-wrapper">
+      <div class="audio-icon">🎵</div>
+      <div class="audio-name">${escapeHtml(name)}</div>
+      <audio src="${url}" controls autoplay style="width:100%"></audio>
+    </div></div>`;
+  }
+}
+
+async function openPreview(name) {
+  const ext = getExt(name);
+  if (!isPreviewable(ext)) return;
+
+  activeFile = name;
+  currentFileName = name;
+
+  const pane = document.getElementById('previewPane');
+  const dividerEl = document.getElementById('dragDivider');
+  pane.classList.add('open');
+  dividerEl.classList.add('visible');
+  document.getElementById('previewFilename').textContent = name;
+  document.getElementById('previewContent').innerHTML = '<div class="empty">Laden...</div>';
+  applySplit();
+
+  const toggle = document.getElementById('viewToggle');
+  const isMedia = MEDIA_IMAGE.includes(ext) || MEDIA_VIDEO.includes(ext) || MEDIA_AUDIO.includes(ext);
+
+  if (isMedia) {
+    toggle.style.display = 'none';
+    renderMediaPreview(name, ext);
+  } else {
+    if (DUAL_VIEW.includes(ext)) {
+      toggle.style.display = 'flex';
+      currentViewMode = 'rendered';
+    } else {
+      toggle.style.display = 'none';
+      currentViewMode = 'code';
+    }
+    document.getElementById('btnCode').classList.toggle('active', currentViewMode === 'code');
+    document.getElementById('btnRendered').classList.toggle('active', currentViewMode === 'rendered');
+
+    try {
+      const filePath = [...currentPath, name];
+      const r = await fetch(READ_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filePath })
+      });
+      const data = await r.json();
+      if (data.ok) {
+        currentFileContent = data.content;
+        renderPreviewContent();
+      } else {
+        document.getElementById('previewContent').innerHTML = '<div class="empty">Fehler: ' + (data.error || 'Unbekannt') + '</div>';
+      }
+    } catch(e) {
+      document.getElementById('previewContent').innerHTML = '<div class="empty">Fehler beim Laden</div>';
+    }
+  }
+
+  renderList();
+}
+
+function closePreview() {
+  const pane = document.getElementById('previewPane');
+  const dividerEl = document.getElementById('dragDivider');
+  pane.classList.remove('open');
+  dividerEl.classList.remove('visible');
+  pane.style.width = '0';
+  pane.style.flex = '';
+  fileListPane.style.width = '';
+  fileListPane.style.flex = '1';
+  activeFile = null;
+  renderList();
+}
+
+function renderBreadcrumb() {
+  const bc = document.getElementById('breadcrumb');
+  let html = '<span onclick="navigateTo(-1)">~</span>';
+  currentPath.forEach((seg, i) => {
+    html += '<span class="sep">/</span>';
+    if (i === currentPath.length - 1) {
+      html += `<span class="current">${seg}</span>`;
+    } else {
+      html += `<span onclick="navigateTo(${i})">${seg}</span>`;
+    }
+  });
+  bc.innerHTML = html;
+}
+
+function renderList() {
+  const node = getNode(currentPath);
+  const list = document.getElementById('fileList');
+  const stats = document.getElementById('stats');
+
+  if (!node || !node.children || node.children.length === 0) {
+    list.innerHTML = '<div class="empty">Leeres Verzeichnis</div>';
+    stats.innerHTML = '';
+    return;
+  }
+
+  const sorted = [...node.children].sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  const dirs = sorted.filter(c => c.type === 'dir').length;
+  const files = sorted.filter(c => c.type === 'file');
+  const totalSize = files.reduce((s, f) => s + (f.size || 0), 0);
+
+  list.innerHTML = sorted.map(item => {
+    const icon = getIcon(item.name, item.type);
+    const size = item.type === 'file' ? formatSize(item.size || 0) : `${(item.children||[]).length} items`;
+    const ext = item.type === 'file' ? getExt(item.name) : '';
+    const isActive = item.name === activeFile && item.type === 'file';
+    const canPreview = item.type === 'file' && isPreviewable(ext);
+    let cls = item.type === 'dir' ? 'file-row is-dir' : 'file-row';
+    if (isActive) cls += ' active';
+    const escapedName = item.name.replace(/'/g, "\\'");
+    return `<div class="${cls}" onclick="openItem('${escapedName}', '${item.type}')">
+      <span class="file-icon">${icon}</span>
+      <span class="file-name">${item.name}</span>
+      <span class="file-type">${ext}</span>
+      <span class="file-size">${size}</span>
+    </div>`;
+  }).join('');
+
+  stats.innerHTML = `<span>${dirs} Ordner</span><span>${files.length} Dateien</span><span>${formatSize(totalSize)}</span>`;
+}
+
+function navigateTo(index) {
+  if (index === -1) currentPath = [];
+  else currentPath = currentPath.slice(0, index + 1);
+  closePreview();
+  renderBreadcrumb();
+  renderList();
+}
+
+function openItem(name, type) {
+  if (type === 'dir') {
+    currentPath.push(name);
+    closePreview();
+    renderBreadcrumb();
+    renderList();
+  } else {
+    const ext = getExt(name);
+    if (isPreviewable(ext)) {
+      openPreview(name);
+    }
+  }
+}
+
+async function loadData() {
+  try {
+    const r = await fetch(BASE);
+    const data = await r.json();
+    tree = data.tree;
+    renderBreadcrumb();
+    renderList();
+  } catch(e) {
+    document.getElementById('fileList').innerHTML = '<div class="empty">Fehler beim Laden</div>';
+  }
+}
+
+async function refreshFiles() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  try {
+    await fetch('/app/filebrowser/api/scan', { method: 'POST' });
+    await loadData();
+  } catch(e) {
+    console.error('Scan failed:', e);
+  }
+  btn.classList.remove('spinning');
+}
+
+loadData();
+
+setInterval(async () => {
+  try {
+    const r = await fetch(BASE);
+    const data = await r.json();
+    tree = data.tree;
+    renderList();
+  } catch {}
+}, 5000);
+</script>
+</body>
+</html>

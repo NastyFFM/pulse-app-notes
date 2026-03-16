@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;height:100vh;overflow:hidden;transition:background .3s}
+
+.dashboard{height:100vh;display:flex;flex-direction:column;padding:20px 24px}
+
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-shrink:0}
+.header h1{font-size:1.4rem;font-weight:700;letter-spacing:-.5px}
+.header-right{display:flex;align-items:center;gap:12px}
+.widget-count{font-size:.75rem;opacity:.5}
+
+.grid{flex:1;display:grid;gap:14px;overflow-y:auto;align-content:start;padding-bottom:20px}
+.grid::-webkit-scrollbar{width:6px}
+.grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+
+/* Widget Card */
+.widget{border-radius:16px;padding:18px;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden}
+.widget:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.widget-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-shrink:0}
+.widget-icon{font-size:1.1rem}
+.widget-title{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;opacity:.7;flex:1}
+.widget-body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+
+/* Clock Widget */
+.clock-time{font-size:3rem;font-weight:200;letter-spacing:2px;line-height:1;text-align:center}
+.clock-seconds{font-size:1.5rem;opacity:.5}
+.clock-date{font-size:.85rem;opacity:.6;text-align:center;margin-top:8px}
+
+/* Text Widget */
+.text-content{font-size:.95rem;line-height:1.5;opacity:.85}
+.text-subtitle{font-size:.8rem;opacity:.5;margin-top:8px}
+
+/* List Widget */
+.list-items{list-style:none;overflow-y:auto;flex:1}
+.list-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.85rem}
+.list-item:last-child{border:none}
+.list-item a{color:inherit;text-decoration:none;opacity:.8;transition:opacity .15s}
+.list-item a:hover{opacity:1;text-decoration:underline}
+.list-check{width:16px;height:16px;border-radius:4px;border:2px solid rgba(255,255,255,.3);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.list-check.checked{border-color:transparent}
+.list-check.checked::after{content:'✓';font-size:11px;color:#fff}
+.list-item.done .list-text{text-decoration:line-through;opacity:.4}
+.list-text{flex:1}
+.list-bullet{width:6px;height:6px;border-radius:50%;flex-shrink:0;opacity:.5}
+
+/* Counter Widget */
+.counter-value{font-size:3.5rem;font-weight:200;text-align:center;line-height:1}
+.counter-label{font-size:.8rem;opacity:.5;text-align:center;margin-top:6px}
+.counter-icon{font-size:2rem;text-align:center;margin-bottom:4px}
+
+/* Chart Widget */
+.chart-bars{display:flex;align-items:flex-end;gap:6px;flex:1;padding-top:8px}
+.chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.chart-bar{width:100%;border-radius:4px 4px 0 0;transition:height .3s;min-height:4px}
+.chart-label{font-size:.65rem;opacity:.5}
+.chart-value{font-size:.7rem;font-weight:600}
+
+/* Progress Widget */
+.progress-track{height:10px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;margin:12px 0}
+.progress-fill{height:100%;border-radius:5px;transition:width .5s}
+.progress-text{display:flex;justify-content:space-between;font-size:.8rem;opacity:.6}
+
+/* Image Widget */
+.image-content{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:8px}
+.image-content img{max-width:100%;max-height:100%;object-fit:cover;border-radius:8px}
+
+/* Lifedata Widget */
+.lifedata-rows{display:flex;flex-direction:column;gap:10px;flex:1;justify-content:center}
+.lifedata-row{display:flex;align-items:center;gap:10px}
+.lifedata-icon{font-size:1.2rem;flex-shrink:0;width:28px;text-align:center}
+.lifedata-info{flex:1;min-width:0}
+.lifedata-value{font-size:1.1rem;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.lifedata-label{font-size:.7rem;opacity:.45;margin-top:1px}
+.lifedata-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.08);margin-top:4px;overflow:hidden}
+.lifedata-fill{height:100%;border-radius:2px;transition:width .5s}
+
+</style>
+</head>
+<body>
+<div class="dashboard">
+  <div class="header">
+    <h1 id="dashTitle">Dashboard</h1>
+    <div class="header-right">
+      <span class="widget-count" id="widgetCount"></span>
+    </div>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+const API = 'api/';
+let dashConfig = {};
+let widgets = [];
+let clockIntervals = [];
+
+// --- Fetch helpers ---
+async function loadJSON(name) {
+  const r = await fetch(API + name + '?t=' + Date.now());
+  return r.json();
+}
+
+// --- Apply theme ---
+function applyTheme(cfg) {
+  const c = cfg.colors || {};
+  document.body.style.background = c.bg || '#0f0f1a';
+  document.body.style.color = c.text || '#e2e8f0';
+  document.documentElement.style.setProperty('--accent', c.accent || '#818cf8');
+  document.documentElement.style.setProperty('--card-bg', c.card || 'rgba(255,255,255,0.06)');
+  document.documentElement.style.setProperty('--card-border', c.cardBorder || 'rgba(255,255,255,0.1)');
+  document.documentElement.style.setProperty('--text-dim', c.textDim || 'rgba(255,255,255,0.5)');
+  document.getElementById('dashTitle').textContent = cfg.title || 'Dashboard';
+}
+
+// --- Renderers ---
+const renderers = {
+  clock(w, el) {
+    const cfg = w.config || {};
+    const fmt = cfg.format || '24h';
+    const showSec = cfg.showSeconds !== false;
+    const showDate = cfg.showDate !== false;
+
+    function tick() {
+      const now = new Date();
+      let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+      let suffix = '';
+      if (fmt === '12h') { suffix = h >= 12 ? ' PM' : ' AM'; h = h % 12 || 12; }
+      const time = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+      const sec = showSec ? '<span class="clock-seconds">:' + String(s).padStart(2,'0') + '</span>' : '';
+      let html = '<div class="clock-time">' + time + sec + suffix + '</div>';
+      if (showDate) {
+        const days = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+        const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+        html += '<div class="clock-date">' + days[now.getDay()] + ', ' + now.getDate() + '. ' + months[now.getMonth()] + ' ' + now.getFullYear() + '</div>';
+      }
+      el.innerHTML = html;
+    }
+    tick();
+    const iv = setInterval(tick, 1000);
+    clockIntervals.push(iv);
+  },
+
+  text(w, el) {
+    const cfg = w.config || {};
+    let html = '<div class="text-content">' + escHtml(w.content || '') + '</div>';
+    if (cfg.subtitle) html += '<div class="text-subtitle">' + escHtml(cfg.subtitle) + '</div>';
+    el.innerHTML = html;
+  },
+
+  list(w, el) {
+    const cfg = w.config || {};
+    const items = w.items || [];
+    const color = cfg.color || 'var(--accent)';
+    let html = '<ul class="list-items">';
+    items.forEach((item, i) => {
+      const text = typeof item === 'string' ? item : item.text;
+      const url = typeof item === 'object' ? item.url : null;
+      const done = typeof item === 'object' ? item.done : false;
+      const checkable = cfg.checkable;
+
+      html += '<li class="list-item' + (done ? ' done' : '') + '">';
+      if (checkable) {
+        html += '<div class="list-check' + (done ? ' checked' : '') + '" data-widget="' + w.id + '" data-idx="' + i + '" style="' + (done ? 'background:' + color : '') + '"></div>';
+      } else {
+        html += '<div class="list-bullet" style="background:' + color + '"></div>';
+      }
+      if (url) {
+        html += '<a href="' + escAttr(url) + '" target="_blank" class="list-text">' + escHtml(text) + '</a>';
+      } else {
+        html += '<span class="list-text">' + escHtml(text) + '</span>';
+      }
+      html += '</li>';
+    });
+    html += '</ul>';
+    el.innerHTML = html;
+  },
+
+  counter(w, el) {
+    const cfg = w.config || {};
+    const target = cfg.targetDate ? new Date(cfg.targetDate) : null;
+    const icon = cfg.icon || '🔢';
+
+    function tick() {
+      let value = w.value || 0;
+      let label = cfg.label || '';
+      if (target) {
+        const diff = target - new Date();
+        value = Math.max(0, Math.ceil(diff / 86400000));
+        label = label || 'Tage';
+      }
+      el.innerHTML = '<div class="counter-icon">' + icon + '</div>' +
+        '<div class="counter-value">' + value + '</div>' +
+        '<div class="counter-label">' + escHtml(label) + '</div>';
+    }
+    tick();
+    if (target) { const iv = setInterval(tick, 60000); clockIntervals.push(iv); }
+  },
+
+  chart(w, el) {
+    const cfg = w.config || {};
+    const data = w.data || [];
+    const color = cfg.color || 'var(--accent)';
+    const maxVal = Math.max(...data.map(d => d.value), 1);
+
+    let html = '<div class="chart-bars">';
+    data.forEach(d => {
+      const pct = (d.value / maxVal * 100);
+      html += '<div class="chart-bar-wrap">' +
+        '<div class="chart-value">' + d.value + '</div>' +
+        '<div class="chart-bar" style="height:' + pct + '%;background:' + color + '"></div>' +
+        '<div class="chart-label">' + escHtml(d.label) + '</div></div>';
+    });
+    html += '</div>';
+    el.innerHTML = html;
+  },
+
+  progress(w, el) {
+    const cfg = w.config || {};
+    const value = w.value || 0;
+    const max = w.max || 100;
+    const pct = Math.min(100, (value / max) * 100);
+    const color = cfg.color || 'var(--accent)';
+
+    el.innerHTML = '<div class="progress-text"><span>' + escHtml(cfg.labelLeft || '') + '</span><span>' + Math.round(pct) + '%</span></div>' +
+      '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+      '<div class="progress-text"><span>' + value + ' / ' + max + '</span><span>' + escHtml(cfg.labelRight || '') + '</span></div>';
+  },
+
+  image(w, el) {
+    const src = w.src || w.content || '';
+    el.innerHTML = '<div class="image-content"><img src="' + escAttr(src) + '" alt="' + escAttr(w.title || '') + '"></div>';
+  },
+
+  lifedata(w, el) {
+    const streams = w.streams || [];
+    const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
+    const startOfYear = new Date(startOfDay.getFullYear(), 0, 1);
+
+    function tick() {
+      const now = Date.now();
+      const secToday = (now - startOfDay.getTime()) / 1000;
+      const secYear = (now - startOfYear.getTime()) / 1000;
+      const dayProgress = Math.min(1, secToday / 86400);
+
+      let html = '<div class="lifedata-rows">';
+      streams.forEach(s => {
+        let value = 0;
+        const rate = s.ratePerSec || 0;
+        const scope = s.scope || 'today';
+        const elapsed = scope === 'year' ? secYear : secToday;
+        value = Math.floor((s.base || 0) + rate * elapsed);
+
+        const formatted = value.toLocaleString('de-DE');
+        const barPct = s.barMax ? Math.min(100, (value / s.barMax) * 100) : (dayProgress * 100);
+        const color = s.color || 'var(--accent)';
+
+        html += '<div class="lifedata-row">' +
+          '<div class="lifedata-icon">' + (s.icon || '📊') + '</div>' +
+          '<div class="lifedata-info">' +
+            '<div class="lifedata-value">' + formatted + '</div>' +
+            '<div class="lifedata-label">' + escHtml(s.label || '') + '</div>' +
+            '<div class="lifedata-bar"><div class="lifedata-fill" style="width:' + barPct.toFixed(1) + '%;background:' + color + '"></div></div>' +
+          '</div></div>';
+      });
+      html += '</div>';
+      el.innerHTML = html;
+    }
+    tick();
+    const iv = setInterval(tick, 200);
+    clockIntervals.push(iv);
+  }
+};
+
+// --- Build grid ---
+function buildGrid(widgetList, cfg) {
+  const grid = document.getElementById('grid');
+  const cols = cfg.columns || 4;
+  grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+
+  // Clear old intervals
+  clockIntervals.forEach(iv => clearInterval(iv));
+  clockIntervals = [];
+
+  grid.innerHTML = '';
+
+  widgetList.filter(w => w.enabled !== false).forEach(w => {
+    const pos = w.position || {};
+    const cfg2 = w.config || {};
+    const color = cfg2.color || 'var(--accent)';
+
+    const card = document.createElement('div');
+    card.className = 'widget';
+    card.id = 'widget-' + w.id;
+    card.style.gridColumn = (pos.col + 1) + ' / span ' + (pos.width || 1);
+    card.style.gridRow = (pos.row + 1) + ' / span ' + (pos.height || 1);
+    card.style.background = 'var(--card-bg)';
+    card.style.border = '1px solid var(--card-border)';
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'widget-header';
+    if (cfg2.icon) header.innerHTML += '<span class="widget-icon">' + cfg2.icon + '</span>';
+    header.innerHTML += '<span class="widget-title">' + escHtml(w.title || w.type) + '</span>';
+    // Color accent line
+    card.style.borderTop = '2px solid ' + color;
+    card.appendChild(header);
+
+    // Body
+    const body = document.createElement('div');
+    body.className = 'widget-body';
+    card.appendChild(body);
+
+    // Render
+    const renderer = renderers[w.type];
+    if (renderer) {
+      renderer(w, body);
+    } else {
+      body.innerHTML = '<div class="text-content" style="opacity:.4">Unknown type: ' + escHtml(w.type) + '</div>';
+    }
+
+    grid.appendChild(card);
+  });
+
+  const active = widgetList.filter(w => w.enabled !== false).length;
+  document.getElementById('widgetCount').textContent = active + ' widgets';
+}
+
+// --- Helpers ---
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function escAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+// --- Checkbox toggle ---
+document.addEventListener('click', async (e) => {
+  const check = e.target.closest('.list-check');
+  if (!check) return;
+  const wid = check.dataset.widget;
+  const idx = parseInt(check.dataset.idx);
+  const w = widgets.find(w => w.id === wid);
+  if (!w || !w.items[idx]) return;
+  w.items[idx].done = !w.items[idx].done;
+  // Save
+  await fetch(API + 'widgets', {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(widgets, null, 2)
+  });
+  buildGrid(widgets, dashConfig);
+});
+
+// --- Polling ---
+let lastWidgetHash = '';
+let lastDashHash = '';
+
+async function poll() {
+  try {
+    const [cfg, wList] = await Promise.all([loadJSON('dashboard'), loadJSON('widgets')]);
+    const wHash = JSON.stringify(wList);
+    const dHash = JSON.stringify(cfg);
+
+    if (wHash !== lastWidgetHash || dHash !== lastDashHash) {
+      dashConfig = cfg;
+      widgets = wList;
+      applyTheme(cfg);
+      buildGrid(wList, cfg);
+      lastWidgetHash = wHash;
+      lastDashHash = dHash;
+    }
+  } catch(e) { console.warn('Poll error:', e); }
+}
+
+poll();
+setInterval(poll, 2000);
+</script>
+</body>
+</html>

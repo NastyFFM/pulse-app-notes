@@ -1,0 +1,120 @@
+{
+  "meta": {
+    "title": "Mein Projekt",
+    "lastModified": "2026-03-12T19:34:13.565Z"
+  },
+  "columns": [
+    {
+      "id": "col-1",
+      "name": "Backlog",
+      "color": "#6B7280",
+      "tasks": [
+        {
+          "id": "task-1772134809234",
+          "title": "qwdqwdqd",
+          "desc": "",
+          "priority": "medium",
+          "created": "2026-02-26"
+        },
+        {
+          "id": "task-1773268023703",
+          "title": "wefwef",
+          "desc": "was ist da denn los",
+          "priority": "medium",
+          "created": "2026-03-11"
+        },
+        {
+          "id": "task-3",
+          "title": "API-Endpunkte",
+          "desc": "REST-Schnittstelle implementieren",
+          "priority": "high",
+          "created": "2026-02-25"
+        },
+        {
+          "id": "task-5",
+          "title": "Projektstruktur",
+          "desc": "Repository und Ordnerstruktur angelegt",
+          "priority": "low",
+          "created": "2026-02-24"
+        }
+      ]
+    },
+    {
+      "id": "col-2",
+      "name": "In Arbeit",
+      "color": "#3B82F6",
+      "tasks": [
+        {
+          "id": "task-1773268200000",
+          "title": "Erstelle PDF",
+          "desc": "kjljbn",
+          "priority": "medium",
+          "created": "2026-03-11"
+        },
+        {
+          "id": "task-4",
+          "title": "Datenbank-Schema",
+          "desc": "Tabellen und Relationen definieren",
+          "priority": "medium",
+          "created": "2026-02-25"
+        },
+        {
+          "id": "task-6",
+          "title": "Tooling Setup",
+          "desc": "Linter, Formatter und CI konfiguriert",
+          "priority": "low",
+          "created": "2026-02-24"
+        },
+        {
+          "id": "task-1",
+          "title": "Recherche",
+          "desc": "Thema eingrenzen und Quellen sammeln",
+          "priority": "high",
+          "created": "2026-02-26"
+        },
+        {
+          "id": "task-1773269390976",
+          "title": "izf",
+          "desc": "",
+          "priority": "medium",
+          "created": "2026-03-11"
+        }
+      ]
+    },
+    {
+      "id": "col-3",
+      "name": "Fertig",
+      "color": "#10B981",
+      "tasks": [
+        {
+          "id": "task-1773268678554",
+          "title": "qwdqw",
+          "desc": "",
+          "priority": "high",
+          "created": "2026-03-11"
+        },
+        {
+          "id": "task-1772569756755",
+          "title": "Arbeit",
+          "desc": "",
+          "priority": "medium",
+          "created": "2026-03-03"
+        },
+        {
+          "id": "task-2",
+          "title": "Design-Mockup",
+          "desc": "Wireframes fuer die Hauptseiten erstellen",
+          "priority": "medium",
+          "created": "2026-02-26"
+        },
+        {
+          "id": "task-1773267973786",
+          "title": "qwdqwd",
+          "desc": "",
+          "priority": "low",
+          "created": "2026-03-11"
+        }
+      ]
+    }
+  ]
+}

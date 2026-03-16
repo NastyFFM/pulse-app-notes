@@ -1,0 +1,16 @@
+{
+  "colors": [
+    "#64DF38",
+    "#D44CAE",
+    "#C1C3C6",
+    "#FFFFFF",
+    "#8A5CF5"
+  ],
+  "palettes": [
+    {
+      "id": "default",
+      "name": "Meine Farben",
+      "colors": []
+    }
+  ]
+}

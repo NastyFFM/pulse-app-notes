@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Desktop</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#0F172A 0%,#1E293B 40%,#334155 100%);min-height:100vh;color:#fff;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+
+/* Top bar */
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;font-size:.85rem;color:rgba(255,255,255,.6);z-index:100}
+.topbar-title{font-weight:600;font-size:1rem;color:rgba(255,255,255,.8)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#22C55E;transition:background .3s}
+.sync-dot.syncing{background:#F59E0B;animation:pulse 1s infinite}
+.sync-dot.error{background:#EF4444}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Main area */
+.main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;transition:margin-right .3s}
+.main.cc-open{margin-right:320px}
+.view-title{font-size:.8rem;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.4);margin-bottom:32px}
+
+/* App grid */
+.app-grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;max-width:600px}
+.app-icon{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:transform .15s}
+.app-icon:hover{transform:scale(1.1)}
+.app-icon:active{transform:scale(.95)}
+.app-icon .icon{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 12px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.15)}
+.app-icon .name{font-size:.7rem;color:rgba(255,255,255,.8);text-align:center;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Store view */
+.store{display:none;width:100%;max-width:500px}
+.store-item{display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.08);border-radius:12px;padding:14px 16px;margin-bottom:10px;backdrop-filter:blur(10px)}
+.store-item .icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.store-item .info{flex:1}
+.store-item .info h3{font-size:.9rem;font-weight:600;margin-bottom:2px}
+.store-item .info p{font-size:.75rem;color:rgba(255,255,255,.5)}
+.store-item button{padding:6px 16px;border-radius:20px;border:none;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-install{background:#3B82F6;color:#fff}
+.btn-installed{background:rgba(255,255,255,.15);color:rgba(255,255,255,.5)}
+.btn-install:hover{background:#2563EB}
+
+/* Dock */
+.dock{display:flex;justify-content:center;padding:16px 0 24px;z-index:100}
+.dock-bar{display:flex;gap:16px;background:rgba(255,255,255,.1);backdrop-filter:blur(20px);border-radius:24px;padding:10px 20px;border:1px solid rgba(255,255,255,.1)}
+.dock-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;transition:transform .15s}
+.dock-icon:hover{transform:scale(1.15)}
+.dock-icon:active{transform:scale(.9)}
+.dock-icon.active{box-shadow:0 0 0 2px rgba(255,255,255,.4)}
+
+/* Empty state */
+.empty{color:rgba(255,255,255,.3);font-size:.9rem;text-align:center;padding:40px}
+
+/* ---- App Windows ---- */
+.app-window{position:fixed;background:#1E293B;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;z-index:200;min-width:400px;min-height:300px;animation:bloom .25s ease-out}
+@keyframes bloom{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.app-window.closing{animation:shrink .2s ease-in forwards}
+@keyframes shrink{to{transform:scale(.8);opacity:0}}
+.app-window.minimized{animation:none;display:none}
+
+.win-titlebar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(0,0,0,.3);border-radius:12px 12px 0 0;cursor:grab;flex-shrink:0;user-select:none}
+.win-titlebar:active{cursor:grabbing}
+.win-title{font-size:.8rem;font-weight:600;color:rgba(255,255,255,.8);display:flex;align-items:center;gap:8px}
+.win-title .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.win-btns{display:flex;gap:6px}
+.win-btn{width:24px;height:24px;border-radius:6px;border:none;font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);font-family:inherit}
+.win-btn:hover{background:rgba(255,255,255,.2)}
+.win-btn.close:hover{background:#EF4444;color:#fff}
+
+.app-window iframe{flex:1;border:none;border-radius:0 0 12px 12px;background:#fff}
+
+/* Resize handles */
+.resize-handle{position:absolute;z-index:10}
+.resize-handle.r{right:-4px;top:12px;bottom:12px;width:8px;cursor:ew-resize}
+.resize-handle.b{bottom:-4px;left:12px;right:12px;height:8px;cursor:ns-resize}
+.resize-handle.br{right:-4px;bottom:-4px;width:16px;height:16px;cursor:nwse-resize}
+.resize-handle.bl{left:-4px;bottom:-4px;width:16px;height:16px;cursor:nesw-resize}
+.resize-handle.tr{right:-4px;top:-4px;width:16px;height:16px;cursor:nesw-resize}
+.resize-handle.tl{left:-4px;top:-4px;width:16px;height:16px;cursor:nwse-resize}
+.resize-handle.l{left:-4px;top:12px;bottom:12px;width:8px;cursor:ew-resize}
+.resize-handle.t{top:-4px;left:12px;right:12px;height:8px;cursor:ns-resize}
+
+/* ---- Command Center ---- */
+.command-center{position:fixed;top:0;right:-320px;width:320px;height:100vh;background:rgba(15,23,42,.95);backdrop-filter:blur(20px);border-left:1px solid rgba(255,255,255,.1);z-index:300;transition:right .3s ease;display:flex;flex-direction:column}
+.command-center.open{right:0}
+.cc-header{padding:16px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center}
+.cc-header h2{font-size:.9rem;font-weight:600;color:rgba(255,255,255,.8)}
+.cc-close{background:none;border:none;color:rgba(255,255,255,.5);font-size:1.2rem;cursor:pointer}
+.cc-close:hover{color:#fff}
+
+.cc-section{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
+.cc-section h3{font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.4);margin-bottom:8px}
+.cc-status{display:flex;gap:12px}
+.cc-stat{flex:1;background:rgba(255,255,255,.06);border-radius:8px;padding:8px;text-align:center}
+.cc-stat .val{font-size:1.2rem;font-weight:700;color:#fff}
+.cc-stat .lbl{font-size:.65rem;color:rgba(255,255,255,.4);margin-top:2px}
+
+.cc-feed{flex:1;overflow-y:auto;padding:8px 16px}
+.cc-entry{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.75rem;color:rgba(255,255,255,.6)}
+.cc-entry .time{color:rgba(255,255,255,.3);font-size:.65rem;margin-top:2px}
+.cc-entry.mutation{border-left:2px solid #3B82F6;padding-left:8px}
+.cc-entry.sse{border-left:2px solid #8B5CF6;padding-left:8px}
+.cc-entry.error{border-left:2px solid #EF4444;padding-left:8px}
+
+/* Sync pulse on SSE update */
+@keyframes syncPulse{0%{box-shadow:0 0 0 0 rgba(139,92,246,.4)}100%{box-shadow:0 0 0 12px rgba(139,92,246,0)}}
+.sse-pulse{animation:syncPulse .6s ease-out}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="topbar-title" id="title">Claude Desktop</span>
+  <div class="topbar-right"><span id="clock"></span><span class="sync-dot" id="syncDot"></span></div>
+</div>
+
+<div class="main" id="mainArea">
+  <div id="home-view">
+    <div class="view-title" id="home-label"></div>
+    <div class="app-grid" id="grid"></div>
+  </div>
+  <div class="store" id="store-view">
+    <div class="view-title">App Store</div>
+    <div id="store-list"></div>
+  </div>
+</div>
+
+<div class="dock">
+  <div class="dock-bar">
+    <div class="dock-icon" style="background:rgba(255,255,255,.12)" onclick="showHome()" id="dock-home" title="Home">🏠</div>
+    <div class="dock-icon" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6)" onclick="showStore()" id="dock-store" title="App Store">🏪</div>
+    <div class="dock-icon" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)" onclick="toggleCC()" id="dock-cc" title="Command Center">📡</div>
+  </div>
+</div>
+
+<div class="command-center" id="cc">
+  <div class="cc-header"><h2>Command Center</h2><button class="cc-close" onclick="toggleCC()">&times;</button></div>
+  <div class="cc-section">
+    <h3>Sync Status</h3>
+    <div class="cc-status">
+      <div class="cc-stat"><div class="val" id="cc-pending">0</div><div class="lbl">Pending</div></div>
+      <div class="cc-stat"><div class="val" id="cc-apps">0</div><div class="lbl">Apps</div></div>
+      <div class="cc-stat"><div class="val" id="cc-windows">0</div><div class="lbl">Fenster</div></div>
+    </div>
+  </div>
+  <div class="cc-section"><h3>Activity Feed</h3></div>
+  <div class="cc-feed" id="cc-feed"></div>
+</div>
+
+<script>
+let state = null, lastHash = '', view = 'home';
+let openWindows = [], nextZ = 300, windowIdCounter = 0;
+let mutationQueue = [], batchTimer = null;
+const feed = [];
+
+// --- SSE ---
+let sse = null;
+function connectSSE() {
+  if (sse) sse.close();
+  sse = new EventSource('/sse/dashboard');
+  sse.onmessage = e => {
+    if (e.data === 'connected') return;
+    addFeed('SSE Update', 'sse');
+    load();
+  };
+  sse.onerror = () => { setSyncStatus('error'); setTimeout(connectSSE, 5000); };
+}
+
+// --- Data ---
+async function load() {
+  try {
+    const r = await fetch('/api/apps');
+    const data = await r.json();
+    const hash = JSON.stringify(data);
+    if (hash !== lastHash) { state = data; lastHash = hash; render(); }
+    setSyncStatus('saved');
+  } catch { setSyncStatus('error'); }
+}
+
+async function save() {
+  setSyncStatus('syncing');
+  state.meta = state.meta || {};
+  try {
+    await fetch('/api/apps', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) });
+    lastHash = JSON.stringify(state);
+    setSyncStatus('saved');
+  } catch { setSyncStatus('error'); }
+}
+
+function setSyncStatus(s) {
+  const dot = document.getElementById('syncDot');
+  dot.className = 'sync-dot' + (s === 'syncing' ? ' syncing' : s === 'error' ? ' error' : '');
+}
+
+// --- Render ---
+function render() {
+  if (!state) return;
+  document.getElementById('title').textContent = state.meta.title || 'Claude Desktop';
+  if (view === 'home') renderHome(); else renderStore();
+  updateCCStats();
+}
+
+function renderHome() {
+  const apps = state.apps.filter(a => a.installed).sort((a, b) => (a.position || 0) - (b.position || 0));
+  const grid = document.getElementById('grid');
+  const label = document.getElementById('home-label');
+  grid.innerHTML = '';
+  if (apps.length === 0) {
+    grid.innerHTML = '<div class="empty">Keine Apps installiert.<br>Oeffne den App Store!</div>';
+    label.textContent = '';
+  } else {
+    label.textContent = apps.length + (apps.length === 1 ? ' App' : ' Apps');
+    apps.forEach(app => {
+      const el = document.createElement('div');
+      el.className = 'app-icon';
+      el.onclick = () => openApp(app);
+      el.innerHTML = `<div class="icon" style="background:${app.color}">${app.icon}</div><div class="name">${app.name}</div>`;
+      grid.appendChild(el);
+    });
+  }
+}
+
+function renderStore() {
+  const list = document.getElementById('store-list');
+  list.innerHTML = '';
+  if (state.apps.length === 0) {
+    list.innerHTML = '<div class="empty">Keine Apps verfuegbar.<br>Claude kann neue Apps erstellen!</div>';
+    return;
+  }
+  state.apps.forEach(app => {
+    const el = document.createElement('div');
+    el.className = 'store-item';
+    el.innerHTML = `<div class="icon" style="background:${app.color}">${app.icon}</div><div class="info"><h3>${app.name}</h3><p>${app.description || ''}</p></div><button class="${app.installed ? 'btn-installed' : 'btn-install'}" onclick="toggleInstall('${app.id}')">${app.installed ? 'Installiert' : 'Installieren'}</button>`;
+    list.appendChild(el);
+  });
+}
+
+function toggleInstall(id) {
+  const app = state.apps.find(a => a.id === id);
+  app.installed = !app.installed;
+  if (app.installed) app.position = state.apps.filter(a => a.installed).length - 1;
+  trackMutation('install', `${app.name} ${app.installed ? 'installiert' : 'deinstalliert'}`);
+  render(); save();
+}
+
+function showHome() {
+  view = 'home';
+  document.getElementById('home-view').style.display = '';
+  document.getElementById('store-view').style.display = 'none';
+  document.getElementById('dock-home').classList.add('active');
+  document.getElementById('dock-store').classList.remove('active');
+  render();
+}
+
+function showStore() {
+  view = 'store';
+  document.getElementById('home-view').style.display = 'none';
+  document.getElementById('store-view').style.display = 'block';
+  document.getElementById('dock-store').classList.add('active');
+  document.getElementById('dock-home').classList.remove('active');
+  render();
+}
+
+// --- Window Manager ---
+function openApp(app) {
+  const existing = openWindows.find(w => w.appId === app.id && !w.minimized);
+  if (existing) { focusWindow(existing.winId); return; }
+
+  const minimized = openWindows.find(w => w.appId === app.id && w.minimized);
+  if (minimized) { minimized.minimized = false; minimized.el.classList.remove('minimized'); focusWindow(minimized.winId); return; }
+
+  const winId = 'win-' + (++windowIdCounter);
+  const w = document.createElement('div');
+  w.className = 'app-window';
+  w.id = winId;
+  w.style.width = '700px';
+  w.style.height = '500px';
+  w.style.left = (80 + openWindows.length * 30) + 'px';
+  w.style.top = (60 + openWindows.length * 30) + 'px';
+  w.style.zIndex = ++nextZ;
+
+  w.innerHTML = `
+    <div class="win-titlebar" onmousedown="startDrag(event,'${winId}')">
+      <div class="win-title"><span class="dot" style="background:${app.color}"></span>${app.name}</div>
+      <div class="win-btns">
+        <button class="win-btn" onclick="historyWin('${winId}','${app.id}')" title="Versionen">🕐</button>
+        <button class="win-btn" onclick="editWin('${winId}')" title="App anpassen (AI)">✏️</button>
+        <button class="win-btn" onclick="minimizeWin('${winId}')" title="Minimize">−</button>
+        <button class="win-btn" onclick="maximizeWin('${winId}')" title="Maximize">□</button>
+        <button class="win-btn close" onclick="closeWin('${winId}')" title="Close">×</button>
+      </div>
+    </div>
+    <iframe src="/app/${app.id}/"></iframe>
+    <div class="resize-handle r" onmousedown="startResize(event,'${winId}','r')"></div>
+    <div class="resize-handle b" onmousedown="startResize(event,'${winId}','b')"></div>
+    <div class="resize-handle br" onmousedown="startResize(event,'${winId}','br')"></div>
+    <div class="resize-handle bl" onmousedown="startResize(event,'${winId}','bl')"></div>
+    <div class="resize-handle l" onmousedown="startResize(event,'${winId}','l')"></div>
+    <div class="resize-handle t" onmousedown="startResize(event,'${winId}','t')"></div>
+    <div class="resize-handle tr" onmousedown="startResize(event,'${winId}','tr')"></div>
+    <div class="resize-handle tl" onmousedown="startResize(event,'${winId}','tl')"></div>`;
+
+  w.addEventListener('mousedown', () => focusWindow(winId));
+  document.body.appendChild(w);
+
+  const winObj = { winId, appId: app.id, el: w, minimized: false, maximized: false, savedRect: null };
+  openWindows.push(winObj);
+  addFeed(`${app.name} geoeffnet`, 'mutation');
+  updateCCStats();
+}
+
+function focusWindow(winId) {
+  const w = document.getElementById(winId);
+  if (w) w.style.zIndex = ++nextZ;
+}
+
+async function editWin(winId) {
+  const win = openWindows.find(w => w.winId === winId);
+  if (!win) return;
+  const appId = win.appId;
+  const app = state.apps.find(a => a.id === appId);
+  if (!app) return;
+
+  // Find existing edit chat for this app, or create a new one
+  try {
+    const r = await fetch('/app/chat/api/chat');
+    const chatData = await r.json();
+
+    // Check if there's already an edit chat for this app
+    let existingEditChat = chatData.chats.find(c => c.appContext === appId);
+    if (existingEditChat) {
+      // Reuse existing edit chat
+      chatData.activeChat = existingEditChat.id;
+    } else {
+      // Create new edit chat
+      const chatId = 'chat-' + Date.now();
+      chatData.chats.push({
+        id: chatId,
+        title: app.name + ' anpassen',
+        appContext: appId,
+        messages: [
+          { id: 'msg-welcome-' + chatId, role: 'claude', text: 'Du bearbeitest die App **' + app.name + '** (ID: `' + appId + '`). Schreib einfach was du aendern moechtest!', time: new Date().toISOString() }
+        ]
+      });
+      chatData.activeChat = chatId;
+    }
+    await fetch('/app/chat/api/chat', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(chatData) });
+
+    // Open or focus chat window
+    const chatApp = state.apps.find(a => a.id === 'chat');
+    if (chatApp) {
+      const existingChat = openWindows.find(w => w.appId === 'chat' && !w.minimized);
+      if (existingChat) {
+        focusWindow(existingChat.winId);
+        // Reload iframe to pick up new chat
+        const iframe = existingChat.el.querySelector('iframe');
+        if (iframe) iframe.src = iframe.src;
+      } else {
+        openApp(chatApp);
+      }
+    }
+    addFeed(app.name + ': Edit-Chat geoeffnet', 'mutation');
+  } catch(e) {
+    console.error('Edit failed:', e);
+    addFeed('Edit-Chat Fehler: ' + e.message, 'error');
+  }
+}
+
+async function historyWin(winId, appId) {
+  // Remove any existing version panel
+  const existing = document.getElementById('version-panel');
+  if (existing) { existing.remove(); return; }
+
+  const r = await fetch(`/app/${appId}/versions`);
+  const versions = await r.json();
+
+  const panel = document.createElement('div');
+  panel.id = 'version-panel';
+  panel.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:340px;max-height:400px;background:#0f0f1a;border-radius:14px;border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 40px rgba(0,0,0,.6);z-index:9999;display:flex;flex-direction:column;font-family:system-ui,sans-serif;overflow:hidden';
+
+  let listHTML = '';
+  if (versions.length === 0) {
+    listHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,.4);font-size:.85rem">Noch keine Versionen gespeichert.<br>Editiere die App, dann werden Versionen automatisch angelegt.</div>';
+  } else {
+    listHTML = versions.map((v, i) => {
+      const d = new Date(v.timestamp);
+      const label = d.toLocaleDateString('de-DE') + ' ' + d.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const tag = i === 0 ? ' <span style="color:#3B82F6;font-size:.65rem;font-weight:600">NEUESTE</span>' : '';
+      return `<div onclick="restoreVersion('${appId}','${winId}',${v.timestamp})" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);font-size:.82rem;color:rgba(255,255,255,.7);display:flex;justify-content:space-between;align-items:center;transition:background .15s" onmouseover="this.style.background='rgba(59,130,246,.15)'" onmouseout="this.style.background='transparent'"><span>v${versions.length - i}${tag}</span><span style="color:rgba(255,255,255,.4);font-size:.75rem">${label}</span></div>`;
+    }).join('');
+  }
+
+  panel.innerHTML = `<div style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center"><span style="font-size:.8rem;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Versionen</span><button onclick="this.closest('#version-panel').remove()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:1.1rem;cursor:pointer">✕</button></div><div style="overflow-y:auto;flex:1">${listHTML}</div>`;
+  document.body.appendChild(panel);
+}
+
+async function restoreVersion(appId, winId, timestamp) {
+  const panel = document.getElementById('version-panel');
+  if (panel) panel.remove();
+  const r = await fetch(`/app/${appId}/versions/restore`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ timestamp })
+  });
+  const d = await r.json();
+  if (d.ok) {
+    const win = openWindows.find(w => w.winId === winId);
+    if (win) { const iframe = win.el.querySelector('iframe'); if (iframe) iframe.src = iframe.src; }
+    addFeed(`${appId}: Version wiederhergestellt`, 'mutation');
+  }
+}
+
+function minimizeWin(winId) {
+  const win = openWindows.find(w => w.winId === winId);
+  if (win) { win.minimized = true; win.el.classList.add('minimized'); }
+  updateCCStats();
+}
+
+function maximizeWin(winId) {
+  const win = openWindows.find(w => w.winId === winId);
+  if (!win) return;
+  if (win.maximized) {
+    const r = win.savedRect;
+    win.el.style.left = r.left; win.el.style.top = r.top; win.el.style.width = r.width; win.el.style.height = r.height;
+    win.el.style.borderRadius = '12px';
+    win.maximized = false;
+  } else {
+    win.savedRect = { left: win.el.style.left, top: win.el.style.top, width: win.el.style.width, height: win.el.style.height };
+    win.el.style.left = '0'; win.el.style.top = '0'; win.el.style.width = '100vw'; win.el.style.height = '100vh';
+    win.el.style.borderRadius = '0';
+    win.maximized = true;
+  }
+}
+
+function closeWin(winId) {
+  const win = openWindows.find(w => w.winId === winId);
+  if (!win) return;
+  win.el.classList.add('closing');
+  setTimeout(() => { win.el.remove(); openWindows = openWindows.filter(w => w.winId !== winId); updateCCStats(); }, 200);
+}
+
+// Window dragging
+let dragWin = null, dragOff = { x: 0, y: 0 };
+function startDrag(e, winId) {
+  const win = openWindows.find(w => w.winId === winId);
+  if (win && win.maximized) return;
+  dragWin = document.getElementById(winId);
+  dragOff.x = e.clientX - dragWin.offsetLeft;
+  dragOff.y = e.clientY - dragWin.offsetTop;
+  // Disable pointer events on ALL iframes so mousemove/mouseup are never swallowed
+  document.querySelectorAll('.app-window iframe').forEach(f => f.style.pointerEvents = 'none');
+  focusWindow(winId);
+  e.preventDefault();
+}
+function stopDragAndResize() {
+  if (dragWin) {
+    dragWin = null;
+    document.querySelectorAll('.app-window iframe').forEach(f => f.style.pointerEvents = '');
+  }
+  if (resizeState) {
+    resizeState.el.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = '');
+    resizeState = null;
+  }
+}
+document.addEventListener('mousemove', e => {
+  if (!dragWin) return;
+  dragWin.style.left = (e.clientX - dragOff.x) + 'px';
+  dragWin.style.top = (e.clientY - dragOff.y) + 'px';
+});
+document.addEventListener('mouseup', stopDragAndResize);
+// Safety net: if mouse leaves the browser window entirely, stop dragging
+document.addEventListener('mouseleave', stopDragAndResize);
+
+// Window resizing
+let resizeState = null;
+function startResize(e, winId, dir) {
+  const el = document.getElementById(winId);
+  if (!el) return;
+  const win = openWindows.find(w => w.winId === winId);
+  if (win && win.maximized) return;
+  el.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = 'none');
+  resizeState = { el, dir, startX: e.clientX, startY: e.clientY, startW: el.offsetWidth, startH: el.offsetHeight, startL: el.offsetLeft, startT: el.offsetTop };
+  focusWindow(winId);
+  e.preventDefault();
+  e.stopPropagation();
+}
+document.addEventListener('mousemove', e => {
+  if (!resizeState) return;
+  const s = resizeState, dx = e.clientX - s.startX, dy = e.clientY - s.startY;
+  const minW = 400, minH = 300;
+  if (s.dir.includes('r')) s.el.style.width = Math.max(minW, s.startW + dx) + 'px';
+  if (s.dir.includes('b')) s.el.style.height = Math.max(minH, s.startH + dy) + 'px';
+  if (s.dir.includes('l')) { const nw = Math.max(minW, s.startW - dx); s.el.style.width = nw + 'px'; s.el.style.left = (s.startL + s.startW - nw) + 'px'; }
+  if (s.dir.includes('t') && s.dir !== 'tr' && s.dir !== 'tl') { const nh = Math.max(minH, s.startH - dy); s.el.style.height = nh + 'px'; s.el.style.top = (s.startT + s.startH - nh) + 'px'; }
+  if (s.dir === 'tr') { s.el.style.width = Math.max(minW, s.startW + dx) + 'px'; const nh = Math.max(minH, s.startH - dy); s.el.style.height = nh + 'px'; s.el.style.top = (s.startT + s.startH - nh) + 'px'; }
+  if (s.dir === 'tl') { const nw = Math.max(minW, s.startW - dx); s.el.style.width = nw + 'px'; s.el.style.left = (s.startL + s.startW - nw) + 'px'; const nh = Math.max(minH, s.startH - dy); s.el.style.height = nh + 'px'; s.el.style.top = (s.startT + s.startH - nh) + 'px'; }
+});
+
+// --- Command Center ---
+let ccOpen = false;
+function toggleCC() {
+  ccOpen = !ccOpen;
+  document.getElementById('cc').classList.toggle('open', ccOpen);
+  document.getElementById('mainArea').classList.toggle('cc-open', ccOpen);
+  document.getElementById('dock-cc').classList.toggle('active', ccOpen);
+}
+
+function addFeed(text, type) {
+  const now = new Date();
+  feed.unshift({ text, type, time: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) });
+  if (feed.length > 50) feed.length = 50;
+  renderFeed();
+}
+
+function renderFeed() {
+  const el = document.getElementById('cc-feed');
+  el.innerHTML = feed.map(f => `<div class="cc-entry ${f.type}"><div>${f.text}</div><div class="time">${f.time}</div></div>`).join('');
+}
+
+function updateCCStats() {
+  document.getElementById('cc-pending').textContent = mutationQueue.length;
+  document.getElementById('cc-apps').textContent = state ? state.apps.filter(a => a.installed).length : 0;
+  document.getElementById('cc-windows').textContent = openWindows.filter(w => !w.minimized).length;
+}
+
+// --- Mutation Queue + Changelog ---
+function trackMutation(action, detail) {
+  mutationQueue.push({ action, detail, time: new Date().toISOString() });
+  addFeed(`${action}: ${detail}`, 'mutation');
+  updateCCStats();
+  clearTimeout(batchTimer);
+  batchTimer = setTimeout(flushMutations, 30000);
+}
+
+async function flushMutations() {
+  if (mutationQueue.length === 0) return;
+  const batch = mutationQueue.splice(0);
+  try {
+    await fetch('/api/changelog', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(batch) });
+    addFeed(`${batch.length} Mutations gesynct`, 'sse');
+  } catch { mutationQueue.unshift(...batch); }
+  updateCCStats();
+}
+
+// Listen for postMessage from app iframes
+window.addEventListener('message', e => {
+  if (e.data && e.data.type === 'mutation') {
+    trackMutation(e.data.action || 'app', e.data.detail || '');
+  }
+  if (e.data && e.data.type === 'error') {
+    addFeed(`App Error: ${e.data.message || 'Unknown'}`, 'error');
+  }
+});
+
+// --- State Summary ---
+async function generateStateSummary() {
+  if (!state) return;
+  const summary = {
+    openApps: openWindows.filter(w => !w.minimized).map(w => w.appId),
+    installedApps: state.apps.filter(a => a.installed).map(a => a.id),
+    pendingMutations: mutationQueue.length,
+    lastUpdate: new Date().toISOString()
+  };
+  try { await fetch('/api/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(summary) }); } catch {}
+}
+
+// --- Clock ---
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+}
+
+// --- Init ---
+showHome();
+updateClock();
+setInterval(updateClock, 30000);
+load();
+connectSSE();
+setInterval(load, 30000); // safety net fallback
+setInterval(generateStateSummary, 60000);
+</script>
+</body>
+</html>

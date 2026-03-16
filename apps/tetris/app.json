@@ -1,0 +1,9 @@
+{
+  "id": "tetris",
+  "name": "Tetris",
+  "icon": "🧩",
+  "color": "#6366F1",
+  "description": "Klassisches Tetris mit Highscores",
+  "installed": true,
+  "position": 6
+}

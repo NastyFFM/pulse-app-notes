@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News Channels</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f13;
+      color: #e8e8f0;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* SIDEBAR */
+    #sidebar {
+      width: 260px;
+      min-width: 260px;
+      background: #17171f;
+      border-right: 1px solid #2a2a38;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #sidebar-header {
+      padding: 20px 16px 14px;
+      border-bottom: 1px solid #2a2a38;
+    }
+    #sidebar-header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #f0f0fa;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #channel-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+    .channel-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      cursor: pointer;
+      border-radius: 0;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .channel-item:hover { background: #22222e; }
+    .channel-item.active { background: #1e1e2e; }
+    .channel-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 4px; bottom: 4px;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+      background: var(--ch-color, #e11d48);
+    }
+    .ch-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      background: var(--ch-color, #e11d48);
+      opacity: 0.85;
+      flex-shrink: 0;
+    }
+    .ch-info { flex: 1; min-width: 0; }
+    .ch-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e8e8f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ch-topic {
+      font-size: 11px;
+      color: #6b6b88;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ch-delete {
+      opacity: 0;
+      background: none;
+      border: none;
+      color: #6b6b88;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .channel-item:hover .ch-delete { opacity: 1; }
+    .ch-delete:hover { color: #e11d48; }
+
+    #sidebar-bottom {
+      padding: 8px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .sidebar-action-btn {
+      padding: 10px;
+      background: #22222e;
+      border: 1px dashed #3a3a50;
+      border-radius: 10px;
+      color: #8888aa;
+      cursor: pointer;
+      font-size: 13px;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .sidebar-action-btn:hover {
+      background: #2a2a3e;
+      color: #e8e8f0;
+      border-color: #5a5a78;
+    }
+    .sidebar-action-btn.saved-btn {
+      border-style: solid;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .sidebar-action-btn.saved-btn.active {
+      background: #2a2a3e;
+      color: #F59E0B;
+      border-color: #F59E0B44;
+    }
+    .saved-count {
+      background: #F59E0B;
+      color: #000;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    /* MAIN */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #main-header {
+      padding: 18px 24px 14px;
+      border-bottom: 1px solid #2a2a38;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    #main-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      flex: 1;
+    }
+    #refresh-btn {
+      background: #22222e;
+      border: 1px solid #3a3a50;
+      color: #a0a0c0;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    #refresh-btn:hover { background: #2a2a3e; color: #e8e8f0; }
+    #refresh-btn.loading { opacity: 0.5; pointer-events: none; }
+
+    #news-feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+    }
+
+    .news-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .news-card {
+      background: #17171f;
+      border: 1px solid #2a2a38;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.15s, border-color 0.15s;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+      position: relative;
+    }
+    .news-card:hover {
+      transform: translateY(-2px);
+      border-color: #4a4a68;
+    }
+    .news-card-img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      display: block;
+      background: #12121a;
+    }
+    .news-card-favicon {
+      width: 16px; height: 16px;
+      border-radius: 3px;
+      vertical-align: middle;
+      margin-right: 5px;
+      flex-shrink: 0;
+    }
+    .news-card-body { padding: 14px 16px 16px; }
+    .news-source {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--ch-color, #e11d48);
+      margin-bottom: 6px;
+    }
+    .news-title {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.4;
+      color: #e8e8f0;
+      margin-bottom: 8px;
+    }
+    .news-desc {
+      font-size: 12px;
+      color: #7878a0;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .news-date {
+      font-size: 11px;
+      color: #55556a;
+      margin-top: 10px;
+    }
+
+    /* Star button on cards */
+    .star-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(15,15,19,0.8);
+      border: none;
+      color: #6b6b88;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+      transition: all 0.15s;
+      backdrop-filter: blur(4px);
+    }
+    .star-btn:hover { color: #F59E0B; background: rgba(15,15,19,0.95); }
+    .star-btn.starred { color: #F59E0B; }
+
+    .remove-saved-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(15,15,19,0.8);
+      border: none;
+      color: #6b6b88;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+      transition: all 0.15s;
+      backdrop-filter: blur(4px);
+    }
+    .remove-saved-btn:hover { color: #EF4444; background: rgba(15,15,19,0.95); }
+
+    .state-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      color: #4a4a68;
+      gap: 10px;
+      text-align: center;
+    }
+    .state-box .icon { font-size: 48px; }
+    .state-box p { font-size: 14px; max-width: 280px; line-height: 1.5; }
+
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #modal-overlay.open { display: flex; }
+    #modal {
+      background: #1e1e2a;
+      border: 1px solid #3a3a50;
+      border-radius: 16px;
+      padding: 28px;
+      width: 420px;
+      max-width: 95vw;
+    }
+    #modal h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #f0f0fa;
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #8888aa;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-group input, .form-group textarea {
+      width: 100%;
+      background: #12121a;
+      border: 1px solid #3a3a50;
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #e8e8f0;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+      border-color: #6060a0;
+    }
+    .icon-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .icon-opt {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      background: #22222e;
+      border: 2px solid transparent;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .icon-opt.selected { border-color: #e11d48; }
+    .color-row { display: flex; gap: 8px; }
+    .color-opt {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 3px solid transparent;
+      transition: transform 0.1s;
+    }
+    .color-opt.selected { border-color: #e8e8f0; transform: scale(1.15); }
+    .modal-btns { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
+    .btn-cancel { background: #22222e; border: 1px solid #3a3a50; color: #8888aa; padding: 10px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+    .btn-cancel:hover { color: #e8e8f0; }
+    .btn-create { background: #e11d48; border: none; color: #fff; padding: 10px 22px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .btn-create:hover { background: #be1039; }
+    .btn-create:disabled { opacity: 0.4; pointer-events: none; }
+
+    #no-channel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #4a4a68;
+      text-align: center;
+      gap: 12px;
+    }
+    #no-channel .big-icon { font-size: 64px; }
+    #no-channel h3 { font-size: 18px; color: #6868a0; }
+    #no-channel p { font-size: 13px; max-width: 260px; line-height: 1.6; }
+
+  </style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div id="sidebar-header">
+    <h1>📰 News Channels</h1>
+  </div>
+  <div id="channel-list"></div>
+  <div id="sidebar-bottom">
+    <button class="sidebar-action-btn" id="add-channel-btn">＋ Kanal erstellen</button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="main-header" style="display:none">
+    <span id="header-icon" style="font-size:22px"></span>
+    <h2 id="header-title"></h2>
+    <span id="header-topic" style="font-size:12px;color:#6868a0;font-style:italic"></span>
+    <button id="refresh-btn">⟳ Aktualisieren</button>
+  </div>
+  <div id="news-feed">
+    <div id="no-channel">
+      <div class="big-icon">📰</div>
+      <h3>Kein Kanal ausgewählt</h3>
+      <p>Wähle einen Kanal aus der Liste oder erstelle einen neuen.</p>
+    </div>
+  </div>
+</div>
+
+<div id="modal-overlay">
+  <div id="modal">
+    <h3>Neuen Kanal erstellen</h3>
+    <div class="form-group">
+      <label>Kanalname</label>
+      <input type="text" id="input-name" placeholder="z.B. Fußball Bundesliga" maxlength="40">
+    </div>
+    <div class="form-group">
+      <label>Suchbegriffe (Komma-getrennt)</label>
+      <input type="text" id="input-topic" placeholder="z.B. Bundesliga, Bayern München, Borussia">
+    </div>
+    <div class="form-group">
+      <label>Icon</label>
+      <div class="icon-row" id="icon-row"></div>
+    </div>
+    <div class="form-group">
+      <label>Farbe</label>
+      <div class="color-row" id="color-row"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" id="modal-cancel">Abbrechen</button>
+      <button class="btn-create" id="modal-create" disabled>Kanal erstellen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ICONS = ['📰','🌍','💻','🤖','⚽','🏀','🎮','🎵','🎬','💰','🏛️','🔬','🏥','✈️','🌿','🔥','⚡','🌊','🎯','🚀'];
+const COLORS = ['#e11d48','#8B5CF6','#3B82F6','#10B981','#F59E0B','#EF4444','#06B6D4','#EC4899','#84CC16','#F97316'];
+
+const CHANNELS_URL = 'api/news-channels';
+const SAVED_URL = 'api/saved-articles';
+
+let channels = [];
+let savedArticles = [];
+let activeId = null;
+let showingSaved = false;
+let selectedIcon = ICONS[0];
+let selectedColor = COLORS[0];
+
+const iconRow = document.getElementById('icon-row');
+ICONS.forEach(ic => {
+  const el = document.createElement('div');
+  el.className = 'icon-opt' + (ic === selectedIcon ? ' selected' : '');
+  el.textContent = ic;
+  el.onclick = () => {
+    selectedIcon = ic;
+    iconRow.querySelectorAll('.icon-opt').forEach(x => x.classList.remove('selected'));
+    el.classList.add('selected');
+  };
+  iconRow.appendChild(el);
+});
+const colorRow = document.getElementById('color-row');
+COLORS.forEach(col => {
+  const el = document.createElement('div');
+  el.className = 'color-opt' + (col === selectedColor ? ' selected' : '');
+  el.style.background = col;
+  el.onclick = () => {
+    selectedColor = col;
+    colorRow.querySelectorAll('.color-opt').forEach(x => x.classList.remove('selected'));
+    el.classList.add('selected');
+  };
+  colorRow.appendChild(el);
+});
+
+document.getElementById('input-name').addEventListener('input', validateForm);
+document.getElementById('input-topic').addEventListener('input', validateForm);
+function validateForm() {
+  const name = document.getElementById('input-name').value.trim();
+  const topic = document.getElementById('input-topic').value.trim();
+  document.getElementById('modal-create').disabled = !(name && topic);
+}
+
+async function loadChannels() {
+  try {
+    const r = await fetch(CHANNELS_URL + '?t=' + Date.now());
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    channels = d.channels || [];
+  } catch {
+    channels = [];
+  }
+  renderSidebar();
+}
+
+async function saveChannels() {
+  await fetch(CHANNELS_URL, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channels }, null, 2)
+  });
+}
+
+async function loadSaved() {
+  try {
+    const r = await fetch(SAVED_URL + '?t=' + Date.now());
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    savedArticles = d.articles || [];
+  } catch {
+    savedArticles = [];
+  }
+  updateSavedCount();
+}
+
+async function saveSavedArticles() {
+  await fetch(SAVED_URL, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ articles: savedArticles }, null, 2)
+  });
+  updateSavedCount();
+}
+
+function updateSavedCount() {
+  renderSidebar();
+}
+
+function isArticleSaved(link) {
+  return savedArticles.some(a => a.link === link);
+}
+
+async function toggleSaveArticle(article, btnEl) {
+  const idx = savedArticles.findIndex(a => a.link === article.link);
+  if (idx >= 0) {
+    savedArticles.splice(idx, 1);
+    if (btnEl) { btnEl.classList.remove('starred'); btnEl.textContent = '☆'; }
+  } else {
+    article.savedAt = new Date().toISOString();
+    savedArticles.push(article);
+    if (btnEl) { btnEl.classList.add('starred'); btnEl.textContent = '★'; }
+  }
+  await saveSavedArticles();
+  if (showingSaved) showSaved();
+}
+
+function renderSidebar() {
+  const list = document.getElementById('channel-list');
+  list.innerHTML = '';
+
+  // Favoriten-Kanal oben
+  if (savedArticles.length > 0) {
+    const favEl = document.createElement('div');
+    favEl.className = 'channel-item' + (showingSaved ? ' active' : '');
+    favEl.style.setProperty('--ch-color', '#F59E0B');
+    favEl.innerHTML = '<div class="ch-icon" style="background:#F59E0B">⭐</div><div class="ch-info"><div class="ch-name">Favoriten</div><div class="ch-topic">'+savedArticles.length+' gespeicherte Artikel</div></div>';
+    favEl.addEventListener('click', () => showSaved());
+    list.appendChild(favEl);
+  }
+
+  if (channels.length === 0 && savedArticles.length === 0) {
+    list.innerHTML = '<div style="padding:20px 16px;font-size:12px;color:#4a4a68;text-align:center">Noch keine Kanäle.<br>Erstelle deinen ersten!</div>';
+    return;
+  }
+  channels.forEach(ch => {
+    const el = document.createElement('div');
+    el.className = 'channel-item' + (ch.id === activeId && !showingSaved ? ' active' : '');
+    el.style.setProperty('--ch-color', ch.color);
+    el.innerHTML = '<div class="ch-icon" style="background:'+ch.color+'">'+ch.icon+'</div><div class="ch-info"><div class="ch-name">'+esc(ch.name)+'</div><div class="ch-topic">'+esc(ch.topic)+'</div></div><button class="ch-delete" title="Kanal löschen">✕</button>';
+    el.querySelector('.ch-delete').addEventListener('click', e => {
+      e.stopPropagation();
+      deleteChannel(ch.id);
+    });
+    el.addEventListener('click', () => selectChannel(ch.id));
+    list.appendChild(el);
+  });
+}
+
+function selectChannel(id) {
+  activeId = id;
+  showingSaved = false;
+  renderSidebar();
+  const ch = channels.find(c => c.id === id);
+  if (!ch) return;
+  document.getElementById('main-header').style.display = 'flex';
+  document.getElementById('header-icon').textContent = ch.icon;
+  document.getElementById('header-title').textContent = ch.name;
+  document.getElementById('header-topic').textContent = ch.topic;
+  document.getElementById('refresh-btn').style.display = '';
+  const noChannel = document.getElementById('no-channel');
+  if (noChannel) noChannel.style.display = 'none';
+  fetchNews(ch);
+}
+
+async function showSaved() {
+  await loadSaved();
+  showingSaved = true;
+  activeId = null;
+  renderSidebar();
+  document.getElementById('main-header').style.display = 'flex';
+  document.getElementById('header-icon').textContent = '⭐';
+  document.getElementById('header-title').textContent = 'Gespeicherte Artikel';
+  document.getElementById('header-topic').textContent = savedArticles.length + ' Artikel';
+  document.getElementById('refresh-btn').style.display = 'none';
+  const noChannel = document.getElementById('no-channel');
+  if (noChannel) noChannel.style.display = 'none';
+
+  const feed = document.getElementById('news-feed');
+  if (savedArticles.length === 0) {
+    feed.innerHTML = '<div class="state-box"><div class="icon">⭐</div><p>Noch keine gespeicherten Artikel. Klicke auf den Stern bei einem Artikel um ihn zu speichern.</p></div>';
+    return;
+  }
+
+  const sorted = [...savedArticles].sort((a,b) => (b.savedAt||'').localeCompare(a.savedAt||''));
+  const cards = sorted.map((article, idx) => {
+    const chName = article.channelName || '';
+    const chColor = article.channelColor || '#8888aa';
+    let html = '<div class="news-card" style="--ch-color:'+chColor+'">';
+    html += '<button class="remove-saved-btn" onclick="event.stopPropagation();removeSaved('+idx+')" title="Entfernen">✕</button>';
+    if (article.imgUrl) html += '<img class="news-card-img" src="'+esc(article.imgUrl)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'" onclick="window.open(\''+esc(article.link)+'\',\'_blank\')">';
+    html += '<div class="news-card-body" onclick="window.open(\''+esc(article.link)+'\',\'_blank\')">';
+    html += '<div class="news-source">'+(article.faviconUrl ? '<img class="news-card-favicon" src="'+esc(article.faviconUrl)+'" alt="">' : '')+esc(article.source || chName || 'News')+'</div>';
+    html += '<div class="news-title">'+esc(article.title)+'</div>';
+    if (article.desc) html += '<div class="news-desc">'+esc(article.desc)+'</div>';
+    html += '<div class="news-date">'+(article.dateStr||'')+' '+(chName ? '· '+esc(chName) : '')+'</div>';
+    html += '</div></div>';
+    return html;
+  }).join('');
+
+  feed.innerHTML = '<div class="news-grid">'+cards+'</div>';
+}
+
+async function removeSaved(idx) {
+  const sorted = [...savedArticles].sort((a,b) => (b.savedAt||'').localeCompare(a.savedAt||''));
+  const article = sorted[idx];
+  if (!article) return;
+  savedArticles = savedArticles.filter(a => a.link !== article.link);
+  await saveSavedArticles();
+  showSaved();
+}
+
+async function fetchNews(ch) {
+  const feed = document.getElementById('news-feed');
+  feed.innerHTML = '<div class="state-box"><div class="icon">⏳</div><p>Nachrichten werden geladen…</p></div>';
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('loading');
+
+  try {
+    const query = encodeURIComponent(ch.topic);
+    const rssUrl = 'https://news.google.com/rss/search?q='+query+'&hl=de&gl=DE&ceid=DE:de';
+    const proxyUrl = '/api/rss-proxy?url='+encodeURIComponent(rssUrl);
+    const r = await fetch(proxyUrl);
+    if (!r.ok) throw new Error('Fetch error');
+    const xmlText = await r.text();
+    const xml = new DOMParser().parseFromString(xmlText, 'text/xml');
+    const items = Array.from(xml.querySelectorAll('item'));
+
+    if (items.length === 0) {
+      feed.innerHTML = '<div class="state-box"><div class="icon">🔍</div><p>Keine Nachrichten gefunden.</p></div>';
+      return;
+    }
+
+    const cards = items.slice(0, 30).map(item => {
+      const title = item.querySelector('title')?.textContent || '';
+      const link = item.querySelector('link')?.textContent || '#';
+      const rawDesc = item.querySelector('description')?.textContent || '';
+      const pubDate = item.querySelector('pubDate')?.textContent || '';
+      const source = item.querySelector('source')?.textContent || '';
+      const dateStr = pubDate ? new Date(pubDate).toLocaleDateString('de-DE', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+
+      let imgUrl = '';
+      const mediaContent = item.getElementsByTagNameNS('*', 'content')[0];
+      if (mediaContent?.getAttribute('url')) imgUrl = mediaContent.getAttribute('url');
+      if (!imgUrl) { const enc = item.querySelector('enclosure'); if (enc?.getAttribute('type')?.startsWith('image/')) imgUrl = enc.getAttribute('url'); }
+      if (!imgUrl && rawDesc) { const tmp = new DOMParser().parseFromString(rawDesc, 'text/html'); const img = tmp.querySelector('img'); if (img?.src) imgUrl = img.src; }
+
+      let faviconUrl = '';
+      try { const domain = new URL(link).hostname; faviconUrl = 'https://www.google.com/s2/favicons?domain='+domain+'&sz=32'; } catch {}
+
+      const desc = rawDesc.replace(/<[^>]*>/g, '').trim();
+      const isSaved = isArticleSaved(link);
+
+      const articleObj = { title: title, link: link, source: source, dateStr: dateStr, imgUrl: imgUrl, faviconUrl: faviconUrl, desc: desc, channelName: ch.name, channelColor: ch.color };
+
+      let html = '<div class="news-card" style="--ch-color:'+ch.color+'">';
+      html += '<button class="star-btn '+(isSaved ? 'starred' : '')+'" data-article="'+esc(JSON.stringify(articleObj))+'" onclick="event.stopPropagation();event.preventDefault();starFromCard(this)" title="'+(isSaved ? 'Gespeichert' : 'Speichern')+'">'+(isSaved ? '★' : '☆')+'</button>';
+      html += '<a href="'+esc(link)+'" target="_blank" style="text-decoration:none;color:inherit;display:block">';
+      if (imgUrl) html += '<img class="news-card-img" src="'+esc(imgUrl)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">';
+      html += '<div class="news-card-body">';
+      html += '<div class="news-source">'+(faviconUrl ? '<img class="news-card-favicon" src="'+esc(faviconUrl)+'" alt="">' : '')+esc(source || 'News')+'</div>';
+      html += '<div class="news-title">'+esc(title)+'</div>';
+      if (desc) html += '<div class="news-desc">'+esc(desc)+'</div>';
+      html += '<div class="news-date">'+dateStr+'</div>';
+      html += '</div></a></div>';
+      return html;
+    }).join('');
+
+    feed.innerHTML = '<div class="news-grid">'+cards+'</div>';
+  } catch (e) {
+    feed.innerHTML = '<div class="state-box"><div class="icon">⚠️</div><p>Fehler beim Laden.<br><small>'+esc(e.message)+'</small></p></div>';
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+function starFromCard(btnEl) {
+  try {
+    const article = JSON.parse(btnEl.getAttribute('data-article'));
+    toggleSaveArticle(article, btnEl);
+  } catch(e) {
+    console.error('Star error:', e);
+  }
+}
+
+
+
+async function deleteChannel(id) {
+  if (!confirm('Kanal wirklich löschen?')) return;
+  channels = channels.filter(c => c.id !== id);
+  await saveChannels();
+  if (activeId === id) {
+    activeId = null;
+    document.getElementById('main-header').style.display = 'none';
+    document.getElementById('news-feed').innerHTML = '<div id="no-channel"><div class="big-icon">📰</div><h3>Kein Kanal ausgewählt</h3><p>Wähle einen Kanal aus der Liste oder erstelle einen neuen.</p></div>';
+  }
+  renderSidebar();
+}
+
+document.getElementById('add-channel-btn').onclick = () => {
+  document.getElementById('input-name').value = '';
+  document.getElementById('input-topic').value = '';
+  validateForm();
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('input-name').focus(), 50);
+};
+document.getElementById('modal-cancel').onclick = () => {
+  document.getElementById('modal-overlay').classList.remove('open');
+};
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.remove('open');
+});
+
+document.getElementById('modal-create').onclick = async () => {
+  const name = document.getElementById('input-name').value.trim();
+  const topic = document.getElementById('input-topic').value.trim();
+  if (!name || !topic) return;
+  const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
+  channels.push({ id: id, name: name, topic: topic, color: selectedColor, icon: selectedIcon, created: new Date().toISOString().split('T')[0] });
+  await saveChannels();
+  document.getElementById('modal-overlay').classList.remove('open');
+  renderSidebar();
+  selectChannel(id);
+};
+
+document.getElementById('refresh-btn').onclick = () => {
+  if (showingSaved) { showSaved(); return; }
+  const ch = channels.find(c => c.id === activeId);
+  if (ch) fetchNews(ch);
+};
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+loadChannels();
+loadSaved();
+setInterval(async () => {
+  await loadChannels();
+  await loadSaved();
+}, 5000);
+</script>
+</body>
+</html>

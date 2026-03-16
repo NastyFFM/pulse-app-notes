@@ -1,0 +1,52 @@
+{
+  "images": [
+    {
+      "id": "img-1",
+      "title": "Mountain Sunset",
+      "url": "https://picsum.photos/seed/mountain/800/600",
+      "thumb": "https://picsum.photos/seed/mountain/300/200",
+      "tags": ["nature", "sunset"],
+      "addedAt": "2026-03-12T00:00:00Z"
+    },
+    {
+      "id": "img-2",
+      "title": "Ocean Waves",
+      "url": "https://picsum.photos/seed/ocean/800/600",
+      "thumb": "https://picsum.photos/seed/ocean/300/200",
+      "tags": ["nature", "water"],
+      "addedAt": "2026-03-12T00:00:00Z"
+    },
+    {
+      "id": "img-3",
+      "title": "City Skyline",
+      "url": "https://picsum.photos/seed/city/800/600",
+      "thumb": "https://picsum.photos/seed/city/300/200",
+      "tags": ["urban", "architecture"],
+      "addedAt": "2026-03-12T00:00:00Z"
+    },
+    {
+      "id": "img-4",
+      "title": "Forest Path",
+      "url": "https://picsum.photos/seed/forest/800/600",
+      "thumb": "https://picsum.photos/seed/forest/300/200",
+      "tags": ["nature", "trees"],
+      "addedAt": "2026-03-12T00:00:00Z"
+    },
+    {
+      "id": "img-5",
+      "title": "Desert Dunes",
+      "url": "https://picsum.photos/seed/desert/800/600",
+      "thumb": "https://picsum.photos/seed/desert/300/200",
+      "tags": ["nature", "sand"],
+      "addedAt": "2026-03-12T00:00:00Z"
+    },
+    {
+      "id": "img-6",
+      "title": "Northern Lights",
+      "url": "https://picsum.photos/seed/aurora/800/600",
+      "thumb": "https://picsum.photos/seed/aurora/300/200",
+      "tags": ["nature", "sky"],
+      "addedAt": "2026-03-12T00:00:00Z"
+    }
+  ]
+}

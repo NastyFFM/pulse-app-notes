@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Social Media Trend Analyse</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a1a;--card:#12122a;--card2:#1a1a3a;--border:rgba(255,255,255,.08);--text:#e2e8f0;--text2:#94a3b8;--accent:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#60a5fa;--purple:#8b5cf6}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* Header */
+.header{background:linear-gradient(135deg,#0f0f2e,#1a1040);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px)}
+.header h1{font-size:1.3rem;font-weight:700;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .subtitle{font-size:.75rem;color:var(--text2);margin-top:2px}
+.header-right{display:flex;align-items:center;gap:12px}
+.last-update{font-size:.7rem;color:var(--text2);padding:4px 10px;background:rgba(255,255,255,.05);border-radius:6px}
+.refresh-btn{background:var(--accent);border:none;color:#fff;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:.75rem;font-weight:600;transition:all .2s}
+.refresh-btn:hover{background:#2563eb;transform:scale(1.05)}
+
+/* Nav Tabs */
+.nav{display:flex;gap:4px;padding:8px 24px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border);overflow-x:auto}
+.nav-tab{padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.8rem;font-weight:500;color:var(--text2);transition:all .2s;white-space:nowrap;border:1px solid transparent}
+.nav-tab:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.nav-tab.active{background:rgba(59,130,246,.15);color:var(--accent);border-color:rgba(59,130,246,.3)}
+.nav-tab .tab-icon{margin-right:6px}
+
+/* Layout */
+.dashboard{padding:20px 24px;display:none}
+.dashboard.active{display:block}
+
+/* KPI Cards */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0}
+.kpi-card.tiktok::before{background:linear-gradient(90deg,#00f2ea,#ff0050)}
+.kpi-card.instagram::before{background:linear-gradient(90deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
+.kpi-card.youtube::before{background:#FF0000}
+.kpi-card.x-twitter::before{background:#1DA1F2}
+.kpi-label{font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.kpi-value{font-size:1.6rem;font-weight:700}
+.kpi-sub{font-size:.7rem;color:var(--text2);margin-top:4px;display:flex;align-items:center;gap:4px}
+.kpi-sub .up{color:var(--green)}
+.kpi-sub .down{color:var(--red)}
+
+/* Charts Container */
+.chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:20px}
+.chart-grid.equal{grid-template-columns:1fr 1fr}
+.chart-grid.triple{grid-template-columns:1fr 1fr 1fr}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;min-height:280px}
+.chart-card h3{font-size:.85rem;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.chart-card h3 .badge{font-size:.65rem;padding:2px 8px;border-radius:10px;background:rgba(59,130,246,.15);color:var(--accent)}
+
+/* Canvas Charts */
+canvas{width:100%!important;height:220px!important;display:block}
+
+/* Trending Table */
+.trend-table{width:100%;border-collapse:collapse}
+.trend-table th{text-align:left;font-size:.7rem;color:var(--text2);text-transform:uppercase;padding:6px 10px;border-bottom:1px solid var(--border);letter-spacing:.03em}
+.trend-table td{padding:8px 10px;font-size:.8rem;border-bottom:1px solid rgba(255,255,255,.03)}
+.trend-table tr:hover{background:rgba(255,255,255,.03)}
+.trend-tag{font-weight:600;color:var(--accent)}
+.trend-posts{color:var(--text2)}
+.trend-growth{font-weight:600;font-size:.75rem;padding:2px 8px;border-radius:10px;display:inline-block}
+.trend-growth.pos{background:rgba(34,197,94,.12);color:var(--green)}
+.trend-growth.neg{background:rgba(239,68,68,.12);color:var(--red)}
+
+/* Sentiment Bar */
+.sentiment-bar{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle}
+.sentiment-fill{height:100%;border-radius:3px;transition:width .5s}
+
+/* Platform Selector */
+.platform-tabs{display:flex;gap:6px;margin-bottom:16px}
+.platform-tab{padding:6px 14px;border-radius:8px;cursor:pointer;font-size:.75rem;font-weight:500;color:var(--text2);background:rgba(255,255,255,.04);border:1px solid transparent;transition:all .2s}
+.platform-tab:hover{background:rgba(255,255,255,.08)}
+.platform-tab.active{border-color:rgba(255,255,255,.15);color:var(--text);background:rgba(255,255,255,.08)}
+
+/* Prediction Cards */
+.prediction-list{display:flex;flex-direction:column;gap:10px}
+.prediction-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;transition:transform .2s}
+.prediction-card:hover{transform:translateX(4px)}
+.prediction-topic{font-size:.82rem;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.prediction-text{font-size:.72rem;color:var(--text2);line-height:1.4;margin-bottom:6px}
+.prediction-meta{display:flex;align-items:center;gap:10px;font-size:.65rem}
+.confidence-bar{flex:1;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.confidence-fill{height:100%;background:var(--accent);border-radius:2px}
+.confidence-label{color:var(--text2)}
+.arrow-up{color:var(--green)}
+.arrow-down{color:var(--red)}
+
+/* Top Creators */
+.creator-row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;transition:background .2s;margin-bottom:4px}
+.creator-row:hover{background:rgba(255,255,255,.04)}
+.creator-rank{font-size:.7rem;color:var(--text2);width:20px;text-align:center;font-weight:700}
+.creator-name{font-size:.8rem;font-weight:600;flex:1}
+.creator-stat{font-size:.7rem;color:var(--text2);text-align:right}
+.creator-eng{font-size:.7rem;color:var(--green);font-weight:600}
+
+/* Cross-Platform */
+.category-bar{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.category-name{font-size:.75rem;width:140px;color:var(--text2)}
+.category-track{flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.category-fill{height:100%;border-radius:4px;transition:width .8s ease}
+.category-score{font-size:.72rem;color:var(--text);font-weight:600;width:30px;text-align:right}
+.category-trend{font-size:.7rem;width:20px;text-align:center}
+
+/* Engagement Heatmap */
+.heatmap{display:grid;grid-template-columns:repeat(24,1fr);gap:2px;margin-top:10px}
+.heat-cell{aspect-ratio:1;border-radius:3px;position:relative;cursor:pointer;transition:transform .15s}
+.heat-cell:hover{transform:scale(1.3);z-index:1}
+.heat-label{font-size:.6rem;color:var(--text2);text-align:center;margin-top:2px}
+.heatmap-labels{display:grid;grid-template-columns:repeat(24,1fr);gap:2px}
+
+/* Weekly Growth */
+.weekly-bars{display:flex;align-items:flex-end;gap:8px;height:120px;padding:10px 0}
+.weekly-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.weekly-bar{width:100%;border-radius:4px 4px 0 0;transition:height .5s ease;min-height:4px}
+.weekly-label{font-size:.6rem;color:var(--text2)}
+.weekly-value{font-size:.65rem;font-weight:600;color:var(--accent)}
+
+/* Responsive */
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr)}.chart-grid,.chart-grid.equal,.chart-grid.triple{grid-template-columns:1fr}}
+@media(max-width:600px){.kpi-row{grid-template-columns:1fr}.nav{padding:8px 12px}.dashboard{padding:14px 12px}}
+
+/* Tooltip */
+.tooltip{position:fixed;background:#1e1e3f;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.72rem;color:var(--text);pointer-events:none;z-index:1000;opacity:0;transition:opacity .15s;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.tooltip.show{opacity:1}
+
+/* Loading Shimmer */
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.loading{background:linear-gradient(90deg,var(--card) 25%,rgba(255,255,255,.05) 50%,var(--card) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+
+/* Sparkline */
+.sparkline{display:inline-block;vertical-align:middle;margin-left:6px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Social Media Trend Analyse</h1>
+    <div class="subtitle">Dashboard fuer TikTok, Instagram, YouTube & X</div>
+  </div>
+  <div class="header-right">
+    <div class="last-update" id="lastUpdate">Letztes Update: --</div>
+    <button class="refresh-btn" onclick="loadData()">Aktualisieren</button>
+  </div>
+</div>
+
+<div class="nav" id="navTabs">
+  <div class="nav-tab active" data-view="overview"><span class="tab-icon">📊</span>Uebersicht</div>
+  <div class="nav-tab" data-view="tiktok"><span class="tab-icon">🎵</span>TikTok</div>
+  <div class="nav-tab" data-view="instagram"><span class="tab-icon">📸</span>Instagram</div>
+  <div class="nav-tab" data-view="youtube"><span class="tab-icon">📺</span>YouTube</div>
+  <div class="nav-tab" data-view="x"><span class="tab-icon">𝕏</span>X</div>
+  <div class="nav-tab" data-view="predictions"><span class="tab-icon">🔮</span>Vorhersagen</div>
+  <div class="nav-tab" data-view="compare"><span class="tab-icon">⚖️</span>Vergleich</div>
+</div>
+
+<!-- Overview Dashboard -->
+<div class="dashboard active" id="view-overview"></div>
+
+<!-- Platform-specific views -->
+<div class="dashboard" id="view-tiktok"></div>
+<div class="dashboard" id="view-instagram"></div>
+<div class="dashboard" id="view-youtube"></div>
+<div class="dashboard" id="view-x"></div>
+
+<!-- Predictions -->
+<div class="dashboard" id="view-predictions"></div>
+
+<!-- Cross-Platform Comparison -->
+<div class="dashboard" id="view-compare"></div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+let DATA = null;
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+// --- Navigation ---
+document.getElementById('navTabs').addEventListener('click', e => {
+  const tab = e.target.closest('.nav-tab');
+  if (!tab) return;
+  $$('.nav-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  $$('.dashboard').forEach(d => d.classList.remove('active'));
+  const view = tab.dataset.view;
+  document.getElementById('view-' + view).classList.add('active');
+});
+
+// --- Data Loading ---
+async function loadData() {
+  try {
+    const r = await fetch('/app/social-trends/api/trends');
+    DATA = await r.json();
+    $('#lastUpdate').textContent = 'Letztes Update: ' + new Date(DATA.lastUpdate).toLocaleString('de-DE');
+    renderOverview();
+    renderPlatformView('tiktok');
+    renderPlatformView('instagram');
+    renderPlatformView('youtube');
+    renderPlatformView('x');
+    renderPredictions();
+    renderCompare();
+  } catch(e) {
+    console.error('Load error:', e);
+  }
+}
+
+// --- Format Numbers ---
+function fmtNum(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return n.toString();
+}
+
+// --- Sentiment Color ---
+function sentimentColor(v) {
+  if (v > 0.8) return '#22c55e';
+  if (v > 0.6) return '#f59e0b';
+  return '#ef4444';
+}
+
+// --- Mini Canvas Chart ---
+function drawBarChart(canvas, labels, values, color) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth * 2;
+  const h = canvas.height = canvas.offsetHeight * 2;
+  ctx.scale(2, 2);
+  const cw = canvas.offsetWidth, ch = canvas.offsetHeight;
+  ctx.clearRect(0, 0, cw, ch);
+
+  const max = Math.max(...values.map(Math.abs)) * 1.2;
+  const barW = (cw - 40) / values.length - 4;
+  const baseline = ch - 30;
+
+  values.forEach((v, i) => {
+    const x = 30 + i * (barW + 4);
+    const barH = (Math.abs(v) / max) * (baseline - 10);
+    const isNeg = v < 0;
+
+    ctx.fillStyle = isNeg ? 'rgba(239,68,68,.6)' : (color || 'rgba(59,130,246,.6)');
+    const radius = 3;
+    const y = isNeg ? baseline : baseline - barH;
+
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, barH, [radius, radius, 0, 0]);
+    ctx.fill();
+
+    // Label
+    ctx.fillStyle = 'rgba(255,255,255,.4)';
+    ctx.font = '9px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[i], x + barW/2, ch - 8);
+
+    // Value
+    ctx.fillStyle = isNeg ? '#ef4444' : 'rgba(255,255,255,.7)';
+    ctx.font = '9px system-ui';
+    ctx.fillText((v > 0 ? '+' : '') + v.toFixed(1) + '%', x + barW/2, y - 4);
+  });
+}
+
+function drawLineChart(canvas, values, color, fillBelow) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth * 2;
+  const h = canvas.height = canvas.offsetHeight * 2;
+  ctx.scale(2, 2);
+  const cw = canvas.offsetWidth, ch = canvas.offsetHeight;
+  ctx.clearRect(0, 0, cw, ch);
+
+  const max = Math.max(...values) * 1.15;
+  const min = Math.min(...values) * 0.85;
+  const range = max - min || 1;
+  const padX = 10, padY = 10;
+  const plotW = cw - padX * 2, plotH = ch - padY * 2 - 15;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,.05)';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = padY + (plotH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(cw - padX, y); ctx.stroke();
+  }
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = color || '#3b82f6';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+
+  const points = values.map((v, i) => ({
+    x: padX + (i / (values.length - 1)) * plotW,
+    y: padY + plotH - ((v - min) / range) * plotH
+  }));
+
+  points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.stroke();
+
+  if (fillBelow) {
+    ctx.lineTo(points[points.length-1].x, padY + plotH);
+    ctx.lineTo(points[0].x, padY + plotH);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, padY, 0, padY + plotH);
+    grad.addColorStop(0, color.replace(')', ',.25)').replace('rgb', 'rgba'));
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+
+  // Dots
+  points.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = color || '#3b82f6';
+    ctx.fill();
+    ctx.strokeStyle = '#0a0a1a';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+}
+
+function drawDonutChart(canvas, values, colors, labels) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth * 2;
+  const h = canvas.height = canvas.offsetHeight * 2;
+  ctx.scale(2, 2);
+  const cw = canvas.offsetWidth, ch = canvas.offsetHeight;
+  ctx.clearRect(0, 0, cw, ch);
+
+  const cx = cw * 0.35, cy = ch * 0.5;
+  const radius = Math.min(cx, cy) - 20;
+  const total = values.reduce((a, b) => a + b, 0);
+  let angle = -Math.PI / 2;
+
+  values.forEach((v, i) => {
+    const sliceAngle = (v / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, angle, angle + sliceAngle);
+    ctx.arc(cx, cy, radius * 0.6, angle + sliceAngle, angle, true);
+    ctx.closePath();
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+    angle += sliceAngle;
+  });
+
+  // Center text
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 16px system-ui';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(fmtNum(total), cx, cy - 6);
+  ctx.font = '9px system-ui';
+  ctx.fillStyle = 'rgba(255,255,255,.5)';
+  ctx.fillText('Gesamt', cx, cy + 10);
+
+  // Legend
+  const lx = cw * 0.65;
+  labels.forEach((l, i) => {
+    const ly = 20 + i * 22;
+    ctx.fillStyle = colors[i];
+    ctx.beginPath(); ctx.roundRect(lx, ly, 10, 10, 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText(l + ' (' + fmtNum(values[i]) + ')', lx + 16, ly + 8);
+  });
+}
+
+// --- RENDER: Overview ---
+function renderOverview() {
+  const p = DATA.platforms;
+  const el = $('#view-overview');
+
+  el.innerHTML = `
+    <div class="kpi-row">
+      ${Object.entries(p).map(([key, pl]) => `
+        <div class="kpi-card ${key === 'x' ? 'x-twitter' : key}">
+          <div class="kpi-label">${pl.icon} ${pl.name}</div>
+          <div class="kpi-value">${fmtNum(pl.stats.dailyActiveUsers)}</div>
+          <div class="kpi-sub">Taegl. Nutzer &middot; <span class="up">${pl.stats.avgEngagement}% Engagement</span></div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>Trending Hashtags - Wachstum <span class="badge">Alle Plattformen</span></h3>
+        <canvas id="overviewGrowthChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Nutzerverteilung</h3>
+        <canvas id="overviewDonut"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-grid equal">
+      <div class="chart-card">
+        <h3>Top Kategorien (Cross-Platform)</h3>
+        <div id="categoryBars"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Engagement nach Uhrzeit (UTC)</h3>
+        <div class="heatmap" id="heatmap"></div>
+        <div class="heatmap-labels" id="heatmapLabels"></div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>Wachstum letzte 7 Tage</h3>
+        <canvas id="weeklyChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Top Vorhersagen</h3>
+        <div id="quickPredictions"></div>
+      </div>
+    </div>
+  `;
+
+  // Growth chart - top hashtags across platforms
+  setTimeout(() => {
+    const allTags = [];
+    Object.values(p).forEach(pl => pl.trending.slice(0, 3).forEach(t => allTags.push(t)));
+    allTags.sort((a, b) => Math.abs(b.growth) - Math.abs(a.growth));
+    const top8 = allTags.slice(0, 8);
+    drawBarChart(
+      document.getElementById('overviewGrowthChart'),
+      top8.map(t => t.tag.replace('#','')),
+      top8.map(t => t.growth),
+      'rgba(59,130,246,.7)'
+    );
+
+    // Donut
+    const userCounts = Object.values(p).map(pl => pl.stats.dailyActiveUsers);
+    const platColors = Object.values(p).map(pl => pl.color);
+    const platNames = Object.values(p).map(pl => pl.name);
+    drawDonutChart(document.getElementById('overviewDonut'), userCounts, platColors, platNames);
+
+    // Category bars
+    const catEl = document.getElementById('categoryBars');
+    const cats = DATA.crossPlatform.topCategories;
+    const catColors = ['#3b82f6','#8b5cf6','#f59e0b','#ef4444','#22c55e','#ec4899','#0ea5e9','#14b8a6'];
+    catEl.innerHTML = cats.map((c, i) => `
+      <div class="category-bar">
+        <div class="category-name">${c.name}</div>
+        <div class="category-track"><div class="category-fill" style="width:${c.score}%;background:${catColors[i%catColors.length]}"></div></div>
+        <div class="category-score">${c.score}</div>
+        <div class="category-trend">${c.trend === 'up' ? '<span class="arrow-up">&#9650;</span>' : c.trend === 'down' ? '<span class="arrow-down">&#9660;</span>' : '&#9644;'}</div>
+      </div>
+    `).join('');
+
+    // Heatmap
+    const heatEl = document.getElementById('heatmap');
+    const labelsEl = document.getElementById('heatmapLabels');
+    const hours = DATA.crossPlatform.engagementByHour;
+    heatEl.innerHTML = hours.map((v, i) => {
+      const intensity = v;
+      const r = Math.round(59 + intensity * 100);
+      const g = Math.round(130 - intensity * 50);
+      const b = Math.round(246 - intensity * 100);
+      return `<div class="heat-cell" style="background:rgba(${r},${g},${b},${0.2 + intensity * 0.7})" title="${i}:00 - ${(v*100).toFixed(0)}%"></div>`;
+    }).join('');
+    labelsEl.innerHTML = hours.map((_, i) => `<div class="heat-label">${i%3===0?i+'h':''}</div>`).join('');
+
+    // Weekly
+    drawLineChart(document.getElementById('weeklyChart'), DATA.crossPlatform.weeklyGrowth, 'rgb(59,130,246)', true);
+
+    // Quick predictions
+    const predEl = document.getElementById('quickPredictions');
+    predEl.innerHTML = DATA.predictions.slice(0, 4).map(p => `
+      <div class="prediction-card">
+        <div class="prediction-topic">${p.direction==='up'?'<span class="arrow-up">&#9650;</span>':'<span class="arrow-down">&#9660;</span>'} ${p.topic}</div>
+        <div class="prediction-text">${p.prediction}</div>
+        <div class="prediction-meta">
+          <div class="confidence-bar"><div class="confidence-fill" style="width:${p.confidence*100}%"></div></div>
+          <span class="confidence-label">${(p.confidence*100).toFixed(0)}% Konfidenz</span>
+        </div>
+      </div>
+    `).join('');
+  }, 50);
+}
+
+// --- RENDER: Platform View ---
+function renderPlatformView(platformKey) {
+  const pl = DATA.platforms[platformKey];
+  const el = $(`#view-${platformKey}`);
+
+  el.innerHTML = `
+    <div class="kpi-row">
+      <div class="kpi-card ${platformKey === 'x' ? 'x-twitter' : platformKey}">
+        <div class="kpi-label">Taegliche Nutzer</div>
+        <div class="kpi-value">${fmtNum(pl.stats.dailyActiveUsers)}</div>
+        <div class="kpi-sub">Aktive Nutzer pro Tag</div>
+      </div>
+      <div class="kpi-card ${platformKey === 'x' ? 'x-twitter' : platformKey}">
+        <div class="kpi-label">Avg. Session</div>
+        <div class="kpi-value">${pl.stats.avgSessionMin} min</div>
+        <div class="kpi-sub">Durchschnittliche Sitzungsdauer</div>
+      </div>
+      <div class="kpi-card ${platformKey === 'x' ? 'x-twitter' : platformKey}">
+        <div class="kpi-label">Engagement Rate</div>
+        <div class="kpi-value">${pl.stats.avgEngagement}%</div>
+        <div class="kpi-sub">Durchschnittliches Engagement</div>
+      </div>
+      <div class="kpi-card ${platformKey === 'x' ? 'x-twitter' : platformKey}">
+        <div class="kpi-label">Trends</div>
+        <div class="kpi-value">${pl.trending.length}</div>
+        <div class="kpi-sub">Aktive Trending Topics</div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>${pl.icon} Trending Hashtags - Wachstum</h3>
+        <canvas id="${platformKey}GrowthChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Top Creator</h3>
+        <div id="${platformKey}Creators"></div>
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-bottom:20px">
+      <h3>Alle Trends im Detail <span class="badge">${pl.trending.length} aktiv</span></h3>
+      <table class="trend-table">
+        <thead>
+          <tr><th>Hashtag</th><th>Posts</th><th>Wachstum</th><th>Sentiment</th></tr>
+        </thead>
+        <tbody>
+          ${pl.trending.sort((a,b) => Math.abs(b.growth) - Math.abs(a.growth)).map(t => `
+            <tr>
+              <td class="trend-tag">${t.tag}</td>
+              <td class="trend-posts">${fmtNum(t.posts)}</td>
+              <td><span class="trend-growth ${t.growth >= 0 ? 'pos' : 'neg'}">${t.growth > 0 ? '+' : ''}${t.growth}%</span></td>
+              <td>
+                <div class="sentiment-bar"><div class="sentiment-fill" style="width:${t.sentiment*100}%;background:${sentimentColor(t.sentiment)}"></div></div>
+                <span style="font-size:.7rem;color:var(--text2);margin-left:6px">${(t.sentiment*100).toFixed(0)}%</span>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  setTimeout(() => {
+    drawBarChart(
+      document.getElementById(platformKey + 'GrowthChart'),
+      pl.trending.map(t => t.tag.replace('#','')),
+      pl.trending.map(t => t.growth),
+      pl.color
+    );
+
+    const crEl = document.getElementById(platformKey + 'Creators');
+    crEl.innerHTML = pl.topCreators.map((c, i) => `
+      <div class="creator-row">
+        <div class="creator-rank">#${i+1}</div>
+        <div class="creator-name">${c.name}</div>
+        <div class="creator-stat">${fmtNum(c.followers)} Follower</div>
+        <div class="creator-eng">${c.engagement}% Eng.</div>
+      </div>
+    `).join('');
+  }, 50);
+}
+
+// --- RENDER: Predictions ---
+function renderPredictions() {
+  const el = $('#view-predictions');
+  el.innerHTML = `
+    <div class="kpi-row">
+      <div class="kpi-card" style="grid-column:span 2">
+        <div class="kpi-label">KI-Vorhersage-Engine</div>
+        <div class="kpi-value" style="font-size:1.2rem">Trend-Prognosen basierend auf historischen Daten</div>
+        <div class="kpi-sub">Analysiert Wachstumsraten, Sentiment und saisonale Muster</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Vorhersagen</div>
+        <div class="kpi-value">${DATA.predictions.length}</div>
+        <div class="kpi-sub">Aktive Prognosen</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Avg. Konfidenz</div>
+        <div class="kpi-value">${(DATA.predictions.reduce((a,p)=>a+p.confidence,0)/DATA.predictions.length*100).toFixed(0)}%</div>
+        <div class="kpi-sub">Durchschnittliche Sicherheit</div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Alle Vorhersagen <span class="badge">${DATA.predictions.length} aktiv</span></h3>
+      <div class="prediction-list">
+        ${DATA.predictions.map(p => `
+          <div class="prediction-card">
+            <div class="prediction-topic">
+              ${p.direction==='up'?'<span class="arrow-up" style="font-size:1.1em">&#9650;</span>':'<span class="arrow-down" style="font-size:1.1em">&#9660;</span>'}
+              ${p.topic}
+              <span style="font-size:.65rem;color:var(--text2);margin-left:auto">${p.platform === 'all' ? 'Alle Plattformen' : DATA.platforms[p.platform]?.name || p.platform}</span>
+            </div>
+            <div class="prediction-text">${p.prediction}</div>
+            <div class="prediction-meta">
+              <div class="confidence-bar"><div class="confidence-fill" style="width:${p.confidence*100}%;background:${p.confidence > 0.85 ? 'var(--green)' : p.confidence > 0.7 ? 'var(--accent)' : 'var(--orange)'}"></div></div>
+              <span class="confidence-label">${(p.confidence*100).toFixed(0)}% Konfidenz</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// --- RENDER: Compare ---
+function renderCompare() {
+  const p = DATA.platforms;
+  const el = $('#view-compare');
+
+  const platforms = Object.entries(p);
+
+  el.innerHTML = `
+    <div class="chart-card" style="margin-bottom:16px">
+      <h3>Plattform-Vergleich <span class="badge">4 Plattformen</span></h3>
+      <table class="trend-table">
+        <thead>
+          <tr>
+            <th>Plattform</th>
+            <th>Taegl. Nutzer</th>
+            <th>Avg. Session</th>
+            <th>Engagement</th>
+            <th>Top Trend</th>
+            <th>Wachstum</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${platforms.map(([key, pl]) => {
+            const topTrend = pl.trending.reduce((a, b) => b.growth > a.growth ? b : a);
+            return `<tr>
+              <td><strong>${pl.icon} ${pl.name}</strong></td>
+              <td>${fmtNum(pl.stats.dailyActiveUsers)}</td>
+              <td>${pl.stats.avgSessionMin} min</td>
+              <td>${pl.stats.avgEngagement}%</td>
+              <td class="trend-tag">${topTrend.tag}</td>
+              <td><span class="trend-growth pos">+${topTrend.growth}%</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="chart-grid equal">
+      <div class="chart-card">
+        <h3>Engagement-Vergleich</h3>
+        <canvas id="compareEngChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Session-Dauer (Minuten)</h3>
+        <canvas id="compareSessionChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-grid equal">
+      <div class="chart-card">
+        <h3>Sentiment-Vergleich (Avg.)</h3>
+        <div id="compareSentiment"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Trend-Diversitaet</h3>
+        <canvas id="compareDiversityChart"></canvas>
+      </div>
+    </div>
+  `;
+
+  setTimeout(() => {
+    // Engagement comparison
+    drawBarChart(
+      document.getElementById('compareEngChart'),
+      platforms.map(([,pl]) => pl.name),
+      platforms.map(([,pl]) => pl.stats.avgEngagement),
+      'rgba(139,92,246,.7)'
+    );
+
+    // Session comparison
+    const sessionVals = platforms.map(([,pl]) => pl.stats.avgSessionMin);
+    drawBarChart(
+      document.getElementById('compareSessionChart'),
+      platforms.map(([,pl]) => pl.name),
+      sessionVals,
+      'rgba(14,165,233,.7)'
+    );
+
+    // Sentiment comparison
+    const sentEl = document.getElementById('compareSentiment');
+    sentEl.innerHTML = platforms.map(([key, pl]) => {
+      const avgSent = pl.trending.reduce((a, t) => a + t.sentiment, 0) / pl.trending.length;
+      return `
+        <div class="category-bar" style="margin-bottom:14px">
+          <div class="category-name">${pl.icon} ${pl.name}</div>
+          <div class="category-track" style="height:12px"><div class="category-fill" style="width:${avgSent*100}%;background:${sentimentColor(avgSent)};border-radius:6px"></div></div>
+          <div class="category-score">${(avgSent*100).toFixed(0)}%</div>
+        </div>
+      `;
+    }).join('');
+
+    // Diversity (number of growing trends)
+    const diversityVals = platforms.map(([,pl]) => pl.trending.filter(t => t.growth > 0).length);
+    drawBarChart(
+      document.getElementById('compareDiversityChart'),
+      platforms.map(([,pl]) => pl.name),
+      diversityVals,
+      'rgba(34,197,94,.7)'
+    );
+  }, 50);
+}
+
+// --- SSE for live updates ---
+function connectSSE() {
+  const es = new EventSource('/sse/social-trends');
+  es.onmessage = e => {
+    const d = JSON.parse(e.data);
+    if (d.type === 'change') loadData();
+  };
+  es.onerror = () => setTimeout(connectSSE, 3000);
+}
+
+// --- Tooltip ---
+document.addEventListener('mouseover', e => {
+  const cell = e.target.closest('.heat-cell');
+  if (cell && cell.title) {
+    const tip = $('#tooltip');
+    tip.textContent = cell.title;
+    tip.classList.add('show');
+    const r = cell.getBoundingClientRect();
+    tip.style.left = r.left + 'px';
+    tip.style.top = (r.top - 30) + 'px';
+  }
+});
+document.addEventListener('mouseout', e => {
+  if (e.target.closest('.heat-cell')) $('#tooltip').classList.remove('show');
+});
+
+// --- Init ---
+loadData();
+connectSSE();
+</script>
+</body>
+</html>

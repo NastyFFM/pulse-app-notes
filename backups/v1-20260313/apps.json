@@ -1,0 +1,232 @@
+{
+  "meta": {
+    "title": "Claude Desktop"
+  },
+  "apps": [
+    {
+      "id": "chat",
+      "name": "Chat",
+      "icon": "💬",
+      "color": "#8B5CF6",
+      "description": "Chat mit Claude Code",
+      "installed": true,
+      "position": 0
+    },
+    {
+      "id": "kanban",
+      "name": "Kanban Board",
+      "icon": "📋",
+      "color": "#3B82F6",
+      "description": "Projektmanagement mit Drag & Drop",
+      "installed": true,
+      "position": 1
+    },
+    {
+      "id": "weather",
+      "name": "Wetter",
+      "icon": "🌤️",
+      "color": "#0EA5E9",
+      "description": "Aktuelles Wetter für beliebige Städte",
+      "installed": true,
+      "position": 2
+    },
+    {
+      "id": "notes",
+      "name": "Notizen",
+      "icon": "📝",
+      "color": "#F59E0B",
+      "description": "Notizen erstellen, bearbeiten und organisieren",
+      "installed": true,
+      "position": 3
+    },
+    {
+      "id": "calendar",
+      "name": "Kalender",
+      "icon": "📅",
+      "color": "#10B981",
+      "description": "Termine und Deadlines verwalten",
+      "installed": true,
+      "position": 4
+    },
+    {
+      "id": "budget",
+      "name": "Budget-Tracker",
+      "icon": "💰",
+      "color": "#F59E0B",
+      "description": "Einnahmen und Ausgaben verwalten, Kategorien, Monatsübersicht",
+      "installed": true,
+      "position": 5
+    },
+    {
+      "id": "tetris",
+      "name": "Tetris",
+      "icon": "🧩",
+      "color": "#6366F1",
+      "description": "Klassisches Tetris mit Highscores",
+      "installed": true,
+      "position": 6
+    },
+    {
+      "id": "drumcomputer",
+      "name": "Drum Computer",
+      "icon": "🥁",
+      "color": "#EF4444",
+      "description": "4-Track Step Sequencer mit Web Audio",
+      "installed": true,
+      "position": 7
+    },
+    {
+      "id": "flappy",
+      "name": "Flappy Bird",
+      "icon": "🐦",
+      "color": "#F59E0B",
+      "description": "Flappy Bird – Fliege durch die Rohre!",
+      "installed": true,
+      "position": 8
+    },
+    {
+      "id": "news-channels",
+      "name": "News Channels",
+      "icon": "📰",
+      "color": "#E11D48",
+      "description": "Eigene News-Kanäle nach Themen erstellen und aktuelle Nachrichten verfolgen",
+      "installed": true,
+      "position": 9
+    },
+    {
+      "id": "filebrowser",
+      "name": "File Browser",
+      "icon": "📁",
+      "color": "#6366F1",
+      "description": "Browse project files and folders",
+      "installed": true,
+      "position": 10
+    },
+    {
+      "id": "picviewer",
+      "name": "Picture Viewer",
+      "icon": "🖼️",
+      "color": "#EC4899",
+      "description": "Browse and view images in a gallery",
+      "installed": true,
+      "position": 11
+    },
+    {
+      "id": "camera",
+      "name": "Camera",
+      "icon": "📷",
+      "color": "#14B8A6",
+      "description": "Camera with live preview, photo capture and color filters",
+      "installed": true,
+      "position": 12
+    },
+    {
+      "id": "imagegen",
+      "name": "Bild Generator",
+      "icon": "🎨",
+      "color": "#8B5CF6",
+      "description": "Bilder aus Text-Prompts generieren mit KI",
+      "installed": true,
+      "position": 13
+    },
+    {
+      "id": "tickets",
+      "name": "Ticket System",
+      "icon": "🎫",
+      "color": "#3B82F6",
+      "description": "Einfaches Jira-artiges Ticketsystem mit Board und Liste",
+      "installed": true,
+      "position": 14
+    },
+    {
+      "id": "mindmap",
+      "name": "MindMap",
+      "icon": "🧠",
+      "color": "#8B5CF6",
+      "description": "Interaktive MindMap mit Drag & Drop und Verbindungen",
+      "installed": true,
+      "position": 15
+    },
+    {
+      "id": "whiteboard",
+      "name": "Whiteboard",
+      "icon": "📋",
+      "color": "#14B8A6",
+      "description": "Miro-artiges Whiteboard mit Sticky Notes und Freihand-Zeichnen",
+      "installed": true,
+      "position": 16
+    },
+    {
+      "id": "travel-planner",
+      "name": "Reiseplaner",
+      "icon": "✈️",
+      "color": "#0EA5E9",
+      "description": "Reisen planen mit Tagesplanung, Aktivitäten und Packliste",
+      "installed": true,
+      "position": 17
+    },
+    {
+      "id": "radio",
+      "name": "Internet Radio",
+      "icon": "📻",
+      "color": "#8B5CF6",
+      "description": "Internet-Radio mit Sendersuche, Genres und Favoriten",
+      "installed": true,
+      "position": 18
+    },
+    {
+      "id": "youtube",
+      "name": "YouTube",
+      "icon": "📺",
+      "color": "#EF4444",
+      "description": "YouTube Videos suchen, ansehen und Favoriten speichern",
+      "installed": true,
+      "position": 19
+    },
+    {
+      "id": "podcast",
+      "name": "Podcasts",
+      "icon": "🎙️",
+      "color": "#EA580C",
+      "description": "Podcasts entdecken, Episoden hoeren und Favoriten speichern",
+      "installed": true,
+      "position": 20
+    },
+    {
+      "id": "doom",
+      "name": "Doom",
+      "icon": "🔫",
+      "color": "#DC2626",
+      "description": "Doom-artiger Ego-Shooter mit Raycasting-Engine",
+      "installed": true,
+      "position": 21
+    },
+    {
+      "id": "social-trends",
+      "name": "Social Trends",
+      "icon": "📊",
+      "color": "#6366F1",
+      "description": "Social Media Trendanalyse fuer TikTok, Instagram, YouTube & X",
+      "installed": true,
+      "position": 22
+    },
+    {
+      "id": "alarm",
+      "name": "Wecker",
+      "icon": "⏰",
+      "color": "#F59E0B",
+      "description": "Wecker mit Alarmen, Stoppuhr und Timer",
+      "installed": true,
+      "position": 23
+    },
+    {
+      "id": "eggtimer",
+      "name": "Eieruhr",
+      "icon": "🥚",
+      "color": "#F97316",
+      "description": "Kurzeitwecker mit Voreinstellungen und Alarm",
+      "installed": true,
+      "position": 24
+    }
+  ]
+}

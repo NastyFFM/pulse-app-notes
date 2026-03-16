@@ -1,0 +1,13 @@
+{
+  "entries": [
+    {
+      "id": "1",
+      "date": "2026-03-15",
+      "title": "Mein erstes Tagebuch",
+      "content": "Willkommen in deinem Tagebuch! Schreibe hier deine Gedanken, Erlebnisse und Erinnerungen auf.",
+      "mood": "happy",
+      "created": "2026-03-15T10:00:00.000Z",
+      "updated": "2026-03-15T10:00:00.000Z"
+    }
+  ]
+}

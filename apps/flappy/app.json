@@ -1,0 +1,9 @@
+{
+  "id": "flappy",
+  "name": "Flappy Bird",
+  "icon": "🐦",
+  "color": "#F59E0B",
+  "description": "Flappy Bird – Fliege durch die Rohre!",
+  "installed": true,
+  "position": 8
+}

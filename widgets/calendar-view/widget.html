@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalender Widget</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--los-font, system-ui, sans-serif); background: var(--los-bg-primary, #1e293b); color: var(--los-text-primary, #e2e8f0); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    .header { background: var(--los-bg-secondary, #16213e); border-bottom: 1px solid var(--los-border, rgba(255,255,255,.08)); padding: 8px 12px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .month-nav { display: flex; align-items: center; gap: 6px; flex: 1; }
+    .month-nav button { background: var(--los-bg-tertiary, #334155); border: none; color: var(--los-text-secondary, #94a3b8); width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+    .month-nav button:hover { background: var(--los-bg-hover, #475569); }
+    .month-title { font-size: 13px; font-weight: 600; min-width: 120px; text-align: center; }
+    .today-btn { background: var(--los-green, #10B981); border: none; color: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; }
+    .view-btns { display: flex; gap: 2px; }
+    .view-btn { background: var(--los-bg-tertiary, #334155); border: none; color: var(--los-text-secondary, #94a3b8); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; }
+    .view-btn:hover { background: var(--los-bg-hover, #475569); }
+    .view-btn.active { background: var(--los-green, #10B981); color: white; }
+
+    .main { display: flex; flex: 1; overflow: hidden; }
+    .calendar-area { flex: 1; overflow-y: auto; padding: 8px; }
+    .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; margin-bottom: 2px; }
+    .weekday { text-align: center; font-size: 10px; color: var(--los-text-muted, #64748b); font-weight: 600; padding: 4px; text-transform: uppercase; letter-spacing: .05em; }
+    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 72px; gap: 1px; }
+    .day-cell { background: var(--los-bg-secondary, #1e293b); border-radius: 6px; padding: 4px; cursor: pointer; border: 1px solid transparent; position: relative; overflow: hidden; }
+    .day-cell:hover { background: #253347; border-color: var(--los-border-light, rgba(255,255,255,.12)); }
+    .day-cell.other-month { opacity: .3; }
+    .day-cell.today { border-color: var(--los-green, #10B981); }
+    .day-cell.selected { background: #1a3a2e; border-color: var(--los-green, #10B981); }
+    .day-number { font-size: 11px; font-weight: 500; color: var(--los-text-secondary, #94a3b8); margin-bottom: 2px; }
+    .day-cell.today .day-number { background: var(--los-green, #10B981); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+    .event-chip { font-size: 9px; padding: 1px 4px; border-radius: 3px; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: white; cursor: pointer; }
+    .more-events { font-size: 9px; color: var(--los-text-muted, #64748b); padding-left: 2px; }
+
+    .sidebar { width: 200px; background: var(--los-bg-secondary, #1e293b); border-left: 1px solid var(--los-border, rgba(255,255,255,.08)); display: flex; flex-direction: column; overflow: hidden; }
+    .sidebar-header { padding: 10px; border-bottom: 1px solid var(--los-border, rgba(255,255,255,.08)); display: flex; align-items: center; justify-content: space-between; }
+    .sidebar-header h3 { font-size: 12px; font-weight: 600; }
+    .add-btn { background: var(--los-green, #10B981); border: none; color: white; width: 24px; height: 24px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+    .events-list { flex: 1; overflow-y: auto; padding: 8px; }
+    .event-item { background: var(--los-bg-base, #0f172a); border-radius: 6px; padding: 8px; margin-bottom: 6px; border-left: 3px solid var(--los-green, #10B981); cursor: pointer; }
+    .event-item:hover { opacity: .85; }
+    .event-item .ev-title { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+    .event-item .ev-time { font-size: 10px; color: var(--los-text-muted, #64748b); }
+    .event-item .ev-desc { font-size: 10px; color: var(--los-text-secondary, #94a3b8); margin-top: 2px; }
+    .no-events { color: var(--los-text-dim, #475569); font-size: 12px; text-align: center; padding: 20px 0; }
+    .selected-label { padding: 0 10px 4px; font-size: 10px; color: var(--los-text-muted, #64748b); }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal-overlay.hidden { display: none; }
+    .modal { background: var(--los-bg-primary, #1e293b); border-radius: 12px; padding: 20px; width: 340px; max-width: 90vw; border: 1px solid var(--los-border-light, rgba(255,255,255,.12)); }
+    .modal h2 { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 11px; color: var(--los-text-secondary, #94a3b8); margin-bottom: 4px; font-weight: 500; }
+    .form-group input, .form-group textarea { width: 100%; background: var(--los-bg-base, #0f172a); border: 1px solid var(--los-border-light, rgba(255,255,255,.12)); border-radius: 6px; padding: 6px 8px; color: var(--los-text-primary, #e2e8f0); font-size: 12px; outline: none; }
+    .form-group input:focus, .form-group textarea:focus { border-color: var(--los-green, #10B981); }
+    .form-group textarea { resize: vertical; min-height: 50px; font-family: inherit; }
+    .time-row { display: flex; gap: 8px; }
+    .time-row .form-group { flex: 1; }
+    .color-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .color-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+    .color-dot:hover { transform: scale(1.15); }
+    .color-dot.selected { border-color: white; transform: scale(1.15); }
+    .allday-row { display: flex; align-items: center; gap: 6px; }
+    .allday-row input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--los-green, #10B981); }
+    .modal-actions { display: flex; gap: 6px; margin-top: 16px; justify-content: flex-end; }
+    .btn { padding: 6px 14px; border-radius: 6px; border: none; font-size: 12px; cursor: pointer; font-weight: 500; }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: var(--los-green, #10B981); color: white; }
+    .btn-danger { background: var(--los-red, #EF4444); color: white; }
+    .btn-secondary { background: var(--los-bg-tertiary, #334155); color: var(--los-text-secondary, #94a3b8); }
+
+    .los-ai-changed { animation: ai-glow 2s ease-out; }
+    @keyframes ai-glow { 0% { box-shadow: 0 0 0 0 rgba(139,92,246,.4); } 50% { box-shadow: 0 0 12px 3px rgba(139,92,246,.4); } 100% { box-shadow: none; } }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="month-nav">
+    <button id="prevMonth">‹</button>
+    <span class="month-title" id="monthTitle"></span>
+    <button id="nextMonth">›</button>
+  </div>
+  <button class="today-btn" id="todayBtn">Heute</button>
+  <div class="view-btns">
+    <button class="view-btn active" data-view="month">M</button>
+    <button class="view-btn" data-view="week">W</button>
+    <button class="view-btn" data-view="day">T</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="calendar-area">
+    <div class="weekdays">
+      <div class="weekday">Mo</div><div class="weekday">Di</div><div class="weekday">Mi</div>
+      <div class="weekday">Do</div><div class="weekday">Fr</div><div class="weekday">Sa</div><div class="weekday">So</div>
+    </div>
+    <div class="days-grid" id="daysGrid"></div>
+  </div>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3 id="sidebarTitle">Termine</h3>
+      <button class="add-btn" id="addBtn" title="Termin hinzufügen">+</button>
+    </div>
+    <div class="selected-label" id="selectedLabel"></div>
+    <div class="events-list" id="eventsList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Neuer Termin</h2>
+    <div class="form-group"><label>Titel *</label><input type="text" id="evTitle" placeholder="Terminname..."></div>
+    <div class="form-group"><label>Datum</label><input type="date" id="evDate"></div>
+    <div class="allday-row form-group"><input type="checkbox" id="evAllDay"><label for="evAllDay" style="margin:0;font-size:12px">Ganztägig</label></div>
+    <div class="time-row" id="timeRow">
+      <div class="form-group"><label>Von</label><input type="time" id="evStart"></div>
+      <div class="form-group"><label>Bis</label><input type="time" id="evEnd"></div>
+    </div>
+    <div class="form-group"><label>Beschreibung</label><textarea id="evDesc" placeholder="Optional..."></textarea></div>
+    <div class="form-group"><label>Farbe</label><div class="color-row" id="colorRow"></div></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger hidden" id="deleteBtn">Löschen</button>
+      <button class="btn btn-secondary" id="cancelBtn">Abbrechen</button>
+      <button class="btn btn-primary" id="saveBtn">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Context-basiert: DATA_URL kommt aus dem Parent ---
+const DATA_SOURCE = window.__DATA_SOURCE || '';
+const WIDGET_ID = window.__WIDGET_ID || '';
+const DATA_URL = DATA_SOURCE ? '/api/widget-data?source=' + encodeURIComponent(DATA_SOURCE) : '';
+
+const COLORS = ['#10B981','#3B82F6','#8B5CF6','#F59E0B','#EF4444','#EC4899','#06B6D4','#64748b'];
+let data = { events: [] };
+let currentYear, currentMonth, selectedDate = null, editingId = null, selectedColor = COLORS[0];
+let currentView = 'month';
+
+const today = new Date();
+currentYear = today.getFullYear();
+currentMonth = today.getMonth();
+
+function toDateStr(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function formatDateDE(s) { const [y,m,d]=s.split('-'); return `${d}.${m}.${y}`; }
+
+// --- Widget Port: emit selected date to parent ---
+function emitOutput(port, value) {
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'widget-output', instanceId: WIDGET_ID, port, value }, '*');
+  }
+}
+
+// --- Listen for inputs from connected widgets ---
+window.addEventListener('message', e => {
+  if (e.data?.type === 'widget-input') {
+    if (e.data.port === 'filter-date' && e.data.value) {
+      selectedDate = e.data.value;
+      const d = new Date(e.data.value + 'T00:00:00');
+      currentYear = d.getFullYear();
+      currentMonth = d.getMonth();
+      render();
+    }
+  }
+  if (e.data?.type === 'highlight-changes') {
+    // Highlight AI-changed elements
+    document.querySelectorAll('.event-item').forEach(el => el.classList.add('los-ai-changed'));
+    setTimeout(() => document.querySelectorAll('.los-ai-changed').forEach(el => el.classList.remove('los-ai-changed')), 3000);
+  }
+});
+
+async function loadData() {
+  if (!DATA_URL) return;
+  try {
+    const r = await fetch(DATA_URL + '&t=' + Date.now());
+    data = await r.json();
+    render();
+  } catch(e) {}
+}
+
+function eventsForDate(dateStr) {
+  return (data.events||[]).filter(e => e.date === dateStr).sort((a,b) => (a.time||'25:00').localeCompare(b.time||'25:00'));
+}
+
+function render() {
+  renderCalendar();
+  renderSidebar();
+  document.getElementById('monthTitle').textContent = new Date(currentYear, currentMonth, 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('daysGrid');
+  grid.innerHTML = '';
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  let startDow = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const todayStr = toDateStr(today);
+  const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
+
+  for (let i = startDow - 1; i >= 0; i--) {
+    const d = prevMonthDays - i;
+    grid.appendChild(makeCell(d, toDateStr(new Date(currentYear, currentMonth - 1, d)), true));
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = toDateStr(new Date(currentYear, currentMonth, d));
+    grid.appendChild(makeCell(d, dateStr, false, dateStr === todayStr));
+  }
+  const remaining = grid.children.length % 7 === 0 ? 0 : 7 - (grid.children.length % 7);
+  for (let d = 1; d <= remaining; d++) {
+    grid.appendChild(makeCell(d, toDateStr(new Date(currentYear, currentMonth + 1, d)), true));
+  }
+}
+
+function makeCell(dayNum, dateStr, otherMonth, isToday) {
+  const cell = document.createElement('div');
+  cell.className = 'day-cell' + (otherMonth ? ' other-month' : '') + (isToday ? ' today' : '') + (dateStr === selectedDate ? ' selected' : '');
+  const numEl = document.createElement('div');
+  numEl.className = 'day-number';
+  numEl.textContent = dayNum;
+  cell.appendChild(numEl);
+
+  const evs = eventsForDate(dateStr);
+  evs.slice(0, 3).forEach(ev => {
+    const chip = document.createElement('div');
+    chip.className = 'event-chip';
+    chip.style.background = ev.color || '#10B981';
+    chip.textContent = (ev.allDay ? '' : (ev.time ? ev.time + ' ' : '')) + ev.title;
+    chip.onclick = (e) => { e.stopPropagation(); openEdit(ev); };
+    cell.appendChild(chip);
+  });
+  if (evs.length > 3) {
+    const more = document.createElement('div');
+    more.className = 'more-events';
+    more.textContent = `+${evs.length - 3}`;
+    cell.appendChild(more);
+  }
+  cell.onclick = () => { selectedDate = dateStr; emitOutput('selected-date', dateStr); render(); };
+  return cell;
+}
+
+function renderSidebar() {
+  const list = document.getElementById('eventsList');
+  const label = document.getElementById('selectedLabel');
+  if (selectedDate) {
+    label.textContent = formatDateDE(selectedDate);
+    const evs = eventsForDate(selectedDate);
+    if (!evs.length) { list.innerHTML = '<div class="no-events">Keine Termine</div>'; return; }
+    list.innerHTML = '';
+    evs.forEach(ev => {
+      const item = document.createElement('div');
+      item.className = 'event-item';
+      item.style.borderLeftColor = ev.color || '#10B981';
+      item.innerHTML = `<div class="ev-title">${esc(ev.title)}</div><div class="ev-time">${ev.allDay ? 'Ganztägig' : (ev.time ? ev.time + (ev.endTime ? ' – ' + ev.endTime : '') : '')}</div>${ev.description ? '<div class="ev-desc">' + esc(ev.description) + '</div>' : ''}`;
+      item.onclick = () => { openEdit(ev); emitOutput('selected-item', ev); };
+      list.appendChild(item);
+    });
+  } else {
+    label.textContent = '';
+    const todayStr = toDateStr(today);
+    const upcoming = (data.events||[]).filter(e => e.date >= todayStr).sort((a,b) => a.date.localeCompare(b.date)).slice(0, 8);
+    if (!upcoming.length) { list.innerHTML = '<div class="no-events">Keine Termine</div>'; return; }
+    list.innerHTML = '';
+    upcoming.forEach(ev => {
+      const item = document.createElement('div');
+      item.className = 'event-item';
+      item.style.borderLeftColor = ev.color || '#10B981';
+      item.innerHTML = `<div class="ev-title">${esc(ev.title)}</div><div class="ev-time">${formatDateDE(ev.date)} ${ev.allDay ? '· Ganztägig' : (ev.time ? '· ' + ev.time : '')}</div>`;
+      item.onclick = () => openEdit(ev);
+      list.appendChild(item);
+    });
+  }
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function setupColorPicker() {
+  const row = document.getElementById('colorRow');
+  row.innerHTML = COLORS.map(c => `<div class="color-dot${c===selectedColor?' selected':''}" style="background:${c}" onclick="selectedColor='${c}';setupColorPicker()"></div>`).join('');
+}
+
+function openNew() {
+  editingId = null; selectedColor = COLORS[0];
+  document.getElementById('modalTitle').textContent = 'Neuer Termin';
+  document.getElementById('evTitle').value = '';
+  document.getElementById('evDate').value = selectedDate || toDateStr(today);
+  document.getElementById('evAllDay').checked = false;
+  document.getElementById('evStart').value = '';
+  document.getElementById('evEnd').value = '';
+  document.getElementById('evDesc').value = '';
+  document.getElementById('deleteBtn').classList.add('hidden');
+  document.getElementById('timeRow').style.display = '';
+  setupColorPicker();
+  document.getElementById('modalOverlay').classList.remove('hidden');
+  document.getElementById('evTitle').focus();
+}
+
+function openEdit(ev) {
+  editingId = ev.id; selectedColor = ev.color || COLORS[0];
+  document.getElementById('modalTitle').textContent = 'Termin bearbeiten';
+  document.getElementById('evTitle').value = ev.title;
+  document.getElementById('evDate').value = ev.date;
+  document.getElementById('evAllDay').checked = !!ev.allDay;
+  document.getElementById('evStart').value = ev.time || '';
+  document.getElementById('evEnd').value = ev.endTime || '';
+  document.getElementById('evDesc').value = ev.description || '';
+  document.getElementById('deleteBtn').classList.remove('hidden');
+  document.getElementById('timeRow').style.display = ev.allDay ? 'none' : '';
+  setupColorPicker();
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
+
+async function saveEvent() {
+  const title = document.getElementById('evTitle').value.trim();
+  if (!title) return;
+  const ev = {
+    id: editingId || String(Date.now()),
+    title,
+    date: document.getElementById('evDate').value,
+    allDay: document.getElementById('evAllDay').checked,
+    time: document.getElementById('evAllDay').checked ? '' : document.getElementById('evStart').value,
+    endTime: document.getElementById('evAllDay').checked ? '' : document.getElementById('evEnd').value,
+    description: document.getElementById('evDesc').value.trim(),
+    color: selectedColor
+  };
+  if (editingId) { data.events = data.events.map(e => e.id === editingId ? ev : e); }
+  else { data.events.push(ev); }
+  selectedDate = ev.date;
+  await saveData();
+  closeModal();
+}
+
+async function deleteEvent() {
+  if (!editingId) return;
+  data.events = data.events.filter(e => e.id !== editingId);
+  await saveData();
+  closeModal();
+}
+
+async function saveData() {
+  if (!DATA_URL) return;
+  try {
+    await fetch(DATA_URL + '&summary=' + encodeURIComponent('Calendar updated'), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data, null, 2)
+    });
+    render();
+  } catch(e) { console.error('Save failed:', e); }
+}
+
+document.getElementById('addBtn').onclick = openNew;
+document.getElementById('cancelBtn').onclick = closeModal;
+document.getElementById('saveBtn').onclick = saveEvent;
+document.getElementById('deleteBtn').onclick = deleteEvent;
+document.getElementById('prevMonth').onclick = () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } render(); };
+document.getElementById('nextMonth').onclick = () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } render(); };
+document.getElementById('todayBtn').onclick = () => { currentYear = today.getFullYear(); currentMonth = today.getMonth(); selectedDate = toDateStr(today); render(); };
+document.querySelectorAll('.view-btn').forEach(b => b.onclick = () => {
+  currentView = b.dataset.view;
+  document.querySelectorAll('.view-btn').forEach(x => x.classList.toggle('active', x === b));
+  render();
+});
+document.getElementById('evAllDay').onchange = () => { document.getElementById('timeRow').style.display = document.getElementById('evAllDay').checked ? 'none' : ''; };
+document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+selectedDate = toDateStr(today);
+loadData();
+setInterval(loadData, 2000);
+</script>
+</body>
+</html>

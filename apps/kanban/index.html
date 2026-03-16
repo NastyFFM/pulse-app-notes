@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanban</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:#F1F5F9;min-height:100vh;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+h1{font-size:1.5rem;color:#1E293B}
+.status{display:flex;align-items:center;gap:8px;font-size:.85rem;color:#64748B}
+.pulse{width:8px;height:8px;border-radius:50%;background:#22C55E;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.board{display:flex;gap:16px;overflow-x:auto;padding-bottom:12px;flex-wrap:wrap}
+.column{background:#fff;border-radius:12px;min-width:280px;flex:1;box-shadow:0 1px 3px rgba(0,0,0,.08);display:flex;flex-direction:column;max-width:400px;transition:box-shadow .3s}
+.col-header{padding:12px 16px;border-radius:12px 12px 0 0;color:#fff;font-weight:600;display:flex;justify-content:space-between;align-items:center;font-size:.95rem}
+.col-header button{background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;line-height:1;opacity:.8}
+.col-header button:hover{opacity:1}
+.col-body{padding:8px;flex:1;min-height:60px;transition:background .2s}
+.col-body.drag-over{background:#F0F9FF}
+.card{background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:12px;margin-bottom:8px;cursor:grab;position:relative;transition:box-shadow .15s}
+.card:hover{box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.card.dragging{opacity:.4}
+.card-title{font-weight:600;font-size:.9rem;color:#1E293B;margin-bottom:4px;padding-right:20px}
+.card-desc{font-size:.8rem;color:#64748B;line-height:1.4}
+.card-meta{display:flex;align-items:center;gap:6px;margin-top:8px}
+.prio{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.prio-high{background:#EF4444}.prio-medium{background:#F59E0B}.prio-low{background:#22C55E}
+.card-date{font-size:.7rem;color:#94A3B8}
+.card .del{position:absolute;top:8px;right:8px;background:none;border:none;color:#CBD5E1;cursor:pointer;font-size:.9rem;line-height:1}
+.card .del:hover{color:#EF4444}
+.add-form{padding:8px}
+.add-form input,.add-form select{width:100%;padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:.85rem;margin-bottom:6px;font-family:inherit}
+.add-form .btns{display:flex;gap:6px}
+.add-form .btns button{flex:1;padding:6px;border:none;border-radius:6px;cursor:pointer;font-size:.8rem;font-family:inherit}
+.btn-save{background:#3B82F6;color:#fff}.btn-cancel{background:#F1F5F9;color:#64748B}
+.edit-form input,.edit-form textarea{width:100%;padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:.85rem;margin-bottom:6px;font-family:inherit;resize:vertical}
+.edit-form .btns{display:flex;gap:6px}
+.edit-form .btns button{flex:1;padding:6px;border:none;border-radius:6px;cursor:pointer;font-size:.8rem;font-family:inherit}
+
+/* Claude Glow - purple pulse on SSE update */
+@keyframes claudeGlow{0%{box-shadow:0 0 0 0 rgba(139,92,246,.4)}50%{box-shadow:0 0 12px 4px rgba(139,92,246,.2)}100%{box-shadow:0 1px 3px rgba(0,0,0,.08)}}
+.claude-glow .column{animation:claudeGlow .8s ease-out}
+</style>
+</head>
+<body>
+<header><div style="display:flex;align-items:center"><h1 id="title"></h1></div><div class="status"><span id="msg">Laden...</span><span class="pulse" id="pulse"></span></div></header>
+<div class="board" id="board"></div>
+<script>
+let state = null, lastHash = '', adding = {}, editing = null;
+
+// --- SSE ---
+let sse = null;
+function connectSSE() {
+  if (sse) sse.close();
+  sse = new EventSource('/sse/kanban');
+  sse.onmessage = e => {
+    if (e.data === 'connected') return;
+    load().then(() => {
+      document.body.classList.add('claude-glow');
+      setTimeout(() => document.body.classList.remove('claude-glow'), 800);
+    });
+  };
+  sse.onerror = () => { setStatus('error'); setTimeout(connectSSE, 5000); };
+}
+
+async function load() {
+  try {
+    const r = await fetch('api/board');
+    const data = await r.json();
+    const hash = JSON.stringify(data);
+    if (hash !== lastHash) { state = data; lastHash = hash; renderBoard(); }
+    setStatus('saved');
+  } catch { setStatus('error'); }
+}
+
+async function save() {
+  setStatus('saving');
+  state.meta.lastModified = new Date().toISOString();
+  try {
+    await fetch('api/board', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) });
+    lastHash = JSON.stringify(state);
+    setStatus('saved');
+  } catch { setStatus('error'); }
+}
+
+function notifyParent(action, detail) {
+  try { window.parent.postMessage({ type: 'mutation', action, detail }, '*'); } catch {}
+}
+
+function setStatus(s) {
+  const el = document.getElementById('msg');
+  const p = document.getElementById('pulse');
+  if (s === 'saved') { el.textContent = 'Gespeichert \u2713'; p.style.background = '#22C55E'; }
+  else if (s === 'saving') { el.textContent = 'Speichert...'; p.style.background = '#F59E0B'; }
+  else { el.textContent = 'Fehler \u2717'; p.style.background = '#EF4444'; }
+}
+
+function renderBoard() {
+  document.getElementById('title').textContent = state.meta.title;
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  state.columns.forEach(col => {
+    const colEl = document.createElement('div');
+    colEl.className = 'column';
+    colEl.innerHTML = `<div class="col-header" style="background:${col.color}"><span>${col.name} (${col.tasks.length})</span><button onclick="toggleAdd('${col.id}')">+</button></div>`;
+    const body = document.createElement('div');
+    body.className = 'col-body';
+    body.dataset.colId = col.id;
+    body.addEventListener('dragover', e => { e.preventDefault(); body.classList.add('drag-over'); });
+    body.addEventListener('dragleave', () => body.classList.remove('drag-over'));
+    body.addEventListener('drop', e => { e.preventDefault(); body.classList.remove('drag-over'); dropTask(e.dataTransfer.getData('text/plain'), col.id); });
+
+    if (adding[col.id]) {
+      body.innerHTML += `<div class="add-form"><input id="add-t-${col.id}" placeholder="Titel"><select id="add-p-${col.id}"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select><div class="btns"><button class="btn-save" onclick="addTask('${col.id}')">Speichern</button><button class="btn-cancel" onclick="toggleAdd('${col.id}')">Abbrechen</button></div></div>`;
+    }
+
+    col.tasks.forEach(task => {
+      if (editing === task.id) {
+        body.innerHTML += `<div class="edit-form card"><input id="ed-t" value="${esc(task.title)}"><textarea id="ed-d" rows="2">${esc(task.desc)}</textarea><div class="btns"><button class="btn-save" onclick="saveEdit('${col.id}','${task.id}')">Speichern</button><button class="btn-cancel" onclick="cancelEdit()">Abbrechen</button></div></div>`;
+      } else {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.draggable = true;
+        card.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', task.id); card.classList.add('dragging'); });
+        card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        card.addEventListener('click', e => { if (!e.target.classList.contains('del')) { editing = task.id; renderBoard(); } });
+        card.innerHTML = `<button class="del" onclick="delTask('${col.id}','${task.id}')">\u00d7</button><div class="card-title">${esc(task.title)}</div><div class="card-desc">${esc(task.desc)}</div><div class="card-meta"><span class="prio prio-${task.priority}"></span><span class="card-date">${task.created}</span></div>`;
+        body.appendChild(card);
+      }
+    });
+    colEl.appendChild(body);
+    board.appendChild(colEl);
+  });
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function toggleAdd(colId) { adding[colId] = !adding[colId]; renderBoard(); }
+
+function addTask(colId) {
+  const t = document.getElementById(`add-t-${colId}`).value.trim();
+  if (!t) return;
+  const p = document.getElementById(`add-p-${colId}`).value;
+  const col = state.columns.find(c => c.id === colId);
+  col.tasks.push({ id: 'task-' + Date.now(), title: t, desc: '', priority: p, created: new Date().toISOString().slice(0, 10) });
+  adding[colId] = false;
+  notifyParent('addTask', `"${t}" in ${col.name}`);
+  renderBoard(); save();
+}
+
+function delTask(colId, taskId) {
+  if (!confirm('Task wirklich loeschen?')) return;
+  const col = state.columns.find(c => c.id === colId);
+  const task = col.tasks.find(t => t.id === taskId);
+  col.tasks = col.tasks.filter(t => t.id !== taskId);
+  notifyParent('delTask', `"${task ? task.title : taskId}" aus ${col.name}`);
+  renderBoard(); save();
+}
+
+function dropTask(taskId, targetColId) {
+  let task;
+  state.columns.forEach(col => {
+    const idx = col.tasks.findIndex(t => t.id === taskId);
+    if (idx !== -1) { task = col.tasks.splice(idx, 1)[0]; }
+  });
+  if (task) {
+    const targetCol = state.columns.find(c => c.id === targetColId);
+    targetCol.tasks.push(task);
+    notifyParent('moveTask', `"${task.title}" nach ${targetCol.name}`);
+    renderBoard(); save();
+  }
+}
+
+function saveEdit(colId, taskId) {
+  const col = state.columns.find(c => c.id === colId);
+  const task = col.tasks.find(t => t.id === taskId);
+  task.title = document.getElementById('ed-t').value.trim() || task.title;
+  task.desc = document.getElementById('ed-d').value.trim();
+  editing = null;
+  notifyParent('editTask', `"${task.title}" bearbeitet`);
+  renderBoard(); save();
+}
+
+function cancelEdit() { editing = null; renderBoard(); }
+
+// Error boundary
+window.onerror = (msg) => {
+  try { window.parent.postMessage({ type: 'error', message: msg }, '*'); } catch {}
+};
+
+// Init
+load();
+connectSSE();
+setInterval(load, 30000); // safety net
+</script>
+</body>
+</html>

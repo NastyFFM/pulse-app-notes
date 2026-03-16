@@ -1,0 +1,114 @@
+{
+  "lastUpdate": "2026-03-13T00:00:00Z",
+  "platforms": {
+    "tiktok": {
+      "name": "TikTok",
+      "icon": "🎵",
+      "color": "#00f2ea",
+      "trending": [
+        {"tag": "#AIGenerated", "posts": 2840000, "growth": 34.2, "sentiment": 0.72},
+        {"tag": "#CleanGirl", "posts": 1950000, "growth": 12.8, "sentiment": 0.85},
+        {"tag": "#BookTok", "posts": 5200000, "growth": 8.1, "sentiment": 0.91},
+        {"tag": "#GymTok", "posts": 3100000, "growth": 15.3, "sentiment": 0.78},
+        {"tag": "#GRWM", "posts": 4800000, "growth": -2.1, "sentiment": 0.80},
+        {"tag": "#Foodie", "posts": 6100000, "growth": 5.4, "sentiment": 0.88},
+        {"tag": "#DIY", "posts": 3400000, "growth": 9.7, "sentiment": 0.82},
+        {"tag": "#MentalHealth", "posts": 2200000, "growth": 18.5, "sentiment": 0.65}
+      ],
+      "topCreators": [
+        {"name": "@charlidamelio", "followers": 155000000, "engagement": 4.2},
+        {"name": "@khaby.lame", "followers": 162000000, "engagement": 3.8},
+        {"name": "@bellapoarch", "followers": 93000000, "engagement": 5.1}
+      ],
+      "stats": {"dailyActiveUsers": 1200000000, "avgSessionMin": 52, "avgEngagement": 5.96}
+    },
+    "instagram": {
+      "name": "Instagram",
+      "icon": "📸",
+      "color": "#E1306C",
+      "trending": [
+        {"tag": "#Reels", "posts": 8500000, "growth": 22.1, "sentiment": 0.76},
+        {"tag": "#OOTD", "posts": 4200000, "growth": 3.5, "sentiment": 0.84},
+        {"tag": "#Sustainability", "posts": 1800000, "growth": 28.4, "sentiment": 0.79},
+        {"tag": "#DigitalArt", "posts": 2600000, "growth": 19.7, "sentiment": 0.88},
+        {"tag": "#TravelGram", "posts": 5900000, "growth": 7.2, "sentiment": 0.92},
+        {"tag": "#Minimalism", "posts": 1500000, "growth": 11.3, "sentiment": 0.86},
+        {"tag": "#FitnessMotivation", "posts": 3800000, "growth": 6.8, "sentiment": 0.81},
+        {"tag": "#PlantBased", "posts": 1200000, "growth": 14.9, "sentiment": 0.83}
+      ],
+      "topCreators": [
+        {"name": "@cristiano", "followers": 650000000, "engagement": 1.8},
+        {"name": "@kyliejenner", "followers": 400000000, "engagement": 2.1},
+        {"name": "@natgeo", "followers": 285000000, "engagement": 3.2}
+      ],
+      "stats": {"dailyActiveUsers": 2000000000, "avgSessionMin": 33, "avgEngagement": 1.22}
+    },
+    "youtube": {
+      "name": "YouTube",
+      "icon": "📺",
+      "color": "#FF0000",
+      "trending": [
+        {"tag": "#Shorts", "posts": 12000000, "growth": 45.3, "sentiment": 0.71},
+        {"tag": "#Tutorial", "posts": 7800000, "growth": 8.9, "sentiment": 0.89},
+        {"tag": "#Gaming", "posts": 9200000, "growth": 11.2, "sentiment": 0.77},
+        {"tag": "#MrBeast", "posts": 3400000, "growth": 15.6, "sentiment": 0.82},
+        {"tag": "#ASMR", "posts": 4100000, "growth": 6.3, "sentiment": 0.85},
+        {"tag": "#Vlog", "posts": 5600000, "growth": -1.8, "sentiment": 0.79},
+        {"tag": "#TechReview", "posts": 2800000, "growth": 13.4, "sentiment": 0.83},
+        {"tag": "#Podcast", "posts": 3200000, "growth": 24.7, "sentiment": 0.80}
+      ],
+      "topCreators": [
+        {"name": "@MrBeast", "followers": 340000000, "engagement": 6.2},
+        {"name": "@tseries", "followers": 270000000, "engagement": 1.1},
+        {"name": "@PewDiePie", "followers": 111000000, "engagement": 4.8}
+      ],
+      "stats": {"dailyActiveUsers": 2500000000, "avgSessionMin": 42, "avgEngagement": 3.47}
+    },
+    "x": {
+      "name": "X (Twitter)",
+      "icon": "𝕏",
+      "color": "#1DA1F2",
+      "trending": [
+        {"tag": "#AI", "posts": 5600000, "growth": 38.7, "sentiment": 0.68},
+        {"tag": "#BreakingNews", "posts": 8900000, "growth": 4.2, "sentiment": 0.52},
+        {"tag": "#Tech", "posts": 4300000, "growth": 12.1, "sentiment": 0.74},
+        {"tag": "#Crypto", "posts": 3100000, "growth": -8.3, "sentiment": 0.58},
+        {"tag": "#Politics", "posts": 7200000, "growth": 9.5, "sentiment": 0.41},
+        {"tag": "#ElonMusk", "posts": 2800000, "growth": 5.7, "sentiment": 0.55},
+        {"tag": "#ClimateChange", "posts": 1900000, "growth": 16.8, "sentiment": 0.63},
+        {"tag": "#Startups", "posts": 1400000, "growth": 21.3, "sentiment": 0.79}
+      ],
+      "topCreators": [
+        {"name": "@elonmusk", "followers": 195000000, "engagement": 2.3},
+        {"name": "@baraborack", "followers": 132000000, "engagement": 1.9},
+        {"name": "@BillGates", "followers": 65000000, "engagement": 3.1}
+      ],
+      "stats": {"dailyActiveUsers": 600000000, "avgSessionMin": 34, "avgEngagement": 0.045}
+    }
+  },
+  "predictions": [
+    {"topic": "AI-generierter Content", "platform": "all", "prediction": "Starker Anstieg um 40-60% in den naechsten 3 Monaten", "confidence": 0.89, "direction": "up"},
+    {"topic": "Short-Form Video", "platform": "all", "prediction": "Weiterhin dominantes Format, besonders Shorts und Reels", "confidence": 0.94, "direction": "up"},
+    {"topic": "Nachhaltigkeit", "platform": "instagram", "prediction": "Wachstum von 25%+ erwartet durch Gen Z Engagement", "confidence": 0.78, "direction": "up"},
+    {"topic": "Crypto/NFT", "platform": "x", "prediction": "Ruecklaeufig, minus 10-15% in den naechsten Wochen", "confidence": 0.72, "direction": "down"},
+    {"topic": "Podcasts auf YouTube", "platform": "youtube", "prediction": "Video-Podcasts wachsen um 30% - neues Top-Format", "confidence": 0.85, "direction": "up"},
+    {"topic": "Mental Health Content", "platform": "tiktok", "prediction": "Starkes Wachstum, zunehmende Creator-Spezialisierung", "confidence": 0.81, "direction": "up"}
+  ],
+  "crossPlatform": {
+    "topCategories": [
+      {"name": "AI & Technologie", "score": 92, "trend": "up"},
+      {"name": "Fitness & Gesundheit", "score": 85, "trend": "stable"},
+      {"name": "Food & Kochen", "score": 81, "trend": "up"},
+      {"name": "Gaming", "score": 79, "trend": "stable"},
+      {"name": "Nachhaltigkeit", "score": 76, "trend": "up"},
+      {"name": "Mode & Beauty", "score": 74, "trend": "down"},
+      {"name": "Reisen", "score": 71, "trend": "up"},
+      {"name": "Bildung & Tutorials", "score": 68, "trend": "up"}
+    ],
+    "engagementByHour": [
+      0.3, 0.2, 0.15, 0.1, 0.12, 0.18, 0.35, 0.52, 0.68, 0.72, 0.65, 0.71,
+      0.78, 0.74, 0.69, 0.72, 0.81, 0.88, 0.95, 1.0, 0.92, 0.85, 0.65, 0.45
+    ],
+    "weeklyGrowth": [2.1, 3.4, 1.8, 4.2, 2.9, 3.7, 5.1]
+  }
+}

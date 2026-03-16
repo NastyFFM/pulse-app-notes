@@ -1,0 +1,15 @@
+{
+  "modelDefaults": {
+    "chat": "sonnet",
+    "modifier": "sonnet"
+  },
+  "modelRules": [
+    { "match": "farbe|color|hintergrund|background|text|schrift|font|titel|title|icon|emoji|border|radius|padding|margin|size|opacity", "model": "haiku" },
+    { "match": "layout|redesign|feature|funktion|hinzufuegen|add|button|component|section|navigation|menu|sidebar", "model": "sonnet" },
+    { "match": "debug|fix|fehler|error|refactor|performance|komplex|rewrite|architektur|security", "model": "opus" }
+  ],
+  "healthCheck": {
+    "intervalSec": 30,
+    "timeoutSec": 90
+  }
+}

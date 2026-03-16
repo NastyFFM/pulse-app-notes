@@ -1,0 +1,369 @@
+/* ============================================================
+   Live.OS - Central Theme
+   Shared CSS for all widgets. Include via <link rel="stylesheet" href="/theme.css">
+   ============================================================ */
+
+:root {
+  /* --- Colors --- */
+  --los-bg-base: #0F172A;
+  --los-bg-primary: #1E293B;
+  --los-bg-secondary: #16213e;
+  --los-bg-tertiary: #334155;
+  --los-bg-hover: #3d4f6f;
+  --los-bg-input: #2d3748;
+
+  --los-text-primary: #F1F5F9;
+  --los-text-secondary: #94A3B8;
+  --los-text-muted: #64748B;
+  --los-text-dim: #475569;
+
+  --los-border: rgba(255,255,255,.08);
+  --los-border-light: rgba(255,255,255,.12);
+  --los-border-focus: rgba(139,92,246,.5);
+
+  /* Accent colors */
+  --los-accent: #8B5CF6;
+  --los-accent-hover: #7C3AED;
+  --los-blue: #3B82F6;
+  --los-blue-hover: #2563EB;
+  --los-green: #10B981;
+  --los-green-hover: #059669;
+  --los-red: #EF4444;
+  --los-red-hover: #DC2626;
+  --los-yellow: #F59E0B;
+  --los-yellow-hover: #D97706;
+  --los-pink: #EC4899;
+  --los-cyan: #06B6D4;
+  --los-orange: #F97316;
+
+  /* AI highlight */
+  --los-ai-glow: rgba(139,92,246,.4);
+  --los-ai-border: rgba(139,92,246,.6);
+
+  /* --- Spacing --- */
+  --los-space-xs: 4px;
+  --los-space-sm: 8px;
+  --los-space-md: 12px;
+  --los-space-lg: 16px;
+  --los-space-xl: 24px;
+
+  /* --- Typography --- */
+  --los-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --los-font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --los-text-xs: 11px;
+  --los-text-sm: 13px;
+  --los-text-base: 15px;
+  --los-text-lg: 18px;
+  --los-text-xl: 22px;
+  --los-text-2xl: 28px;
+
+  /* --- Radius --- */
+  --los-radius-sm: 6px;
+  --los-radius: 8px;
+  --los-radius-lg: 12px;
+  --los-radius-xl: 16px;
+  --los-radius-full: 9999px;
+
+  /* --- Shadows --- */
+  --los-shadow-sm: 0 2px 8px rgba(0,0,0,.2);
+  --los-shadow: 0 4px 16px rgba(0,0,0,.3);
+  --los-shadow-lg: 0 8px 32px rgba(0,0,0,.4);
+  --los-shadow-glow: 0 0 20px var(--los-ai-glow);
+
+  /* --- Transitions --- */
+  --los-transition: 150ms ease;
+  --los-transition-slow: 300ms ease;
+}
+
+/* ---- Reset ---- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body.los-widget {
+  font-family: var(--los-font);
+  background: var(--los-bg-primary);
+  color: var(--los-text-primary);
+  font-size: var(--los-text-base);
+  line-height: 1.5;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* ---- Buttons ---- */
+.los-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--los-space-sm);
+  padding: var(--los-space-sm) var(--los-space-lg);
+  border: none;
+  border-radius: var(--los-radius);
+  font-family: var(--los-font);
+  font-size: var(--los-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--los-transition);
+  white-space: nowrap;
+}
+.los-btn:active { transform: scale(.97); }
+
+.los-btn-primary { background: var(--los-accent); color: #fff; }
+.los-btn-primary:hover { background: var(--los-accent-hover); }
+
+.los-btn-blue { background: var(--los-blue); color: #fff; }
+.los-btn-blue:hover { background: var(--los-blue-hover); }
+
+.los-btn-secondary { background: var(--los-bg-tertiary); color: var(--los-text-primary); }
+.los-btn-secondary:hover { background: var(--los-bg-hover); }
+
+.los-btn-danger { background: var(--los-red); color: #fff; }
+.los-btn-danger:hover { background: var(--los-red-hover); }
+
+.los-btn-ghost { background: transparent; color: var(--los-text-secondary); }
+.los-btn-ghost:hover { background: rgba(255,255,255,.08); color: var(--los-text-primary); }
+
+.los-btn-sm { padding: var(--los-space-xs) var(--los-space-sm); font-size: var(--los-text-xs); }
+.los-btn-icon { width: 32px; height: 32px; padding: 0; justify-content: center; }
+
+/* ---- Inputs ---- */
+.los-input, .los-textarea, .los-select {
+  width: 100%;
+  padding: var(--los-space-sm) var(--los-space-md);
+  background: var(--los-bg-input);
+  border: 1px solid var(--los-border-light);
+  border-radius: var(--los-radius);
+  color: var(--los-text-primary);
+  font-family: var(--los-font);
+  font-size: var(--los-text-sm);
+  outline: none;
+  transition: border-color var(--los-transition);
+}
+.los-input:focus, .los-textarea:focus, .los-select:focus {
+  border-color: var(--los-border-focus);
+}
+.los-input::placeholder, .los-textarea::placeholder {
+  color: var(--los-text-dim);
+}
+.los-textarea { resize: vertical; min-height: 80px; }
+.los-select { cursor: pointer; }
+.los-select option { background: var(--los-bg-primary); }
+
+/* ---- Cards ---- */
+.los-card {
+  background: var(--los-bg-secondary);
+  border: 1px solid var(--los-border);
+  border-radius: var(--los-radius-lg);
+  padding: var(--los-space-lg);
+  transition: border-color var(--los-transition);
+}
+.los-card:hover { border-color: var(--los-border-light); }
+.los-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--los-space-md);
+}
+.los-card-title {
+  font-size: var(--los-text-sm);
+  font-weight: 700;
+  color: var(--los-text-primary);
+}
+
+/* ---- Tables ---- */
+.los-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--los-text-sm);
+}
+.los-table th {
+  text-align: left;
+  padding: var(--los-space-sm) var(--los-space-md);
+  color: var(--los-text-muted);
+  font-weight: 600;
+  font-size: var(--los-text-xs);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  border-bottom: 1px solid var(--los-border);
+}
+.los-table td {
+  padding: var(--los-space-sm) var(--los-space-md);
+  border-bottom: 1px solid var(--los-border);
+  color: var(--los-text-secondary);
+}
+.los-table tr:hover td { background: rgba(255,255,255,.03); }
+
+/* ---- Badges ---- */
+.los-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--los-radius-full);
+  font-size: var(--los-text-xs);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.los-badge-accent { background: rgba(139,92,246,.2); color: var(--los-accent); }
+.los-badge-blue { background: rgba(59,130,246,.2); color: var(--los-blue); }
+.los-badge-green { background: rgba(16,185,129,.2); color: var(--los-green); }
+.los-badge-red { background: rgba(239,68,68,.2); color: var(--los-red); }
+.los-badge-yellow { background: rgba(245,158,11,.2); color: var(--los-yellow); }
+
+/* ---- Tags / Chips ---- */
+.los-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(255,255,255,.08);
+  border-radius: var(--los-radius-full);
+  font-size: var(--los-text-xs);
+  color: var(--los-text-secondary);
+}
+.los-tag.active { background: var(--los-accent); color: #fff; }
+
+/* ---- Notifications ---- */
+.los-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--los-space-sm);
+  padding: var(--los-space-sm) var(--los-space-md);
+  border-radius: var(--los-radius);
+  font-size: var(--los-text-sm);
+  border-left: 3px solid;
+}
+.los-toast-success { background: rgba(16,185,129,.1); border-color: var(--los-green); color: var(--los-green); }
+.los-toast-warning { background: rgba(245,158,11,.1); border-color: var(--los-yellow); color: var(--los-yellow); }
+.los-toast-error { background: rgba(239,68,68,.1); border-color: var(--los-red); color: var(--los-red); }
+.los-toast-info { background: rgba(59,130,246,.1); border-color: var(--los-blue); color: var(--los-blue); }
+
+/* ---- Progress ---- */
+.los-progress {
+  width: 100%;
+  height: 6px;
+  background: var(--los-bg-tertiary);
+  border-radius: var(--los-radius-full);
+  overflow: hidden;
+}
+.los-progress-bar {
+  height: 100%;
+  border-radius: var(--los-radius-full);
+  background: var(--los-accent);
+  transition: width var(--los-transition-slow);
+}
+
+/* ---- Tabs ---- */
+.los-tabs {
+  display: flex;
+  gap: 2px;
+  background: rgba(255,255,255,.04);
+  border-radius: var(--los-radius);
+  padding: 2px;
+}
+.los-tab {
+  padding: 6px 14px;
+  border-radius: var(--los-radius-sm);
+  font-size: var(--los-text-xs);
+  font-weight: 600;
+  color: var(--los-text-muted);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-family: var(--los-font);
+  transition: all var(--los-transition);
+}
+.los-tab:hover { color: var(--los-text-secondary); }
+.los-tab.active { background: var(--los-accent); color: #fff; }
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.25); }
+
+/* ---- AI Highlight Animation ---- */
+@keyframes los-ai-glow {
+  0% { box-shadow: 0 0 0 0 var(--los-ai-glow); }
+  50% { box-shadow: 0 0 16px 4px var(--los-ai-glow); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.los-ai-changed {
+  animation: los-ai-glow 2s ease-out;
+  border-color: var(--los-ai-border) !important;
+}
+
+/* ---- Widget Container (used by liveos.html) ---- */
+.los-widget-frame {
+  position: absolute;
+  background: var(--los-bg-primary);
+  border: 1px solid var(--los-border-light);
+  border-radius: var(--los-radius-lg);
+  box-shadow: var(--los-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.los-widget-header {
+  display: flex;
+  align-items: center;
+  gap: var(--los-space-sm);
+  padding: 8px 12px;
+  background: rgba(0,0,0,.2);
+  border-bottom: 1px solid var(--los-border);
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+}
+.los-widget-header:active { cursor: grabbing; }
+.los-widget-label {
+  font-size: var(--los-text-xs);
+  font-weight: 600;
+  color: var(--los-text-secondary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.los-widget-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.los-widget-body {
+  flex: 1;
+  overflow: hidden;
+}
+.los-widget-body iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* ---- Ports (connection points on widgets) ---- */
+.los-port {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--los-bg-tertiary);
+  border: 2px solid var(--los-text-muted);
+  cursor: crosshair;
+  z-index: 10;
+  transition: all var(--los-transition);
+}
+.los-port:hover {
+  transform: scale(1.4);
+  border-color: var(--los-accent);
+  background: var(--los-accent);
+}
+.los-port-input { left: -6px; }
+.los-port-output { right: -6px; }
+
+/* ---- Utility ---- */
+.los-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.los-flex { display: flex; }
+.los-flex-col { display: flex; flex-direction: column; }
+.los-gap-sm { gap: var(--los-space-sm); }
+.los-gap-md { gap: var(--los-space-md); }
+.los-gap-lg { gap: var(--los-space-lg); }
+.los-flex-1 { flex: 1; }
+.los-text-center { text-align: center; }
+.los-hidden { display: none !important; }

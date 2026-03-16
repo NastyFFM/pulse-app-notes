@@ -1,0 +1,48 @@
+{
+  "trips": [
+    {
+      "id": "trip-1773290749589",
+      "destination": "Barcelona",
+      "from": "2026-07-05",
+      "to": "2026-07-12",
+      "notes": "Das wird schön.",
+      "days": [
+        {
+          "date": "2026-07-05",
+          "activities": [
+            {
+              "time": "13:02",
+              "title": "esse",
+              "note": ""
+            }
+          ]
+        },
+        {
+          "date": "2026-07-06",
+          "activities": []
+        },
+        {
+          "date": "2026-07-07",
+          "activities": []
+        },
+        {
+          "date": "2026-07-08",
+          "activities": []
+        },
+        {
+          "date": "2026-07-09",
+          "activities": []
+        },
+        {
+          "date": "2026-07-10",
+          "activities": []
+        },
+        {
+          "date": "2026-07-11",
+          "activities": []
+        }
+      ],
+      "packing": []
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "types": [
+    {
+      "typeId": "calendar-view",
+      "name": "Kalender",
+      "icon": "📅",
+      "color": "#10B981",
+      "description": "Monats- und Wochenansicht fuer Termine und Events",
+      "html": "widgets/calendar-view/widget.html",
+      "accepts": ["date-items"],
+      "outputs": ["selected-date", "selected-item"],
+      "defaultSize": { "w": 500, "h": 450 }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head><title>WS Test</title></head>
+<body style="background:#1a1b26;color:#a9b1d6;font-family:monospace;padding:20px">
+<h2>WebSocket Test</h2>
+<div id="log"></div>
+<script>
+function log(msg) {
+  document.getElementById('log').innerHTML += msg + '<br>';
+  console.log(msg);
+}
+
+log('Connecting to ws://' + location.host + '/ws/echo ...');
+const ws = new WebSocket('ws://' + location.host + '/ws/echo');
+
+ws.onopen = () => {
+  log('✅ OPEN — WebSocket connected!');
+  ws.send('ping');
+  log('Sent: ping');
+};
+
+ws.onmessage = (evt) => {
+  log('📩 Message: ' + evt.data);
+};
+
+ws.onclose = (evt) => {
+  log('❌ CLOSED — code: ' + evt.code + ', reason: "' + evt.reason + '", wasClean: ' + evt.wasClean);
+};
+
+ws.onerror = (evt) => {
+  log('⚠️ ERROR');
+};
+</script>
+</body>
+</html>

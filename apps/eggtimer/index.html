@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Eieruhr</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0a;
+    color: #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+  }
+  .header {
+    background: #111;
+    border-bottom: 2px solid #F97316;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .title { font-size: 18px; font-weight: bold; color: #F97316; }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    padding: 20px;
+  }
+
+  /* Timer display */
+  .timer-ring {
+    position: relative;
+    width: 260px;
+    height: 260px;
+  }
+  .timer-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .ring-bg {
+    fill: none;
+    stroke: #222;
+    stroke-width: 8;
+  }
+  .ring-fg {
+    fill: none;
+    stroke: #F97316;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 753.98;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 0.5s linear, stroke 0.3s;
+  }
+  .ring-fg.warning { stroke: #EF4444; }
+  .timer-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .timer-digits {
+    font-size: 64px;
+    font-weight: 200;
+    color: #F97316;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+  .timer-digits.warning { color: #EF4444; }
+  .timer-label {
+    font-size: 14px;
+    color: #888;
+    margin-top: 6px;
+  }
+
+  /* Presets grid */
+  .presets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    width: 100%;
+    max-width: 400px;
+  }
+  .preset-btn {
+    background: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 12px;
+    padding: 14px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .preset-btn:hover { border-color: #F97316; background: #1f1a14; }
+  .preset-btn.active { border-color: #F97316; background: #2a1a0a; }
+  .preset-icon { font-size: 28px; display: block; margin-bottom: 4px; }
+  .preset-name { font-size: 13px; color: #ccc; }
+  .preset-time { font-size: 11px; color: #888; margin-top: 2px; }
+
+  /* Custom time input */
+  .custom-input {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-top: -10px;
+  }
+  .custom-input.show { display: flex; }
+  .custom-input input {
+    width: 60px;
+    background: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    color: #F97316;
+    font-size: 20px;
+    text-align: center;
+    padding: 6px;
+    outline: none;
+  }
+  .custom-input input:focus { border-color: #F97316; }
+  .custom-input label { color: #888; font-size: 13px; }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 16px;
+  }
+  .btn {
+    border: none;
+    border-radius: 50%;
+    width: 64px;
+    height: 64px;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .btn-start {
+    background: #F97316;
+    color: #000;
+  }
+  .btn-start:hover { background: #FB923C; }
+  .btn-pause {
+    background: #F59E0B;
+    color: #000;
+  }
+  .btn-pause:hover { background: #FBBF24; }
+  .btn-stop {
+    background: #333;
+    color: #e0e0e0;
+  }
+  .btn-stop:hover { background: #444; }
+  .btn:disabled { opacity: 0.3; cursor: default; }
+
+  /* Alarm animation */
+  @keyframes shake {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    10%, 30%, 50%, 70%, 90% { transform: translate(-50%, -50%) rotate(-4deg); }
+    20%, 40%, 60%, 80% { transform: translate(-50%, -50%) rotate(4deg); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .timer-text.alarm { animation: shake 0.5s infinite; }
+  .timer-digits.alarm { animation: pulse 0.6s infinite; color: #EF4444; }
+  .ring-fg.alarm { stroke: #EF4444; animation: pulse 0.6s infinite; }
+
+  /* Done overlay */
+  .done-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 10;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .done-overlay.show { display: flex; }
+  .done-emoji { font-size: 80px; animation: shake 0.5s infinite; }
+  .done-text { font-size: 28px; color: #F97316; font-weight: bold; }
+  .done-sub { font-size: 16px; color: #888; }
+  .btn-dismiss {
+    background: #F97316;
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 40px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  .btn-dismiss:hover { background: #FB923C; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span style="font-size:24px">🥚</span>
+  <span class="title">Eieruhr</span>
+</div>
+
+<div class="main">
+  <!-- Timer ring -->
+  <div class="timer-ring">
+    <svg viewBox="0 0 260 260">
+      <circle class="ring-bg" cx="130" cy="130" r="120"/>
+      <circle class="ring-fg" id="ring" cx="130" cy="130" r="120"/>
+    </svg>
+    <div class="timer-text" id="timerText">
+      <div class="timer-digits" id="digits">00:00</div>
+      <div class="timer-label" id="label">Zeit wählen</div>
+    </div>
+  </div>
+
+  <!-- Presets -->
+  <div class="presets" id="presets"></div>
+
+  <!-- Custom time input -->
+  <div class="custom-input" id="customInput">
+    <input type="number" id="customMin" min="0" max="99" value="1" placeholder="Min">
+    <label>Min</label>
+    <input type="number" id="customSec" min="0" max="59" value="0" placeholder="Sek">
+    <label>Sek</label>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn btn-stop" id="btnReset" title="Reset" disabled>⏹</button>
+    <button class="btn btn-start" id="btnStart" title="Start">▶</button>
+  </div>
+</div>
+
+<!-- Done overlay -->
+<div class="done-overlay" id="doneOverlay">
+  <div class="done-emoji">🥚</div>
+  <div class="done-text">Fertig!</div>
+  <div class="done-sub" id="doneSub">Timer abgelaufen</div>
+  <button class="btn-dismiss" onclick="dismissAlarm()">OK</button>
+</div>
+
+<script>
+const CIRCUMFERENCE = 2 * Math.PI * 120; // ~753.98
+const ring = document.getElementById('ring');
+const digits = document.getElementById('digits');
+const label = document.getElementById('label');
+const timerText = document.getElementById('timerText');
+const btnStart = document.getElementById('btnStart');
+const btnReset = document.getElementById('btnReset');
+const presetsEl = document.getElementById('presets');
+const customInput = document.getElementById('customInput');
+const customMin = document.getElementById('customMin');
+const customSec = document.getElementById('customSec');
+const doneOverlay = document.getElementById('doneOverlay');
+const doneSub = document.getElementById('doneSub');
+
+ring.style.strokeDasharray = CIRCUMFERENCE;
+ring.style.strokeDashoffset = 0;
+
+let state = 'idle'; // idle, running, paused, done
+let totalSeconds = 0;
+let remaining = 0;
+let interval = null;
+let selectedPreset = null;
+let audioCtx = null;
+let alarmOsc = null;
+let presets = [];
+
+// Load presets from JSON
+async function loadPresets() {
+  try {
+    const r = await fetch('/apps/eggtimer/data/timers.json?_=' + Date.now());
+    const data = await r.json();
+    presets = data.presets || [];
+    renderPresets();
+  } catch(e) {
+    // Defaults
+    presets = [
+      { id:'soft', name:'Weich', icon:'🥚', seconds:240, description:'4 Min' },
+      { id:'medium', name:'Wachsweich', icon:'🍳', seconds:420, description:'7 Min' },
+      { id:'hard', name:'Hart', icon:'🥚', seconds:600, description:'10 Min' },
+      { id:'tea', name:'Tee', icon:'🍵', seconds:180, description:'3 Min' },
+      { id:'pasta', name:'Pasta', icon:'🍝', seconds:480, description:'8 Min' },
+      { id:'custom', name:'Eigene Zeit', icon:'⏱️', seconds:60, description:'1 Min' }
+    ];
+    renderPresets();
+  }
+}
+
+function renderPresets() {
+  presetsEl.innerHTML = '';
+  presets.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'preset-btn' + (selectedPreset === p.id ? ' active' : '');
+    div.innerHTML = `<span class="preset-icon">${p.icon}</span><div class="preset-name">${p.name}</div><div class="preset-time">${p.description}</div>`;
+    div.onclick = () => selectPreset(p);
+    presetsEl.appendChild(div);
+  });
+}
+
+function selectPreset(p) {
+  if (state === 'running') return;
+  selectedPreset = p.id;
+  if (p.id === 'custom') {
+    customInput.classList.add('show');
+    updateCustomTime();
+  } else {
+    customInput.classList.remove('show');
+    totalSeconds = p.seconds;
+    remaining = totalSeconds;
+    updateDisplay();
+    label.textContent = p.name;
+  }
+  renderPresets();
+  setState('idle');
+}
+
+function updateCustomTime() {
+  const m = parseInt(customMin.value) || 0;
+  const s = parseInt(customSec.value) || 0;
+  totalSeconds = m * 60 + s;
+  remaining = totalSeconds;
+  updateDisplay();
+  label.textContent = 'Eigene Zeit';
+}
+customMin.addEventListener('input', updateCustomTime);
+customSec.addEventListener('input', updateCustomTime);
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function updateDisplay() {
+  digits.textContent = formatTime(remaining);
+  // Ring progress
+  const pct = totalSeconds > 0 ? remaining / totalSeconds : 1;
+  ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - pct);
+  // Warning state (last 10 seconds)
+  const isWarning = state === 'running' && remaining <= 10 && remaining > 0;
+  ring.classList.toggle('warning', isWarning);
+  digits.classList.toggle('warning', isWarning);
+}
+
+function setState(newState) {
+  state = newState;
+  // Update button states
+  if (state === 'idle') {
+    btnStart.textContent = '▶';
+    btnStart.className = 'btn btn-start';
+    btnStart.disabled = totalSeconds === 0;
+    btnReset.disabled = true;
+    ring.classList.remove('warning', 'alarm');
+    digits.classList.remove('warning', 'alarm');
+    timerText.classList.remove('alarm');
+  } else if (state === 'running') {
+    btnStart.textContent = '⏸';
+    btnStart.className = 'btn btn-pause';
+    btnStart.disabled = false;
+    btnReset.disabled = false;
+  } else if (state === 'paused') {
+    btnStart.textContent = '▶';
+    btnStart.className = 'btn btn-start';
+    btnStart.disabled = false;
+    btnReset.disabled = false;
+  } else if (state === 'done') {
+    btnStart.disabled = true;
+    btnReset.disabled = false;
+    ring.classList.add('alarm');
+    digits.classList.add('alarm');
+    timerText.classList.add('alarm');
+  }
+}
+
+function startTimer() {
+  setState('running');
+  interval = setInterval(() => {
+    remaining--;
+    updateDisplay();
+    if (remaining <= 0) {
+      clearInterval(interval);
+      interval = null;
+      remaining = 0;
+      updateDisplay();
+      triggerAlarm();
+    }
+  }, 1000);
+}
+
+function pauseTimer() {
+  clearInterval(interval);
+  interval = null;
+  setState('paused');
+}
+
+function resetTimer() {
+  clearInterval(interval);
+  interval = null;
+  stopAlarmSound();
+  remaining = totalSeconds;
+  updateDisplay();
+  setState('idle');
+  doneOverlay.classList.remove('show');
+}
+
+btnStart.onclick = () => {
+  if (state === 'idle' || state === 'paused') {
+    if (remaining > 0) startTimer();
+  } else if (state === 'running') {
+    pauseTimer();
+  }
+};
+
+btnReset.onclick = resetTimer;
+
+// Alarm
+function triggerAlarm() {
+  setState('done');
+  const preset = presets.find(p => p.id === selectedPreset);
+  doneSub.textContent = preset ? `${preset.name} - ${preset.description}` : 'Timer abgelaufen';
+  doneOverlay.classList.add('show');
+  playAlarmSound();
+}
+
+function playAlarmSound() {
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    playBeepPattern();
+  } catch(e) {}
+}
+
+function playBeepPattern() {
+  if (state !== 'done') return;
+  // Play 3 beeps
+  for (let i = 0; i < 3; i++) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.value = 0.3;
+    const t = audioCtx.currentTime + i * 0.2;
+    osc.start(t);
+    gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    osc.stop(t + 0.15);
+  }
+  // Repeat pattern
+  setTimeout(() => {
+    if (state === 'done') playBeepPattern();
+  }, 1200);
+}
+
+function stopAlarmSound() {
+  if (audioCtx) {
+    audioCtx.close().catch(() => {});
+    audioCtx = null;
+  }
+}
+
+function dismissAlarm() {
+  stopAlarmSound();
+  doneOverlay.classList.remove('show');
+  remaining = totalSeconds;
+  updateDisplay();
+  setState('idle');
+}
+
+// Init
+loadPresets();
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    btnStart.click();
+  } else if (e.code === 'Escape') {
+    if (state === 'done') dismissAlarm();
+    else resetTimer();
+  }
+});
+</script>
+</body>
+</html>

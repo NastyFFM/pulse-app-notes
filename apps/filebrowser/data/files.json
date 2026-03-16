@@ -1,0 +1,941 @@
+{
+  "tree": {
+    "name": "GUITest",
+    "type": "dir",
+    "children": [
+      {
+        "name": "apps",
+        "type": "dir",
+        "children": [
+          {
+            "name": "alarm",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 140
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "alarms.json",
+                    "type": "file",
+                    "size": 485
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 17610
+              }
+            ]
+          },
+          {
+            "name": "budget",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 172
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "budget.json",
+                    "type": "file",
+                    "size": 1053
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 15935
+              }
+            ]
+          },
+          {
+            "name": "calendar",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 137
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "calendar.json",
+                    "type": "file",
+                    "size": 2764
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 30898
+              }
+            ]
+          },
+          {
+            "name": "camera",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 158
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "photos.json",
+                    "type": "file",
+                    "size": 18
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 8486
+              },
+              {
+                "name": "versions",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "v-1773283380099.html",
+                    "type": "file",
+                    "size": 8486
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "chat",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 102
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "chat.json",
+                    "type": "file",
+                    "size": 6854
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 15042
+              }
+            ]
+          },
+          {
+            "name": "doom",
+            "type": "dir",
+            "children": [
+              {
+                "name": "data",
+                "type": "dir",
+                "children": []
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 14937
+              },
+              {
+                "name": "versions",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "v-1773431323718.html",
+                    "type": "file",
+                    "size": 14937
+                  },
+                  {
+                    "name": "v-1773431328519.html",
+                    "type": "file",
+                    "size": 14937
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "drumcomputer",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 151
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "drumcomputer.json",
+                    "type": "file",
+                    "size": 1038
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 23055
+              }
+            ]
+          },
+          {
+            "name": "eggtimer",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 149
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "timers.json",
+                    "type": "file",
+                    "size": 629
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 13202
+              }
+            ]
+          },
+          {
+            "name": "filebrowser",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 144
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "files.json",
+                    "type": "file",
+                    "size": 24100
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 7209
+              },
+              {
+                "name": "versions",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "v-1773282024169.html",
+                    "type": "file",
+                    "size": 6169
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "flappy",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 184
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "flappy.json",
+                    "type": "file",
+                    "size": 23
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 11580
+              }
+            ]
+          },
+          {
+            "name": "imagegen",
+            "type": "dir",
+            "children": [
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "images.json",
+                    "type": "file",
+                    "size": 523
+                  },
+                  {
+                    "name": "img-1773340057318.jpg",
+                    "type": "file",
+                    "size": 3779264
+                  },
+                  {
+                    "name": "img-1773340320045.jpg",
+                    "type": "file",
+                    "size": 2712922
+                  },
+                  {
+                    "name": "queue",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "req-1773340057318.json",
+                        "type": "file",
+                        "size": 106
+                      },
+                      {
+                        "name": "req-1773340320045.json",
+                        "type": "file",
+                        "size": 165
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 11022
+              }
+            ]
+          },
+          {
+            "name": "kanban",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 123
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "board.json",
+                    "type": "file",
+                    "size": 2934
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 9869
+              }
+            ]
+          },
+          {
+            "name": "mindmap",
+            "type": "dir",
+            "children": [
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "mindmap.json",
+                    "type": "file",
+                    "size": 1309
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 11034
+              },
+              {
+                "name": "versions",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "v-1773288017270.html",
+                    "type": "file",
+                    "size": 11034
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "news-channels",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 192
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "news-channels.json",
+                    "type": "file",
+                    "size": 624
+                  },
+                  {
+                    "name": "saved-articles.json",
+                    "type": "file",
+                    "size": 1624
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 26255
+              }
+            ]
+          },
+          {
+            "name": "notes",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 148
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "notes.json",
+                    "type": "file",
+                    "size": 302
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 11844
+              },
+              {
+                "name": "versions",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "v-1773430837607.html",
+                    "type": "file",
+                    "size": 11844
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "orchestrator",
+            "type": "dir",
+            "children": [
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "config.json",
+                    "type": "file",
+                    "size": 577
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 9297
+              }
+            ]
+          },
+          {
+            "name": "picviewer",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 150
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "gallery.json",
+                    "type": "file",
+                    "size": 1574
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 7457
+              }
+            ]
+          },
+          {
+            "name": "podcast",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 114
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "podcast.json",
+                    "type": "file",
+                    "size": 17955
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 20954
+              }
+            ]
+          },
+          {
+            "name": "radio",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 161
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "radio.json",
+                    "type": "file",
+                    "size": 6164
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 15229
+              }
+            ]
+          },
+          {
+            "name": "social-trends",
+            "type": "dir",
+            "children": [
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "trends.json",
+                    "type": "file",
+                    "size": 6407
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 30365
+              }
+            ]
+          },
+          {
+            "name": "tetris",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 173
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "tetris.json",
+                    "type": "file",
+                    "size": 23
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 13415
+              },
+              {
+                "name": "versions",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "v-1773277059307.html",
+                    "type": "file",
+                    "size": 11980
+                  },
+                  {
+                    "name": "v-1773277411941.html",
+                    "type": "file",
+                    "size": 11980
+                  },
+                  {
+                    "name": "v-1773277587715.html",
+                    "type": "file",
+                    "size": 11980
+                  },
+                  {
+                    "name": "v-1773278736071.html",
+                    "type": "file",
+                    "size": 11980
+                  },
+                  {
+                    "name": "v-1773278759948.html",
+                    "type": "file",
+                    "size": 11980
+                  },
+                  {
+                    "name": "v-1773281682738.html",
+                    "type": "file",
+                    "size": 11980
+                  },
+                  {
+                    "name": "v-1773334293918.html",
+                    "type": "file",
+                    "size": 13415
+                  },
+                  {
+                    "name": "v-1773334299484.html",
+                    "type": "file",
+                    "size": 11980
+                  },
+                  {
+                    "name": "v-1773334304873.html",
+                    "type": "file",
+                    "size": 11980
+                  },
+                  {
+                    "name": "v-1773334307572.html",
+                    "type": "file",
+                    "size": 11980
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "tickets",
+            "type": "dir",
+            "children": [
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "tickets.json",
+                    "type": "file",
+                    "size": 2436
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 16221
+              }
+            ]
+          },
+          {
+            "name": "travel-planner",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 175
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "travel-planner.json",
+                    "type": "file",
+                    "size": 919
+                  },
+                  {
+                    "name": "trips.json",
+                    "type": "file",
+                    "size": 391
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 24066
+              }
+            ]
+          },
+          {
+            "name": "weather",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 126
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "weather.json",
+                    "type": "file",
+                    "size": 860
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 12928
+              }
+            ]
+          },
+          {
+            "name": "whiteboard",
+            "type": "dir",
+            "children": [
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "board.json",
+                    "type": "file",
+                    "size": 16337
+                  },
+                  {
+                    "name": "whiteboard.json",
+                    "type": "file",
+                    "size": 667
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 19913
+              },
+              {
+                "name": "versions",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "v-1773288218094.html",
+                    "type": "file",
+                    "size": 11901
+                  },
+                  {
+                    "name": "v-1773290496267.html",
+                    "type": "file",
+                    "size": 19913
+                  },
+                  {
+                    "name": "v-1773290505552.html",
+                    "type": "file",
+                    "size": 11901
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "youtube",
+            "type": "dir",
+            "children": [
+              {
+                "name": "app.json",
+                "type": "file",
+                "size": 137
+              },
+              {
+                "name": "data",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "youtube.json",
+                    "type": "file",
+                    "size": 4842
+                  }
+                ]
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "size": 13015
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "chat-worker.js",
+        "type": "file",
+        "size": 1737
+      },
+      {
+        "name": "dashboard.html",
+        "type": "file",
+        "size": 27469
+      },
+      {
+        "name": "data",
+        "type": "dir",
+        "children": [
+          {
+            "name": "agents.json",
+            "type": "file",
+            "size": 758
+          },
+          {
+            "name": "apps.json",
+            "type": "file",
+            "size": 6055
+          },
+          {
+            "name": "changelog.json",
+            "type": "file",
+            "size": 25072
+          },
+          {
+            "name": "chat-queue.json",
+            "type": "file",
+            "size": 19
+          },
+          {
+            "name": "modify-queue.json",
+            "type": "file",
+            "size": 15
+          },
+          {
+            "name": "state.json",
+            "type": "file",
+            "size": 561
+          }
+        ]
+      },
+      {
+        "name": "kanban",
+        "type": "dir",
+        "children": [
+          {
+            "name": "data",
+            "type": "dir",
+            "children": [
+              {
+                "name": "board.json",
+                "type": "file",
+                "size": 2224
+              }
+            ]
+          },
+          {
+            "name": "kanban.html",
+            "type": "file",
+            "size": 8578
+          },
+          {
+            "name": "server.js",
+            "type": "file",
+            "size": 1384
+          }
+        ]
+      },
+      {
+        "name": "PROMPT_kanban_demo.md",
+        "type": "file",
+        "size": 4552
+      },
+      {
+        "name": "server.js",
+        "type": "file",
+        "size": 47537
+      },
+      {
+        "name": "temp",
+        "type": "dir",
+        "children": []
+      }
+    ]
+  }
+}

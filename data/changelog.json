@@ -1,0 +1,1004 @@
+{
+  "entries": [
+    {
+      "action": "chat",
+      "detail": "User: \"was war heute bei der tagesschau los\"",
+      "time": "2026-03-11T23:58:16.082Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"bei der wetter app gibt es einen bug: obwohl sie f...\"",
+      "time": "2026-03-12T00:03:44.864Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"öffne die wetter app\"",
+      "time": "2026-03-12T00:05:06.069Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"jetz mach emir eine app die mir news zusammen fast...\"",
+      "time": "2026-03-12T00:06:51.762Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mach bei den news auch noch bilder mit in die kach...\"",
+      "time": "2026-03-12T00:11:38.188Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"from now on every app has a new button top right. ...\"",
+      "time": "2026-03-12T00:16:25.789Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"falsch du brauchst den server aopi key nicht. du l...\"",
+      "time": "2026-03-12T00:19:52.721Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"restart the server\"",
+      "time": "2026-03-12T00:20:58.768Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"der edit button ist an der falschen stelle. er ist...\"",
+      "time": "2026-03-12T00:22:24.851Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"der button ist unter dem schliessen button. Er sol...\"",
+      "time": "2026-03-12T00:23:59.897Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich wollte die chat app editieren mit dem neuen bu...\"",
+      "time": "2026-03-12T00:28:26.782Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"wennj ich den editierbutton in einer app druücke u...\"",
+      "time": "2026-03-12T00:48:11.124Z"
+    },
+    {
+      "action": "moveTask",
+      "detail": "\"Projektstruktur\" nach Backlog",
+      "time": "2026-03-12T01:04:49.623Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"test\"",
+      "time": "2026-03-12T01:26:27.500Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"hallo\"",
+      "time": "2026-03-12T01:28:40.791Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"test\"",
+      "time": "2026-03-12T01:31:54.100Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"test\"",
+      "time": "2026-03-12T01:37:40.747Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"test\"",
+      "time": "2026-03-12T01:49:23.247Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"test\"",
+      "time": "2026-03-12T01:50:41.900Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"test\"",
+      "time": "2026-03-12T01:52:59.148Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"wann ist mein geburtstag\"",
+      "time": "2026-03-12T01:54:43.384Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"was ist ein kuchen\"",
+      "time": "2026-03-12T02:15:01.319Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"what time is it\"",
+      "time": "2026-03-12T02:16:49.834Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"create a simlpe file brower app\"",
+      "time": "2026-03-12T02:17:47.205Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"create a picture viewer\"",
+      "time": "2026-03-12T02:21:18.782Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"create an app that opens the camera and detects fa...\"",
+      "time": "2026-03-12T02:36:16.188Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"yes\"",
+      "time": "2026-03-12T02:36:45.481Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"tell me when you are done\"",
+      "time": "2026-03-12T02:38:10.524Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mache bei tetris noch einen upside down modus wo d...\"",
+      "time": "2026-03-12T02:43:42.958Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mache bei tetris noch einen upside down modus wo d...\"",
+      "time": "2026-03-12T02:48:00.014Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"test\"",
+      "time": "2026-03-12T02:50:40.299Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"huhu\"",
+      "time": "2026-03-12T02:51:48.683Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"alles neu\"",
+      "time": "2026-03-12T02:54:00.422Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle mir eine app. die aus einem prompt ein bi...\"",
+      "time": "2026-03-12T02:56:58.691Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"macke the windows also resizeable\"",
+      "time": "2026-03-12T03:04:30.530Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle mir ein einfaches jira ticketsystem\"",
+      "time": "2026-03-12T03:14:37.558Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"sag bescheid wenn du fertig bist\"",
+      "time": "2026-03-12T03:19:15.457Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich würde die tickets auch gerne per drag and drop...\"",
+      "time": "2026-03-12T03:25:43.717Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"what is another popular productivity tool\"",
+      "time": "2026-03-12T03:30:33.869Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"create the 8. MindMap\"",
+      "time": "2026-03-12T03:31:52.803Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mache mir soetwas wie eine miro board app\"",
+      "time": "2026-03-12T03:35:16.991Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"der editierbuttoon funktiniert immer noch nicht. M...\"",
+      "time": "2026-03-12T03:57:35.854Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"nein, es funktioniert nicht wenn ich auf den stift...\"",
+      "time": "2026-03-12T04:01:18.832Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"gib die möglichkeit auch primitive zu erstellen\"",
+      "time": "2026-03-12T04:04:55.188Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"die ui elem,ente sind da, aber ich kan keine primi...\"",
+      "time": "2026-03-12T04:06:38.310Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"entferne den anpassen und den dashboard button im ...\"",
+      "time": "2026-03-12T04:08:12.173Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"fals ich nochmal auf den stift im selben fenster d...\"",
+      "time": "2026-03-12T04:11:00.291Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"die texte der termine vergössern einen tag und sei...\"",
+      "time": "2026-03-12T04:12:41.119Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle noch wochen und tagesansicht\"",
+      "time": "2026-03-12T04:17:14.610Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"meine channels werden nicht gespeichert. Ich möcht...\"",
+      "time": "2026-03-12T04:22:43.687Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"fehler beim laden der nachrichten. failed to fetch...\"",
+      "time": "2026-03-12T04:26:14.240Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich möchte städte hinzufügen speichern und auch wi...\"",
+      "time": "2026-03-12T04:35:07.379Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"wenn ich links auf eine stadt klicke wird rechts n...\"",
+      "time": "2026-03-12T04:38:17.663Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle mir einen reiseplaner\"",
+      "time": "2026-03-12T04:43:02.581Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"create a internet radio player. search and browse ...\"",
+      "time": "2026-03-12T04:50:41.590Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich kann keine favouriten speichern, und in den su...\"",
+      "time": "2026-03-12T04:55:32.547Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"nein, ich weiss nicht wie ich etwas zu den favorit...\"",
+      "time": "2026-03-12T04:57:41.230Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"create a youtube app\"",
+      "time": "2026-03-12T05:00:28.961Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"es werden keine videos gefunden. weder trending no...\"",
+      "time": "2026-03-12T05:03:17.969Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"bitte server neu starten\"",
+      "time": "2026-03-12T05:06:17.087Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"wenn der filebrowser geöffnet wird soll ein refres...\"",
+      "time": "2026-03-12T05:20:19.553Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"sag bescheid wenn du fertig bist\"",
+      "time": "2026-03-12T05:28:25.744Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich kann einträge nicht löschen. sie erscheinen so...\"",
+      "time": "2026-03-12T05:29:35.436Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich kann einträge nicht löschen. sie erscheinen so...\"",
+      "time": "2026-03-12T14:31:49.890Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich kann einträge nicht löschen. sie erscheinen so...\"",
+      "time": "2026-03-12T14:37:53.035Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich kann einträge nicht löschen wie erscheinen sof...\"",
+      "time": "2026-03-12T14:41:05.348Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"hallo test\"",
+      "time": "2026-03-12T14:48:45.238Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich kan einen eintrag löschen, aber eine sekunde s...\"",
+      "time": "2026-03-12T14:51:53.918Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"es ist der budget tracker\"",
+      "time": "2026-03-12T14:53:45.128Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"suche im projectordner. in /apps\"",
+      "time": "2026-03-12T14:57:49.089Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ja\"",
+      "time": "2026-03-12T15:13:40.906Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"wenn ich ein radio starte kommt unten der player u...\"",
+      "time": "2026-03-12T15:40:04.085Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ok mache es ist sehe unten implayer noch keinen st...\"",
+      "time": "2026-03-12T15:42:15.290Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"macke a pdcast app, also with favourites and stars...\"",
+      "time": "2026-03-12T15:49:21.042Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"du bist claude code\"",
+      "time": "2026-03-12T15:50:08.082Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"wenn ich einen podcast anklicke kommt immer \"keine...\"",
+      "time": "2026-03-12T15:53:33.406Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich möhte ein video was ich angeklickt und gestart...\"",
+      "time": "2026-03-12T16:24:05.438Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich möhte ein video was ich angeklickt und gestart...\"",
+      "time": "2026-03-12T16:32:51.533Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"nein, setze es direkt um\"",
+      "time": "2026-03-12T16:38:37.622Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"du bist claude code\"",
+      "time": "2026-03-12T16:39:00.096Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"füge neue favouriten immer oben bei den favs an\"",
+      "time": "2026-03-12T16:41:52.244Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle einen modus in den man wechseln kann bei ...\"",
+      "time": "2026-03-12T16:47:55.469Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"du bist claude code. mahe es so das wenn ich eine ...\"",
+      "time": "2026-03-12T16:54:30.441Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"es kommt beim klick auf einen artikel immer:\"Laden...\"",
+      "time": "2026-03-12T16:58:56.974Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"wäre es mit artikel proxy gegangen? wenn ja baue e...\"",
+      "time": "2026-03-12T17:02:28.869Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"nein, mache es wieder rückgangig sodas wenn man au...\"",
+      "time": "2026-03-12T17:06:46.886Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich möchte wenn ich favouriten habe nur diese sehe...\"",
+      "time": "2026-03-12T17:09:59.518Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"in der news channels app\"",
+      "time": "2026-03-12T17:10:44.206Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"dein der mechanismus funktioniert nicht. nur beim ...\"",
+      "time": "2026-03-12T17:13:00.264Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"könne wir nicht einfach favouriten als kanal mache...\"",
+      "time": "2026-03-12T17:16:28.210Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich sehe den favoriten kanal. aber wenn ich den ka...\"",
+      "time": "2026-03-12T17:19:28.601Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"wenn ich ein fenster oben dragge, verliere ich man...\"",
+      "time": "2026-03-12T17:57:15.916Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"use the nanobanana mcp to generate the images. rig...\"",
+      "time": "2026-03-12T18:24:01.951Z"
+    },
+    {
+      "action": "moveTask",
+      "detail": "\"qwdqwd\" nach Fertig",
+      "time": "2026-03-12T19:34:06.739Z"
+    },
+    {
+      "action": "moveTask",
+      "detail": "\"wefwef\" nach Backlog",
+      "time": "2026-03-12T19:34:07.933Z"
+    },
+    {
+      "action": "moveTask",
+      "detail": "\"Projektstruktur\" nach In Arbeit",
+      "time": "2026-03-12T19:34:08.976Z"
+    },
+    {
+      "action": "moveTask",
+      "detail": "\"Recherche\" nach In Arbeit",
+      "time": "2026-03-12T19:34:09.994Z"
+    },
+    {
+      "action": "moveTask",
+      "detail": "\"API-Endpunkte\" nach Backlog",
+      "time": "2026-03-12T19:34:11.440Z"
+    },
+    {
+      "action": "moveTask",
+      "detail": "\"Projektstruktur\" nach Backlog",
+      "time": "2026-03-12T19:34:12.403Z"
+    },
+    {
+      "action": "moveTask",
+      "detail": "\"izf\" nach In Arbeit",
+      "time": "2026-03-12T19:34:13.566Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle eine neue app. Doom mit dem ersten level\"",
+      "time": "2026-03-12T19:36:52.676Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle mir eine social media trendanalysen app. ...\"",
+      "time": "2026-03-13T00:15:33.531Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ja fang an\"",
+      "time": "2026-03-13T00:16:54.602Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ok, melde dich wenn du fertig bist\"",
+      "time": "2026-03-13T00:17:45.730Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mache mir ein neuen ticket. einkaufen gehen\"",
+      "time": "2026-03-13T11:43:27.746Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mache es hier in der jira app, si ist schon offen....\"",
+      "time": "2026-03-13T11:43:55.374Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mache es auch in das Ticket system in \"open\"\"",
+      "time": "2026-03-13T11:45:30.817Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle im ticketsystem einen neuen eintrag bei \"...\"",
+      "time": "2026-03-13T11:46:33.048Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"test\"",
+      "time": "2026-03-13T12:12:03.089Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"wie spät ist es\"",
+      "time": "2026-03-13T12:39:14.012Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle im ticketsystem eine neues ticket in Open...\"",
+      "time": "2026-03-13T12:40:37.876Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"du bist claude code mache es!\"",
+      "time": "2026-03-13T12:41:02.113Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mache im teicket system eine neues ticket \"Kuchen ...\"",
+      "time": "2026-03-13T12:42:31.173Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mache mir eine neue app - wecker\"",
+      "time": "2026-03-13T12:44:43.247Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mache mir in unserer wecker app einen neuen alarm ...\"",
+      "time": "2026-03-13T12:49:55.777Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"was war das letzte was ich menacht habe\"",
+      "time": "2026-03-13T12:50:56.327Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mache mir eine 5te spur and den sequencer des \"Dru...\"",
+      "time": "2026-03-13T12:54:47.754Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich möchte gerne eine Eieruhr/Kurzeitwecker app. M...\"",
+      "time": "2026-03-13T15:42:57.737Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"doch du kannst es du bist claude code\"",
+      "time": "2026-03-13T15:43:20.162Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"sag mir bescheid wenn du fertig bist\"",
+      "time": "2026-03-13T15:44:32.826Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"stell meine eier uhr ein eine minute 15 sekunden u...\"",
+      "time": "2026-03-13T15:47:38.812Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"hast du eine idee was man heute abend machen könnt...\"",
+      "time": "2026-03-13T18:49:34.556Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"was habe ich gerade gemacht?\"",
+      "time": "2026-03-13T19:06:58.107Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"es gbit einen bug. das datum auf einer kachel und ...\"",
+      "time": "2026-03-13T19:09:04.160Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"du ist claude code und hast diese app gemacht. beh...\"",
+      "time": "2026-03-13T19:11:39.367Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"doch du kannst es du bist claude code\"",
+      "time": "2026-03-13T19:12:18.179Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle einen termin heute 21 uht. netflix film s...\"",
+      "time": "2026-03-13T19:15:35.169Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ich sterbe immer und weiss nicht warum. verebssere...\"",
+      "time": "2026-03-13T19:44:10.339Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"der filebrowser zeigt alte dateien an. er muss dyn...\"",
+      "time": "2026-03-13T19:52:06.426Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"der filebrowser zeigt alte dateien an. er muss dyn...\"",
+      "time": "2026-03-13T19:53:35.345Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"der filebrowser braucht eine aktualisieren button ...\"",
+      "time": "2026-03-13T20:02:31.013Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"der filebrowser braucht eine aktualisieren button ...\"",
+      "time": "2026-03-13T20:03:56.490Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mach das\"",
+      "time": "2026-03-13T20:05:30.094Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle einen neuen ordner für meine temporären d...\"",
+      "time": "2026-03-13T20:08:00.902Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"lass uns nun vorschauen für die files machen. wenn...\"",
+      "time": "2026-03-13T20:14:00.923Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"bist du noch da\"",
+      "time": "2026-03-13T20:16:23.083Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"kannst du noch die vorschauen für medien typenmach...\"",
+      "time": "2026-03-13T20:21:45.778Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"bist du noch da\"",
+      "time": "2026-03-13T20:23:25.145Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mache mir eine neues ticket im ticket system: \"Brö...\"",
+      "time": "2026-03-13T20:30:00.707Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"test\"",
+      "time": "2026-03-13T20:42:51.379Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle eine suchfunktion\"",
+      "time": "2026-03-13T20:59:27.084Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle eine suchfunktion\"",
+      "time": "2026-03-13T21:01:19.575Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle eine suchfunktion\"",
+      "time": "2026-03-13T21:05:10.729Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle eine suchfunktion\"",
+      "time": "2026-03-13T21:07:06.408Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle eine suchfunktion\"",
+      "time": "2026-03-13T21:09:51.370Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle im filebrowser eine suchfunktion\"",
+      "time": "2026-03-13T21:17:16.180Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"du hast mir den quellcode geschickt. du sollst es ...\"",
+      "time": "2026-03-13T21:19:36.269Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle im filebrowser eine suchfunktion\n\n22:17\n\ud83e...\"",
+      "time": "2026-03-13T21:20:30.828Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"du hast den zugriff, du bist claude code. die app ...\"",
+      "time": "2026-03-13T21:22:33.783Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"zeige in der File Browser app auch versteckte data...\"",
+      "time": "2026-03-13T21:24:06.388Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"bestätigt\"",
+      "time": "2026-03-13T21:25:29.813Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"die versteckten dateien werden immer noch nicht an...\"",
+      "time": "2026-03-13T21:26:21.146Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"ja mache es jetzt stelle keine fragen mehr. setze ...\"",
+      "time": "2026-03-13T21:27:44.636Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"du hast schon alle rechte!\"",
+      "time": "2026-03-13T21:39:15.890Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"erstelle in der app file browser acuh die darstell...\"",
+      "time": "2026-03-13T21:40:13.072Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"die app soll sein wie checfkoch., man kann rezepte...\"",
+      "time": "2026-03-14T03:31:57.403Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"die rezepte sollen online gesucht und gefunden wer...\"",
+      "time": "2026-03-14T03:33:24.617Z"
+    },
+    {
+      "action": "chat",
+      "detail": "User: \"mache mir blauu statt orangene elemente\"",
+      "time": "2026-03-14T19:03:29.253Z"
+    },
+    {
+      "action": "install",
+      "detail": "Pulse deinstalliert",
+      "time": "2026-03-16T20:01:07.853Z"
+    },
+    {
+      "action": "install",
+      "detail": "Chat deinstalliert",
+      "time": "2026-03-16T20:01:11.557Z"
+    },
+    {
+      "action": "install",
+      "detail": "Kanban Board deinstalliert",
+      "time": "2026-03-16T20:01:12.277Z"
+    },
+    {
+      "action": "install",
+      "detail": "Wetter deinstalliert",
+      "time": "2026-03-16T20:01:12.958Z"
+    },
+    {
+      "action": "install",
+      "detail": "Notizen deinstalliert",
+      "time": "2026-03-16T20:01:14.044Z"
+    },
+    {
+      "action": "install",
+      "detail": "Kalender deinstalliert",
+      "time": "2026-03-16T20:01:14.880Z"
+    },
+    {
+      "action": "install",
+      "detail": "Budget-Tracker deinstalliert",
+      "time": "2026-03-16T20:01:15.623Z"
+    },
+    {
+      "action": "install",
+      "detail": "Tetris deinstalliert",
+      "time": "2026-03-16T20:01:17.612Z"
+    },
+    {
+      "action": "install",
+      "detail": "Drum Computer deinstalliert",
+      "time": "2026-03-16T20:01:18.251Z"
+    },
+    {
+      "action": "install",
+      "detail": "Flappy Bird deinstalliert",
+      "time": "2026-03-16T20:01:18.874Z"
+    },
+    {
+      "action": "install",
+      "detail": "News Channels deinstalliert",
+      "time": "2026-03-16T20:01:19.447Z"
+    },
+    {
+      "action": "install",
+      "detail": "File Browser deinstalliert",
+      "time": "2026-03-16T20:01:20.591Z"
+    },
+    {
+      "action": "install",
+      "detail": "Picture Viewer deinstalliert",
+      "time": "2026-03-16T20:01:21.670Z"
+    },
+    {
+      "action": "install",
+      "detail": "Camera deinstalliert",
+      "time": "2026-03-16T20:01:22.317Z"
+    },
+    {
+      "action": "install",
+      "detail": "Bild Generator deinstalliert",
+      "time": "2026-03-16T20:01:23.053Z"
+    },
+    {
+      "action": "install",
+      "detail": "Ticket System deinstalliert",
+      "time": "2026-03-16T20:01:24.516Z"
+    },
+    {
+      "action": "install",
+      "detail": "MindMap deinstalliert",
+      "time": "2026-03-16T20:01:25.203Z"
+    },
+    {
+      "action": "install",
+      "detail": "Whiteboard deinstalliert",
+      "time": "2026-03-16T20:01:26.602Z"
+    },
+    {
+      "action": "install",
+      "detail": "Reiseplaner deinstalliert",
+      "time": "2026-03-16T20:01:27.314Z"
+    },
+    {
+      "action": "install",
+      "detail": "Internet Radio deinstalliert",
+      "time": "2026-03-16T20:01:28.137Z"
+    },
+    {
+      "action": "install",
+      "detail": "YouTube deinstalliert",
+      "time": "2026-03-16T20:01:28.932Z"
+    },
+    {
+      "action": "install",
+      "detail": "Podcasts deinstalliert",
+      "time": "2026-03-16T20:01:29.714Z"
+    },
+    {
+      "action": "install",
+      "detail": "Doom deinstalliert",
+      "time": "2026-03-16T20:01:30.335Z"
+    },
+    {
+      "action": "install",
+      "detail": "Social Trends deinstalliert",
+      "time": "2026-03-16T20:01:32.380Z"
+    },
+    {
+      "action": "install",
+      "detail": "Wecker deinstalliert",
+      "time": "2026-03-16T20:01:32.986Z"
+    },
+    {
+      "action": "install",
+      "detail": "Eieruhr deinstalliert",
+      "time": "2026-03-16T20:01:33.577Z"
+    },
+    {
+      "action": "install",
+      "detail": "Agent Control deinstalliert",
+      "time": "2026-03-16T20:01:34.313Z"
+    },
+    {
+      "action": "install",
+      "detail": "Claude Terminal deinstalliert",
+      "time": "2026-03-16T20:01:35.015Z"
+    },
+    {
+      "action": "install",
+      "detail": "Rezepte deinstalliert",
+      "time": "2026-03-16T20:01:35.622Z"
+    },
+    {
+      "action": "install",
+      "detail": "Pipette deinstalliert",
+      "time": "2026-03-16T20:01:36.381Z"
+    },
+    {
+      "action": "install",
+      "detail": "Tagebuch deinstalliert",
+      "time": "2026-03-16T20:01:37.327Z"
+    },
+    {
+      "action": "install",
+      "detail": "Claude Terminal installiert",
+      "time": "2026-03-16T20:01:54.473Z"
+    },
+    {
+      "action": "install",
+      "detail": "YouTube installiert",
+      "time": "2026-03-16T20:02:16.096Z"
+    },
+    {
+      "action": "install",
+      "detail": "Podcasts installiert",
+      "time": "2026-03-16T20:02:17.493Z"
+    },
+    {
+      "action": "install",
+      "detail": "Wetter installiert",
+      "time": "2026-03-16T21:14:36.251Z"
+    },
+    {
+      "action": "install",
+      "detail": "Pulse installiert",
+      "time": "2026-03-16T21:15:31.679Z"
+    },
+    {
+      "action": "install",
+      "detail": "Chat installiert",
+      "time": "2026-03-16T21:15:32.370Z"
+    },
+    {
+      "action": "install",
+      "detail": "Kanban Board installiert",
+      "time": "2026-03-16T21:15:32.973Z"
+    },
+    {
+      "action": "install",
+      "detail": "Notizen installiert",
+      "time": "2026-03-16T21:15:33.709Z"
+    },
+    {
+      "action": "install",
+      "detail": "Notizen deinstalliert",
+      "time": "2026-03-16T21:15:35.054Z"
+    },
+    {
+      "action": "install",
+      "detail": "Kanban Board installiert",
+      "time": "2026-03-16T21:15:36.709Z"
+    },
+    {
+      "action": "install",
+      "detail": "Notizen installiert",
+      "time": "2026-03-16T21:15:39.539Z"
+    }
+  ]
+}

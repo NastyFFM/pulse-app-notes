@@ -1,0 +1,7 @@
+{
+  "settings": {
+    "refreshInterval": 30,
+    "enabledModules": ["tickets", "kanban", "calendar", "budget", "notes", "chat", "system"]
+  },
+  "insights": []
+}

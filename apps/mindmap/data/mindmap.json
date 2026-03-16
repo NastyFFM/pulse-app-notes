@@ -1,0 +1,92 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "text": "Hauptidee",
+      "x": 442,
+      "y": 236,
+      "color": "#3B82F6"
+    },
+    {
+      "id": "n2",
+      "text": "Konzept A",
+      "x": 148,
+      "y": 150,
+      "color": "#10B981"
+    },
+    {
+      "id": "n3",
+      "text": "Konzept B",
+      "x": 487,
+      "y": 122,
+      "color": "#F59E0B"
+    },
+    {
+      "id": "n4",
+      "text": "Detail 1",
+      "x": 170,
+      "y": 359,
+      "color": "#8B5CF6"
+    },
+    {
+      "id": "n5",
+      "text": "Detail 2",
+      "x": 592,
+      "y": 415,
+      "color": "#EF4444"
+    },
+    {
+      "id": "n6",
+      "text": "Neuer Knoten",
+      "x": 707,
+      "y": 281,
+      "color": "#3B82F6"
+    },
+    {
+      "id": "n7",
+      "text": "Neuer Knoten",
+      "x": 758,
+      "y": 140,
+      "color": "#3B82F6"
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2"
+    },
+    {
+      "from": "n1",
+      "to": "n3"
+    },
+    {
+      "from": "n1",
+      "to": "n4"
+    },
+    {
+      "from": "n1",
+      "to": "n5"
+    },
+    {
+      "from": "n6",
+      "to": "n3"
+    },
+    {
+      "from": "n1",
+      "to": "n6"
+    },
+    {
+      "from": "n2",
+      "to": "n3"
+    },
+    {
+      "from": "n7",
+      "to": "n6"
+    },
+    {
+      "from": "n3",
+      "to": "n7"
+    }
+  ],
+  "nextId": 8
+}

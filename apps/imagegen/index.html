@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bild Generator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+
+header{padding:16px 24px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:12px}
+header .icon{font-size:1.8rem}
+header h1{font-size:1.2rem;font-weight:600;color:#f1f5f9}
+header .home{text-decoration:none;color:rgba(255,255,255,.4);font-size:.85rem;margin-left:auto}
+header .home:hover{color:#fff}
+header .modify-btn{background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:.75rem}
+header .modify-btn:hover{color:#fff;border-color:rgba(255,255,255,.3)}
+
+.main{flex:1;display:flex;flex-direction:column;max-width:900px;width:100%;margin:0 auto;padding:24px}
+
+.prompt-area{display:flex;gap:10px;margin-bottom:24px}
+.prompt-area textarea{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px;color:#fff;font-size:.95rem;resize:none;outline:none;font-family:inherit;min-height:60px}
+.prompt-area textarea:focus{border-color:rgba(139,92,246,.6)}
+.prompt-area textarea::placeholder{color:rgba(255,255,255,.3)}
+
+.controls{display:flex;gap:8px;flex-direction:column;justify-content:flex-end}
+.generate-btn{padding:12px 24px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);border:none;border-radius:12px;color:#fff;font-size:.95rem;cursor:pointer;font-weight:600;white-space:nowrap;transition:all .2s}
+.generate-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(139,92,246,.4)}
+.generate-btn:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none}
+
+.style-row{display:flex;gap:6px;flex-wrap:wrap}
+.style-btn{padding:5px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.6);font-size:.78rem;cursor:pointer;transition:all .15s}
+.style-btn:hover{color:#fff;border-color:rgba(139,92,246,.4)}
+.style-btn.active{background:rgba(139,92,246,.2);border-color:rgba(139,92,246,.5);color:#c4b5fd}
+
+.status{text-align:center;padding:16px;color:rgba(255,255,255,.5);font-size:.9rem}
+.status.error{color:#f87171}
+.status .spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,.15);border-top-color:#8B5CF6;border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;padding-bottom:40px}
+.gallery-item{position:relative;border-radius:12px;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:all .2s}
+.gallery-item:hover{border-color:rgba(139,92,246,.3);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.gallery-item img{width:100%;display:block;aspect-ratio:1;object-fit:cover}
+.gallery-item .caption{padding:10px 12px;font-size:.8rem;color:rgba(255,255,255,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gallery-item .timestamp{padding:0 12px 8px;font-size:.7rem;color:rgba(255,255,255,.3)}
+
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);backdrop-filter:blur(10px);z-index:1000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:40px}
+.lightbox.open{display:flex}
+.lightbox img{max-width:90vw;max-height:75vh;border-radius:8px;box-shadow:0 10px 50px rgba(0,0,0,.5)}
+.lightbox .info{color:rgba(255,255,255,.7);font-size:.9rem;text-align:center;max-width:600px}
+.lightbox .close{position:absolute;top:20px;right:24px;background:none;border:none;color:rgba(255,255,255,.5);font-size:1.5rem;cursor:pointer}
+.lightbox .close:hover{color:#fff}
+
+.empty{text-align:center;padding:60px 20px;color:rgba(255,255,255,.3)}
+.empty .big{font-size:3rem;margin-bottom:12px}
+.empty p{font-size:.95rem}
+</style>
+</head>
+<body>
+<header>
+  <span class="icon">🎨</span>
+  <h1>Bild Generator</h1>
+  <button class="modify-btn" onclick="typeof __mcToggle==='function'&&__mcToggle()">Anpassen</button>
+  <a href="/" class="home">Dashboard</a>
+</header>
+
+<div class="main">
+  <div class="prompt-area">
+    <textarea id="prompt" rows="2" placeholder="Beschreibe das Bild, das du erstellen möchtest..."></textarea>
+    <div class="controls">
+      <button class="generate-btn" id="genBtn" onclick="generateImage()">Generieren</button>
+    </div>
+  </div>
+
+  <div class="style-row" id="styles">
+    <button class="style-btn active" data-style="">Standard</button>
+    <button class="style-btn" data-style="photorealistic">Fotorealistisch</button>
+    <button class="style-btn" data-style="watercolor">Aquarell</button>
+    <button class="style-btn" data-style="oil painting">Ölgemälde</button>
+    <button class="style-btn" data-style="anime">Anime</button>
+    <button class="style-btn" data-style="cyberpunk">Cyberpunk</button>
+    <button class="style-btn" data-style="pencil sketch">Bleistift</button>
+    <button class="style-btn" data-style="pixel art">Pixel Art</button>
+  </div>
+
+  <div class="status" id="status" style="display:none"></div>
+
+  <div class="gallery" id="gallery"></div>
+  <div class="empty" id="empty">
+    <div class="big">🖼️</div>
+    <p>Noch keine Bilder generiert. Gib oben einen Prompt ein!</p>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="close" onclick="closeLightbox()">&times;</button>
+  <img id="lbImg" src="" alt="">
+  <div class="info" id="lbInfo"></div>
+</div>
+
+<script>
+let currentStyle = '';
+let images = [];
+
+// Style buttons
+document.getElementById('styles').addEventListener('click', e => {
+  if (!e.target.classList.contains('style-btn')) return;
+  document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  currentStyle = e.target.dataset.style;
+});
+
+// Generate image (queue-based, processed by Claude daemon)
+async function generateImage() {
+  const prompt = document.getElementById('prompt').value.trim();
+  if (!prompt) return;
+
+  const btn = document.getElementById('genBtn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.style.display = 'block';
+  status.className = 'status';
+  status.innerHTML = '<span class="spinner"></span>Bild wird in Warteschlange gestellt...';
+
+  try {
+    const r = await fetch('/api/imagegen-generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, style: currentStyle })
+    });
+    const data = await r.json();
+    if (data.ok && data.requestId) {
+      document.getElementById('prompt').value = '';
+      status.innerHTML = '<span class="spinner"></span>Bild wird generiert... (kann 10-30 Sekunden dauern)';
+      pollForResult(data.requestId);
+    } else {
+      status.className = 'status error';
+      status.textContent = 'Fehler: ' + (data.error || 'Unbekannter Fehler');
+      btn.disabled = false;
+    }
+  } catch (e) {
+    status.className = 'status error';
+    status.textContent = 'Verbindungsfehler: ' + e.message;
+    btn.disabled = false;
+  }
+}
+
+async function pollForResult(requestId) {
+  const btn = document.getElementById('genBtn');
+  const status = document.getElementById('status');
+  let attempts = 0;
+  const maxAttempts = 60; // 2 minutes max
+
+  const poll = async () => {
+    try {
+      const r = await fetch('/api/imagegen-status/' + requestId);
+      const data = await r.json();
+
+      if (data.status === 'done') {
+        status.innerHTML = 'Bild erfolgreich generiert!';
+        setTimeout(() => { status.style.display = 'none'; }, 2000);
+        loadImages();
+        btn.disabled = false;
+        return;
+      } else if (data.status === 'error') {
+        status.className = 'status error';
+        status.textContent = 'Fehler: ' + (data.error || 'Generierung fehlgeschlagen');
+        btn.disabled = false;
+        return;
+      }
+
+      // Still pending/processing
+      attempts++;
+      if (attempts >= maxAttempts) {
+        status.className = 'status error';
+        status.textContent = 'Zeitüberschreitung - versuche es erneut';
+        btn.disabled = false;
+        return;
+      }
+      setTimeout(poll, 2000);
+    } catch {
+      attempts++;
+      if (attempts >= maxAttempts) {
+        status.className = 'status error';
+        status.textContent = 'Verbindungsfehler';
+        btn.disabled = false;
+        return;
+      }
+      setTimeout(poll, 2000);
+    }
+  };
+  poll();
+}
+
+// Load images from data
+async function loadImages() {
+  try {
+    const r = await fetch('/app/imagegen/api/images');
+    const data = await r.json();
+    images = (data.images || []).sort((a, b) => (b.created || 0) - (a.created || 0));
+    renderGallery();
+  } catch (e) {
+    console.error('Failed to load images:', e);
+  }
+}
+
+function renderGallery() {
+  const gallery = document.getElementById('gallery');
+  const empty = document.getElementById('empty');
+
+  if (images.length === 0) {
+    gallery.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  gallery.innerHTML = images.map((img, i) => `
+    <div class="gallery-item" onclick="openLightbox(${i})">
+      <img src="${img.dataUrl || img.url || ''}" alt="${esc(img.prompt)}" loading="lazy">
+      <div class="caption">${esc(img.prompt)}</div>
+      <div class="timestamp">${img.style ? img.style + ' · ' : ''}${formatTime(img.created)}</div>
+    </div>
+  `).join('');
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleDateString('de-DE') + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+}
+
+function openLightbox(i) {
+  const img = images[i];
+  if (!img) return;
+  document.getElementById('lbImg').src = img.dataUrl || img.url || '';
+  document.getElementById('lbInfo').textContent = img.prompt + (img.style ? ' (' + img.style + ')' : '');
+  document.getElementById('lightbox').classList.add('open');
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'Enter' && !e.shiftKey && document.activeElement === document.getElementById('prompt')) {
+    e.preventDefault();
+    generateImage();
+  }
+});
+
+// SSE for live updates
+const evtSrc = new EventSource('/sse/imagegen');
+evtSrc.onmessage = e => {
+  try {
+    const d = JSON.parse(e.data);
+    if (d.type === 'change' && d.file === 'images.json') loadImages();
+  } catch {}
+};
+
+// Initial load
+loadImages();
+</script>
+</body>
+</html>

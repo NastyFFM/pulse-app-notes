@@ -1,0 +1,7 @@
+{
+  "id": "filebrowser",
+  "name": "File Browser",
+  "icon": "📁",
+  "color": "#6366F1",
+  "description": "Browse project files and folders"
+}

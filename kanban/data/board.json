@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "title": "Mein Projekt",
+    "lastModified": "2026-03-13T12:41:00.000Z"
+  },
+  "columns": [
+    {
+      "id": "col-1",
+      "name": "Backlog",
+      "color": "#6B7280",
+      "tasks": [
+        {
+          "id": "task-1773405662110",
+          "title": "Kuchen backen",
+          "desc": "",
+          "priority": "medium",
+          "created": "2026-03-13"
+        },
+        {
+          "id": "task-1773402235369",
+          "title": "Einkaufen gehen",
+          "desc": "",
+          "priority": "medium",
+          "created": "2026-03-13"
+        },
+        {
+          "id": "task-1772134809234",
+          "title": "qwdqwdqd",
+          "desc": "",
+          "priority": "medium",
+          "created": "2026-02-26"
+        }
+      ]
+    },
+    {
+      "id": "col-2",
+      "name": "In Arbeit",
+      "color": "#3B82F6",
+      "tasks": [
+        {
+          "id": "task-3",
+          "title": "API-Endpunkte",
+          "desc": "REST-Schnittstelle implementieren",
+          "priority": "high",
+          "created": "2026-02-25"
+        }
+      ]
+    },
+    {
+      "id": "col-3",
+      "name": "Fertig",
+      "color": "#10B981",
+      "tasks": [
+        {
+          "id": "task-5",
+          "title": "Projektstruktur",
+          "desc": "Repository und Ordnerstruktur angelegt",
+          "priority": "low",
+          "created": "2026-02-24"
+        },
+        {
+          "id": "task-6",
+          "title": "Tooling Setup",
+          "desc": "Linter, Formatter und CI konfiguriert",
+          "priority": "low",
+          "created": "2026-02-24"
+        },
+        {
+          "id": "task-1",
+          "title": "Recherche",
+          "desc": "Thema eingrenzen und Quellen sammeln",
+          "priority": "high",
+          "created": "2026-02-26"
+        },
+        {
+          "id": "task-2",
+          "title": "Design-Mockup",
+          "desc": "Wireframes fuer die Hauptseiten erstellen",
+          "priority": "medium",
+          "created": "2026-02-26"
+        },
+        {
+          "id": "task-4",
+          "title": "Datenbank-Schema",
+          "desc": "Tabellen und Relationen definieren",
+          "priority": "medium",
+          "created": "2026-02-25"
+        }
+      ]
+    }
+  ]
+}

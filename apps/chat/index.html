@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Chat</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:#0F172A;min-height:100vh;color:#fff;display:flex;flex-direction:row;height:100vh;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:220px;flex-shrink:0;background:#080F1E;border-right:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-header{padding:12px 12px 8px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-title{font-size:.75rem;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.new-chat-btn{width:100%;padding:7px 10px;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.3);border-radius:8px;color:#A78BFA;font-size:.82rem;cursor:pointer;text-align:left;transition:background .15s;display:flex;align-items:center;gap:6px}
+.new-chat-btn:hover{background:rgba(139,92,246,.35)}
+.chat-list{flex:1;overflow-y:auto;padding:8px 8px;display:flex;flex-direction:column;gap:3px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent}
+.chat-item{padding:8px 10px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .15s;position:relative}
+.chat-item:hover{background:rgba(255,255,255,.07)}
+.chat-item.active{background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.25)}
+.chat-item .chat-name{font-size:.82rem;color:rgba(255,255,255,.8);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-item.active .chat-name{color:#C4B5FD}
+.chat-item .del-btn{width:18px;height:18px;border-radius:4px;border:none;background:none;color:rgba(255,255,255,.25);font-size:.7rem;cursor:pointer;display:none;align-items:center;justify-content:center;flex-shrink:0}
+.chat-item:hover .del-btn{display:flex}
+.chat-item .del-btn:hover{background:rgba(239,68,68,.2);color:#F87171}
+
+/* Main area */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.1);flex-shrink:0}
+.chat-title-input{background:none;border:none;font-size:1rem;font-weight:600;color:rgba(255,255,255,.9);outline:none;cursor:pointer;width:100%;max-width:300px}
+.chat-title-input:focus{border-bottom:1px solid rgba(139,92,246,.5)}
+.status{display:flex;align-items:center;gap:8px;font-size:.8rem;color:rgba(255,255,255,.5)}
+.pulse{width:8px;height:8px;border-radius:50%;background:#22C55E;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.msg{display:flex;gap:10px;max-width:85%;animation:msgIn .25s ease-out}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.msg.claude{align-self:flex-start}
+.msg .avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.msg.claude .avatar{background:linear-gradient(135deg,#8B5CF6,#A78BFA)}
+.msg.user .avatar{background:linear-gradient(135deg,#3B82F6,#60A5FA)}
+.msg .bubble{padding:10px 14px;border-radius:16px;font-size:.9rem;line-height:1.5;word-break:break-word}
+.msg.claude .bubble{background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.2);border-top-left-radius:4px}
+.msg.user .bubble{background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.2);border-top-right-radius:4px}
+.msg .time{font-size:.65rem;color:rgba(255,255,255,.3);margin-top:4px;padding:0 4px}
+.msg.user .time{text-align:right}
+.bubble pre{background:rgba(0,0,0,.4);border-radius:8px;padding:10px 12px;margin:8px 0;overflow-x:auto;font-size:.8rem;line-height:1.5;border:1px solid rgba(255,255,255,.08)}
+.bubble code{font-family:'SF Mono',Monaco,Consolas,monospace;font-size:.85em}
+.bubble pre code{font-size:inherit}
+.bubble p{margin:6px 0}
+.bubble p:first-child{margin-top:0}
+.bubble p:last-child{margin-bottom:0}
+.typing{display:flex;gap:10px;align-self:flex-start;max-width:85%}
+.typing .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#8B5CF6,#A78BFA);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.typing .dots{background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.2);border-radius:16px;border-top-left-radius:4px;padding:12px 18px;display:flex;gap:4px}
+.typing .dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);animation:typingDot 1.4s infinite}
+.typing .dot:nth-child(2){animation-delay:.2s}
+.typing .dot:nth-child(3){animation-delay:.4s}
+@keyframes typingDot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(15,23,42,.8);backdrop-filter:blur(10px)}
+.input-area textarea{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 14px;color:#fff;font-size:.9rem;font-family:inherit;resize:none;outline:none;min-height:42px;max-height:120px;line-height:1.4;transition:border-color .2s}
+.input-area textarea:focus{border-color:rgba(139,92,246,.5)}
+.input-area textarea::placeholder{color:rgba(255,255,255,.3)}
+.send-btn{width:42px;height:42px;border-radius:12px;border:none;background:linear-gradient(135deg,#8B5CF6,#7C3AED);color:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s,opacity .2s;flex-shrink:0}
+.send-btn:hover{transform:scale(1.05)}
+.send-btn:active{transform:scale(.95)}
+.send-btn:disabled{opacity:.3;cursor:default;transform:none}
+@keyframes claudeGlow{0%{box-shadow:inset 0 0 0 0 rgba(139,92,246,.3)}50%{box-shadow:inset 0 0 30px 0 rgba(139,92,246,.1)}100%{box-shadow:none}}
+.sse-glow{animation:claudeGlow .8s ease-out}
+.offline-banner{padding:8px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;margin:0 16px 8px;font-size:.78rem;color:rgba(255,255,255,.6);display:none;align-items:center;gap:8px;animation:msgIn .25s ease-out}
+.offline-banner.show{display:flex}
+.offline-banner .offline-dot{width:6px;height:6px;border-radius:50%;background:#EF4444;flex-shrink:0}
+.offline-banner a{color:#A78BFA;text-decoration:none;cursor:pointer}
+.offline-banner a:hover{text-decoration:underline}
+.supervisor-banner{padding:8px 14px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);border-radius:8px;margin:0 16px 8px;font-size:.78rem;color:rgba(255,255,255,.6);display:flex;align-items:center;gap:8px;animation:msgIn .25s ease-out}
+.supervisor-banner span:first-child{font-size:1.1rem;animation:spin 2s linear infinite}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Chats</div>
+    <button class="new-chat-btn" onclick="newChat()">＋ Neuer Chat</button>
+  </div>
+  <div class="chat-list" id="chatList"></div>
+</div>
+
+<div class="main">
+  <header>
+    <input class="chat-title-input" id="titleInput" value="Chat" onchange="renameChat(this.value)" />
+    <div class="status"><span id="statusMsg">Laden...</span><span class="pulse" id="pulse"></span></div>
+  </header>
+  <div class="messages" id="messages"></div>
+  <div class="offline-banner" id="offlineBanner">
+    <span class="offline-dot"></span>
+    <span>Chat-Agent offline — Antworten dauern etwas laenger (Fallback-Modus).</span>
+  </div>
+  <div class="supervisor-banner" id="supervisorBanner" style="display:none">
+    <span style="color:#3B82F6">&#x21bb;</span>
+    <span>Supervisor startet Agent neu... <span id="supervisorDetail"></span></span>
+  </div>
+  <div class="input-area">
+    <textarea id="input" placeholder="Nachricht an Claude..." rows="1"></textarea>
+    <button class="send-btn" id="sendBtn" disabled onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<script>
+let state = null, lastHash = '', isWaiting = false;
+
+function activeChat() {
+  if (!state) return null;
+  return state.chats.find(c => c.id === state.activeChat) || state.chats[0];
+}
+
+// --- SSE ---
+let sse = null;
+function connectSSE() {
+  if (sse) sse.close();
+  sse = new EventSource('/sse/chat');
+  sse.onmessage = e => {
+    if (e.data === 'connected') return;
+    load().then(() => {
+      document.body.classList.add('sse-glow');
+      setTimeout(() => document.body.classList.remove('sse-glow'), 800);
+    });
+  };
+  sse.onerror = () => { setStatus('error'); setTimeout(connectSSE, 5000); };
+}
+
+// --- Data ---
+async function load() {
+  try {
+    const r = await fetch('api/chat');
+    const data = await r.json();
+    const hash = JSON.stringify(data);
+    if (hash !== lastHash) {
+      state = data;
+      lastHash = hash;
+      renderSidebar();
+      renderMessages();
+      checkWaiting();
+    }
+    setStatus('saved');
+  } catch { setStatus('error'); }
+}
+
+async function save() {
+  setStatus('saving');
+  try {
+    await fetch('api/chat', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) });
+    lastHash = JSON.stringify(state);
+    setStatus('saved');
+  } catch { setStatus('error'); }
+}
+
+let botAlive = false;
+let supervisorRunning = false;
+let supervisorData = null;
+async function checkBotHealth() {
+  try {
+    const r = await fetch('/api/orchestrator-health');
+    const h = await r.json();
+    botAlive = h.alive;
+    supervisorRunning = !!(h.supervisor && h.supervisor.running);
+    supervisorData = h.supervisor;
+    updateStatusDisplay();
+  } catch { botAlive = false; supervisorRunning = false; supervisorData = null; updateStatusDisplay(); }
+}
+
+function setStatus(s) {
+  const el = document.getElementById('statusMsg');
+  const p = document.getElementById('pulse');
+  if (s === 'saved') { updateStatusDisplay(); return; }
+  else if (s === 'saving') { el.textContent = 'Sendet...'; p.style.background = '#F59E0B'; }
+  else { el.textContent = 'Offline'; p.style.background = '#EF4444'; }
+}
+
+function updateStatusDisplay() {
+  const el = document.getElementById('statusMsg');
+  const p = document.getElementById('pulse');
+  const banner = document.getElementById('offlineBanner');
+  const input = document.getElementById('input');
+  const svBanner = document.getElementById('supervisorBanner');
+  const svDetail = document.getElementById('supervisorDetail');
+  if (botAlive) {
+    el.textContent = 'Bot Online'; p.style.background = '#22C55E'; p.style.animation = '';
+    banner.classList.remove('show');
+    svBanner.style.display = 'none';
+    input.placeholder = 'Nachricht an Claude...';
+  } else if (supervisorRunning) {
+    const managed = supervisorData?.managedAgents || {};
+    const count = Object.keys(managed).length;
+    el.textContent = 'Supervisor'; p.style.background = '#3B82F6'; p.style.animation = '';
+    banner.classList.remove('show');
+    if (count > 0) {
+      svBanner.style.display = '';
+      const details = Object.entries(managed).map(([id, m]) => `${id.replace('agent-','')} (${m.runningFor})`).join(', ');
+      svDetail.textContent = details;
+    } else {
+      svBanner.style.display = '';
+      svDetail.textContent = 'wartet auf tote Agents...';
+    }
+    input.placeholder = 'Nachricht an Claude (Supervisor aktiv)...';
+  } else {
+    el.textContent = 'Fallback'; p.style.background = '#F59E0B'; p.style.animation = 'none';
+    banner.classList.add('show');
+    svBanner.style.display = 'none';
+    input.placeholder = 'Nachricht an Claude (Fallback-Modus)...';
+  }
+}
+
+// --- Sidebar ---
+function renderSidebar() {
+  if (!state) return;
+  const list = document.getElementById('chatList');
+  list.innerHTML = '';
+  state.chats.forEach(chat => {
+    const el = document.createElement('div');
+    el.className = 'chat-item' + (chat.id === state.activeChat ? ' active' : '');
+    el.innerHTML = `<span class="chat-name">${esc(chat.title)}</span>
+      <button class="del-btn" onclick="deleteChat('${chat.id}', event)" title="Löschen">✕</button>`;
+    el.addEventListener('click', () => switchChat(chat.id));
+    list.appendChild(el);
+  });
+}
+
+// --- Render ---
+function renderMessages() {
+  if (!state) return;
+  const chat = activeChat();
+  if (!chat) return;
+  document.getElementById('titleInput').value = chat.title;
+  const container = document.getElementById('messages');
+  container.innerHTML = '';
+
+  chat.messages.forEach(msg => {
+    const el = document.createElement('div');
+    el.className = `msg ${msg.role}`;
+    const time = new Date(msg.time);
+    const timeStr = time.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    el.innerHTML = `
+      <div class="avatar">${msg.role === 'claude' ? '🤖' : '👤'}</div>
+      <div>
+        <div class="bubble">${formatText(msg.text)}</div>
+        <div class="time">${timeStr}</div>
+      </div>`;
+    container.appendChild(el);
+  });
+
+  if (isWaiting) {
+    const typing = document.createElement('div');
+    typing.className = 'typing';
+    typing.innerHTML = `<div class="avatar">🤖</div><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
+    container.appendChild(typing);
+  }
+
+  container.scrollTop = container.scrollHeight;
+}
+
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function formatText(text) {
+  const escaped = esc(text);
+  let result = escaped.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => `<pre><code>${code.trim()}</code></pre>`);
+  result = result.replace(/`([^`]+)`/g, '<code>$1</code>');
+  result = result.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  result = result.split('\n\n').map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+  return result;
+}
+
+function checkWaiting() {
+  if (!state) return;
+  const chat = activeChat();
+  if (!chat || chat.messages.length === 0) { isWaiting = false; return; }
+  const last = chat.messages[chat.messages.length - 1];
+  const wasWaiting = isWaiting;
+  isWaiting = last.role === 'user';
+  if (wasWaiting !== isWaiting) renderMessages();
+}
+
+// --- Chat management ---
+function newChat() {
+  if (!state) return;
+  const id = 'chat-' + Date.now();
+  const n = state.chats.length + 1;
+  state.chats.push({ id, title: `Chat ${n}`, messages: [
+    { id: 'msg-welcome-' + id, role: 'claude', text: 'Hallo! Wie kann ich dir helfen?', time: new Date().toISOString() }
+  ]});
+  state.activeChat = id;
+  isWaiting = false;
+  renderSidebar();
+  renderMessages();
+  save();
+}
+
+function switchChat(id) {
+  if (!state || state.activeChat === id) return;
+  state.activeChat = id;
+  isWaiting = false;
+  renderSidebar();
+  renderMessages();
+  checkWaiting();
+  save();
+}
+
+function deleteChat(id, e) {
+  e.stopPropagation();
+  if (!state || state.chats.length <= 1) return;
+  state.chats = state.chats.filter(c => c.id !== id);
+  if (state.activeChat === id) state.activeChat = state.chats[0].id;
+  isWaiting = false;
+  renderSidebar();
+  renderMessages();
+  save();
+}
+
+function renameChat(title) {
+  if (!state) return;
+  const chat = activeChat();
+  if (chat) { chat.title = title; renderSidebar(); save(); }
+}
+
+// --- Send ---
+function sendMessage() {
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if (!text || !state) return;
+
+  const chat = activeChat();
+  if (!chat) return;
+
+  chat.messages.push({ id: 'msg-' + Date.now(), role: 'user', text, time: new Date().toISOString() });
+
+  input.value = '';
+  input.style.height = 'auto';
+  updateSendBtn();
+  isWaiting = true;
+  renderMessages();
+  save();
+
+  try { window.parent.postMessage({ type: 'mutation', action: 'chat', detail: `User: "${text.slice(0, 50)}${text.length > 50 ? '...' : ''}"` }, '*'); } catch {}
+}
+
+// --- Input handling ---
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  updateSendBtn();
+});
+
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+function updateSendBtn() { sendBtn.disabled = !input.value.trim(); }
+
+window.onerror = (msg) => { try { window.parent.postMessage({ type: 'error', message: msg }, '*'); } catch {} };
+
+load();
+connectSSE();
+checkBotHealth();
+setInterval(load, 30000);
+setInterval(checkBotHealth, 10000);
+</script>
+</body>
+</html>

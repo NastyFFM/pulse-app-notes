@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reiseplaner</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);min-height:100vh;color:#e2e8f0;display:flex;overflow:hidden}
+
+.sidebar{width:280px;min-width:280px;background:rgba(15,23,42,.95);border-right:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;height:100vh}
+.sidebar-header{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.sidebar-header h1{font-size:1.1rem;font-weight:700;color:#f1f5f9}
+.sidebar-header .icon{font-size:1.4rem}
+
+.trip-list{flex:1;overflow-y:auto;padding:8px}
+.trip-item{display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;cursor:pointer;transition:background .15s;position:relative;margin-bottom:2px}
+.trip-item:hover{background:rgba(255,255,255,.06)}
+.trip-item.active{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3)}
+.trip-item .ti-icon{font-size:1.5rem;flex-shrink:0}
+.trip-item .ti-info{flex:1;min-width:0}
+.trip-item .ti-name{font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#f1f5f9}
+.trip-item .ti-date{font-size:.75rem;color:rgba(255,255,255,.45);margin-top:2px}
+.trip-item .ti-status{font-size:.65rem;padding:2px 7px;border-radius:6px;font-weight:600;margin-top:3px;display:inline-block}
+.status-planned{background:rgba(59,130,246,.2);color:#60a5fa}
+.status-active{background:rgba(34,197,94,.2);color:#4ade80}
+.status-done{background:rgba(148,163,184,.2);color:#94a3b8}
+.trip-item .ti-delete{opacity:0;background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:12px;padding:4px;transition:opacity .15s;position:absolute;right:8px;top:8px}
+.trip-item:hover .ti-delete{opacity:1}
+.trip-item .ti-delete:hover{color:#f87171}
+
+.add-area{padding:12px;border-top:1px solid rgba(255,255,255,.08)}
+.btn-add{width:100%;padding:10px;border-radius:10px;border:1px dashed rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.5);font-size:.85rem;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn-add:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.3);color:rgba(255,255,255,.8)}
+
+.main{flex:1;overflow-y:auto;height:100vh;padding:24px 32px}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;opacity:.5;text-align:center;gap:14px}
+.empty .big{font-size:4rem}
+.empty p{font-size:.95rem;max-width:280px;line-height:1.6}
+
+.trip-title input{background:transparent;border:none;color:#f8fafc;font-size:1.8rem;font-weight:700;font-family:inherit;outline:none;width:100%;border-bottom:2px solid transparent}
+.trip-title input:focus{border-bottom-color:rgba(59,130,246,.5)}
+.trip-meta{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.meta-field{display:flex;flex-direction:column;gap:4px}
+.meta-field label{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:rgba(255,255,255,.4);font-weight:600}
+.meta-field input,.meta-field select{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:.85rem;font-family:inherit;outline:none}
+.meta-field input:focus,.meta-field select:focus{border-color:rgba(59,130,246,.5)}
+
+.card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-title{font-size:1rem;font-weight:700;color:#f1f5f9;display:flex;align-items:center;gap:8px}
+.btn-small{padding:5px 12px;border-radius:8px;border:none;background:rgba(59,130,246,.2);color:#60a5fa;font-size:.78rem;cursor:pointer;font-weight:600;font-family:inherit;transition:background .15s}
+.btn-small:hover{background:rgba(59,130,246,.35)}
+
+.stop{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);position:relative}
+.stop:last-child{border-bottom:none}
+.stop-marker{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:32px}
+.stop-dot{width:12px;height:12px;border-radius:50%;background:#3b82f6;border:2px solid #1e293b;flex-shrink:0}
+.stop-line{width:2px;flex:1;background:rgba(59,130,246,.3);min-height:20px}
+.stop:last-child .stop-line{display:none}
+.stop-content{flex:1}
+.stop-name{font-weight:600;font-size:.9rem;color:#f1f5f9}
+.stop-date{font-size:.75rem;color:rgba(255,255,255,.4);margin-top:2px}
+.stop-notes{font-size:.82rem;color:rgba(255,255,255,.6);margin-top:4px;line-height:1.5}
+.stop-actions{display:flex;gap:6px;margin-top:6px}
+.stop-btn{background:none;border:none;color:rgba(255,255,255,.35);cursor:pointer;font-size:.75rem;padding:2px 6px;border-radius:4px}
+.stop-btn:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
+
+.pack-item{display:flex;align-items:center;gap:10px;padding:6px 0}
+.pack-item input[type=checkbox]{accent-color:#3b82f6;width:16px;height:16px;cursor:pointer}
+.pack-item .pack-text{flex:1;font-size:.85rem;color:#cbd5e1}
+.pack-item .pack-text.checked{text-decoration:line-through;opacity:.45}
+.pack-item .pack-del{opacity:0;background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:.75rem;padding:2px 4px}
+.pack-item:hover .pack-del{opacity:1}
+.pack-item .pack-del:hover{color:#f87171}
+.pack-add{display:flex;gap:8px;margin-top:10px}
+.pack-add input{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:.82rem;outline:none;font-family:inherit}
+.pack-add input:focus{border-color:rgba(59,130,246,.5)}
+.pack-add input::placeholder{color:rgba(255,255,255,.25)}
+
+.trip-notes{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;min-height:100px;color:#cbd5e1;font-size:.85rem;font-family:inherit;width:100%;outline:none;resize:vertical;line-height:1.6}
+.trip-notes:focus{border-color:rgba(59,130,246,.4)}
+
+.budget-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.budget-row:last-child{border-bottom:none}
+.budget-cat{font-size:.82rem;color:#94a3b8;min-width:100px}
+.budget-amount{font-size:.9rem;font-weight:600;color:#f1f5f9}
+.budget-total{display:flex;justify-content:space-between;padding:12px 0;margin-top:8px;border-top:2px solid rgba(255,255,255,.1);font-weight:700;font-size:1rem}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:100}
+.modal-bg.show{display:flex}
+.modal{background:#1e293b;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:24px;width:420px;max-width:90vw}
+.modal h2{font-size:1.1rem;margin-bottom:16px;color:#f1f5f9}
+.modal-field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.modal-field label{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:rgba(255,255,255,.4);font-weight:600}
+.modal-field input,.modal-field select,.modal-field textarea{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:.85rem;font-family:inherit;outline:none}
+.modal-field input:focus,.modal-field textarea:focus{border-color:rgba(59,130,246,.5)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.btn-cancel{padding:8px 18px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#94a3b8;cursor:pointer;font-size:.85rem;font-family:inherit}
+.btn-cancel:hover{background:rgba(255,255,255,.05)}
+.btn-confirm{padding:8px 18px;border-radius:8px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:.85rem;font-weight:600;font-family:inherit}
+.btn-confirm:hover{background:#2563eb}
+
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.detail-grid{grid-template-columns:1fr}}
+.detail-full{grid-column:1/-1}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-header">
+    <span class="icon">✈️</span>
+    <h1>Reiseplaner</h1>
+  </div>
+  <div class="trip-list" id="tripList"></div>
+  <div class="add-area">
+    <button class="btn-add" onclick="showNewTripModal()">+ Neue Reise</button>
+  </div>
+</div>
+
+<div class="main" id="mainArea">
+  <div class="empty" id="emptyState">
+    <div class="big">🗺️</div>
+    <p>Erstelle deine erste Reise und plane Stops, Packliste und Budget.</p>
+  </div>
+</div>
+
+<div class="modal-bg" id="newTripModal">
+  <div class="modal">
+    <h2>Neue Reise erstellen</h2>
+    <div class="modal-field"><label>Reiseziel</label><input id="mTripName" type="text" placeholder="z.B. Japan, Roadtrip Italien..." /></div>
+    <div class="modal-field"><label>Von</label><input id="mTripFrom" type="date" /></div>
+    <div class="modal-field"><label>Bis</label><input id="mTripTo" type="date" /></div>
+    <div class="modal-field"><label>Status</label><select id="mTripStatus"><option value="planned">Geplant</option><option value="active">Aktiv</option><option value="done">Abgeschlossen</option></select></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideModal('newTripModal')">Abbrechen</button>
+      <button class="btn-confirm" onclick="createTrip()">Erstellen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="newStopModal">
+  <div class="modal">
+    <h2>Neuen Stop hinzufuegen</h2>
+    <div class="modal-field"><label>Ort</label><input id="mStopName" type="text" placeholder="z.B. Tokyo, Rom..." /></div>
+    <div class="modal-field"><label>Datum</label><input id="mStopDate" type="date" /></div>
+    <div class="modal-field"><label>Notizen</label><textarea id="mStopNotes" rows="3" placeholder="Sehenswuerdigkeiten, Hotel, etc."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideModal('newStopModal')">Abbrechen</button>
+      <button class="btn-confirm" onclick="addStop()">Hinzufuegen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="budgetModal">
+  <div class="modal">
+    <h2>Ausgabe hinzufuegen</h2>
+    <div class="modal-field"><label>Kategorie</label><select id="mBudgetCat"><option value="Transport">Transport</option><option value="Unterkunft">Unterkunft</option><option value="Essen">Essen</option><option value="Aktivitaeten">Aktivitaeten</option><option value="Shopping">Shopping</option><option value="Sonstiges">Sonstiges</option></select></div>
+    <div class="modal-field"><label>Beschreibung</label><input id="mBudgetDesc" type="text" placeholder="z.B. Flug nach Tokyo" /></div>
+    <div class="modal-field"><label>Betrag (EUR)</label><input id="mBudgetAmount" type="number" step="0.01" placeholder="0.00" /></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideModal('budgetModal')">Abbrechen</button>
+      <button class="btn-confirm" onclick="addBudgetItem()">Hinzufuegen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API='/app/travel-planner/api/trips';
+const ICONS=['✈️','🏖️','🏔️','🗼','🌍','🚗','🚂','🛳️','🏕️','🎒'];
+const STATUS_LABELS={planned:'Geplant',active:'Aktiv',done:'Abgeschlossen'};
+const STATUS_CLASS={planned:'status-planned',active:'status-active',done:'status-done'};
+
+let trips=[],activeTrip=null;
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function fmtDate(d){if(!d)return'';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'numeric'})}
+function daysUntil(d){if(!d)return null;const now=new Date();now.setHours(0,0,0,0);return Math.ceil((new Date(d+'T00:00:00')-now)/(864e5))}
+function hashCode(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0}return h}
+
+async function loadData(){
+  try{const r=await fetch(API+'?t='+Date.now());if(!r.ok)throw 0;const d=await r.json();trips=d.trips||[]}catch{trips=[]}
+  renderTripList();
+  if(activeTrip){const f=trips.find(t=>t.id===activeTrip.id);if(f){activeTrip=f;renderDetail()}else{activeTrip=null;showEmpty()}}
+}
+async function saveData(){await fetch(API,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({trips},null,2)})}
+
+function renderTripList(){
+  const list=document.getElementById('tripList');list.innerHTML='';
+  if(!trips.length){list.innerHTML='<div style="padding:24px 16px;font-size:.82rem;opacity:.4;text-align:center;line-height:1.5">Noch keine Reisen.<br>Erstelle deine erste!</div>';return}
+  const sorted=[...trips].sort((a,b)=>{const o={active:0,planned:1,done:2};if(o[a.status]!==o[b.status])return o[a.status]-o[b.status];return(a.dateFrom||'').localeCompare(b.dateFrom||'')});
+  sorted.forEach(trip=>{
+    const el=document.createElement('div');
+    el.className='trip-item'+(activeTrip&&activeTrip.id===trip.id?' active':'');
+    const icon=trip.icon||ICONS[Math.abs(hashCode(trip.id))%ICONS.length];
+    el.innerHTML='<span class="ti-icon">'+icon+'</span><div class="ti-info"><div class="ti-name">'+esc(trip.name)+'</div><div class="ti-date">'+(trip.dateFrom?fmtDate(trip.dateFrom):'')+(trip.dateTo?' – '+fmtDate(trip.dateTo):'')+'</div><span class="ti-status '+(STATUS_CLASS[trip.status]||'')+'">'+(STATUS_LABELS[trip.status]||trip.status)+'</span></div><button class="ti-delete" onclick="event.stopPropagation();deleteTrip(\''+trip.id+'\')" title="Loeschen">✕</button>';
+    el.addEventListener('click',()=>selectTrip(trip));
+    list.appendChild(el);
+  });
+}
+
+function selectTrip(trip){activeTrip=trip;renderTripList();renderDetail()}
+function showEmpty(){document.getElementById('mainArea').innerHTML='<div class="empty"><div class="big">🗺️</div><p>Erstelle deine erste Reise und plane Stops, Packliste und Budget.</p></div>'}
+
+function renderDetail(){
+  if(!activeTrip)return showEmpty();
+  const t=activeTrip;
+  const days=daysUntil(t.dateFrom);
+  let daysStr='';
+  if(t.status==='planned'&&days!==null){daysStr=days>0?'In '+days+' Tagen':days===0?'Heute!':'Vergangen'}
+
+  let h='';
+  h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px"><span style="font-size:2.2rem">'+(t.icon||ICONS[Math.abs(hashCode(t.id))%ICONS.length])+'</span><div class="trip-title"><input value="'+esc(t.name)+'" onchange="updateField(\'name\',this.value)" /></div></div>';
+  if(daysStr)h+='<div style="font-size:.85rem;color:#60a5fa;margin-bottom:16px;margin-left:48px">'+daysStr+'</div>';
+
+  h+='<div class="trip-meta"><div class="meta-field"><label>Von</label><input type="date" value="'+(t.dateFrom||'')+'" onchange="updateField(\'dateFrom\',this.value)" /></div><div class="meta-field"><label>Bis</label><input type="date" value="'+(t.dateTo||'')+'" onchange="updateField(\'dateTo\',this.value)" /></div><div class="meta-field"><label>Status</label><select onchange="updateField(\'status\',this.value)"><option value="planned" '+(t.status==='planned'?'selected':'')+'>Geplant</option><option value="active" '+(t.status==='active'?'selected':'')+'>Aktiv</option><option value="done" '+(t.status==='done'?'selected':'')+'>Abgeschlossen</option></select></div></div>';
+
+  h+='<div class="detail-grid">';
+
+  // Stops
+  h+='<div class="card detail-full"><div class="card-header"><div class="card-title">📍 Reiseroute</div><button class="btn-small" onclick="showNewStopModal()">+ Stop</button></div>';
+  if(!t.stops||!t.stops.length){h+='<div style="text-align:center;opacity:.4;padding:16px;font-size:.85rem">Noch keine Stops. Fuege Orte zu deiner Route hinzu.</div>'}
+  else{t.stops.forEach((s,i)=>{h+='<div class="stop"><div class="stop-marker"><div class="stop-dot"></div><div class="stop-line"></div></div><div class="stop-content"><div class="stop-name">'+esc(s.name)+'</div>'+(s.date?'<div class="stop-date">'+fmtDate(s.date)+'</div>':'')+(s.notes?'<div class="stop-notes">'+esc(s.notes)+'</div>':'')+'<div class="stop-actions"><button class="stop-btn" onclick="editStop('+i+')">Bearbeiten</button><button class="stop-btn" onclick="deleteStop('+i+')">Entfernen</button></div></div></div>'})}
+  h+='</div>';
+
+  // Packing
+  h+='<div class="card"><div class="card-header"><div class="card-title">🎒 Packliste</div></div>';
+  const pk=t.packing||[];const packed=pk.filter(p=>p.checked).length;
+  if(pk.length>0){h+='<div style="font-size:.75rem;color:rgba(255,255,255,.4);margin-bottom:8px">'+packed+'/'+pk.length+' eingepackt</div><div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-bottom:10px;overflow:hidden"><div style="height:100%;width:'+Math.round(packed/pk.length*100)+'%;background:#3b82f6;border-radius:2px;transition:width .3s"></div></div>'}
+  pk.forEach((p,i)=>{h+='<div class="pack-item"><input type="checkbox" '+(p.checked?'checked':'')+' onchange="togglePack('+i+')" /><span class="pack-text '+(p.checked?'checked':'')+'">'+esc(p.text)+'</span><button class="pack-del" onclick="deletePack('+i+')">✕</button></div>'});
+  h+='<div class="pack-add"><input id="packInput" type="text" placeholder="Gegenstand hinzufuegen..." onkeydown="if(event.key===\'Enter\')addPack()" /></div></div>';
+
+  // Budget
+  h+='<div class="card"><div class="card-header"><div class="card-title">💰 Budget</div><button class="btn-small" onclick="showBudgetModal()">+ Ausgabe</button></div>';
+  const bu=t.budget||[];
+  if(!bu.length){h+='<div style="text-align:center;opacity:.4;padding:12px;font-size:.82rem">Noch keine Ausgaben erfasst.</div>'}
+  else{const cats={};let total=0;bu.forEach(b=>{if(!cats[b.category])cats[b.category]=[];cats[b.category].push(b);total+=b.amount||0});
+  Object.keys(cats).forEach(cat=>{const ct=cats[cat].reduce((s,b)=>s+(b.amount||0),0);h+='<div class="budget-row"><div class="budget-cat">'+esc(cat)+'</div><div style="flex:1">';cats[cat].forEach(b=>{h+='<div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font-size:.82rem;color:#94a3b8">'+esc(b.desc||'')+'</span><span style="font-size:.82rem;color:#e2e8f0">'+(b.amount||0).toFixed(2)+' EUR</span></div>'});h+='</div><div class="budget-amount">'+ct.toFixed(2)+'</div></div>'});
+  h+='<div class="budget-total"><span>Gesamt</span><span>'+total.toFixed(2)+' EUR</span></div>'}
+  h+='</div>';
+
+  // Notes
+  h+='<div class="card detail-full"><div class="card-header"><div class="card-title">📝 Notizen</div></div><textarea class="trip-notes" onblur="updateField(\'notes\',this.value)" placeholder="Allgemeine Notizen zur Reise...">'+esc(t.notes||'')+'</textarea></div>';
+
+  h+='</div>';
+  document.getElementById('mainArea').innerHTML=h;
+}
+
+function showNewTripModal(){document.getElementById('mTripName').value='';document.getElementById('mTripFrom').value='';document.getElementById('mTripTo').value='';document.getElementById('mTripStatus').value='planned';document.getElementById('newTripModal').classList.add('show');document.getElementById('mTripName').focus()}
+function showNewStopModal(){document.getElementById('mStopName').value='';document.getElementById('mStopDate').value='';document.getElementById('mStopNotes').value='';document.getElementById('newStopModal').classList.add('show');document.getElementById('mStopName').focus()}
+function showBudgetModal(){document.getElementById('mBudgetCat').value='Transport';document.getElementById('mBudgetDesc').value='';document.getElementById('mBudgetAmount').value='';document.getElementById('budgetModal').classList.add('show');document.getElementById('mBudgetDesc').focus()}
+function hideModal(id){document.getElementById(id).classList.remove('show')}
+
+async function createTrip(){
+  const name=document.getElementById('mTripName').value.trim();if(!name)return;
+  const trip={id:'trip-'+Date.now(),name,dateFrom:document.getElementById('mTripFrom').value||null,dateTo:document.getElementById('mTripTo').value||null,status:document.getElementById('mTripStatus').value,icon:ICONS[Math.floor(Math.random()*ICONS.length)],stops:[],packing:[],budget:[],notes:''};
+  trips.push(trip);await saveData();hideModal('newTripModal');renderTripList();selectTrip(trip);
+}
+async function deleteTrip(id){trips=trips.filter(t=>t.id!==id);await saveData();if(activeTrip&&activeTrip.id===id){activeTrip=null;showEmpty()}renderTripList()}
+async function updateField(field,value){if(!activeTrip)return;activeTrip[field]=value;const i=trips.findIndex(t=>t.id===activeTrip.id);if(i>=0)trips[i]=activeTrip;await saveData();if(['status','name','dateFrom','dateTo'].includes(field))renderTripList()}
+
+async function addStop(){
+  if(!activeTrip)return;const name=document.getElementById('mStopName').value.trim();if(!name)return;
+  if(!activeTrip.stops)activeTrip.stops=[];
+  activeTrip.stops.push({name,date:document.getElementById('mStopDate').value||null,notes:document.getElementById('mStopNotes').value.trim()||null});
+  const i=trips.findIndex(t=>t.id===activeTrip.id);if(i>=0)trips[i]=activeTrip;
+  await saveData();hideModal('newStopModal');renderDetail();
+}
+async function deleteStop(si){if(!activeTrip||!activeTrip.stops)return;activeTrip.stops.splice(si,1);const i=trips.findIndex(t=>t.id===activeTrip.id);if(i>=0)trips[i]=activeTrip;await saveData();renderDetail()}
+function editStop(si){
+  if(!activeTrip||!activeTrip.stops)return;const s=activeTrip.stops[si];
+  document.getElementById('mStopName').value=s.name;document.getElementById('mStopDate').value=s.date||'';document.getElementById('mStopNotes').value=s.notes||'';
+  const orig=addStop;
+  window.addStop=async function(){
+    activeTrip.stops.splice(si,1,{name:document.getElementById('mStopName').value.trim()||s.name,date:document.getElementById('mStopDate').value||null,notes:document.getElementById('mStopNotes').value.trim()||null});
+    const i=trips.findIndex(t=>t.id===activeTrip.id);if(i>=0)trips[i]=activeTrip;await saveData();hideModal('newStopModal');renderDetail();window.addStop=orig;
+  };
+  document.getElementById('newStopModal').classList.add('show');document.getElementById('mStopName').focus();
+}
+
+async function togglePack(pi){if(!activeTrip||!activeTrip.packing)return;activeTrip.packing[pi].checked=!activeTrip.packing[pi].checked;const i=trips.findIndex(t=>t.id===activeTrip.id);if(i>=0)trips[i]=activeTrip;await saveData();renderDetail()}
+async function addPack(){const inp=document.getElementById('packInput');const v=inp.value.trim();if(!v||!activeTrip)return;if(!activeTrip.packing)activeTrip.packing=[];activeTrip.packing.push({text:v,checked:false});const i=trips.findIndex(t=>t.id===activeTrip.id);if(i>=0)trips[i]=activeTrip;inp.value='';await saveData();renderDetail();setTimeout(()=>{const el=document.getElementById('packInput');if(el)el.focus()},50)}
+async function deletePack(pi){if(!activeTrip||!activeTrip.packing)return;activeTrip.packing.splice(pi,1);const i=trips.findIndex(t=>t.id===activeTrip.id);if(i>=0)trips[i]=activeTrip;await saveData();renderDetail()}
+
+async function addBudgetItem(){
+  if(!activeTrip)return;const desc=document.getElementById('mBudgetDesc').value.trim();const amount=parseFloat(document.getElementById('mBudgetAmount').value)||0;const cat=document.getElementById('mBudgetCat').value;
+  if(!desc&&!amount)return;if(!activeTrip.budget)activeTrip.budget=[];activeTrip.budget.push({category:cat,desc,amount});
+  const i=trips.findIndex(t=>t.id===activeTrip.id);if(i>=0)trips[i]=activeTrip;await saveData();hideModal('budgetModal');renderDetail();
+}
+
+document.querySelectorAll('.modal-bg').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show')})});
+
+function connectSSE(){const es=new EventSource('/sse/travel-planner');es.onmessage=e=>{if(e.data==='connected')return;try{const d=JSON.parse(e.data);if(d.file==='trips.json')loadData()}catch{}};es.onerror=()=>{es.close();setTimeout(connectSSE,3000)}}
+
+async function init(){await loadData();if(trips.length>0)selectTrip(trips[0]);connectSSE()}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "bpm": 120,
+  "swing": 0,
+  "patterns": {
+    "current": "default",
+    "saved": {
+      "default": {
+        "name": "Default",
+        "tracks": [
+          {
+            "name": "Kick",
+            "color": "#EF4444",
+            "volume": 0.9,
+            "steps": [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0]
+          },
+          {
+            "name": "Snare",
+            "color": "#F59E0B",
+            "volume": 0.8,
+            "steps": [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0]
+          },
+          {
+            "name": "Hi-Hat",
+            "color": "#10B981",
+            "volume": 0.6,
+            "steps": [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0]
+          },
+          {
+            "name": "Open HH",
+            "color": "#6366F1",
+            "volume": 0.5,
+            "steps": [0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0]
+          },
+          {
+            "name": "Clap",
+            "color": "#EC4899",
+            "volume": 0.7,
+            "steps": [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,1]
+          }
+        ]
+      }
+    }
+  }
+}
