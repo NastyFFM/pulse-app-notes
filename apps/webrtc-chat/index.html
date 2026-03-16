@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebRTC Bridge</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0e17;
+      color: #e1e4e8;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: #111827;
+      border-bottom: 1px solid #1e293b;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    .header h1 span { color: #0ea5e9; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 20px;
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      font-size: 13px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      flex-shrink: 0;
+    }
+    .dot.green { background: #22c55e; }
+    .dot.blue { background: #3b82f6; }
+    .dot.yellow { background: #eab308; animation: pulse-dot 2s infinite; }
+    @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* ── Main layout ── */
+    .main {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 280px;
+      background: #111827;
+      border-right: 1px solid #1e293b;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .sidebar-section {
+      padding: 16px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .sidebar-section label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+    .sidebar-section input, .sidebar-section select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #1e293b;
+      background: #0f172a;
+      color: #e1e4e8;
+      font-size: 13px;
+      outline: none;
+    }
+    .sidebar-section input:focus { border-color: #0ea5e9; }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: #0ea5e9; color: #fff; }
+    .btn-primary:hover { background: #0284c7; }
+    .btn-danger { background: #dc2626; color: #fff; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-secondary { background: #1e293b; color: #94a3b8; }
+    .btn-secondary:hover { background: #334155; color: #e2e8f0; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-group { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-group .btn { flex: 1; }
+
+    .role-selector {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .role-btn {
+      flex: 1;
+      padding: 8px;
+      border: 2px solid #1e293b;
+      border-radius: 8px;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .role-btn.active {
+      border-color: #0ea5e9;
+      color: #0ea5e9;
+      background: rgba(14, 165, 233, 0.1);
+    }
+    .role-btn:hover:not(.active) { border-color: #334155; color: #e2e8f0; }
+
+    /* Peer list */
+    .peer-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+    }
+    .peer-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .peer-item .peer-id { flex: 1; font-family: 'SF Mono', Monaco, monospace; font-size: 12px; color: #94a3b8; }
+    .peer-item .peer-state { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
+    .peer-state.connected { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .peer-state.connecting { background: rgba(234,179,8,0.15); color: #eab308; }
+    .peer-state.failed { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+    .no-peers {
+      text-align: center;
+      color: #475569;
+      font-size: 13px;
+      padding: 30px 10px;
+    }
+
+    /* ── Chat area ── */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .msg {
+      max-width: 75%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .msg.sent {
+      align-self: flex-end;
+      background: #0ea5e9;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .msg.received {
+      align-self: flex-start;
+      background: #1e293b;
+      color: #e2e8f0;
+      border-bottom-left-radius: 4px;
+    }
+    .msg.system {
+      align-self: center;
+      background: transparent;
+      color: #475569;
+      font-size: 12px;
+      padding: 6px 12px;
+      max-width: 90%;
+      text-align: center;
+    }
+    .msg.tunnel-link {
+      align-self: center;
+      background: rgba(14, 165, 233, 0.1);
+      border: 1px solid #0ea5e9;
+      color: #7dd3fc;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 13px;
+      padding: 12px 16px;
+      max-width: 90%;
+      text-align: center;
+      cursor: pointer;
+      user-select: all;
+      border-radius: 8px;
+    }
+    .msg.tunnel-link:hover { background: rgba(14, 165, 233, 0.2); }
+    .msg .meta {
+      font-size: 11px;
+      opacity: 0.6;
+      margin-top: 4px;
+    }
+
+    /* ── Input bar ── */
+    .input-bar {
+      display: flex;
+      gap: 8px;
+      padding: 14px 20px;
+      background: #111827;
+      border-top: 1px solid #1e293b;
+      flex-shrink: 0;
+    }
+    .input-bar input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+      background: #0f172a;
+      color: #e1e4e8;
+      font-size: 14px;
+      outline: none;
+    }
+    .input-bar input:focus { border-color: #0ea5e9; }
+    .input-bar input:disabled { opacity: 0.4; }
+    .input-bar button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      background: #0ea5e9;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .input-bar button:hover { background: #0284c7; }
+    .input-bar button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Quick actions */
+    .quick-actions {
+      display: flex;
+      gap: 6px;
+      padding: 8px 20px;
+      background: #0f172a;
+      border-top: 1px solid #1e293b;
+      flex-shrink: 0;
+    }
+    .quick-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #1e293b;
+      background: transparent;
+      color: #64748b;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .quick-btn:hover { border-color: #0ea5e9; color: #0ea5e9; }
+    .quick-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* Empty state */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: #475569;
+      padding: 40px;
+      text-align: center;
+    }
+    .empty-state .icon { font-size: 48px; }
+    .empty-state h3 { font-size: 16px; color: #94a3b8; }
+    .empty-state p { font-size: 13px; max-width: 320px; line-height: 1.6; }
+
+    /* Log panel */
+    .log-panel {
+      height: 140px;
+      background: #0a0e17;
+      border-top: 1px solid #1e293b;
+      overflow-y: auto;
+      padding: 8px 16px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 11px;
+      flex-shrink: 0;
+      display: none;
+    }
+    .log-panel.visible { display: block; }
+    .log-entry { padding: 1px 0; line-height: 1.5; }
+    .log-entry.info { color: #475569; }
+    .log-entry.event { color: #0ea5e9; }
+    .log-entry.error { color: #ef4444; }
+    .log-entry.success { color: #22c55e; }
+
+    /* Footer */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 20px;
+      background: #111827;
+      border-top: 1px solid #1e293b;
+      font-size: 11px;
+      color: #475569;
+      flex-shrink: 0;
+    }
+    .footer button {
+      background: none;
+      border: none;
+      color: #475569;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .footer button:hover { color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🌐 <span>WebRTC</span> Bridge</h1>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="status-indicator">
+      <div class="dot" id="dot-signaling"></div>
+      <span id="status-signaling">Signaling: disconnected</span>
+    </div>
+    <div class="status-indicator">
+      <div class="dot" id="dot-peer"></div>
+      <span id="status-peer">Peer: no connection</span>
+    </div>
+    <div class="status-indicator" style="margin-left:auto">
+      <span id="status-room" style="color:#64748b">No room</span>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <label>Role</label>
+        <div class="role-selector">
+          <button class="role-btn active" data-role="host" onclick="setRole('host')">🏠 Host</button>
+          <button class="role-btn" data-role="client" onclick="setRole('client')">📱 Client</button>
+        </div>
+
+        <label>Signaling Server</label>
+        <input type="text" id="serverUrl" value="https://web-production-84380f.up.railway.app" placeholder="wss://...">
+      </div>
+
+      <div class="sidebar-section">
+        <label>Room ID</label>
+        <input type="text" id="roomId" placeholder="auto-generated" style="margin-bottom: 8px">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="btn-connect" onclick="connect()">Connect</button>
+          <button class="btn btn-danger" id="btn-disconnect" onclick="disconnect()" disabled>Leave</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section" id="tunnel-section">
+        <label>Tunnel / Share Link</label>
+        <input type="text" id="tunnelUrl" placeholder="Paste current tunnel URL here">
+        <button class="btn btn-secondary" onclick="saveTunnelUrl()" style="margin-top:8px">💾 Save Link</button>
+      </div>
+
+      <div class="peer-list" id="peer-list">
+        <div class="no-peers">No peers connected</div>
+      </div>
+    </div>
+
+    <!-- Chat area -->
+    <div class="chat-area">
+      <div class="messages" id="messages">
+        <div class="empty-state" id="empty-state">
+          <div class="icon">🌐</div>
+          <h3>WebRTC Bridge</h3>
+          <p>Connect to a room to establish a peer-to-peer link. Use this to share tunnel URLs and stay connected even when the tunnel drops.</p>
+          <p style="font-size:12px; color:#334155; margin-top:8px">
+            <strong>Host:</strong> Runs on the PulseOS machine — responds with tunnel links<br>
+            <strong>Client:</strong> Runs in your remote browser — requests tunnel links
+          </p>
+        </div>
+      </div>
+
+      <div class="quick-actions" id="quick-actions">
+        <button class="quick-btn" onclick="sendQuick('share tunnel link')" disabled id="qb-tunnel">🔗 Request Tunnel Link</button>
+        <button class="quick-btn" onclick="sendQuick('ping')" disabled id="qb-ping">📡 Ping</button>
+        <button class="quick-btn" onclick="sendQuick('status')" disabled id="qb-status">📊 Status</button>
+      </div>
+
+      <div class="input-bar">
+        <input type="text" id="msg-input" placeholder="Type a message..." disabled onkeydown="if(event.key==='Enter')sendMessage()">
+        <button onclick="sendMessage()" id="btn-send" disabled>Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log panel -->
+  <div class="log-panel" id="log-panel"></div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span id="footer-info">WebRTC Bridge v1.0</span>
+    <button onclick="toggleLog()">Toggle Log</button>
+  </div>
+
+<script>
+// ── State ──
+let socket = null;
+let role = 'host';
+let currentRoom = null;
+let tunnelUrl = '';
+const peers = {};       // socketId → RTCPeerConnection
+const dataChannels = {}; // socketId → RTCDataChannel
+
+const SIGNALING_SERVER = document.getElementById('serverUrl');
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' }
+];
+
+// ── Role ──
+function setRole(r) {
+  role = r;
+  document.querySelectorAll('.role-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.role === r);
+  });
+  // Host shows tunnel input, client shows request button
+  document.getElementById('tunnel-section').style.display = r === 'host' ? 'block' : 'none';
+  log(`Role set to: ${r}`, 'event');
+}
+
+// ── Room ID ──
+function generateRoomId() {
+  return 'pulse-' + Math.random().toString(36).substring(2, 8);
+}
+
+// ── Connect ──
+function connect() {
+  const serverUrl = SIGNALING_SERVER.value.trim();
+  if (!serverUrl) { log('No server URL', 'error'); return; }
+
+  let roomId = document.getElementById('roomId').value.trim();
+  if (!roomId) {
+    roomId = generateRoomId();
+    document.getElementById('roomId').value = roomId;
+  }
+  currentRoom = roomId;
+
+  log(`Connecting to ${serverUrl}...`, 'info');
+  updateSignalingStatus('connecting');
+
+  socket = io(serverUrl, {
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 50,
+    reconnectionDelay: 2000
+  });
+
+  socket.on('connect', () => {
+    log(`Connected to signaling server (${socket.id})`, 'success');
+    updateSignalingStatus('connected');
+    socket.emit('join-room', { roomId: currentRoom, maxUsers: 2 });
+    log(`Joining room: ${currentRoom}`, 'event');
+  });
+
+  socket.on('disconnect', (reason) => {
+    log(`Signaling disconnected: ${reason}`, 'error');
+    updateSignalingStatus('disconnected');
+  });
+
+  socket.on('reconnect', () => {
+    log('Reconnected to signaling server', 'success');
+    updateSignalingStatus('connected');
+    if (currentRoom) {
+      socket.emit('join-room', { roomId: currentRoom, maxUsers: 2 });
+    }
+  });
+
+  socket.on('room-users', ({ roomId, users }) => {
+    log(`In room "${roomId}" — ${users.length} peer(s) waiting`, 'event');
+    updateRoomStatus(roomId);
+    addSystemMessage(`Joined room "${roomId}"`);
+
+    // Initiate connection to existing peers
+    users.forEach(targetId => {
+      createPeerConnection(targetId, true);
+    });
+  });
+
+  socket.on('room-full', ({ roomId, maxUsers }) => {
+    log(`Room "${roomId}" is full (max ${maxUsers})`, 'error');
+    addSystemMessage(`Room is full — max ${maxUsers} users`);
+  });
+
+  socket.on('user-joined', ({ userId }) => {
+    log(`Peer joined: ${userId}`, 'event');
+    addSystemMessage('Peer connected to room');
+    updatePeerList();
+    // Wait for their offer
+  });
+
+  socket.on('user-left', ({ userId }) => {
+    log(`Peer left: ${userId}`, 'event');
+    addSystemMessage('Peer disconnected');
+    cleanupPeer(userId);
+    updatePeerList();
+    updatePeerStatus();
+    enableChat(false);
+  });
+
+  socket.on('offer', async ({ offer, senderId, roomId }) => {
+    log(`Offer from ${senderId}`, 'event');
+    const pc = createPeerConnection(senderId, false);
+    try {
+      await pc.setRemoteDescription(offer);
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('answer', { roomId, answer, targetId: senderId });
+      log(`Answer sent to ${senderId}`, 'success');
+    } catch (e) {
+      log(`Error handling offer: ${e.message}`, 'error');
+    }
+  });
+
+  socket.on('answer', async ({ answer, senderId }) => {
+    log(`Answer from ${senderId}`, 'event');
+    if (peers[senderId]) {
+      try {
+        await peers[senderId].setRemoteDescription(answer);
+      } catch (e) {
+        log(`Error setting answer: ${e.message}`, 'error');
+      }
+    }
+  });
+
+  socket.on('ice-candidate', async ({ candidate, senderId }) => {
+    if (peers[senderId] && candidate) {
+      try {
+        await peers[senderId].addIceCandidate(candidate);
+      } catch (e) {
+        // ICE candidate errors are usually harmless
+      }
+    }
+  });
+
+  // UI state
+  document.getElementById('btn-connect').disabled = true;
+  document.getElementById('btn-disconnect').disabled = false;
+  SIGNALING_SERVER.disabled = true;
+  document.getElementById('roomId').disabled = true;
+}
+
+// ── Disconnect ──
+function disconnect() {
+  Object.keys(peers).forEach(id => cleanupPeer(id));
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+  currentRoom = null;
+
+  updateSignalingStatus('disconnected');
+  updatePeerStatus();
+  updateRoomStatus(null);
+  updatePeerList();
+  enableChat(false);
+  addSystemMessage('Disconnected');
+
+  document.getElementById('btn-connect').disabled = false;
+  document.getElementById('btn-disconnect').disabled = true;
+  SIGNALING_SERVER.disabled = false;
+  document.getElementById('roomId').disabled = false;
+}
+
+// ── WebRTC ──
+function createPeerConnection(targetId, isInitiator) {
+  if (peers[targetId]) return peers[targetId];
+
+  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  peers[targetId] = pc;
+
+  // Data channel
+  if (isInitiator) {
+    const dc = pc.createDataChannel('bridge', { ordered: true });
+    setupDataChannel(dc, targetId);
+  }
+
+  pc.ondatachannel = (e) => {
+    setupDataChannel(e.channel, targetId);
+  };
+
+  pc.onicecandidate = (e) => {
+    if (e.candidate && socket) {
+      socket.emit('ice-candidate', {
+        roomId: currentRoom,
+        candidate: e.candidate,
+        targetId
+      });
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    const state = pc.connectionState;
+    log(`Peer ${targetId.substring(0, 8)}: ${state}`, state === 'connected' ? 'success' : 'info');
+    updatePeerList();
+    updatePeerStatus();
+
+    if (state === 'connected') {
+      addSystemMessage('🟢 Peer-to-peer connection established!');
+      enableChat(true);
+    } else if (state === 'failed' || state === 'closed') {
+      enableChat(false);
+    }
+  };
+
+  if (isInitiator) {
+    pc.createOffer().then(offer => {
+      pc.setLocalDescription(offer);
+      socket.emit('offer', { roomId: currentRoom, offer, targetId });
+      log(`Offer sent to ${targetId.substring(0, 8)}`, 'success');
+    }).catch(e => log(`Offer error: ${e.message}`, 'error'));
+  }
+
+  updatePeerList();
+  return pc;
+}
+
+function setupDataChannel(dc, targetId) {
+  dataChannels[targetId] = dc;
+
+  dc.onopen = () => {
+    log(`DataChannel open with ${targetId.substring(0, 8)}`, 'success');
+    enableChat(true);
+    addSystemMessage('🔗 Direct P2P data channel ready');
+  };
+
+  dc.onclose = () => {
+    log(`DataChannel closed with ${targetId.substring(0, 8)}`, 'info');
+    enableChat(false);
+  };
+
+  dc.onmessage = (e) => {
+    let data;
+    try {
+      data = JSON.parse(e.data);
+    } catch {
+      data = { type: 'text', content: e.data };
+    }
+    handleIncomingMessage(data, targetId);
+  };
+}
+
+function cleanupPeer(targetId) {
+  if (dataChannels[targetId]) {
+    try { dataChannels[targetId].close(); } catch {}
+    delete dataChannels[targetId];
+  }
+  if (peers[targetId]) {
+    try { peers[targetId].close(); } catch {}
+    delete peers[targetId];
+  }
+}
+
+// ── Message handling ──
+function handleIncomingMessage(data, senderId) {
+  switch (data.type) {
+    case 'text':
+      addMessage(data.content, 'received');
+      break;
+
+    case 'tunnel-request':
+      log(`Tunnel link requested by peer`, 'event');
+      addMessage('🔗 Peer is requesting the tunnel link...', 'received');
+      // Auto-respond if host and we have a tunnel URL
+      if (role === 'host') {
+        autoRespondTunnel(senderId);
+      }
+      break;
+
+    case 'tunnel-response':
+      log(`Tunnel link received: ${data.url}`, 'success');
+      addTunnelLink(data.url);
+      addSystemMessage('Tunnel link received! Click to copy.');
+      break;
+
+    case 'ping':
+      addMessage('📡 ping', 'received');
+      sendTo(senderId, { type: 'pong', timestamp: Date.now() });
+      break;
+
+    case 'pong':
+      const latency = Date.now() - data.timestamp;
+      addSystemMessage(`Pong! Latency: ${latency}ms`);
+      break;
+
+    case 'status-request':
+      addMessage('📊 Status requested', 'received');
+      if (role === 'host') {
+        sendTo(senderId, {
+          type: 'status-response',
+          data: {
+            server: 'PulseOS',
+            uptime: formatUptime(),
+            tunnelUrl: tunnelUrl || 'not set',
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+      break;
+
+    case 'status-response':
+      addSystemMessage(`Host Status:\n• Server: ${data.data.server}\n• Uptime: ${data.data.uptime}\n• Tunnel: ${data.data.tunnelUrl}`);
+      break;
+
+    default:
+      addMessage(JSON.stringify(data), 'received');
+  }
+}
+
+function autoRespondTunnel(targetId) {
+  const url = tunnelUrl || document.getElementById('tunnelUrl').value.trim();
+  if (url) {
+    sendTo(targetId, { type: 'tunnel-response', url });
+    addSystemMessage(`Tunnel link sent: ${url}`);
+    log(`Auto-sent tunnel URL to peer`, 'success');
+  } else {
+    sendTo(targetId, { type: 'text', content: '⚠️ No tunnel URL configured on host. Please set one in the sidebar.' });
+    addSystemMessage('No tunnel URL to send — set one in the sidebar');
+    log('No tunnel URL configured', 'error');
+  }
+}
+
+function sendTo(targetId, data) {
+  const dc = dataChannels[targetId];
+  if (dc && dc.readyState === 'open') {
+    dc.send(JSON.stringify(data));
+  }
+}
+
+function broadcastMessage(data) {
+  const json = JSON.stringify(data);
+  Object.values(dataChannels).forEach(dc => {
+    if (dc.readyState === 'open') {
+      dc.send(json);
+    }
+  });
+}
+
+function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  broadcastMessage({ type: 'text', content: text });
+  addMessage(text, 'sent');
+  input.value = '';
+}
+
+function sendQuick(action) {
+  switch (action) {
+    case 'share tunnel link':
+      broadcastMessage({ type: 'tunnel-request' });
+      addMessage('🔗 Requesting tunnel link...', 'sent');
+      log('Sent tunnel link request', 'event');
+      break;
+    case 'ping':
+      broadcastMessage({ type: 'ping', timestamp: Date.now() });
+      addMessage('📡 ping', 'sent');
+      break;
+    case 'status':
+      broadcastMessage({ type: 'status-request' });
+      addMessage('📊 Requesting status...', 'sent');
+      break;
+  }
+}
+
+function saveTunnelUrl() {
+  tunnelUrl = document.getElementById('tunnelUrl').value.trim();
+  if (tunnelUrl) {
+    log(`Tunnel URL saved: ${tunnelUrl}`, 'success');
+    addSystemMessage(`Tunnel URL saved: ${tunnelUrl}`);
+    // Persist to localStorage
+    try { localStorage.setItem('webrtc-bridge-tunnel', tunnelUrl); } catch {}
+  }
+}
+
+// ── UI updates ──
+function addMessage(content, type) {
+  hideEmptyState();
+  const el = document.getElementById('messages');
+  const msg = document.createElement('div');
+  msg.className = `msg ${type}`;
+  msg.textContent = content;
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = new Date().toLocaleTimeString('de-DE', { hour12: false });
+  msg.appendChild(meta);
+  el.appendChild(msg);
+  el.scrollTop = el.scrollHeight;
+}
+
+function addSystemMessage(text) {
+  hideEmptyState();
+  const el = document.getElementById('messages');
+  const msg = document.createElement('div');
+  msg.className = 'msg system';
+  msg.textContent = text;
+  el.appendChild(msg);
+  el.scrollTop = el.scrollHeight;
+}
+
+function addTunnelLink(url) {
+  hideEmptyState();
+  const el = document.getElementById('messages');
+  const msg = document.createElement('div');
+  msg.className = 'msg tunnel-link';
+  msg.textContent = url;
+  msg.title = 'Click to copy';
+  msg.onclick = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      addSystemMessage('✅ Link copied to clipboard!');
+    }).catch(() => {
+      addSystemMessage('Select and copy the link manually');
+    });
+  };
+  el.appendChild(msg);
+  el.scrollTop = el.scrollHeight;
+}
+
+function hideEmptyState() {
+  const es = document.getElementById('empty-state');
+  if (es) es.style.display = 'none';
+}
+
+function enableChat(enabled) {
+  document.getElementById('msg-input').disabled = !enabled;
+  document.getElementById('btn-send').disabled = !enabled;
+  document.getElementById('qb-tunnel').disabled = !enabled;
+  document.getElementById('qb-ping').disabled = !enabled;
+  document.getElementById('qb-status').disabled = !enabled;
+}
+
+function updateSignalingStatus(state) {
+  const dot = document.getElementById('dot-signaling');
+  const text = document.getElementById('status-signaling');
+  dot.className = 'dot ' + (state === 'connected' ? 'green' : state === 'connecting' ? 'yellow' : '');
+  text.textContent = `Signaling: ${state}`;
+}
+
+function updatePeerStatus() {
+  const dot = document.getElementById('dot-peer');
+  const text = document.getElementById('status-peer');
+  const connected = Object.values(peers).some(pc => pc.connectionState === 'connected');
+  const connecting = Object.values(peers).some(pc => pc.connectionState === 'connecting' || pc.connectionState === 'new');
+
+  if (connected) {
+    dot.className = 'dot green';
+    text.textContent = 'Peer: connected (P2P)';
+  } else if (connecting) {
+    dot.className = 'dot yellow';
+    text.textContent = 'Peer: connecting...';
+  } else {
+    dot.className = 'dot';
+    text.textContent = 'Peer: no connection';
+  }
+}
+
+function updateRoomStatus(roomId) {
+  const el = document.getElementById('status-room');
+  el.textContent = roomId ? `Room: ${roomId}` : 'No room';
+  el.style.color = roomId ? '#0ea5e9' : '#64748b';
+}
+
+function updatePeerList() {
+  const el = document.getElementById('peer-list');
+  const ids = Object.keys(peers);
+  if (ids.length === 0) {
+    el.innerHTML = '<div class="no-peers">No peers connected</div>';
+    return;
+  }
+  el.innerHTML = ids.map(id => {
+    const state = peers[id].connectionState || 'new';
+    const stateClass = state === 'connected' ? 'connected' : (state === 'connecting' || state === 'new') ? 'connecting' : 'failed';
+    return `<div class="peer-item">
+      <div class="dot ${stateClass === 'connected' ? 'green' : stateClass === 'connecting' ? 'yellow' : ''}"></div>
+      <div class="peer-id">${id.substring(0, 12)}…</div>
+      <div class="peer-state ${stateClass}">${state}</div>
+    </div>`;
+  }).join('');
+}
+
+function log(msg, type = 'info') {
+  const el = document.getElementById('log-panel');
+  const time = new Date().toLocaleTimeString('de-DE', { hour12: false });
+  const entry = document.createElement('div');
+  entry.className = `log-entry ${type}`;
+  entry.textContent = `[${time}] ${msg}`;
+  el.appendChild(entry);
+  el.scrollTop = el.scrollHeight;
+}
+
+function toggleLog() {
+  document.getElementById('log-panel').classList.toggle('visible');
+}
+
+function formatUptime() {
+  const s = Math.floor(performance.now() / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return `${h}h ${m}m`;
+}
+
+// ── Init ──
+(function init() {
+  // Load saved tunnel URL
+  try {
+    const saved = localStorage.getItem('webrtc-bridge-tunnel');
+    if (saved) {
+      document.getElementById('tunnelUrl').value = saved;
+      tunnelUrl = saved;
+    }
+  } catch {}
+
+  // Set initial role
+  setRole('host');
+
+  log('WebRTC Bridge initialized', 'event');
+  log('Set your role, enter a Room ID, and click Connect', 'info');
+})();
+</script>
+</body>
+</html>

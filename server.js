@@ -1465,15 +1465,35 @@ window.__CONFIG = ${config};
   if (url === '/ws-test') return htmlRes(res, path.join(ROOT, 'ws-test.html'));
 
   // --- Port Forwarding / Tunnel ---
+  // --- Bridge Room Management ---
+  if (url === '/api/bridge-room') {
+    if (req.method === 'GET') {
+      return jsonRes(res, { roomId: getBridgeRoom(), bridgeUrl: getBridgeUrl() });
+    }
+    if (req.method === 'POST') {
+      return readBody(req, b => {
+        const { action } = JSON.parse(b);
+        if (action === 'reset') {
+          const newRoomId = resetBridgeRoom();
+          console.log('[bridge] Room ID reset to:', newRoomId);
+          broadcast('dashboard', { type: 'bridge-room-changed', roomId: newRoomId, bridgeUrl: getBridgeUrl() });
+          return jsonRes(res, { ok: true, roomId: newRoomId, bridgeUrl: getBridgeUrl() });
+        }
+        return jsonRes(res, { ok: false, error: 'action must be reset' });
+      });
+      return;
+    }
+  }
+
   if (url === '/api/tunnel') {
     if (req.method === 'GET') {
-      return jsonRes(res, { active: !!tunnelProcess, url: tunnelUrl });
+      return jsonRes(res, { active: !!tunnelProcess, url: tunnelUrl, bridgeRoom: getBridgeRoom(), bridgeUrl: getBridgeUrl() });
     }
     if (req.method === 'POST') {
       return readBody(req, b => {
         const { action } = JSON.parse(b);
         if (action === 'start') {
-          if (tunnelProcess) return jsonRes(res, { ok: true, url: tunnelUrl, message: 'already running' });
+          if (tunnelProcess) return jsonRes(res, { ok: true, url: tunnelUrl, bridgeRoom: getBridgeRoom(), bridgeUrl: getBridgeUrl(), message: 'already running' });
           tunnelStopped = false;
           tunnelRetries = 0;
           restartTunnel();
@@ -1483,7 +1503,7 @@ window.__CONFIG = ${config};
             waited += 200;
             if (tunnelUrl || waited > 8000) {
               clearInterval(check);
-              jsonRes(res, { ok: !!tunnelUrl, url: tunnelUrl, message: tunnelUrl ? 'tunnel active' : 'waiting for URL (check /api/tunnel later)' });
+              jsonRes(res, { ok: !!tunnelUrl, url: tunnelUrl, bridgeRoom: getBridgeRoom(), bridgeUrl: getBridgeUrl(), message: tunnelUrl ? 'tunnel active' : 'waiting for URL (check /api/tunnel later)' });
             }
           }, 200);
         } else if (action === 'stop') {
@@ -1514,6 +1534,27 @@ let tunnelUrl = null;
 let tunnelHealthCheck = null;
 let tunnelStopped = true;   // true = user explicitly stopped, no auto-restart
 let tunnelRetries = 0;      // reset on successful connect
+
+// --- Bridge Room ID (persistent for WebRTC reconnect) ---
+const BRIDGE_ROOM_FILE = path.join(ROOT, 'data', 'bridge-room.json');
+const BRIDGE_SIGNALING_URL = 'https://web-production-84380f.up.railway.app';
+function getBridgeRoom() {
+  try {
+    const data = JSON.parse(fs.readFileSync(BRIDGE_ROOM_FILE, 'utf8'));
+    return data.roomId;
+  } catch {
+    return resetBridgeRoom();
+  }
+}
+function resetBridgeRoom() {
+  const roomId = 'pulse-' + crypto.randomBytes(4).toString('hex');
+  fs.writeFileSync(BRIDGE_ROOM_FILE, JSON.stringify({ roomId, created: new Date().toISOString() }, null, 2));
+  return roomId;
+}
+function getBridgeUrl() {
+  const roomId = getBridgeRoom();
+  return `${BRIDGE_SIGNALING_URL}/bridge?room=${roomId}`;
+}
 
 // Tunnel auto-reconnect: check every 30s if tunnel is still alive
 function startTunnelHealthCheck() {
@@ -1562,7 +1603,7 @@ function restartTunnel() {
       tunnelUrl = urlMatch[1];
       tunnelRetries = 0;
       console.log('[tunnel] Connected! URL:', tunnelUrl);
-      broadcast('dashboard', { type: 'tunnel', url: tunnelUrl, active: true });
+      broadcast('dashboard', { type: 'tunnel', url: tunnelUrl, active: true, bridgeRoom: getBridgeRoom(), bridgeUrl: getBridgeUrl() });
       startTunnelHealthCheck();
     }
   });

@@ -209,6 +209,7 @@ function connectSSE() {
       if (msg.type === 'tunnel') {
         tunnelActive = !!msg.active;
         tunnelCurrentUrl = msg.url || null;
+        if (msg.bridgeUrl) bridgeCurrentUrl = msg.bridgeUrl;
         const btn = document.getElementById('tunnelBtn');
         const label = document.getElementById('tunnelLabel');
         if (tunnelActive && tunnelCurrentUrl) {
@@ -349,14 +350,14 @@ function generateQR(text) {
   return 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&bgcolor=1a1b26&color=a9b1d6&data=' + encodeURIComponent(text);
 }
 
-function showTunnelModal(url) {
+function showTunnelModal(url, bridgeUrl) {
   let modal = document.getElementById('tunnelModal');
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'tunnelModal';
     modal.innerHTML = `
       <div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center" onclick="if(event.target===this)closeTunnelModal()">
-        <div style="background:#1a1b26;border:1px solid #292e42;border-radius:12px;padding:28px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+        <div style="background:#1a1b26;border:1px solid #292e42;border-radius:12px;padding:28px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)">
           <div style="font:600 16px/1.4 -apple-system,sans-serif;color:#c0caf5;margin-bottom:4px">Dashboard ist live!</div>
           <div style="font:12px/1.4 -apple-system,sans-serif;color:#565f89;margin-bottom:20px">Scanne den QR-Code oder kopiere die URL</div>
           <div style="background:#fff;border-radius:8px;padding:12px;display:inline-block;margin-bottom:16px">
@@ -366,6 +367,22 @@ function showTunnelModal(url) {
             <input id="tunnelUrlInput" readonly style="flex:1;background:#16161e;border:1px solid #292e42;color:#7aa2f7;padding:8px 12px;border-radius:6px;font:13px/1.4 'SF Mono',monospace;outline:none;cursor:text" onclick="this.select()">
             <button onclick="copyTunnelUrl()" style="background:#7aa2f7;color:#1a1b26;border:none;padding:8px 14px;border-radius:6px;font:13px/1.4 -apple-system,sans-serif;cursor:pointer;white-space:nowrap" id="tunnelCopyBtn">Copy</button>
           </div>
+          <div id="bridgeLinkSection" style="margin-bottom:16px;display:none">
+            <div style="width:100%;height:1px;background:#292e42;margin:4px 0 16px"></div>
+            <div style="font:600 12px/1.4 -apple-system,sans-serif;color:#0ea5e9;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px">🌐 Reconnect-Bookmark</div>
+            <div style="font:11px/1.5 -apple-system,sans-serif;color:#565f89;margin-bottom:12px">Diesen Link bookmarken — damit kannst du einen neuen Tunnel-Link anfordern falls die Verbindung abbricht</div>
+            <div style="background:#fff;border-radius:8px;padding:12px;display:inline-block;margin-bottom:12px">
+              <img id="bridgeQR" width="140" height="140" style="display:block" alt="Bridge QR Code">
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:8px">
+              <input id="bridgeUrlInput" readonly style="flex:1;background:#16161e;border:1px solid #1e3a5f;color:#0ea5e9;padding:8px 12px;border-radius:6px;font:11px/1.4 'SF Mono',monospace;outline:none;cursor:text" onclick="this.select()">
+              <button onclick="copyBridgeUrl()" style="background:#0ea5e9;color:#fff;border:none;padding:8px 14px;border-radius:6px;font:12px/1.4 -apple-system,sans-serif;cursor:pointer;white-space:nowrap" id="bridgeCopyBtn">Copy</button>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;justify-content:center;margin-top:10px">
+              <span style="font:11px/1.4 -apple-system,sans-serif;color:#565f89">Room: <span id="bridgeRoomDisplay" style="color:#7aa2f7;font-family:'SF Mono',monospace"></span></span>
+              <button onclick="resetBridgeRoom()" style="background:none;border:1px solid #3b3e52;color:#f7768e;padding:3px 10px;border-radius:4px;font:11px/1.4 -apple-system,sans-serif;cursor:pointer" title="Neue Room-ID generieren — alle bisherigen Clients verlieren Zugriff">🔄 Neue Room-ID</button>
+            </div>
+          </div>
           <button onclick="closeTunnelModal()" style="background:none;border:1px solid #3b3e52;color:#7a7e96;padding:6px 20px;border-radius:6px;font:12px/1.4 -apple-system,sans-serif;cursor:pointer">Schliessen</button>
         </div>
       </div>`;
@@ -373,6 +390,18 @@ function showTunnelModal(url) {
   }
   document.getElementById('tunnelQR').src = generateQR(url);
   document.getElementById('tunnelUrlInput').value = url;
+  // Show bridge link if available
+  if (bridgeUrl) {
+    document.getElementById('bridgeLinkSection').style.display = 'block';
+    document.getElementById('bridgeUrlInput').value = bridgeUrl;
+    document.getElementById('bridgeQR').src = generateQR(bridgeUrl);
+    bridgeCurrentUrl = bridgeUrl;
+    // Extract and display room ID
+    try {
+      const roomId = new URL(bridgeUrl).searchParams.get('room');
+      document.getElementById('bridgeRoomDisplay').textContent = roomId || '—';
+    } catch {}
+  }
   modal.style.display = 'block';
 }
 
@@ -391,6 +420,34 @@ function copyTunnelUrl() {
   });
 }
 
+let bridgeCurrentUrl = null;
+function copyBridgeUrl() {
+  const inp = document.getElementById('bridgeUrlInput');
+  navigator.clipboard.writeText(inp.value).then(() => {
+    const btn = document.getElementById('bridgeCopyBtn');
+    btn.textContent = 'Copied!';
+    btn.style.background = '#22c55e';
+    setTimeout(() => { btn.textContent = 'Copy'; btn.style.background = '#0ea5e9'; }, 1500);
+  });
+}
+
+async function resetBridgeRoom() {
+  if (!confirm('Neue Room-ID generieren?\n\nAlle bisherigen Bookmark-Links werden ungültig. Clients müssen den neuen Link erhalten.')) return;
+  try {
+    const r = await fetch('/api/bridge-room', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action:'reset'}) });
+    const d = await r.json();
+    if (d.ok) {
+      bridgeCurrentUrl = d.bridgeUrl;
+      document.getElementById('bridgeUrlInput').value = d.bridgeUrl;
+      document.getElementById('bridgeQR').src = generateQR(d.bridgeUrl);
+      document.getElementById('bridgeRoomDisplay').textContent = d.roomId;
+      // Reconnect bridge host to new room
+      if (typeof startBridgeHost === 'function') startBridgeHost(d.roomId);
+      addFeed('Bridge Room-ID geändert: ' + d.roomId, 'sse');
+    }
+  } catch (e) { console.error('resetBridgeRoom error:', e); }
+}
+
 // --- Port Forwarding Tunnel ---
 let tunnelActive = false;
 let tunnelCurrentUrl = null;
@@ -399,7 +456,7 @@ async function toggleTunnel() {
   const label = document.getElementById('tunnelLabel');
   // If already active, show the modal again (don't stop)
   if (tunnelActive && tunnelCurrentUrl) {
-    showTunnelModal(tunnelCurrentUrl);
+    showTunnelModal(tunnelCurrentUrl, bridgeCurrentUrl);
     return;
   }
   label.textContent = 'Starting...';
@@ -410,11 +467,14 @@ async function toggleTunnel() {
     if (d.ok && d.url) {
       tunnelActive = true;
       tunnelCurrentUrl = d.url;
+      bridgeCurrentUrl = d.bridgeUrl || null;
       btn.style.borderColor = '#9ece6a';
       btn.style.color = '#9ece6a';
       label.textContent = 'Live';
       label.title = d.url;
-      showTunnelModal(d.url);
+      showTunnelModal(d.url, d.bridgeUrl);
+      // Start WebRTC bridge host
+      if (d.bridgeRoom) startBridgeHost(d.bridgeRoom);
     } else {
       btn.style.color = '#f7768e';
       label.textContent = d.message || 'Failed';
@@ -443,11 +503,14 @@ fetch('/api/tunnel').then(r=>r.json()).then(d => {
   if (d.active && d.url) {
     tunnelActive = true;
     tunnelCurrentUrl = d.url;
+    bridgeCurrentUrl = d.bridgeUrl || null;
     document.getElementById('tunnelBtn').style.borderColor = '#9ece6a';
     document.getElementById('tunnelBtn').style.color = '#9ece6a';
     document.getElementById('tunnelLabel').textContent = 'Live';
     document.getElementById('tunnelLabel').title = d.url;
   }
+  // Always start bridge host if we have a room (even without active tunnel)
+  if (d.bridgeRoom) startBridgeHost(d.bridgeRoom);
 }).catch(()=>{});
 
 // --- Fullscreen ---
@@ -820,6 +883,236 @@ load();
 connectSSE();
 setInterval(load, 30000);
 setInterval(generateStateSummary, 60000);
+</script>
+
+<!-- WebRTC Bridge Host (for tunnel reconnect) -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+// --- WebRTC Bridge Host ---
+// Connects to signaling server and responds to tunnel-link requests from remote clients
+(function() {
+  const SIGNALING_URL = 'https://web-production-84380f.up.railway.app';
+  const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
+
+  let bridgeSocket = null;
+  let bridgeRoom = null;
+  const bridgePeers = {};
+  const bridgeChannels = {};
+
+  window.startBridgeHost = function(roomId) {
+    if (bridgeSocket && bridgeRoom === roomId && bridgeSocket.connected) return; // already connected to same room
+
+    // Cleanup all existing peer connections
+    Object.keys(bridgePeers).forEach(id => cleanupBridgePeer(id));
+
+    // If already connected to signaling server: leave old room, join new one (no reconnect needed)
+    if (bridgeSocket && bridgeSocket.connected && bridgeRoom) {
+      console.log('[bridge-host] Leaving old room:', bridgeRoom, '→ joining:', roomId);
+      bridgeSocket.emit('leave-room', { roomId: bridgeRoom });
+      bridgeRoom = roomId;
+      bridgeSocket.emit('join-room', { roomId: bridgeRoom });
+      return;
+    }
+
+    // First connect or socket lost — create fresh connection
+    if (bridgeSocket) {
+      try { bridgeSocket.removeAllListeners(); bridgeSocket.disconnect(); } catch {}
+      bridgeSocket = null;
+    }
+    bridgeRoom = roomId;
+
+    console.log('[bridge-host] Connecting to signaling server, room:', roomId);
+
+    bridgeSocket = io(SIGNALING_URL, {
+      forceNew: true,
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 3000
+    });
+
+    bridgeSocket.on('connect', () => {
+      console.log('[bridge-host] Connected to signaling server as', bridgeSocket.id);
+      bridgeSocket.emit('join-room', { roomId: bridgeRoom });
+    });
+
+    bridgeSocket.on('disconnect', (reason) => {
+      console.log('[bridge-host] Signaling disconnected:', reason);
+    });
+
+    bridgeSocket.on('reconnect', () => {
+      console.log('[bridge-host] Reconnected, rejoining room');
+      bridgeSocket.emit('join-room', { roomId: bridgeRoom });
+    });
+
+    bridgeSocket.on('room-users', ({ roomId, users }) => {
+      console.log('[bridge-host] In room, existing peers:', users.length);
+      users.forEach(targetId => createBridgePeer(targetId, true));
+    });
+
+    bridgeSocket.on('user-joined', ({ userId }) => {
+      console.log('[bridge-host] Peer joined:', userId);
+      // Wait for their offer
+    });
+
+    bridgeSocket.on('user-left', ({ userId }) => {
+      console.log('[bridge-host] Peer left:', userId);
+      cleanupBridgePeer(userId);
+    });
+
+    bridgeSocket.on('offer', async ({ offer, senderId, roomId }) => {
+      console.log('[bridge-host] Offer from', senderId);
+      const pc = createBridgePeer(senderId, false);
+      try {
+        await pc.setRemoteDescription(offer);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        bridgeSocket.emit('answer', { roomId, answer, targetId: senderId });
+      } catch (e) { console.error('[bridge-host] Error handling offer:', e); }
+    });
+
+    bridgeSocket.on('answer', async ({ answer, senderId }) => {
+      if (bridgePeers[senderId]) {
+        try { await bridgePeers[senderId].setRemoteDescription(answer); } catch (e) { console.error('[bridge-host] Answer error:', e); }
+      }
+    });
+
+    bridgeSocket.on('ice-candidate', async ({ candidate, senderId }) => {
+      if (bridgePeers[senderId] && candidate) {
+        try { await bridgePeers[senderId].addIceCandidate(candidate); } catch {}
+      }
+    });
+
+    bridgeSocket.on('room-full', () => {
+      console.log('[bridge-host] Room full (unexpected)');
+    });
+  };
+
+  function createBridgePeer(targetId, isInitiator) {
+    if (bridgePeers[targetId]) return bridgePeers[targetId];
+
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    bridgePeers[targetId] = pc;
+
+    if (isInitiator) {
+      const dc = pc.createDataChannel('bridge', { ordered: true });
+      setupBridgeChannel(dc, targetId);
+    }
+
+    pc.ondatachannel = (e) => setupBridgeChannel(e.channel, targetId);
+
+    pc.onicecandidate = (e) => {
+      if (e.candidate && bridgeSocket) {
+        bridgeSocket.emit('ice-candidate', { roomId: bridgeRoom, candidate: e.candidate, targetId });
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log('[bridge-host] Peer', targetId.substring(0, 8), ':', pc.connectionState);
+      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+        cleanupBridgePeer(targetId);
+      }
+    };
+
+    if (isInitiator) {
+      pc.createOffer().then(offer => {
+        pc.setLocalDescription(offer);
+        bridgeSocket.emit('offer', { roomId: bridgeRoom, offer, targetId });
+      }).catch(e => console.error('[bridge-host] Offer error:', e));
+    }
+
+    return pc;
+  }
+
+  function setupBridgeChannel(dc, targetId) {
+    bridgeChannels[targetId] = dc;
+
+    dc.onopen = () => console.log('[bridge-host] DataChannel open with', targetId.substring(0, 8));
+    dc.onclose = () => console.log('[bridge-host] DataChannel closed with', targetId.substring(0, 8));
+
+    dc.onmessage = (e) => {
+      let data;
+      try { data = JSON.parse(e.data); } catch { data = { type: 'text', content: e.data }; }
+      handleBridgeMessage(data, targetId);
+    };
+  }
+
+  function handleBridgeMessage(data, senderId) {
+    switch (data.type) {
+      case 'tunnel-request':
+        console.log('[bridge-host] Tunnel link requested by peer');
+        // Get the current tunnel URL and send it back
+        fetch('/api/tunnel').then(r => r.json()).then(d => {
+          if (d.active && d.url) {
+            sendBridgeMsg(senderId, { type: 'tunnel-response', url: d.url });
+            console.log('[bridge-host] Sent tunnel URL:', d.url);
+          } else {
+            // No tunnel active — start one!
+            console.log('[bridge-host] No tunnel active, starting one...');
+            sendBridgeMsg(senderId, { type: 'text', content: '⏳ Tunnel wird gestartet...' });
+            fetch('/api/tunnel', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'start' })
+            }).then(r => r.json()).then(result => {
+              if (result.ok && result.url) {
+                sendBridgeMsg(senderId, { type: 'tunnel-response', url: result.url });
+                console.log('[bridge-host] Tunnel started, sent URL:', result.url);
+                // Update dashboard UI
+                tunnelActive = true;
+                tunnelCurrentUrl = result.url;
+                const btn = document.getElementById('tunnelBtn');
+                btn.style.borderColor = '#9ece6a';
+                btn.style.color = '#9ece6a';
+                document.getElementById('tunnelLabel').textContent = 'Live';
+              } else {
+                sendBridgeMsg(senderId, { type: 'text', content: '❌ Tunnel konnte nicht gestartet werden' });
+              }
+            }).catch(() => {
+              sendBridgeMsg(senderId, { type: 'text', content: '❌ Fehler beim Tunnel-Start' });
+            });
+          }
+        }).catch(() => {
+          sendBridgeMsg(senderId, { type: 'text', content: '❌ Server nicht erreichbar' });
+        });
+        break;
+
+      case 'ping':
+        sendBridgeMsg(senderId, { type: 'pong', timestamp: data.timestamp });
+        break;
+
+      case 'status-request':
+        fetch('/api/tunnel').then(r => r.json()).then(d => {
+          sendBridgeMsg(senderId, {
+            type: 'status-response',
+            data: {
+              server: 'PulseOS',
+              tunnelActive: d.active,
+              tunnelUrl: d.url || 'inactive',
+              timestamp: new Date().toISOString()
+            }
+          });
+        }).catch(() => {});
+        break;
+
+      case 'text':
+        console.log('[bridge-host] Message from peer:', data.content);
+        break;
+    }
+  }
+
+  function sendBridgeMsg(targetId, data) {
+    const dc = bridgeChannels[targetId];
+    if (dc && dc.readyState === 'open') {
+      dc.send(JSON.stringify(data));
+    }
+  }
+
+  function cleanupBridgePeer(targetId) {
+    if (bridgeChannels[targetId]) { try { bridgeChannels[targetId].close(); } catch {} delete bridgeChannels[targetId]; }
+    if (bridgePeers[targetId]) { try { bridgePeers[targetId].close(); } catch {} delete bridgePeers[targetId]; }
+  }
+})();
 </script>
 </body>
 </html>
