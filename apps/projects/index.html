@@ -1151,7 +1151,17 @@ async function sendMessage() {
   input.value = '';
   input.style.height = '42px';
   renderChat();
-  save();
+
+  // Save immediately (not debounced) so the server has the user message before agent call
+  saving = true;
+  try {
+    await fetch(DATA_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state)
+    });
+  } catch (e) { console.error('Save error:', e); }
+  setTimeout(() => { saving = false; }, 800);
 
   // Show typing
   processing = true;
@@ -1159,20 +1169,58 @@ async function sendMessage() {
   document.getElementById('btnSend').disabled = true;
 
   try {
-    // Process message locally — detect widgets to create
-    const response = await processProjectMessage(text, proj);
+    // Try AI agent first, fall back to local pattern matching
+    let response;
+    try {
+      response = await callProjectAgent(state.activeProject, text);
+    } catch (agentErr) {
+      console.log('Agent unavailable, using local fallback:', agentErr.message);
+      response = await processProjectMessage(text, proj);
+    }
 
-    // Add agent response
-    const agentMsg = {
-      id: 'msg-' + Date.now(),
-      role: 'agent',
-      text: response.text,
-      widgetActions: response.widgetActions || [],
-      time: new Date().toISOString()
-    };
-    proj.chat.push(agentMsg);
-    proj.updated = new Date().toISOString();
-    save();
+    // If agent responded, reload full state from server (agent wrote directly to projects.json)
+    if (response._fromAgent) {
+      const freshRes = await fetch(DATA_URL);
+      const freshState = await freshRes.json();
+      if (freshState.projects) {
+        state.projects = freshState.projects;
+        state.activeProject = freshState.activeProject || state.activeProject;
+      }
+      // Re-get the project reference after state reload
+      const freshProj = getProject(state.activeProject);
+      if (freshProj) {
+        // Add agent response to the fresh state
+        freshProj.chat.push({
+          id: 'msg-' + Date.now(),
+          role: 'agent',
+          text: response.text,
+          widgetActions: response.widgetActions || [],
+          time: new Date().toISOString()
+        });
+        freshProj.updated = new Date().toISOString();
+      }
+    } else {
+      // Local fallback: add response to current proj
+      proj.chat.push({
+        id: 'msg-' + Date.now(),
+        role: 'agent',
+        text: response.text,
+        widgetActions: response.widgetActions || [],
+        time: new Date().toISOString()
+      });
+      proj.updated = new Date().toISOString();
+    }
+
+    // Save with immediate flush
+    saving = true;
+    try {
+      await fetch(DATA_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state)
+      });
+    } catch (e) { console.error('Save error:', e); }
+    setTimeout(() => { saving = false; }, 800);
 
   } catch (e) {
     proj.chat.push({
@@ -1181,6 +1229,7 @@ async function sendMessage() {
       text: 'Fehler: ' + e.message,
       time: new Date().toISOString()
     });
+    save();
   }
 
   processing = false;
@@ -1189,6 +1238,26 @@ async function sendMessage() {
   renderChat();
   renderCanvas();
   document.getElementById('projectSub').textContent = `${proj.canvas.widgets.length} Widgets`;
+}
+
+// ── AI Agent Call ──
+async function callProjectAgent(projectId, text) {
+  const res = await fetch('/api/project-chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ projectId, text })
+  });
+
+  if (!res.ok) throw new Error('Agent request failed');
+
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'Agent error');
+
+  return {
+    text: data.text,
+    widgetActions: data.widgetActions || [],
+    _fromAgent: true
+  };
 }
 
 // ── Widget Detection Engine ──

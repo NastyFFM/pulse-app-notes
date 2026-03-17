@@ -2119,6 +2119,197 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
     }
   }
 
+  // --- Project Chat AI: spawns claude -p with project context for intelligent widget management ---
+  if (url === '/api/project-chat' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { projectId, text } = JSON.parse(b);
+        if (!projectId || !text) return jsonRes(res, { ok: false, error: 'projectId and text required' });
+
+        // Read current project state
+        const projFile = path.join(ROOT, 'apps', 'projects', 'data', 'projects.json');
+        const projData = JSON.parse(safeReadJSON(projFile, { projects: [] }));
+        const project = projData.projects.find(p => p.id === projectId);
+        if (!project) return jsonRes(res, { ok: false, error: 'Project not found' });
+
+        // Build context for Claude
+        const widgetTypes = ['todo', 'notes', 'table', 'timeline', 'kanban', 'kpi', 'links', 'progress'];
+        const existingWidgets = project.canvas.widgets.map(w => `${w.type}: "${w.title}" (dataKey: ${w.dataKey})`).join('\n  ');
+        const recentChat = project.chat.slice(-6).map(m => `${m.role}: ${m.text}`).join('\n');
+
+        const prompt = `Du bist der Projekt-Agent fuer PulseOS. Der User arbeitet am Projekt "${project.name}".
+
+WICHTIG: Antworte NUR mit einem JSON-Objekt, kein anderer Text davor oder danach. Das JSON muss diese Struktur haben:
+{
+  "text": "Deine Antwort an den User (deutsch, freundlich, kompakt)",
+  "widgets": [
+    {
+      "action": "create",
+      "type": "todo|notes|table|timeline|kanban|kpi|links|progress",
+      "title": "Widget-Titel",
+      "size": "sm|md|lg|full",
+      "data": { ... passende Daten fuer den Widget-Typ ... }
+    }
+  ],
+  "updates": [
+    {
+      "action": "update",
+      "dataKey": "existierender-dataKey",
+      "data": { ... aktualisierte Daten ... }
+    }
+  ]
+}
+
+Widget-Datenformate:
+- todo: { "items": [{ "id": "t-1", "text": "Aufgabe", "done": false, "priority": "high|medium|low" }] }
+- notes: { "text": "Notiz-Inhalt" }
+- table: { "rows": [{ "spalte1": "wert1", "spalte2": "wert2" }] }, config: { "columns": ["spalte1", "spalte2"] }
+- timeline: { "items": [{ "title": "Event", "description": "...", "time": "...", "color": "#hex" }] }
+- kanban: { "columns": [{ "id": "col1", "name": "Name", "items": [{ "text": "Task" }] }] }
+- kpi: { "value": "42", "label": "Metrik-Name", "change": 5.2 }
+- links: { "links": [{ "title": "Name", "url": "https://...", "icon": "emoji" }] }
+- progress: { "percent": 75, "label": "Fortschritt-Name" }
+
+Bestehendes Projekt:
+  Name: ${project.name}
+  Widgets: ${existingWidgets || 'keine'}
+
+Letzte Chat-Nachrichten:
+${recentChat}
+
+Neue Nachricht vom User: ${text}
+
+Regeln:
+- Erstelle Widgets wenn der User etwas braucht (Planung, Listen, Tracking etc.)
+- Befuelle Widgets mit sinnvollen Daten basierend auf dem Kontext
+- Wenn der User etwas beschreibt (z.B. eine Reise), erstelle passende Widgets MIT Inhalten
+- Du kannst mehrere Widgets gleichzeitig erstellen
+- Aktualisiere bestehende Widgets ueber "updates" wenn der User Aenderungen will
+- Antworte immer auf Deutsch
+- Antworte NUR mit dem JSON, nichts anderes`;
+
+        // Spawn claude -p
+        const proc = spawn('claude', ['-p', '--output-format', 'json'], {
+          cwd: ROOT,
+          env: process.env,
+          stdio: ['pipe', 'pipe', 'pipe']
+        });
+
+        proc.stdin.write(prompt);
+        proc.stdin.end();
+
+        let stdout = '';
+        let stderr = '';
+        proc.stdout.on('data', chunk => { stdout += chunk.toString(); });
+        proc.stderr.on('data', chunk => { stderr += chunk.toString(); });
+
+        // Timeout after 60s
+        const timeout = setTimeout(() => {
+          proc.kill('SIGTERM');
+        }, 60000);
+
+        proc.on('close', (code) => {
+          clearTimeout(timeout);
+
+          try {
+            // Parse claude response — extract JSON from the output
+            let parsed;
+            try {
+              // --output-format json wraps in { result: "..." }
+              const envelope = JSON.parse(stdout);
+              const resultText = envelope.result || envelope.content || stdout;
+              // Find JSON in the result text
+              const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+              } else {
+                parsed = { text: resultText, widgets: [], updates: [] };
+              }
+            } catch {
+              // Try direct parse
+              const jsonMatch = stdout.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+              } else {
+                parsed = { text: stdout.trim() || 'Ich konnte die Anfrage nicht verarbeiten.', widgets: [], updates: [] };
+              }
+            }
+
+            // Apply widget creates
+            const widgetActions = [];
+            if (parsed.widgets && Array.isArray(parsed.widgets)) {
+              for (const w of parsed.widgets) {
+                if (w.action === 'create' && w.type) {
+                  const widgetId = 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+                  const dataKey = w.type + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 4);
+                  const widget = {
+                    id: widgetId,
+                    type: w.type,
+                    title: w.title || w.type,
+                    size: w.size || 'md',
+                    dataKey,
+                    color: project.color,
+                    data: w.data || {}
+                  };
+                  project.canvas.widgets.push(widget);
+                  // Store data in project.data
+                  if (w.data) {
+                    project.data[dataKey] = w.data.items || w.data.columns || w.data.rows || w.data.links || w.data;
+                  }
+                  const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉' };
+                  widgetActions.push({ icon: icons[w.type] || '🧩', label: `${w.title || w.type} erstellt` });
+                }
+              }
+            }
+
+            // Apply widget updates
+            if (parsed.updates && Array.isArray(parsed.updates)) {
+              for (const u of parsed.updates) {
+                if (u.dataKey && u.data) {
+                  project.data[u.dataKey] = u.data.items || u.data.columns || u.data.rows || u.data.links || u.data;
+                  widgetActions.push({ icon: '✏️', label: `Widget aktualisiert` });
+                }
+              }
+            }
+
+            // Save updated project
+            project.updated = new Date().toISOString();
+            fs.writeFileSync(projFile, JSON.stringify(projData, null, 2));
+            broadcast('projects', { type: 'change', file: 'projects.json', time: Date.now() });
+
+            emitEvent({ type: 'chat:message', source: 'project-agent', data: { projectId, text: parsed.text?.slice(0, 100) } });
+
+            jsonRes(res, {
+              ok: true,
+              text: parsed.text || 'Fertig!',
+              widgetActions,
+              widgetsCreated: (parsed.widgets || []).length,
+              widgetsUpdated: (parsed.updates || []).length
+            });
+
+          } catch (e) {
+            console.error('[project-chat] Parse error:', e.message, 'stdout:', stdout.slice(0, 200));
+            jsonRes(res, {
+              ok: true,
+              text: 'Ich habe die Anfrage bearbeitet, konnte aber die Antwort nicht strukturiert parsen. Versuch es nochmal!',
+              widgetActions: [],
+              widgetsCreated: 0,
+              widgetsUpdated: 0
+            });
+          }
+        });
+
+        proc.on('error', (e) => {
+          clearTimeout(timeout);
+          jsonRes(res, { ok: false, error: 'Agent error: ' + e.message });
+        });
+
+      } catch (e) {
+        jsonRes(res, { ok: false, error: e.message });
+      }
+    });
+  }
+
   // --- Terminal API: Direct pipe to claude with real-time SSE streaming ---
   if (url === '/api/terminal-send' && req.method === 'POST') {
     return readBody(req, b => {

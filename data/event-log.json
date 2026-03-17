@@ -1795,6 +1795,154 @@
         "file": "projects.json"
       },
       "timestamp": "2026-03-17T01:58:51.161Z"
+    },
+    {
+      "type": "system:health",
+      "source": "scheduler",
+      "data": {
+        "taskId": "health-check",
+        "taskName": "System Health Check"
+      },
+      "timestamp": "2026-03-17T02:00:11.855Z"
+    },
+    {
+      "type": "system:startup",
+      "source": "server",
+      "data": {
+        "port": 3000,
+        "time": "2026-03-17T02:04:44.465Z"
+      },
+      "timestamp": "2026-03-17T02:04:44.473Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T02:04:50.145Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T02:05:04.960Z"
+    },
+    {
+      "type": "chat:message",
+      "source": "project-agent",
+      "data": {
+        "projectId": "proj-demo",
+        "text": "Super, ich plane dein Wochenende! 🚆 Samstag Mittag geht's los nach Köln über Ludwigshafen und Stutt"
+      },
+      "timestamp": "2026-03-17T02:05:27.465Z"
+    },
+    {
+      "type": "chat:intent",
+      "data": {
+        "projectId": "proj-demo",
+        "text": "Super, ich plane dein Wochenende! 🚆 Samstag Mittag geht's los nach Köln über Ludwigshafen und Stutt",
+        "intent": "general",
+        "targetAgent": "chat"
+      },
+      "source": "chain:chat-intent-router:route",
+      "timestamp": "2026-03-17T02:05:27.475Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T02:05:27.843Z"
+    },
+    {
+      "type": "system:health",
+      "source": "scheduler",
+      "data": {
+        "taskId": "health-check",
+        "taskName": "System Health Check"
+      },
+      "timestamp": "2026-03-17T02:05:42.479Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T02:06:12.219Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T02:07:30.922Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T02:07:37.482Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T02:07:44.602Z"
+    },
+    {
+      "type": "chat:message",
+      "source": "project-agent",
+      "data": {
+        "projectId": "proj-demo",
+        "text": "Super, ich plane deinen Wochenend-Trip von Köln über Ludwigshafen nach Stuttgart! Hier ist alles auf"
+      },
+      "timestamp": "2026-03-17T02:08:09.221Z"
+    },
+    {
+      "type": "chat:intent",
+      "data": {
+        "projectId": "proj-demo",
+        "text": "Super, ich plane deinen Wochenend-Trip von Köln über Ludwigshafen nach Stuttgart! Hier ist alles auf",
+        "intent": "travel",
+        "targetAgent": "travel-planner"
+      },
+      "source": "chain:chat-intent-router:route",
+      "timestamp": "2026-03-17T02:08:09.233Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T02:08:09.256Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T02:08:47.604Z"
     }
   ]
 }
