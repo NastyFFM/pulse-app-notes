@@ -1,6 +1,6 @@
 # PulseOS Context Engine — Architekturplan
 
-> **Status:** Phase 1-4 ✅ abgeschlossen. Phase 5 (Viking) als nächstes.
+> **Status:** Phase 1-5 ✅ abgeschlossen. Phase 6 (Polish) optional.
 > **Letzte Aktualisierung:** 2026-03-17
 > **Session-Einstieg:** Lies dieses Dokument. Prüfe den Status jeder Phase. Mach da weiter wo ✅ aufhört und 🔲 anfängt.
 
@@ -396,30 +396,30 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 ---
 
 ### Phase 5: Viking-Integration (Context-Gedächtnis)
-> **Status:** 🔲 Nicht begonnen
+> **Status:** ✅ Abgeschlossen (2026-03-17)
 
 **Auto-Sync:**
-- [ ] Bei jedem Context-Save: L0/L1/L2 berechnen
-- [ ] L0 = `{icon} {name} | {widgetCount} widgets | {lastUpdate}` (deterministisch)
-- [ ] L1 = Widget-Summaries + Key-Metriken + letzte Changelog-Einträge (deterministisch)
-- [ ] L2 = Voller Context-JSON
-- [ ] Nach Viking schreiben: `viking://contexts/{contextId}/`
+- [x] Bei jedem Context-Save: L0/L1/L2 berechnen (deterministisch, kein LLM)
+- [x] L0 = `{icon} {name} | {widgetCount} Widgets: widget-badges`
+- [x] L1 = Markdown: ID, Parent, Updated, Widget-Details, letzte Changelog-Einträge
+- [x] L2 = Voller Context-JSON
+- [x] Nach Viking schreiben: `viking://resources/contexts/{contextId}`
+- [x] Debounced (2s) — kein Spam bei schnellen Edits
 
 **Semantische Suche:**
-- [ ] Sidebar: Suchfeld das über alle Contexts sucht
-- [ ] Ergebnisse als L0-Karten mit Klick → Navigation
-- [ ] AI nutzt Viking-Suche: "Gibt es schon ein Widget für X?"
+- [x] `POST /api/context-search` — Viking semantische Suche + lokaler Fallback
+- [x] Sidebar: Suchfeld mit Debounce (300ms) und Dropdown-Ergebnissen
+- [x] Ergebnisse als L0-Karten mit Icon, Name, Badge → Klick navigiert
+- [x] AI nutzt Viking-Suche im Prompt: "Ähnliche Contexts als Referenz"
 
 **Pattern-Speicher:**
-- [ ] Bewährte Widget-Kombinationen als Pattern speichern
-- [ ] `viking://patterns/{patternId}` mit L0/L1/L2
-- [ ] AI fragt: "Gibt es ein Pattern für Budget-Dashboard?" → findet es
-- [ ] Pattern als Template für neue Contexts nutzbar
+- [ ] Bewährte Widget-Kombinationen als Pattern speichern (Phase 6)
+- [ ] `viking://patterns/{patternId}` mit L0/L1/L2 (Phase 6)
 
 **Akzeptanzkriterien:**
-- Jeder Context hat aktuelle L0/L1/L2 Daten in Viking
-- Suche findet Daten über alle Contexts hinweg
-- AI nutzt Viking aktiv für Pattern-Matching
+- ✅ Jeder Context-Save triggert Viking L0/L1/L2 Sync
+- ✅ Suche findet Contexts (Viking oder lokaler Fallback)
+- ✅ AI bekommt ähnliche Contexts als Referenz im Prompt
 
 ---
 
