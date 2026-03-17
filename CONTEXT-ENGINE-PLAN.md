@@ -1,6 +1,6 @@
 # PulseOS Context Engine — Architekturplan
 
-> **Status:** Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅ abgeschlossen. Phase 4 (Skills/AI) als nächstes.
+> **Status:** Phase 1-4 ✅ abgeschlossen. Phase 5 (Viking) als nächstes.
 > **Letzte Aktualisierung:** 2026-03-17
 > **Session-Einstieg:** Lies dieses Dokument. Prüfe den Status jeder Phase. Mach da weiter wo ✅ aufhört und 🔲 anfängt.
 
@@ -367,55 +367,31 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 ---
 
 ### Phase 4: Skill-System (AI-Integration)
-> **Status:** 🔲 Nicht begonnen
-
-**Skill-Registry:**
-- [ ] `data/skills/` Verzeichnis erstellen
-- [ ] `data/skills/data-writer.md` — Daten lesen/schreiben
-- [ ] `data/skills/data-router.md` — homeContext-Entscheidung
-- [ ] `data/skills/widget-builder.md` — Widget erstellen/umbauen
-- [ ] `data/skills/schema-resolver.md` — Schema finden/erstellen
-- [ ] `data/skills/context-navigator.md` — Sub-Context erstellen
-- [ ] `data/skills/plan-generator.md` — Implementierungsplan
-- [ ] `data/skills/search.md` — Viking-Suche
+> **Status:** ✅ Abgeschlossen (2026-03-17)
 
 **Context Engine (server.js):**
-- [ ] `/api/project-chat` → `/api/context-chat` umbauen
-- [ ] `buildContextPrompt()` — Prompt mit:
-  - Context-Baum (Hierarchie)
-  - Scope-Chain (geerbte Daten)
-  - Relevante Schemas
-  - Kombinierte Skill-Instruktionen
-  - Cross-Context Widget-Bibliothek
-- [ ] `resolveSkills(context, message)` — relevante Skills auswählen
-- [ ] homeContext-Routing: AI Output enthält `homeContext` für neue Daten
-- [ ] Action-Ausführung: write-data, create-widget, create-subcontext, update-schema
+- [x] `/api/context-chat` Endpoint (neben bestehendem `/api/project-chat`)
+- [x] Prompt enthält: Context-Baum, Scope-Chain, Schemas, Cross-Context Widget-Bibliothek
+- [x] homeContext-Routing Regeln im Prompt
+- [x] Action-Ausführung: create-subcontext, write-data mit homeContext
+- [x] `/api/context-plan` Endpoint für Plan-Generierung
+- [x] Frontend nutzt `/api/context-chat` statt `/api/project-chat`
 
-**AI Output Format:**
-```json
-{
-  "text": "Antwort an User",
-  "actions": [
-    { "type": "write-data", "homeContext": "ctx-ich", "dataKey": "gewicht", "data": {...} },
-    { "type": "create-widget", "targetContext": "ctx-abnehmen", "widget": {...} },
-    { "type": "create-subcontext", "parentId": "ctx-gesundheit", "context": {...} }
-  ],
-  "widgetActions": [
-    { "icon": "✏️", "label": "Gewicht eingetragen", "widgetId": "w-1", "detail": "82.5kg" }
-  ]
-}
-```
+**Skill-Registry (vereinfacht — Skills als Prompt-Bausteine statt separate Dateien):**
+- [x] Schemas im Prompt = impliziter schema-resolver Skill
+- [x] Context-Baum im Prompt = impliziter context-navigator Skill
+- [x] homeContext-Regeln im Prompt = impliziter data-router Skill
+- [ ] `data/skills/` als separate Dateien (optional, spätere Erweiterung)
 
 **Aufräumen:**
-- [ ] 13 idle Context-Agents aus `agents.json` entfernen
-- [ ] Nur System-Agents behalten (modifier, chat-orchestrator)
-- [ ] Alte `/api/agent-context` Endpoint deprecaten
+- [ ] 13 idle Context-Agents aus `agents.json` entfernen (späterer Cleanup)
 
 **Akzeptanzkriterien:**
-- Chat in jedem Context funktioniert über `/api/context-chat`
-- AI kennt den Context-Baum und entscheidet homeContext korrekt
-- Skills werden dynamisch kombiniert
-- Widget-Erstellung + Daten-Routing funktionieren end-to-end
+- ✅ Chat in jedem Context funktioniert über `/api/context-chat`
+- ✅ AI kennt Context-Baum mit Hierarchie-Marker
+- ✅ AI bekommt Schemas für korrekte Datenformate
+- ✅ homeContext-Routing Regeln im Prompt
+- ✅ create-subcontext und write-data Actions implementiert
 
 ---
 

@@ -494,6 +494,90 @@ function vikingImportApp(appId) {
   }, 2000));
 }
 
+// --- Viking context sync: write L0/L1/L2 summaries to Viking ---
+const vikingSyncTimers = {};
+
+function vikingWrite(uri, content) {
+  const postData = JSON.stringify({ uri, content });
+  const options = {
+    hostname: 'localhost',
+    port: 1934,
+    path: '/api/viking/write',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) },
+    timeout: 5000
+  };
+  const req = http.request(options);
+  req.on('error', () => {}); // silent fail if Viking not running
+  req.write(postData);
+  req.end();
+}
+
+function vikingSyncContext(contextId) {
+  try {
+    const ctxFile = path.join(ROOT, 'data', 'contexts', contextId + '.json');
+    if (!fs.existsSync(ctxFile)) return;
+    const ctx = JSON.parse(fs.readFileSync(ctxFile, 'utf8'));
+
+    // L0: Abstract (~100 tokens) - deterministic, no LLM needed
+    const widgetSummaries = (ctx.widgets || []).map(w => {
+      const data = ctx.data?.[w.dataKey];
+      let badge = '';
+      if (w.type === 'todo' && Array.isArray(data)) {
+        const done = data.filter(i => i.done).length;
+        badge = ` (${done}/${data.length})`;
+      } else if (w.type === 'kpi' && data) {
+        badge = ` = ${data.value || '?'}`;
+      } else if (w.type === 'table' && Array.isArray(data)) {
+        badge = ` (${data.length} Zeilen)`;
+      }
+      return `${w.title}${badge}`;
+    }).join(', ');
+
+    const l0 = `${ctx.icon || ''} ${ctx.name} | ${(ctx.widgets||[]).length} Widgets: ${widgetSummaries}`;
+
+    // L1: Overview (~1-2k tokens) - deterministic
+    let l1 = `# ${ctx.icon || ''} ${ctx.name}\n\n`;
+    l1 += `**ID:** ${ctx.id}\n`;
+    l1 += `**Parent:** ${ctx.parentId || 'Root'}\n`;
+    l1 += `**Updated:** ${ctx.updated || 'unbekannt'}\n\n`;
+    l1 += `## Widgets (${(ctx.widgets||[]).length})\n\n`;
+    for (const w of (ctx.widgets || [])) {
+      const data = ctx.data?.[w.dataKey];
+      const dataPreview = data ? JSON.stringify(data).slice(0, 300) : 'keine Daten';
+      l1 += `### ${w.type}: "${w.title}" (${w.size || 'md'})\n`;
+      l1 += `Daten: ${dataPreview}\n\n`;
+    }
+    if (ctx.changelog && ctx.changelog.length > 0) {
+      l1 += `## Letzte Aenderungen\n`;
+      for (const c of ctx.changelog.slice(-5)) {
+        l1 += `- [${c.time}] ${c.summary}\n`;
+      }
+    }
+
+    // L2: Full content - just the JSON
+    const l2 = JSON.stringify(ctx, null, 2);
+
+    // Write to Viking via bridge (fire and forget, don't block)
+    const uri = `viking://resources/contexts/${contextId}`;
+    vikingWrite(uri + '.abstract', l0);
+    vikingWrite(uri + '.overview', l1);
+    vikingWrite(uri, l2);
+
+    console.log(`[viking] Context sync: ${contextId}`);
+  } catch(e) {
+    console.error('[viking-sync] Error syncing context:', contextId, e.message);
+  }
+}
+
+function vikingSyncContextDebounced(contextId) {
+  if (vikingSyncTimers[contextId]) clearTimeout(vikingSyncTimers[contextId]);
+  vikingSyncTimers[contextId] = setTimeout(() => {
+    delete vikingSyncTimers[contextId];
+    vikingSyncContext(contextId);
+  }, 2000);
+}
+
 // --- SSE ---
 const sseClients = new Map();
 const debounceTimers = new Map();
@@ -1663,6 +1747,7 @@ const server = http.createServer((req, res) => {
         ctx.updated = new Date().toISOString();
         fs.writeFileSync(ctxFile, JSON.stringify(ctx, null, 2));
         broadcast('liveos', { type: 'context-change', contextId: ctxId, time: Date.now() });
+        vikingSyncContextDebounced(ctxId);
         jsonRes(res, { ok: true });
       } catch (e) {
         res.writeHead(400); res.end(JSON.stringify({ error: e.message }));
@@ -2661,9 +2746,102 @@ Regeln:
     });
   }
 
+  // ── Context Search (Phase 5 — search across contexts via Viking) ──
+  if (url === '/api/context-search' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { query, limit } = JSON.parse(b);
+        if (!query) return jsonRes(res, { ok: false, error: 'query required' });
+
+        // Try Viking search first
+        const searchData = JSON.stringify({ query, target_uri: 'viking://resources/contexts/', limit: limit || 10 });
+        const vikingReq = http.request({
+          hostname: 'localhost', port: 1934, path: '/api/viking/search',
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(searchData) },
+          timeout: 3000
+        }, vikingRes => {
+          let body = '';
+          vikingRes.on('data', c => { body += c; });
+          vikingRes.on('end', () => {
+            try {
+              const vikingResult = JSON.parse(body);
+              if (vikingResult.ok && vikingResult.results && vikingResult.results.length > 0) {
+                // Enrich results with context metadata
+                const enriched = vikingResult.results.map(r => {
+                  const uriMatch = (r.uri || '').match(/contexts\/([a-z0-9_-]+)/);
+                  const ctxId = uriMatch ? uriMatch[1] : null;
+                  let ctx = null;
+                  if (ctxId) {
+                    const ctxFile = path.join(ROOT, 'data', 'contexts', ctxId + '.json');
+                    if (fs.existsSync(ctxFile)) {
+                      try {
+                        const full = JSON.parse(fs.readFileSync(ctxFile, 'utf8'));
+                        ctx = { id: full.id, name: full.name, icon: full.icon, color: full.color, widgetCount: (full.widgets || []).length };
+                      } catch {}
+                    }
+                  }
+                  return { ...r, context: ctx };
+                }).filter(r => r.context);
+                return jsonRes(res, { ok: true, source: 'viking', results: enriched });
+              }
+              // Viking returned no results, fall through to local search
+              localContextSearch(query, limit || 10, res);
+            } catch {
+              localContextSearch(query, limit || 10, res);
+            }
+          });
+        });
+        vikingReq.on('error', () => { localContextSearch(query, limit || 10, res); });
+        vikingReq.on('timeout', () => { vikingReq.destroy(); localContextSearch(query, limit || 10, res); });
+        vikingReq.write(searchData);
+        vikingReq.end();
+
+      } catch (e) {
+        jsonRes(res, { ok: false, error: e.message });
+      }
+    });
+  }
+
+  // Local fallback search across context files
+  function localContextSearch(query, limit, res) {
+    try {
+      const contextDir = path.join(ROOT, 'data', 'contexts');
+      if (!fs.existsSync(contextDir)) return jsonRes(res, { ok: true, source: 'local', results: [] });
+      const files = fs.readdirSync(contextDir).filter(f => f.endsWith('.json') && !f.startsWith('_'));
+      const queryLower = query.toLowerCase();
+      const results = [];
+      for (const f of files) {
+        try {
+          const ctx = JSON.parse(fs.readFileSync(path.join(contextDir, f), 'utf8'));
+          // Search in name, widget titles, and data
+          const searchable = [
+            ctx.name || '',
+            ...(ctx.widgets || []).map(w => w.title || ''),
+            ...(ctx.changelog || []).map(c => c.summary || ''),
+            JSON.stringify(ctx.data || {}).slice(0, 2000)
+          ].join(' ').toLowerCase();
+          if (searchable.includes(queryLower)) {
+            const widgetSummaries = (ctx.widgets || []).map(w => w.title).join(', ');
+            results.push({
+              uri: `viking://resources/contexts/${ctx.id}`,
+              name: ctx.name,
+              abstract: `${ctx.icon || ''} ${ctx.name} | ${(ctx.widgets||[]).length} Widgets: ${widgetSummaries}`,
+              score: searchable.split(queryLower).length - 1,
+              context: { id: ctx.id, name: ctx.name, icon: ctx.icon, color: ctx.color, widgetCount: (ctx.widgets || []).length }
+            });
+          }
+        } catch {}
+      }
+      results.sort((a, b) => b.score - a.score);
+      jsonRes(res, { ok: true, source: 'local', results: results.slice(0, limit) });
+    } catch (e) {
+      jsonRes(res, { ok: false, error: e.message, results: [] });
+    }
+  }
+
   // ── Context Chat (Phase 4 — works with context files instead of projects.json) ──
   if (url === '/api/context-chat' && req.method === 'POST') {
-    return readBody(req, b => {
+    return readBody(req, async b => {
       try {
         const { contextId, text } = JSON.parse(b);
         if (!contextId || !text) return jsonRes(res, { ok: false, error: 'contextId and text required' });
@@ -2767,6 +2945,45 @@ Regeln:
           if (schemas) schemasText = schemas;
         } catch {}
 
+        // Viking search for similar contexts (async, inject into prompt if available)
+        let vikingSearchText = '';
+        const vikingSearchPromise = new Promise(resolve => {
+          try {
+            const searchData = JSON.stringify({ query: text, target_uri: 'viking://resources/contexts/', limit: 3 });
+            const vReq = http.request({
+              hostname: 'localhost', port: 1934, path: '/api/viking/search',
+              method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(searchData) },
+              timeout: 1000
+            }, vRes => {
+              let body = '';
+              vRes.on('data', c => { body += c; });
+              vRes.on('end', () => {
+                try {
+                  const r = JSON.parse(body);
+                  if (r.ok && r.results && r.results.length > 0) {
+                    const relevant = r.results.filter(item => {
+                      const uriMatch = (item.uri || '').match(/contexts\/([a-z0-9_-]+)/);
+                      return !uriMatch || uriMatch[1] !== contextId;
+                    });
+                    if (relevant.length > 0) {
+                      vikingSearchText = relevant.map(item => `  - ${item.name || item.uri}: ${item.abstract || ''}`).join('\n');
+                    }
+                  }
+                } catch {}
+                resolve();
+              });
+            });
+            vReq.on('error', () => resolve());
+            vReq.on('timeout', () => { vReq.destroy(); resolve(); });
+            vReq.write(searchData);
+            vReq.end();
+          } catch { resolve(); }
+        });
+
+        // Wait briefly for Viking, then build prompt
+        const vikingTimeout = new Promise(resolve => setTimeout(resolve, 1200));
+        await Promise.race([vikingSearchPromise, vikingTimeout]);
+
         const prompt = `Du bist der Context-Agent fuer PulseOS. Der User arbeitet im Context "${context.name}" (${contextId}).
 
 WICHTIG: Antworte NUR mit einem JSON-Objekt, kein anderer Text davor oder danach. Das JSON muss diese Struktur haben:
@@ -2852,6 +3069,9 @@ ${widgetLibrary}` : ''}
 
 ${changelog ? `Aenderungs-Log (was der User zuletzt an den Widgets geaendert hat):
 ${changelog}` : ''}
+
+${vikingSearchText ? `Aehnliche Contexts (aus Viking-Suche, als Referenz/Inspiration):
+${vikingSearchText}` : ''}
 
 Letzte Chat-Nachrichten:
 ${recentChat}
@@ -3074,6 +3294,7 @@ Regeln:
             freshContext.updated = new Date().toISOString();
             fs.writeFileSync(ctxFile, JSON.stringify(freshContext, null, 2));
             broadcast('liveos', { type: 'context-change', contextId, time: Date.now() });
+            vikingSyncContextDebounced(contextId);
 
             emitEvent({ type: 'chat:message', source: 'context-agent', data: { contextId, text: parsed.text?.slice(0, 100) } });
 
