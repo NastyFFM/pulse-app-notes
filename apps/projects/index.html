@@ -2912,17 +2912,25 @@ function getL0ActionsHtml(widget, proj, widgetId) {
     case 'notes': {
       const noteData = proj.data?.[dk] || widget.data || {};
       const txt = noteData.text || noteData.content || '';
+      const charCount = txt.length;
       const firstLine = txt.split('\n')[0] || '';
       const preview = firstLine.slice(0, 50) + (firstLine.length > 50 ? '…' : '');
-      return `<span class="l0-note-preview" title="Klick zum Öffnen">${escapeHtml(preview) || '<i style="opacity:.4">Leer</i>'}</span>`;
+      return `<span class="l0-note-preview" title="Klick zum Öffnen">${escapeHtml(preview) || '<i style="opacity:.4">Leer</i>'}</span><span style="font-size:9px;color:var(--text-muted);margin-left:auto;">${charCount}z</span>`;
     }
 
     case 'table': {
       const rows = proj.data?.[dk] || widget.data?.rows || [];
-      const count = Array.isArray(rows) ? rows.length : 0;
+      const arr = Array.isArray(rows) ? rows : [];
+      const count = arr.length;
+      let lastPreview = '';
+      if (count > 0) {
+        const last = arr[count - 1];
+        const vals = Object.values(last).filter(v => typeof v === 'string' || typeof v === 'number');
+        lastPreview = vals.slice(0, 2).join(' · ').slice(0, 30);
+      }
       return `
-        <span style="font-size:11px;color:var(--text-secondary)">${count} Zeilen</span>
-        <button class="l0-btn l0-add-table-row" title="Neue Zeile">+</button>
+        <span style="font-size:11px;color:var(--text-secondary)">${count} Zeilen${lastPreview ? ' · <span style="opacity:.6">' + escapeHtml(lastPreview) + '</span>' : ''}</span>
+        <button class="l0-btn l0-add-table-row" title="Neue Zeile" style="margin-left:auto;">+</button>
       `;
     }
 
@@ -2930,7 +2938,7 @@ function getL0ActionsHtml(widget, proj, widgetId) {
       const kanbanData = proj.data?.[dk] || widget.data || {};
       const cols = Array.isArray(kanbanData) ? kanbanData : (kanbanData.columns || []);
       return cols.map(c => `
-        <div class="l0-kanban-col" title="${escapeHtml(c.name || c.id)}">
+        <div class="l0-kanban-col l0-kanban-expand" data-wid="${widget.id}" title="${escapeHtml(c.name || c.id)}" style="cursor:pointer;">
           ${escapeHtml((c.name || c.id).slice(0, 8))} <span class="count">${(c.items || []).length}</span>
         </div>
       `).join('');
@@ -3080,6 +3088,16 @@ function bindL0Actions(frame, widget, proj, widgetId) {
         renderCanvas();
       });
     }
+  }
+
+  // Kanban: click column badge → expand to L1
+  if (type === 'kanban') {
+    frame.querySelectorAll('.l0-kanban-expand').forEach(badge => {
+      badge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        cycleZoom(widget.id); // Expand to L1
+      });
+    });
   }
 }
 

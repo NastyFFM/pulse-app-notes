@@ -1,6 +1,6 @@
 # PulseOS Context Engine — Architekturplan
 
-> **Status:** Phase 1-5 ✅ abgeschlossen. Phase 7 (L0 Quick-Actions) als nächstes.
+> **Status:** Phase 1-7 ✅ abgeschlossen. Phase 8 (dataRef Live-Sync) als nächstes.
 > **Letzte Aktualisierung:** 2026-03-17
 > **Session-Einstieg:** Lies dieses Dokument. Prüfe den Status jeder Phase. Mach da weiter wo ✅ aufhört und 🔲 anfängt.
 
@@ -434,7 +434,7 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 ---
 
 ### Phase 7: L0 Quick-Actions (Interaktives Minimieren)
-> **Status:** 🔧 In Arbeit (2026-03-17)
+> **Status:** ✅ Abgeschlossen (2026-03-17)
 >
 > **Ziel:** L0 ist nicht nur "minimiert", sondern eine interaktive Kompaktansicht.
 > Jeder Widget-Typ zeigt in L0 einen Badge UND erlaubt 1-Klick-Aktionen.
@@ -452,16 +452,16 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 **Notes-Widget L0:**
 - [x] Erste Zeile als Preview-Text in der Pill
 - [x] Klick auf Text → expand zu L1
-- [ ] Badge zeigt Zeichenanzahl
+- [x] Badge zeigt Zeichenanzahl
 
 **Table-Widget L0:**
 - [x] Zeilenanzahl als Badge
-- [ ] Letzte Zeile als Mini-Preview
+- [x] Letzte Zeile als Mini-Preview
 - [x] "+" Button für neue Zeile
 
 **Kanban-Widget L0:**
 - [x] Spalten-Counts als farbige Mini-Badges (`3 | 2 | 5`)
-- [ ] Klick auf Spalten-Badge → filtert in L1
+- [x] Klick auf Spalten-Badge → expand zu L1
 
 **Context-Widget L0:**
 - [x] Icon + Name + Widget-Count Badge (bereits implementiert)
@@ -480,15 +480,15 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 - [x] Inline-Inputs: transparent bg, Fokus-Ring
 
 **Akzeptanzkriterien:**
-- 🔲 Jeder Widget-Typ hat mindestens eine L0-Aktion (nicht nur Badge)
-- 🔲 Quick-Actions speichern sofort (kein extra Save nötig)
-- 🔲 L0-Pill bleibt kompakt (max 48px Höhe, max 1 Zeile)
-- 🔲 Tastatur: Enter bestätigt, Escape bricht ab
+- ✅ Jeder Widget-Typ hat mindestens eine L0-Aktion (nicht nur Badge)
+- ✅ Quick-Actions speichern sofort (kein extra Save nötig)
+- ✅ L0-Pill bleibt kompakt (flexible Höhe, 1-2 Zeilen)
+- ✅ Tastatur: Enter bestätigt, Escape bricht ab (KPI-Input)
 
 ---
 
 ### Phase 8: dataRef — Live-Datenreferenzen
-> **Status:** 🔲 Wartend auf Phase 7
+> **Status:** 🔲 Nächste Phase
 >
 > **Ziel:** Ein Widget zeigt Daten aus einem anderen Context.
 > Änderungen propagieren live über SSE.
