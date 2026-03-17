@@ -617,6 +617,68 @@ body {
   color: var(--text-muted);
 }
 
+/* Template card */
+.tpl-card {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.tpl-card:hover { border-color: var(--accent); background: var(--accent-dim); }
+.tpl-card .tpl-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.tpl-card .tpl-info { flex: 1; }
+.tpl-card .tpl-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.tpl-card .tpl-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+.tpl-card .tpl-widgets {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.tpl-card .tpl-widgets span {
+  font-size: 10px;
+  padding: 1px 6px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  color: var(--text-muted);
+}
+.tpl-card .tpl-usage {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Save as template button */
+.btn-save-template {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.15s;
+}
+.btn-save-template:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
 /* Scrollbars */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -638,7 +700,7 @@ body {
 <div class="sidebar">
   <div class="sidebar-header">
     <h2><span>🧩</span> <span>Projekte</span></h2>
-    <button class="btn-new" onclick="createProject()" title="Neues Projekt">+</button>
+    <button class="btn-new" onclick="openTemplateModal()" title="Neues Projekt">+</button>
   </div>
   <div class="project-list" id="projectList"></div>
 </div>
@@ -651,6 +713,7 @@ body {
       <input class="name-input" id="projectName" value="Projekt" spellcheck="false">
       <div class="sub" id="projectSub">0 Widgets</div>
     </div>
+    <button class="btn-save-template" onclick="saveAsTemplate()" title="Als Template speichern">💾 Template</button>
   </div>
   <div class="chat-messages" id="chatMessages"></div>
   <div class="typing-indicator" id="typingIndicator">
@@ -670,6 +733,27 @@ body {
     <div class="sub">Schreibe im Chat was du brauchst — Widgets erscheinen hier automatisch</div>
   </div>
   <div class="canvas-grid" id="canvasGrid"></div>
+</div>
+
+<!-- Template Picker Modal -->
+<div id="templateModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:none;align-items:center;justify-content:center;">
+  <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:16px;width:520px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <h3 style="font-size:15px;font-weight:600;">Neues Projekt erstellen</h3>
+      <button onclick="closeTemplateModal()" style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:16px 20px;overflow-y:auto;flex:1;" id="templateList">
+      <!-- Templates rendered here -->
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;">
+      <button onclick="createProject()" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);font-size:13px;cursor:pointer;font-family:var(--font);">
+        📝 Leeres Projekt
+      </button>
+      <button onclick="closeTemplateModal()" style="padding:10px 16px;border-radius:8px;border:none;background:var(--bg-secondary);color:var(--text-muted);font-size:13px;cursor:pointer;font-family:var(--font);">
+        Abbrechen
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1499,6 +1583,98 @@ document.getElementById('projectName').addEventListener('change', function() {
     renderProjectList();
     save();
   }
+});
+
+// ── Templates ──
+async function openTemplateModal() {
+  const modal = document.getElementById('templateModal');
+  modal.style.display = 'flex';
+
+  try {
+    const res = await fetch('/api/project-templates');
+    const data = await res.json();
+    const list = document.getElementById('templateList');
+    const templates = data.templates || [];
+
+    if (templates.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;">Keine Templates vorhanden. Erstelle ein leeres Projekt!</div>';
+      return;
+    }
+
+    const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉' };
+    list.innerHTML = templates.map(tpl => `
+      <div class="tpl-card" onclick="createFromTemplate('${tpl.id}')">
+        <div class="tpl-icon" style="background:${tpl.color}22">${tpl.icon}</div>
+        <div class="tpl-info">
+          <div class="tpl-name">${escapeHtml(tpl.name)}</div>
+          <div class="tpl-desc">${escapeHtml(tpl.description || '')}</div>
+          <div class="tpl-widgets">
+            ${tpl.widgets.map(w => `<span>${icons[w.type] || '🧩'} ${w.title}</span>`).join('')}
+          </div>
+          ${tpl.usageCount > 0 ? `<div class="tpl-usage">${tpl.usageCount}x verwendet</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Template load error:', e);
+  }
+}
+
+function closeTemplateModal() {
+  document.getElementById('templateModal').style.display = 'none';
+}
+
+async function createFromTemplate(templateId) {
+  closeTemplateModal();
+  try {
+    const res = await fetch('/api/project-from-template', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templateId })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      await load();
+      selectProject(data.projectId);
+    }
+  } catch (e) {
+    console.error('Template creation error:', e);
+  }
+}
+
+async function saveAsTemplate() {
+  const proj = getProject(state.activeProject);
+  if (!proj || proj.canvas.widgets.length === 0) {
+    alert('Dieses Projekt hat keine Widgets — nichts zum Speichern als Template.');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/project-save-as-template', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId: proj.id })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      // Add system message
+      proj.chat.push({
+        id: 'msg-tpl-' + Date.now(),
+        role: 'system',
+        text: `Projekt als Template "${data.name}" gespeichert! Du kannst es bei neuen Projekten wiederverwenden.`,
+        time: new Date().toISOString()
+      });
+      save();
+      renderChat();
+    }
+  } catch (e) {
+    console.error('Save template error:', e);
+  }
+}
+
+// Close modal on backdrop click
+document.getElementById('templateModal').addEventListener('click', function(e) {
+  if (e.target === this) closeTemplateModal();
 });
 
 // ── Init ──

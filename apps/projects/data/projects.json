@@ -106,7 +106,7 @@
             "id": "w-1773713289208-zcou",
             "type": "todo",
             "title": "Reise-Checkliste",
-            "size": "md",
+            "size": "lg",
             "dataKey": "todo-1773713289208-cz",
             "color": "#8B5CF6",
             "data": {
@@ -184,18 +184,6 @@
                   "Tipp": "Sonntagabend früh buchen!"
                 }
               ]
-            }
-          },
-          {
-            "id": "w-1773713289208-sw2t",
-            "type": "progress",
-            "title": "Trip-Vorbereitung",
-            "size": "sm",
-            "dataKey": "progress-1773713289208-ss",
-            "color": "#8B5CF6",
-            "data": {
-              "percent": 10,
-              "label": "Planung gestartet"
             }
           }
         ]
@@ -315,7 +303,225 @@
         }
       },
       "children": []
+    },
+    {
+      "id": "proj-1773713867205",
+      "name": "Software-Projekt",
+      "icon": "💻",
+      "color": "#22c55e",
+      "parentId": null,
+      "created": "2026-03-17T02:17:47.205Z",
+      "updated": "2026-03-17T02:17:47.205Z",
+      "chat": [
+        {
+          "id": "msg-sys-1773713867205",
+          "role": "system",
+          "text": "Projekt aus Template \"Software-Projekt\" erstellt! 6 Widgets sind bereit.",
+          "time": "2026-03-17T02:17:47.205Z"
+        }
+      ],
+      "canvas": {
+        "widgets": [
+          {
+            "id": "w-1773713867205-wj1i",
+            "type": "kanban",
+            "title": "Sprint Board",
+            "size": "lg",
+            "dataKey": "kanban-1773713867205-jf",
+            "color": "#22c55e",
+            "config": {},
+            "data": {
+              "columns": [
+                {
+                  "id": "backlog",
+                  "name": "Backlog",
+                  "items": []
+                },
+                {
+                  "id": "doing",
+                  "name": "In Arbeit",
+                  "items": []
+                },
+                {
+                  "id": "review",
+                  "name": "Review",
+                  "items": []
+                },
+                {
+                  "id": "done",
+                  "name": "Done",
+                  "items": []
+                }
+              ]
+            }
+          },
+          {
+            "id": "w-1773713867205-ps3c",
+            "type": "todo",
+            "title": "Setup Tasks",
+            "size": "md",
+            "dataKey": "todo-1773713867205-an",
+            "color": "#22c55e",
+            "config": {},
+            "data": {
+              "items": [
+                {
+                  "id": "t-1",
+                  "text": "Repository erstellen",
+                  "done": false,
+                  "priority": "high"
+                },
+                {
+                  "id": "t-2",
+                  "text": "Tech Stack festlegen",
+                  "done": false,
+                  "priority": "high"
+                },
+                {
+                  "id": "t-3",
+                  "text": "Grundstruktur aufsetzen",
+                  "done": false,
+                  "priority": "high"
+                },
+                {
+                  "id": "t-4",
+                  "text": "CI/CD einrichten",
+                  "done": false,
+                  "priority": "medium"
+                },
+                {
+                  "id": "t-5",
+                  "text": "README schreiben",
+                  "done": false,
+                  "priority": "low"
+                }
+              ]
+            }
+          },
+          {
+            "id": "w-1773713867205-os3j",
+            "type": "table",
+            "title": "Tech Stack",
+            "size": "md",
+            "dataKey": "table-1773713867205-dc",
+            "color": "#22c55e",
+            "config": {
+              "columns": [
+                "Bereich",
+                "Technologie",
+                "Grund"
+              ]
+            },
+            "data": {
+              "rows": []
+            }
+          },
+          {
+            "id": "w-1773713867205-kbpm",
+            "type": "timeline",
+            "title": "Meilensteine",
+            "size": "md",
+            "dataKey": "timeline-1773713867205-xd",
+            "color": "#22c55e",
+            "config": {},
+            "data": {
+              "items": []
+            }
+          },
+          {
+            "id": "w-1773713867205-8kmo",
+            "type": "notes",
+            "title": "Architektur-Notizen",
+            "size": "md",
+            "dataKey": "notes-1773713867205-p2",
+            "color": "#22c55e",
+            "config": {},
+            "data": {
+              "text": ""
+            }
+          },
+          {
+            "id": "w-1773713867205-qmgy",
+            "type": "progress",
+            "title": "Gesamtfortschritt",
+            "size": "sm",
+            "dataKey": "progress-1773713867205-t2",
+            "color": "#22c55e",
+            "config": {},
+            "data": {
+              "percent": 0,
+              "label": "Projekt gestartet"
+            }
+          }
+        ]
+      },
+      "data": {
+        "kanban-1773713867205-jf": [
+          {
+            "id": "backlog",
+            "name": "Backlog",
+            "items": []
+          },
+          {
+            "id": "doing",
+            "name": "In Arbeit",
+            "items": []
+          },
+          {
+            "id": "review",
+            "name": "Review",
+            "items": []
+          },
+          {
+            "id": "done",
+            "name": "Done",
+            "items": []
+          }
+        ],
+        "todo-1773713867205-an": [
+          {
+            "id": "t-1",
+            "text": "Repository erstellen",
+            "done": false,
+            "priority": "high"
+          },
+          {
+            "id": "t-2",
+            "text": "Tech Stack festlegen",
+            "done": false,
+            "priority": "high"
+          },
+          {
+            "id": "t-3",
+            "text": "Grundstruktur aufsetzen",
+            "done": false,
+            "priority": "high"
+          },
+          {
+            "id": "t-4",
+            "text": "CI/CD einrichten",
+            "done": false,
+            "priority": "medium"
+          },
+          {
+            "id": "t-5",
+            "text": "README schreiben",
+            "done": false,
+            "priority": "low"
+          }
+        ],
+        "table-1773713867205-dc": [],
+        "timeline-1773713867205-xd": [],
+        "notes-1773713867205-p2": {
+          "text": ""
+        },
+        "progress-1773713867205-t2": {
+          "percent": 0,
+          "label": "Projekt gestartet"
+        }
+      },
+      "children": []
     }
   ],
-  "activeProject": "proj-demo"
+  "activeProject": "proj-1773713867205"
 }

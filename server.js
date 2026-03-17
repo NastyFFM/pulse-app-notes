@@ -2119,6 +2119,101 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
     }
   }
 
+  // --- Project Templates API ---
+  if (url === '/api/project-templates') {
+    const tplFile = path.join(ROOT, 'apps', 'projects', 'data', 'templates.json');
+    if (req.method === 'GET') return jsonRes(res, safeReadJSON(tplFile, { templates: [] }));
+    if (req.method === 'POST') return readBody(req, b => {
+      try {
+        const tpl = JSON.parse(b);
+        if (!tpl.name) return jsonRes(res, { ok: false, error: 'name required' });
+        const data = JSON.parse(safeReadJSON(tplFile, { templates: [] }));
+        tpl.id = tpl.id || 'tpl-' + Date.now();
+        tpl.created = new Date().toISOString();
+        tpl.usageCount = 0;
+        data.templates.push(tpl);
+        fs.writeFileSync(tplFile, JSON.stringify(data, null, 2));
+        jsonRes(res, { ok: true, id: tpl.id });
+      } catch (e) { jsonRes(res, { ok: false, error: e.message }); }
+    });
+  }
+
+  // Save existing project as template
+  if (url === '/api/project-save-as-template' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { projectId } = JSON.parse(b);
+        const projFile = path.join(ROOT, 'apps', 'projects', 'data', 'projects.json');
+        const projData = JSON.parse(safeReadJSON(projFile, { projects: [] }));
+        const project = projData.projects.find(p => p.id === projectId);
+        if (!project) return jsonRes(res, { ok: false, error: 'Project not found' });
+
+        const widgets = project.canvas.widgets.map(w => ({
+          type: w.type, title: w.title, size: w.size, config: w.config || {},
+          defaultData: w.data || project.data[w.dataKey] || {}
+        }));
+
+        const tpl = {
+          id: 'tpl-' + Date.now(), name: project.name, icon: project.icon, color: project.color,
+          description: `Template aus Projekt "${project.name}"`, tags: [],
+          created: new Date().toISOString(), usageCount: 0, widgets
+        };
+
+        const tplFile = path.join(ROOT, 'apps', 'projects', 'data', 'templates.json');
+        const tplData = JSON.parse(safeReadJSON(tplFile, { templates: [] }));
+        tplData.templates.push(tpl);
+        fs.writeFileSync(tplFile, JSON.stringify(tplData, null, 2));
+        jsonRes(res, { ok: true, id: tpl.id, name: tpl.name });
+      } catch (e) { jsonRes(res, { ok: false, error: e.message }); }
+    });
+  }
+
+  // Create project from template
+  if (url === '/api/project-from-template' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { templateId, name } = JSON.parse(b);
+        const tplFile = path.join(ROOT, 'apps', 'projects', 'data', 'templates.json');
+        const tplData = JSON.parse(safeReadJSON(tplFile, { templates: [] }));
+        const tpl = tplData.templates.find(t => t.id === templateId);
+        if (!tpl) return jsonRes(res, { ok: false, error: 'Template not found' });
+
+        const projId = 'proj-' + Date.now();
+        const project = {
+          id: projId, name: name || tpl.name, icon: tpl.icon, color: tpl.color,
+          parentId: null, created: new Date().toISOString(), updated: new Date().toISOString(),
+          chat: [{ id: 'msg-sys-' + Date.now(), role: 'system',
+            text: `Projekt aus Template "${tpl.name}" erstellt! ${tpl.widgets.length} Widgets sind bereit.`,
+            time: new Date().toISOString() }],
+          canvas: { widgets: [] }, data: {}, children: []
+        };
+
+        for (const tw of tpl.widgets) {
+          const wId = 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+          const dataKey = tw.type + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 4);
+          project.canvas.widgets.push({
+            id: wId, type: tw.type, title: tw.title, size: tw.size || 'md',
+            dataKey, color: tpl.color, config: tw.config || {},
+            data: JSON.parse(JSON.stringify(tw.defaultData || {}))
+          });
+          const dd = tw.defaultData || {};
+          project.data[dataKey] = dd.items || dd.columns || dd.rows || dd.links || dd;
+        }
+
+        const projFile = path.join(ROOT, 'apps', 'projects', 'data', 'projects.json');
+        const projData = JSON.parse(safeReadJSON(projFile, { projects: [] }));
+        projData.projects.push(project);
+        projData.activeProject = projId;
+        fs.writeFileSync(projFile, JSON.stringify(projData, null, 2));
+        broadcast('projects', { type: 'change', file: 'projects.json', time: Date.now() });
+
+        tpl.usageCount = (tpl.usageCount || 0) + 1;
+        fs.writeFileSync(tplFile, JSON.stringify(tplData, null, 2));
+        jsonRes(res, { ok: true, projectId: projId, name: project.name, widgets: project.canvas.widgets.length });
+      } catch (e) { jsonRes(res, { ok: false, error: e.message }); }
+    });
+  }
+
   // --- Project Chat AI: spawns claude -p with project context for intelligent widget management ---
   if (url === '/api/project-chat' && req.method === 'POST') {
     return readBody(req, b => {
