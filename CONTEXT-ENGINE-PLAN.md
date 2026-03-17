@@ -434,47 +434,50 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 ---
 
 ### Phase 7: L0 Quick-Actions (Interaktives Minimieren)
-> **Status:** 🔲 Nächste Phase
+> **Status:** 🔧 In Arbeit (2026-03-17)
 >
 > **Ziel:** L0 ist nicht nur "minimiert", sondern eine interaktive Kompaktansicht.
 > Jeder Widget-Typ zeigt in L0 einen Badge UND erlaubt 1-Klick-Aktionen.
 
 **Todo-Widget L0:**
-- [ ] Checkbox-Toggles direkt in der Pill-Zeile (Mini-Checkboxen neben Badge)
-- [ ] "+" Button zum schnellen Hinzufügen eines Items
-- [ ] Badge zeigt `3/7 ✓` (done/total)
+- [x] Checkbox-Toggles direkt in der Pill-Zeile (Mini-Checkboxen neben Badge)
+- [x] "+" Button zum schnellen Hinzufügen eines Items
+- [x] Badge zeigt `3/7 ✓` (done/total)
 
 **KPI-Widget L0:**
-- [ ] Wert inline editierbar (klick auf Zahl → Input)
-- [ ] Trend-Pfeil (↑/↓/→) basierend auf vorherigem Wert
-- [ ] Badge zeigt aktuellen Wert + Einheit
+- [x] Wert inline editierbar (klick auf Zahl → Input)
+- [x] Trend-Pfeil (↑/↓/→) basierend auf vorherigem Wert
+- [x] Badge zeigt aktuellen Wert + Einheit
 
 **Notes-Widget L0:**
-- [ ] Erste Zeile als Preview-Text in der Pill
-- [ ] Klick auf Text → expand zu L1
+- [x] Erste Zeile als Preview-Text in der Pill
+- [x] Klick auf Text → expand zu L1
 - [ ] Badge zeigt Zeichenanzahl
 
 **Table-Widget L0:**
-- [ ] Zeilenanzahl als Badge
+- [x] Zeilenanzahl als Badge
 - [ ] Letzte Zeile als Mini-Preview
-- [ ] "+" Button für neue Zeile
+- [x] "+" Button für neue Zeile
 
 **Kanban-Widget L0:**
-- [ ] Spalten-Counts als farbige Mini-Badges (`3 | 2 | 5`)
+- [x] Spalten-Counts als farbige Mini-Badges (`3 | 2 | 5`)
 - [ ] Klick auf Spalten-Badge → filtert in L1
 
 **Context-Widget L0:**
 - [x] Icon + Name + Widget-Count Badge (bereits implementiert)
-- [ ] Status-Indicator: letztes Update-Datum als relative Zeit
+- [x] Status-Indicator: letztes Update-Datum als relative Zeit
 
 **Timeline-Widget L0:**
-- [ ] Nächstes/aktuelles Event als Badge
-- [ ] Countdown oder relative Zeit
+- [x] Nächstes/aktuelles Event als Badge
+- [x] Countdown oder relative Zeit
+
+**Progress-Widget L0:**
+- [x] Mini-Fortschrittsbalken + Prozent-Anzeige
 
 **CSS/UX für L0 Quick-Actions:**
-- [ ] L0-Pill-Höhe auf 48px erhöhen (statt 44px) für Klick-Targets
-- [ ] Quick-Action Buttons: 20x20px, transparent, hover-Effekt
-- [ ] Inline-Inputs: 60px breit, kein Border, transparent bg, Fokus-Ring
+- [x] L0-Pill flexible Höhe (auto statt fixed 44px) für Klick-Targets
+- [x] Quick-Action Buttons: 22x22px, transparent, hover-Effekt
+- [x] Inline-Inputs: transparent bg, Fokus-Ring
 
 **Akzeptanzkriterien:**
 - 🔲 Jeder Widget-Typ hat mindestens eine L0-Aktion (nicht nur Badge)

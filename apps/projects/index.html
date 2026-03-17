@@ -578,13 +578,122 @@ body {
 
 /* Zoom Levels */
 .widget-frame.zoom-l0 {
-  max-height: 44px;
-  overflow: hidden;
+  max-height: none;
+  overflow: visible;
 }
 .widget-frame.zoom-l0 .widget-body { display: none; }
 .widget-frame.zoom-l0 .widget-cmd { display: none !important; }
 .widget-frame.zoom-l0 .widget-head .actions button:not(.widget-zoom-btn) { display: none; }
 .widget-frame.zoom-l0 .widget-head .label { font-size: 12px; }
+.widget-frame.zoom-l0 .widget-head { padding: 6px 10px; min-height: 36px; }
+
+/* L0 Quick-Actions Zone */
+.l0-actions {
+  display: none;
+  padding: 4px 10px 6px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-primary);
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.widget-frame.zoom-l0 .l0-actions { display: flex; }
+.widget-frame:not(.zoom-l0) .l0-actions { display: none; }
+
+/* L0 Todo mini-checkboxes */
+.l0-todo-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 1px 6px;
+  border-radius: 4px;
+  transition: background 0.1s;
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.l0-todo-item:hover { background: var(--bg-secondary); }
+.l0-todo-item.done { text-decoration: line-through; opacity: 0.5; }
+.l0-todo-item input[type="checkbox"] {
+  width: 12px; height: 12px; margin: 0; cursor: pointer; accent-color: var(--accent);
+}
+
+/* L0 Quick-Action Buttons */
+.l0-btn {
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+  flex-shrink: 0;
+}
+.l0-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+/* L0 Inline KPI Edit */
+.l0-kpi-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  min-width: 40px;
+  text-align: center;
+  font-family: var(--font);
+  transition: border-color 0.15s;
+}
+.l0-kpi-value:hover { border-color: var(--border); }
+.l0-kpi-value:focus { border-color: var(--accent); outline: none; background: var(--bg-secondary); }
+.l0-kpi-unit { font-size: 10px; color: var(--text-muted); }
+.l0-kpi-trend { font-size: 12px; margin-left: 2px; }
+
+/* L0 Notes preview */
+.l0-note-preview {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  cursor: pointer;
+  padding: 1px 4px;
+}
+.l0-note-preview:hover { color: var(--text-primary); }
+
+/* L0 Kanban mini badges */
+.l0-kanban-col {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+.l0-kanban-col .count { font-weight: 600; color: var(--text-primary); }
+
+/* L0 Timeline */
+.l0-next-event {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.l0-next-event .date { color: var(--accent); font-weight: 500; }
 
 .widget-frame.zoom-l2 {
   grid-column: 1 / -1;
@@ -1708,11 +1817,17 @@ function createWidgetFrame(widget, proj, inherited = false) {
       </div>
       <div id="wcmd-status-${widgetId}" style="font-size:11px;color:var(--text-muted);padding-top:4px;display:none;"></div>
     </div>
+    <div class="l0-actions" id="l0-${widgetId}">${getL0ActionsHtml(widget, proj, widgetId)}</div>
     <div class="widget-body" id="wb-${widgetId}"></div>
   `;
 
   const body = frame.querySelector('.widget-body');
   renderWidgetContent(body, widget, proj);
+
+  // Bind L0 action events after DOM insertion
+  if (zoomLevel === 'L0') {
+    setTimeout(() => bindL0Actions(frame, widget, proj, widgetId), 0);
+  }
 
   return frame;
 }
@@ -2753,6 +2868,232 @@ function cycleZoom(widgetId) {
   renderCanvas();
 }
 
+// ── L0 Quick-Actions ──
+
+function getL0ActionsHtml(widget, proj, widgetId) {
+  const type = widget.type;
+  const dk = widget.dataKey;
+
+  switch (type) {
+    case 'todo': {
+      const items = proj.data?.[dk] || widget.data?.items || [];
+      const arr = Array.isArray(items) ? items : [];
+      const visible = arr.slice(0, 5); // Show max 5 items in L0
+      let html = visible.map((item, i) => `
+        <label class="l0-todo-item${item.done ? ' done' : ''}" title="${escapeHtml(item.text)}">
+          <input type="checkbox" ${item.done ? 'checked' : ''} data-idx="${i}" class="l0-todo-check"/>
+          ${escapeHtml(item.text.slice(0, 20))}${item.text.length > 20 ? '…' : ''}
+        </label>
+      `).join('');
+      if (arr.length > 5) html += `<span style="font-size:10px;color:var(--text-muted)">+${arr.length - 5}</span>`;
+      html += `<button class="l0-btn l0-add-todo" title="Neues Item">+</button>`;
+      return html;
+    }
+
+    case 'kpi': {
+      const kpiData = proj.data?.[dk] || widget.data || {};
+      const val = kpiData.value ?? '';
+      const unit = kpiData.unit || '';
+      const prev = kpiData.previousValue;
+      let trend = '';
+      if (prev !== undefined && prev !== null && val !== '') {
+        const diff = Number(val) - Number(prev);
+        trend = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+        const trendColor = diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red)' : 'var(--text-muted)';
+        trend = `<span class="l0-kpi-trend" style="color:${trendColor}">${trend}</span>`;
+      }
+      return `
+        <input type="text" class="l0-kpi-value" value="${escapeHtml(String(val))}" data-dk="${dk}" placeholder="—" />
+        <span class="l0-kpi-unit">${escapeHtml(unit)}</span>
+        ${trend}
+      `;
+    }
+
+    case 'notes': {
+      const noteData = proj.data?.[dk] || widget.data || {};
+      const txt = noteData.text || noteData.content || '';
+      const firstLine = txt.split('\n')[0] || '';
+      const preview = firstLine.slice(0, 50) + (firstLine.length > 50 ? '…' : '');
+      return `<span class="l0-note-preview" title="Klick zum Öffnen">${escapeHtml(preview) || '<i style="opacity:.4">Leer</i>'}</span>`;
+    }
+
+    case 'table': {
+      const rows = proj.data?.[dk] || widget.data?.rows || [];
+      const count = Array.isArray(rows) ? rows.length : 0;
+      return `
+        <span style="font-size:11px;color:var(--text-secondary)">${count} Zeilen</span>
+        <button class="l0-btn l0-add-table-row" title="Neue Zeile">+</button>
+      `;
+    }
+
+    case 'kanban': {
+      const kanbanData = proj.data?.[dk] || widget.data || {};
+      const cols = Array.isArray(kanbanData) ? kanbanData : (kanbanData.columns || []);
+      return cols.map(c => `
+        <div class="l0-kanban-col" title="${escapeHtml(c.name || c.id)}">
+          ${escapeHtml((c.name || c.id).slice(0, 8))} <span class="count">${(c.items || []).length}</span>
+        </div>
+      `).join('');
+    }
+
+    case 'timeline': {
+      const tItems = proj.data?.[dk] || widget.data?.items || [];
+      const arr = Array.isArray(tItems) ? tItems : [];
+      // Find next upcoming event
+      const now = new Date();
+      const upcoming = arr.filter(i => i.date && new Date(i.date) >= now).sort((a, b) => new Date(a.date) - new Date(b.date));
+      if (upcoming.length > 0) {
+        const next = upcoming[0];
+        const d = new Date(next.date);
+        const diffDays = Math.ceil((d - now) / 86400000);
+        const relTime = diffDays === 0 ? 'Heute' : diffDays === 1 ? 'Morgen' : `in ${diffDays}d`;
+        return `<div class="l0-next-event">📅 <span class="date">${relTime}</span> ${escapeHtml((next.text || next.title || '').slice(0, 25))}</div>`;
+      }
+      return `<span style="font-size:11px;color:var(--text-muted)">${arr.length} Events</span>`;
+    }
+
+    case 'context': {
+      const refCtx = state.contexts.find(c => c.id === widget.contextRef);
+      if (refCtx) {
+        const ago = refCtx.updated ? timeAgo(refCtx.updated) : '';
+        return `<span style="font-size:11px;color:var(--text-secondary)">${refCtx.widgetCount || 0}w${ago ? ' · ' + ago : ''}</span>`;
+      }
+      return '';
+    }
+
+    case 'progress': {
+      const progData = proj.data?.[dk] || widget.data || {};
+      const pct = progData.percent ?? 0;
+      const barColor = pct >= 100 ? 'var(--green)' : pct >= 50 ? 'var(--accent)' : 'var(--amber)';
+      return `
+        <div style="flex:1;min-width:80px;height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;">
+          <div style="width:${Math.min(pct, 100)}%;height:100%;background:${barColor};border-radius:4px;transition:width .3s;"></div>
+        </div>
+        <span style="font-size:11px;font-weight:600;color:var(--text-primary);min-width:30px;text-align:right;">${pct}%</span>
+      `;
+    }
+
+    default:
+      return '';
+  }
+}
+
+function timeAgo(dateStr) {
+  try {
+    const d = new Date(dateStr);
+    const diff = Date.now() - d.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'jetzt';
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d`;
+  } catch { return ''; }
+}
+
+function bindL0Actions(frame, widget, proj, widgetId) {
+  const type = widget.type;
+  const dk = widget.dataKey;
+
+  // Todo: checkbox toggles
+  if (type === 'todo') {
+    frame.querySelectorAll('.l0-todo-check').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(cb.dataset.idx);
+        const items = proj.data?.[dk] || widget.data?.items || [];
+        if (Array.isArray(items) && items[idx]) {
+          items[idx].done = cb.checked;
+          cb.closest('.l0-todo-item').classList.toggle('done', cb.checked);
+          // Update badge in header
+          const done = items.filter(i => i.done).length;
+          updateL0Badge(widgetId, `${done}/${items.length} ✓`);
+          save();
+        }
+      });
+    });
+    // Todo: add button
+    const addBtn = frame.querySelector('.l0-add-todo');
+    if (addBtn) {
+      addBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const text = prompt('Neues Todo:');
+        if (!text) return;
+        if (!proj.data[dk]) proj.data[dk] = [];
+        const items = proj.data[dk];
+        items.push({ id: 't-' + Date.now(), text, done: false });
+        save();
+        renderCanvas();
+      });
+    }
+  }
+
+  // KPI: inline edit
+  if (type === 'kpi') {
+    const input = frame.querySelector('.l0-kpi-value');
+    if (input) {
+      input.addEventListener('blur', () => {
+        const newVal = input.value.trim();
+        if (!proj.data[dk]) proj.data[dk] = {};
+        const old = proj.data[dk].value;
+        if (old !== undefined && old !== null) proj.data[dk].previousValue = old;
+        proj.data[dk].value = isNaN(Number(newVal)) ? newVal : Number(newVal);
+        save();
+        // Refresh to update trend arrow
+        renderCanvas();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { input.blur(); }
+        if (e.key === 'Escape') { input.value = proj.data?.[dk]?.value ?? ''; input.blur(); }
+      });
+    }
+  }
+
+  // Notes: click to expand
+  if (type === 'notes') {
+    const preview = frame.querySelector('.l0-note-preview');
+    if (preview) {
+      preview.addEventListener('click', (e) => {
+        e.stopPropagation();
+        cycleZoom(widget.id); // Expand to L1
+      });
+    }
+  }
+
+  // Table: add row
+  if (type === 'table') {
+    const addBtn = frame.querySelector('.l0-add-table-row');
+    if (addBtn) {
+      addBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!proj.data[dk]) proj.data[dk] = [];
+        const rows = proj.data[dk];
+        const cols = widget.config?.columns || ['Name', 'Wert'];
+        const newRow = {};
+        cols.forEach(c => newRow[c] = '');
+        rows.push(newRow);
+        save();
+        // Switch to L1 so user can edit the new row
+        const w = (proj.widgets || []).find(w => w.id === widget.id);
+        if (w) { w.zoomLevel = 'L1'; save(); }
+        renderCanvas();
+      });
+    }
+  }
+}
+
+function updateL0Badge(widgetId, badgeText) {
+  const frame = document.querySelector(`.widget-frame[data-widget-id="${widgetId}"]`);
+  if (!frame) return;
+  const label = frame.querySelector('.label');
+  if (label) {
+    // Replace badge part (after " · ")
+    const base = label.textContent.split(' · ')[0];
+    label.innerHTML = label.innerHTML.replace(/ · [^<]*/, ` · ${badgeText}`);
+  }
+}
+
 function getL0Badge(widget, proj) {
   const data = proj.data?.[widget.dataKey] || widget.data || {};
   switch (widget.type) {
@@ -2772,7 +3113,7 @@ function getL0Badge(widget, proj) {
     }
     case 'kanban': {
       const kanbanData = proj.data?.[widget.dataKey] || widget.data || {};
-      const cols = kanbanData.columns || [];
+      const cols = Array.isArray(kanbanData) ? kanbanData : (kanbanData.columns || []);
       return cols.map(c => (c.items || []).length).join('/');
     }
     case 'notes': {
@@ -2787,6 +3128,10 @@ function getL0Badge(widget, proj) {
     case 'timeline': {
       const tItems = proj.data?.[widget.dataKey] || widget.data?.items || [];
       return `${Array.isArray(tItems) ? tItems.length : 0} Items`;
+    }
+    case 'progress': {
+      const progData = proj.data?.[widget.dataKey] || widget.data || {};
+      return `${progData.percent ?? 0}%`;
     }
     default:
       return '';
