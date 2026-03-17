@@ -2,26 +2,6 @@
   "entries": [
     {
       "action": "chat",
-      "detail": "User: \"was war heute bei der tagesschau los\"",
-      "time": "2026-03-11T23:58:16.082Z"
-    },
-    {
-      "action": "chat",
-      "detail": "User: \"bei der wetter app gibt es einen bug: obwohl sie f...\"",
-      "time": "2026-03-12T00:03:44.864Z"
-    },
-    {
-      "action": "chat",
-      "detail": "User: \"öffne die wetter app\"",
-      "time": "2026-03-12T00:05:06.069Z"
-    },
-    {
-      "action": "chat",
-      "detail": "User: \"jetz mach emir eine app die mir news zusammen fast...\"",
-      "time": "2026-03-12T00:06:51.762Z"
-    },
-    {
-      "action": "chat",
       "detail": "User: \"mach bei den news auch noch bilder mit in die kach...\"",
       "time": "2026-03-12T00:11:38.188Z"
     },
@@ -999,6 +979,26 @@
       "action": "install",
       "detail": "Notizen installiert",
       "time": "2026-03-16T21:15:39.539Z"
+    },
+    {
+      "action": "install",
+      "detail": "Viking Context DB deinstalliert",
+      "time": "2026-03-17T00:46:18.435Z"
+    },
+    {
+      "action": "install",
+      "detail": "Context Demo deinstalliert",
+      "time": "2026-03-17T00:46:20.368Z"
+    },
+    {
+      "action": "install",
+      "detail": "Context Demo installiert",
+      "time": "2026-03-17T00:46:22.439Z"
+    },
+    {
+      "action": "install",
+      "detail": "Viking Context DB installiert",
+      "time": "2026-03-17T00:46:23.335Z"
     }
   ]
 }

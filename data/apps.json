@@ -326,6 +326,15 @@
       "description": "Verwaltet Notizen, Ideen und Wissenssammlungen",
       "installed": true,
       "position": 36
+    },
+    {
+      "id": "projects",
+      "name": "Projects",
+      "icon": "🧩",
+      "color": "#8B5CF6",
+      "description": "Chat-gesteuerte Projekt-Kontexte mit dynamischen Widget-Canvas",
+      "installed": true,
+      "position": 37
     }
   ]
 }

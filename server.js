@@ -542,6 +542,341 @@ function ensureWatcher(scope) {
   } catch {}
 }
 
+// =============================================================================
+// --- PulseOS Event Bus + Action Chain Engine ---
+// =============================================================================
+// Events flow through the bus. Action chains listen for events and trigger
+// sequences of agent actions. Apps are gates — both in and out.
+
+const ROOT_CONTEXT_FILE = path.join(ROOT, 'data', 'root-context.json');
+const ACTION_CHAINS_FILE = path.join(ROOT, 'data', 'action-chains.json');
+const EVENT_LOG_FILE = path.join(ROOT, 'data', 'event-log.json');
+
+// Initialize action chains file
+if (!fs.existsSync(ACTION_CHAINS_FILE)) {
+  fs.writeFileSync(ACTION_CHAINS_FILE, JSON.stringify({
+    chains: [
+      {
+        id: 'chat-intent-router',
+        name: 'Chat Intent Router',
+        description: 'Analysiert Chat-Nachrichten und leitet Intents an zustaendige Agenten weiter',
+        enabled: true,
+        trigger: { type: 'chat:message' },
+        steps: [
+          { id: 'parse', agent: 'system', action: 'parse-intent', description: 'Intent aus Nachricht erkennen' },
+          { id: 'route', agent: 'system', action: 'route-to-agent', description: 'Intent an zustaendigen Agent weiterleiten' }
+        ]
+      },
+      {
+        id: 'data-sync-chain',
+        name: 'Data Sync Chain',
+        description: 'Synchronisiert Datenaenderungen mit Viking und benachrichtigt betroffene Agenten',
+        enabled: true,
+        trigger: { type: 'data:changed' },
+        steps: [
+          { id: 'viking-sync', agent: 'system', action: 'viking-import', description: 'Daten in Viking importieren' },
+          { id: 'notify-agents', agent: 'system', action: 'notify-related-agents', description: 'Betroffene Agenten informieren' }
+        ]
+      },
+      {
+        id: 'startup-chain',
+        name: 'System Startup',
+        description: 'Initialisierung beim Start von PulseOS',
+        enabled: true,
+        trigger: { type: 'system:startup' },
+        steps: [
+          { id: 'load-context', agent: 'system', action: 'load-root-context', description: 'Root-Context laden' },
+          { id: 'health-check', agent: 'system', action: 'health-check', description: 'System-Health pruefen' }
+        ]
+      }
+    ]
+  }, null, 2));
+}
+
+// Event log (ring buffer, max 500 entries)
+function logEvent(event) {
+  try {
+    const log = JSON.parse(safeReadJSON(EVENT_LOG_FILE, { events: [] }));
+    log.events.push({ ...event, timestamp: new Date().toISOString() });
+    if (log.events.length > 500) log.events = log.events.slice(-500);
+    fs.writeFileSync(EVENT_LOG_FILE, JSON.stringify(log, null, 2));
+  } catch {}
+}
+
+// ── Event Bus ──
+const eventListeners = new Map(); // type → Set of callbacks
+
+function onEvent(type, callback) {
+  if (!eventListeners.has(type)) eventListeners.set(type, new Set());
+  eventListeners.get(type).add(callback);
+}
+
+function emitEvent(event) {
+  const { type, source, data } = event;
+  console.log(`[event-bus] ${type} from ${source || 'system'}${data?.appId ? ' (' + data.appId + ')' : ''}`);
+  logEvent(event);
+
+  // Notify direct listeners
+  const listeners = eventListeners.get(type);
+  if (listeners) {
+    for (const cb of listeners) {
+      try { cb(event); } catch (e) { console.error(`[event-bus] listener error:`, e.message); }
+    }
+  }
+
+  // Broadcast to SSE (all clients on 'pulse' channel get all events)
+  broadcast('pulse', { type: 'event', event });
+
+  // Match against action chains
+  runActionChains(event);
+}
+
+// ── Action Chain Runner ──
+function getActionChains() {
+  try { return JSON.parse(fs.readFileSync(ACTION_CHAINS_FILE, 'utf8')).chains || []; }
+  catch { return []; }
+}
+
+async function runActionChains(event) {
+  const chains = getActionChains();
+  for (const chain of chains) {
+    if (!chain.enabled) continue;
+    if (chain.trigger.type !== event.type) continue;
+
+    // Optional: match pattern on event data
+    if (chain.trigger.pattern) {
+      const regex = new RegExp(chain.trigger.pattern, 'i');
+      const testStr = JSON.stringify(event.data || '');
+      if (!regex.test(testStr)) continue;
+    }
+
+    console.log(`[action-chain] Triggered: ${chain.name} (${chain.id})`);
+
+    // Execute steps sequentially
+    let context = { event, results: {} };
+    for (const step of chain.steps) {
+      try {
+        const result = await executeChainStep(step, context);
+        context.results[step.id] = result;
+        console.log(`[action-chain]   Step ${step.id}: ${result?.ok !== false ? 'OK' : 'FAIL'}`);
+
+        // Check if step wants to stop the chain
+        if (result?.stopChain) break;
+
+        // Emit sub-events if step produced them
+        if (result?.emitEvents) {
+          for (const subEvent of result.emitEvents) {
+            emitEvent({ ...subEvent, source: `chain:${chain.id}:${step.id}` });
+          }
+        }
+      } catch (e) {
+        console.error(`[action-chain]   Step ${step.id} error:`, e.message);
+        if (!step.continueOnError) break;
+      }
+    }
+  }
+}
+
+async function executeChainStep(step, context) {
+  const { agent, action } = step;
+  const event = context.event;
+
+  // Built-in system actions
+  if (agent === 'system') {
+    switch (action) {
+      case 'parse-intent':
+        // Simple intent parsing from chat messages
+        return parseIntent(event.data?.text || '');
+
+      case 'route-to-agent':
+        // Route parsed intent to the right agent
+        const intent = context.results?.parse;
+        if (intent?.agents) {
+          return { ok: true, routed: intent.agents, emitEvents: intent.agents.map(a => ({
+            type: 'chat:intent',
+            data: { ...event.data, intent: intent.intent, targetAgent: a }
+          })) };
+        }
+        return { ok: true, routed: [] };
+
+      case 'viking-import':
+        if (event.data?.appId) vikingImportApp(event.data.appId);
+        return { ok: true };
+
+      case 'notify-related-agents':
+        // Broadcast data change to all agent contexts
+        return { ok: true };
+
+      case 'load-root-context':
+        try {
+          const ctx = JSON.parse(fs.readFileSync(ROOT_CONTEXT_FILE, 'utf8'));
+          return { ok: true, context: ctx.identity?.name };
+        } catch { return { ok: false }; }
+
+      case 'health-check':
+        const agents = readAgents();
+        const alive = agents.agents.filter(a => a.status === 'running').length;
+        return { ok: true, agents: agents.agents.length, alive };
+
+      default:
+        return { ok: false, error: `Unknown system action: ${action}` };
+    }
+  }
+
+  // Agent-based actions: spawn claude -p with the agent's skill
+  if (agent && action) {
+    const skillPath = path.join(ROOT, '.claude', 'skills', agent, 'SKILL.md');
+    if (fs.existsSync(skillPath)) {
+      // Queue the task for the agent (don't block the chain)
+      return { ok: true, queued: true, agent, action };
+    }
+    return { ok: false, error: `No skill found for agent: ${agent}` };
+  }
+
+  return { ok: false, error: 'Invalid step configuration' };
+}
+
+// ── Intent Parser ──
+// Simple keyword-based intent detection — routes to the right agents
+function parseIntent(text) {
+  const lower = text.toLowerCase();
+  const intents = [];
+
+  // Calendar intents
+  if (/termin|meeting|event|kalender|morgen|uebermorgen|um \d{1,2}(:\d{2})?\s*(uhr)?/i.test(lower)) {
+    intents.push({ intent: 'calendar-event', agents: ['calendar-agent', 'calendar'] });
+  }
+  // Todo/Task intents
+  if (/todo|aufgabe|task|erledigen|machen|ticket/i.test(lower)) {
+    intents.push({ intent: 'create-task', agents: ['tickets', 'kanban'] });
+  }
+  // Budget intents
+  if (/budget|ausgabe|einnahme|kosten|bezahlt|euro|€|\d+\s*(euro|eur)/i.test(lower)) {
+    intents.push({ intent: 'budget-entry', agents: ['budget-agent', 'budget'] });
+  }
+  // Note intents
+  if (/notiz|note|merken|aufschreiben|idee/i.test(lower)) {
+    intents.push({ intent: 'create-note', agents: ['notes-agent', 'notes'] });
+  }
+  // Reminder intents
+  if (/erinner|remind|wecker|alarm/i.test(lower)) {
+    intents.push({ intent: 'reminder', agents: ['alarm', 'calendar-agent'] });
+  }
+  // Travel intents
+  if (/reise|flug|hotel|urlaub|trip/i.test(lower)) {
+    intents.push({ intent: 'travel', agents: ['travel-planner'] });
+  }
+  // Recipe intents
+  if (/rezept|kochen|essen|gericht/i.test(lower)) {
+    intents.push({ intent: 'recipe', agents: ['recipes'] });
+  }
+
+  if (intents.length === 0) {
+    return { ok: true, intent: 'general', agents: ['chat'], intents: [] };
+  }
+
+  // Flatten all target agents (deduplicate)
+  const allAgents = [...new Set(intents.flatMap(i => i.agents))];
+  return { ok: true, intent: intents[0].intent, agents: allAgents, intents };
+}
+
+// ── Scheduler (Cron-like) ──
+const SCHEDULER_FILE = path.join(ROOT, 'data', 'scheduled-tasks.json');
+if (!fs.existsSync(SCHEDULER_FILE)) {
+  fs.writeFileSync(SCHEDULER_FILE, JSON.stringify({
+    tasks: [
+      {
+        id: 'health-check',
+        name: 'System Health Check',
+        cron: '*/5 * * * *',
+        enabled: true,
+        event: { type: 'system:health', source: 'scheduler' },
+        lastRun: null
+      },
+      {
+        id: 'daily-summary',
+        name: 'Tages-Zusammenfassung',
+        cron: '0 8 * * *',
+        enabled: false,
+        event: { type: 'cron:trigger', source: 'scheduler', data: { task: 'daily-summary' } },
+        lastRun: null
+      }
+    ]
+  }, null, 2));
+}
+
+// Simple 5-field cron matcher (minute hour day month weekday)
+function matchesCron(cron, date) {
+  if (!cron) return false;
+  const parts = cron.split(/\s+/);
+  if (parts.length !== 5) return false;
+  const [min, hour, day, month, weekday] = parts;
+  const checks = [
+    [min, date.getMinutes()],
+    [hour, date.getHours()],
+    [day, date.getDate()],
+    [month, date.getMonth() + 1],
+    [weekday, date.getDay()]
+  ];
+  return checks.every(([pattern, value]) => {
+    if (pattern === '*') return true;
+    // Handle */N
+    if (pattern.startsWith('*/')) {
+      const interval = parseInt(pattern.slice(2));
+      return value % interval === 0;
+    }
+    // Handle ranges: 1-5
+    if (pattern.includes('-')) {
+      const [a, b] = pattern.split('-').map(Number);
+      return value >= a && value <= b;
+    }
+    // Handle lists: 1,3,5
+    if (pattern.includes(',')) {
+      return pattern.split(',').map(Number).includes(value);
+    }
+    return parseInt(pattern) === value;
+  });
+}
+
+// Check scheduled tasks every 60s
+setInterval(() => {
+  try {
+    const data = JSON.parse(fs.readFileSync(SCHEDULER_FILE, 'utf8'));
+    const now = new Date();
+    let changed = false;
+    for (const task of data.tasks) {
+      if (!task.enabled || !task.cron) continue;
+      if (matchesCron(task.cron, now)) {
+        // Don't re-run within the same minute
+        if (task.lastRun) {
+          const lastRun = new Date(task.lastRun);
+          if (lastRun.getMinutes() === now.getMinutes() &&
+              lastRun.getHours() === now.getHours() &&
+              lastRun.getDate() === now.getDate()) continue;
+        }
+        task.lastRun = now.toISOString();
+        changed = true;
+        console.log(`[scheduler] Running: ${task.name} (${task.id})`);
+        emitEvent({ ...task.event, data: { ...(task.event.data || {}), taskId: task.id, taskName: task.name } });
+      }
+    }
+    if (changed) fs.writeFileSync(SCHEDULER_FILE, JSON.stringify(data, null, 2));
+  } catch {}
+}, 60000);
+
+// ── Wire existing systems into Event Bus ──
+
+// When broadcast() is called for data changes, also emit event
+const _originalBroadcast = broadcast;
+// Monkey-patch not needed — we'll emit events at the API level instead
+
+// Emit startup event
+setTimeout(() => {
+  emitEvent({ type: 'system:startup', source: 'server', data: { port: PORT, time: new Date().toISOString() } });
+}, 2000);
+
+// =============================================================================
+
 // --- Server ---
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -659,6 +994,7 @@ const server = http.createServer((req, res) => {
       ready.status = 'in_progress';
       ready.pickedUpAt = new Date().toISOString();
       fs.writeFileSync(queueFile, JSON.stringify(queue, null, 2));
+      emitEvent({ type: 'chat:message', source: 'user', data: { chatId: ready.chatId, msgId: ready.msgId, text: ready.text, user: ready.user } });
       return jsonRes(res, ready);
     }
     // Otherwise wait for fs.watch event on queue file
@@ -679,6 +1015,7 @@ const server = http.createServer((req, res) => {
           nextReady.status = 'in_progress';
           nextReady.pickedUpAt = new Date().toISOString();
           fs.writeFileSync(queueFile, JSON.stringify(q, null, 2));
+          emitEvent({ type: 'chat:message', source: 'user', data: { chatId: nextReady.chatId, msgId: nextReady.msgId, text: nextReady.text, user: nextReady.user } });
           jsonRes(res, nextReady);
         }
       } catch {}
@@ -721,6 +1058,7 @@ const server = http.createServer((req, res) => {
         fs.writeFileSync(queueFile, JSON.stringify(queue, null, 2));
 
         orchestratorLastResponse = Date.now();
+        emitEvent({ type: 'chat:message', source: 'agent:chat-orchestrator', data: { chatId, msgId, text, role: 'claude' } });
         console.log(`[chat] Response written for ${msgId} in ${chatId}`);
         jsonRes(res, { ok: true });
       } catch(e) {
@@ -815,6 +1153,7 @@ const server = http.createServer((req, res) => {
           pickedUpAt: null, agentId: null
         });
         writeModifyQueue(queue);
+        emitEvent({ type: 'data:changed', source: 'modifier', data: { appId, request: request.slice(0, 100), model: selectedModel } });
         console.log(`[modify-queue] ${appId} (${appName}): "${request.slice(0, 60)}" model=${selectedModel}`);
         jsonRes(res, { ok: true, requestId, model: selectedModel });
       } catch(e) {
@@ -921,6 +1260,7 @@ const server = http.createServer((req, res) => {
           broadcast(appId, { type: 'change', file: 'index.html', time: Date.now() });
           vikingImportApp(appId);
         }
+        emitEvent({ type: 'agent:completed', source: `agent:${agentId || 'modifier'}`, data: { requestId, appId, status, summary: (summary || '').slice(0, 100) } });
         console.log(`[modify-done] ${requestId} status=${status || 'done'} summary=${(summary || '').slice(0, 80)}`);
         jsonRes(res, { ok: true });
       } catch(e) {
@@ -1229,6 +1569,70 @@ window.__CONFIG = ${config};
     html = html.replace('<head>', '<head>' + injection);
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
     return res.end(html);
+  }
+
+  // --- Event Bus API ---
+
+  // Emit an event into the bus (from any source: app, external, etc.)
+  if (url === '/api/event' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const event = JSON.parse(b);
+        if (!event.type) return jsonRes(res, { ok: false, error: 'Event type required' });
+        emitEvent({ type: event.type, source: event.source || 'api', data: event.data || {} });
+        jsonRes(res, { ok: true, type: event.type });
+      } catch (e) {
+        jsonRes(res, { ok: false, error: e.message });
+      }
+    });
+  }
+
+  // Get event log
+  if (url === '/api/events' && req.method === 'GET') {
+    return jsonRes(res, safeReadJSON(EVENT_LOG_FILE, { events: [] }));
+  }
+
+  // Get/update action chains
+  if (url === '/api/action-chains') {
+    if (req.method === 'GET') return jsonRes(res, safeReadJSON(ACTION_CHAINS_FILE, { chains: [] }));
+    if (req.method === 'PUT') return readBody(req, b => {
+      fs.writeFileSync(ACTION_CHAINS_FILE, JSON.stringify(JSON.parse(b), null, 2));
+      jsonRes(res, { ok: true });
+    });
+    if (req.method === 'POST') return readBody(req, b => {
+      const newChain = JSON.parse(b);
+      if (!newChain.id) newChain.id = 'chain-' + Date.now();
+      newChain.enabled = newChain.enabled !== false;
+      const data = JSON.parse(safeReadJSON(ACTION_CHAINS_FILE, { chains: [] }));
+      data.chains.push(newChain);
+      fs.writeFileSync(ACTION_CHAINS_FILE, JSON.stringify(data, null, 2));
+      jsonRes(res, { ok: true, id: newChain.id });
+    });
+  }
+
+  // Get/update scheduled tasks
+  if (url === '/api/scheduled-tasks') {
+    if (req.method === 'GET') return jsonRes(res, safeReadJSON(SCHEDULER_FILE, { tasks: [] }));
+    if (req.method === 'POST') return readBody(req, b => {
+      const task = JSON.parse(b);
+      if (!task.id) task.id = 'task-' + Date.now();
+      task.enabled = task.enabled !== false;
+      task.lastRun = null;
+      const data = JSON.parse(fs.readFileSync(SCHEDULER_FILE, 'utf8'));
+      data.tasks.push(task);
+      fs.writeFileSync(SCHEDULER_FILE, JSON.stringify(data, null, 2));
+      jsonRes(res, { ok: true, id: task.id });
+    });
+  }
+
+  // Root context
+  if (url === '/api/root-context') {
+    if (req.method === 'GET') return jsonRes(res, safeReadJSON(ROOT_CONTEXT_FILE, {}));
+    if (req.method === 'PUT') return readBody(req, b => {
+      fs.writeFileSync(ROOT_CONTEXT_FILE, JSON.stringify(JSON.parse(b), null, 2));
+      emitEvent({ type: 'system:context-updated', source: 'api', data: {} });
+      jsonRes(res, { ok: true });
+    });
   }
 
   // --- Agent Context Creator ---
@@ -1709,6 +2113,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
         fs.writeFileSync(file, JSON.stringify(JSON.parse(b), null, 2));
         broadcast(appId, { type: 'change', file: apiMatch[1] + '.json', time: Date.now() });
         vikingImportApp(appId);
+        emitEvent({ type: 'data:changed', source: `app:${appId}`, data: { appId, file: apiMatch[1] + '.json' } });
         jsonRes(res, { ok: true });
       });
     }
@@ -1726,6 +2131,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
         // Continue previous conversation if one exists
         if (terminalSessionActive) args.push('--continue');
 
+        emitEvent({ type: 'terminal:command', source: 'user', data: { text: text.slice(0, 200) } });
         console.log(`[terminal] Spawning claude for: "${text.slice(0, 60)}"`);
         const proc = spawn('claude', args, {
           cwd: ROOT,
@@ -1826,6 +2232,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
         const filename = file || 'data.json';
         broadcast(appId, { type: 'change', file: filename, time: Date.now() });
         vikingImportApp(appId);
+        emitEvent({ type: 'data:changed', source: `notify:${appId}`, data: { appId, file: filename } });
         console.log(`[notify] Broadcast change for ${appId}/${filename}`);
         jsonRes(res, { ok: true });
       } catch(e) {
@@ -2012,6 +2419,7 @@ function restartTunnel() {
       tunnelRetries = 0;
       console.log('[tunnel] Connected! URL:', tunnelUrl);
       broadcast('dashboard', { type: 'tunnel', url: tunnelUrl, active: true, bridgeRoom: getBridgeRoom(), bridgeUrl: getBridgeUrl() });
+      emitEvent({ type: 'webrtc:message', source: 'tunnel', data: { action: 'connected', url: tunnelUrl } });
       startTunnelHealthCheck();
     }
   });

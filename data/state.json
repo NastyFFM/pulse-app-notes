@@ -1,6 +1,6 @@
 {
   "openApps": [
-    "terminal"
+    "projects"
   ],
   "installedApps": [
     "pulse",
@@ -10,8 +10,14 @@
     "notes",
     "youtube",
     "podcast",
-    "terminal"
+    "terminal",
+    "viking",
+    "context-demo",
+    "calendar-agent",
+    "budget-agent",
+    "notes-agent",
+    "projects"
   ],
   "pendingMutations": 0,
-  "lastUpdate": "2026-03-16T23:51:41.299Z"
+  "lastUpdate": "2026-03-17T01:59:12.416Z"
 }

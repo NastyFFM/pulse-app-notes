@@ -129,6 +129,16 @@
       "endTime": "16:30",
       "description": "Nachmittagsspaziergang",
       "color": "#10B981"
+    },
+    {
+      "id": "1774000000001",
+      "title": "Telefonat Budget-Besprechung",
+      "date": "2026-03-18",
+      "allDay": false,
+      "time": "",
+      "endTime": "",
+      "description": "Telefonat zum Budget",
+      "color": "#3B82F6"
     }
   ]
 }

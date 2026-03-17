@@ -1,0 +1,1800 @@
+{
+  "events": [
+    {
+      "type": "system:startup",
+      "source": "server",
+      "data": {
+        "port": 3000,
+        "time": "2026-03-17T01:40:58.859Z"
+      },
+      "timestamp": "2026-03-17T01:40:58.859Z"
+    },
+    {
+      "type": "chat:message",
+      "source": "test",
+      "data": {
+        "text": "Meeting morgen um 10 Uhr mit Team",
+        "chatId": "test-1",
+        "msgId": "test-msg-1"
+      },
+      "timestamp": "2026-03-17T01:41:09.816Z"
+    },
+    {
+      "type": "chat:intent",
+      "data": {
+        "text": "Meeting morgen um 10 Uhr mit Team",
+        "chatId": "test-1",
+        "msgId": "test-msg-1",
+        "intent": "calendar-event",
+        "targetAgent": "calendar-agent"
+      },
+      "source": "chain:chat-intent-router:route",
+      "timestamp": "2026-03-17T01:41:09.820Z"
+    },
+    {
+      "type": "chat:intent",
+      "data": {
+        "text": "Meeting morgen um 10 Uhr mit Team",
+        "chatId": "test-1",
+        "msgId": "test-msg-1",
+        "intent": "calendar-event",
+        "targetAgent": "calendar"
+      },
+      "source": "chain:chat-intent-router:route",
+      "timestamp": "2026-03-17T01:41:09.822Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:notes",
+      "data": {
+        "appId": "notes",
+        "file": "notes.json"
+      },
+      "timestamp": "2026-03-17T01:41:19.930Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:notes",
+      "data": {
+        "appId": "notes",
+        "file": "notes.json"
+      },
+      "timestamp": "2026-03-17T01:41:38.966Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:chat",
+      "data": {
+        "appId": "chat",
+        "file": "chat.json"
+      },
+      "timestamp": "2026-03-17T01:42:42.626Z"
+    },
+    {
+      "type": "system:health",
+      "source": "scheduler",
+      "data": {
+        "taskId": "health-check",
+        "taskName": "System Health Check"
+      },
+      "timestamp": "2026-03-17T01:45:56.902Z"
+    },
+    {
+      "type": "system:health",
+      "source": "scheduler",
+      "data": {
+        "taskId": "health-check",
+        "taskName": "System Health Check"
+      },
+      "timestamp": "2026-03-17T01:50:56.909Z"
+    },
+    {
+      "type": "system:startup",
+      "source": "server",
+      "data": {
+        "port": 3000,
+        "time": "2026-03-17T01:53:40.235Z"
+      },
+      "timestamp": "2026-03-17T01:53:40.237Z"
+    },
+    {
+      "type": "system:startup",
+      "source": "server",
+      "data": {
+        "port": 3000,
+        "time": "2026-03-17T01:54:13.845Z"
+      },
+      "timestamp": "2026-03-17T01:54:13.851Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:15.106Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:28.798Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:29.221Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:29.643Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:30.060Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:30.479Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:30.897Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:31.324Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:31.742Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:32.164Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:32.597Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:33.023Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:33.455Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:33.888Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:34.309Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:34.741Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:35.170Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:35.601Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:36.027Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:36.449Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:36.876Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:37.347Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:37.775Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:38.205Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:38.636Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:39.065Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:39.499Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:39.929Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:40.358Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:40.786Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:41.216Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:41.644Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:42.065Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:42.484Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:42.902Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:43.323Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:43.746Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:44.168Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:44.592Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:45.014Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:45.433Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:45.852Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:46.276Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:46.697Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:47.111Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:47.535Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:47.955Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:48.377Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:48.802Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:49.224Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:49.639Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:50.060Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:50.481Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:50.902Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:51.323Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:51.745Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:52.172Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:52.594Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:53.019Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:53.444Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:53.863Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:54.284Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:54.716Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:55.152Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:55.580Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:56.008Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:56.438Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:56.878Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:57.341Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:57.773Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:58.204Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:58.634Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:59.061Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:59.485Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:54:59.918Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:00.344Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:00.769Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:01.196Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:01.630Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:02.058Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:02.490Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:02.918Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:03.343Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:03.773Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:04.195Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:04.619Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:05.050Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:05.478Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:05.897Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:06.332Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:06.767Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:07.194Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:07.621Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:08.052Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:08.481Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:08.913Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:09.342Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:09.773Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:10.196Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:10.623Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:11.048Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:11.475Z"
+    },
+    {
+      "type": "system:health",
+      "source": "scheduler",
+      "data": {
+        "taskId": "health-check",
+        "taskName": "System Health Check"
+      },
+      "timestamp": "2026-03-17T01:55:11.858Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:11.906Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:12.344Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:12.790Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:13.219Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:13.646Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:14.071Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:14.502Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:14.970Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:15.400Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:15.830Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:16.260Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:16.690Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:17.117Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:17.538Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:17.968Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:18.392Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:18.823Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:19.251Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:19.678Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:20.104Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:20.539Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:20.971Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:21.401Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:21.830Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:22.255Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:22.677Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:23.106Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:23.536Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:23.969Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:24.397Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:24.828Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:25.253Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:25.682Z"
+    },
+    {
+      "type": "chat:message",
+      "source": "project:proj-demo",
+      "data": {
+        "text": "ich möchte mein wochen ende planen. Ich bin hier in köln. möchte gegen mittag hier los mit dem deutschlandticket nach ludwigshafen am rhein. und dann am samstag weiter nach stuttgart zu meiner schwesster in die madenstrasse 36.",
+        "projectId": "proj-demo",
+        "projectName": "Mein erstes Projekt"
+      },
+      "timestamp": "2026-03-17T01:55:26.064Z"
+    },
+    {
+      "type": "chat:intent",
+      "data": {
+        "text": "ich möchte mein wochen ende planen. Ich bin hier in köln. möchte gegen mittag hier los mit dem deutschlandticket nach ludwigshafen am rhein. und dann am samstag weiter nach stuttgart zu meiner schwesster in die madenstrasse 36.",
+        "projectId": "proj-demo",
+        "projectName": "Mein erstes Projekt",
+        "intent": "create-task",
+        "targetAgent": "tickets"
+      },
+      "source": "chain:chat-intent-router:route",
+      "timestamp": "2026-03-17T01:55:26.072Z"
+    },
+    {
+      "type": "chat:intent",
+      "data": {
+        "text": "ich möchte mein wochen ende planen. Ich bin hier in köln. möchte gegen mittag hier los mit dem deutschlandticket nach ludwigshafen am rhein. und dann am samstag weiter nach stuttgart zu meiner schwesster in die madenstrasse 36.",
+        "projectId": "proj-demo",
+        "projectName": "Mein erstes Projekt",
+        "intent": "create-task",
+        "targetAgent": "kanban"
+      },
+      "source": "chain:chat-intent-router:route",
+      "timestamp": "2026-03-17T01:55:26.083Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:26.113Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:26.374Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:26.805Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:27.232Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:27.665Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:28.091Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:28.512Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:28.941Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:29.372Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:29.803Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:30.233Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:30.662Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:31.092Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:31.518Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:31.942Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:32.375Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:32.802Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:33.228Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:33.657Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:34.088Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:34.512Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:34.943Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:35.372Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:35.799Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:36.234Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:36.664Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:37.093Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:37.519Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:37.947Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:38.372Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:38.807Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:39.235Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:39.666Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:40.098Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:40.533Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:40.965Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:41.399Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:55:41.946Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:56:05.336Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:56:48.312Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:56:52.633Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:56:58.738Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:58:05.684Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:58:10.130Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:58:16.022Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:58:39.409Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:58:46.416Z"
+    },
+    {
+      "type": "data:changed",
+      "source": "app:projects",
+      "data": {
+        "appId": "projects",
+        "file": "projects.json"
+      },
+      "timestamp": "2026-03-17T01:58:51.161Z"
+    }
+  ]
+}

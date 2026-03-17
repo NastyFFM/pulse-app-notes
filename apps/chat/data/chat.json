@@ -1,5 +1,5 @@
 {
-  "activeChat": "chat-1773514992980",
+  "activeChat": "chat-1773711762620",
   "chats": [
     {
       "id": "chat-1773430100351",
@@ -518,6 +518,18 @@
           "role": "claude",
           "text": "Erledigt! In der Social-Trends App wurden die orangenen Elemente auf Blau (#60a5fa) geaendert. Die Confidence-Bar zeigt bei niedrigen Werten jetzt Blau statt Orange.",
           "time": "2026-03-14T19:04:14.278Z"
+        }
+      ]
+    },
+    {
+      "id": "chat-1773711762620",
+      "title": "Chat 10",
+      "messages": [
+        {
+          "id": "msg-welcome-chat-1773711762620",
+          "role": "claude",
+          "text": "Hallo! Wie kann ich dir helfen?",
+          "time": "2026-03-17T01:42:42.620Z"
         }
       ]
     }

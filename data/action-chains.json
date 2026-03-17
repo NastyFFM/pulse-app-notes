@@ -1,0 +1,73 @@
+{
+  "chains": [
+    {
+      "id": "chat-intent-router",
+      "name": "Chat Intent Router",
+      "description": "Analysiert Chat-Nachrichten und leitet Intents an zustaendige Agenten weiter",
+      "enabled": true,
+      "trigger": {
+        "type": "chat:message"
+      },
+      "steps": [
+        {
+          "id": "parse",
+          "agent": "system",
+          "action": "parse-intent",
+          "description": "Intent aus Nachricht erkennen"
+        },
+        {
+          "id": "route",
+          "agent": "system",
+          "action": "route-to-agent",
+          "description": "Intent an zustaendigen Agent weiterleiten"
+        }
+      ]
+    },
+    {
+      "id": "data-sync-chain",
+      "name": "Data Sync Chain",
+      "description": "Synchronisiert Datenaenderungen mit Viking und benachrichtigt betroffene Agenten",
+      "enabled": true,
+      "trigger": {
+        "type": "data:changed"
+      },
+      "steps": [
+        {
+          "id": "viking-sync",
+          "agent": "system",
+          "action": "viking-import",
+          "description": "Daten in Viking importieren"
+        },
+        {
+          "id": "notify-agents",
+          "agent": "system",
+          "action": "notify-related-agents",
+          "description": "Betroffene Agenten informieren"
+        }
+      ]
+    },
+    {
+      "id": "startup-chain",
+      "name": "System Startup",
+      "description": "Initialisierung beim Start von PulseOS",
+      "enabled": true,
+      "trigger": {
+        "type": "system:startup"
+      },
+      "steps": [
+        {
+          "id": "load-context",
+          "agent": "system",
+          "action": "load-root-context",
+          "description": "Root-Context laden"
+        },
+        {
+          "id": "health-check",
+          "agent": "system",
+          "action": "health-check",
+          "description": "System-Health pruefen"
+        }
+      ]
+    }
+  ]
+}

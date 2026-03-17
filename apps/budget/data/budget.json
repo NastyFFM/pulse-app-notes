@@ -26,6 +26,15 @@
       "category": "Transport",
       "date": "2026-03-13",
       "color": "#3B82F6"
+    },
+    {
+      "id": "t1773999000001",
+      "type": "expense",
+      "amount": 50,
+      "description": "Fahrkarten",
+      "category": "Transport",
+      "date": "2026-03-17",
+      "color": "#3B82F6"
     }
   ],
   "categories": {

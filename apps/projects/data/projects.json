@@ -1,0 +1,123 @@
+{
+  "projects": [
+    {
+      "id": "proj-demo",
+      "name": "Wochenend-Trip",
+      "icon": "🚀",
+      "color": "#8B5CF6",
+      "parentId": null,
+      "created": "2026-03-17T02:00:00.000Z",
+      "updated": "2026-03-17T01:58:50.949Z",
+      "chat": [
+        {
+          "id": "msg-1",
+          "role": "system",
+          "text": "Willkommen! Beschreibe was du bauen oder planen willst — ich erstelle automatisch die passenden Widgets.",
+          "time": "2026-03-17T02:00:00.000Z"
+        },
+        {
+          "id": "msg-1773712730947",
+          "role": "user",
+          "text": "Erstelle eine Todo-Liste, eine Timeline und ein Kanban Board",
+          "time": "2026-03-17T01:58:50.947Z"
+        },
+        {
+          "id": "msg-1773712730949",
+          "role": "agent",
+          "text": "Ich habe 3 Widgets erstellt: ✅ Aufgaben, ⏱️ Timeline, 📋 Board.\n\nDu kannst sie rechts im Canvas sehen und direkt bearbeiten. Sag mir wenn du mehr brauchst!",
+          "widgetActions": [
+            {
+              "icon": "✅",
+              "label": "Todo-Liste erstellt"
+            },
+            {
+              "icon": "⏱️",
+              "label": "Timeline erstellt"
+            },
+            {
+              "icon": "📋",
+              "label": "Kanban Board erstellt"
+            }
+          ],
+          "time": "2026-03-17T01:58:50.949Z"
+        }
+      ],
+      "canvas": {
+        "widgets": [
+          {
+            "type": "todo",
+            "title": "Aufgaben",
+            "size": "md",
+            "dataKey": "todos-1773712730949",
+            "data": {
+              "items": []
+            },
+            "id": "w-1773712730949-2k0t",
+            "color": "#8B5CF6"
+          },
+          {
+            "type": "timeline",
+            "title": "Timeline",
+            "size": "md",
+            "dataKey": "timeline-1773712730949",
+            "data": {
+              "items": []
+            },
+            "id": "w-1773712730949-bsof",
+            "color": "#8B5CF6"
+          },
+          {
+            "type": "kanban",
+            "title": "Board",
+            "size": "lg",
+            "dataKey": "kanban-1773712730949",
+            "data": {
+              "columns": [
+                {
+                  "id": "todo",
+                  "name": "To Do",
+                  "items": []
+                },
+                {
+                  "id": "doing",
+                  "name": "In Arbeit",
+                  "items": []
+                },
+                {
+                  "id": "done",
+                  "name": "Erledigt",
+                  "items": []
+                }
+              ]
+            },
+            "id": "w-1773712730949-iqo4",
+            "color": "#8B5CF6"
+          }
+        ]
+      },
+      "data": {
+        "todos-1773712730949": [],
+        "timeline-1773712730949": [],
+        "kanban-1773712730949": [
+          {
+            "id": "todo",
+            "name": "To Do",
+            "items": []
+          },
+          {
+            "id": "doing",
+            "name": "In Arbeit",
+            "items": []
+          },
+          {
+            "id": "done",
+            "name": "Erledigt",
+            "items": []
+          }
+        ]
+      },
+      "children": []
+    }
+  ],
+  "activeProject": "proj-demo"
+}

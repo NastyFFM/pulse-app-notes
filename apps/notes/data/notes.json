@@ -3,11 +3,20 @@
     {
       "id": "1",
       "title": "Willkommen",
-      "content": "Das ist deine erste Notiz! Klicke auf 'Neue Notiz' um loszulegen.",
+      "content": "Erste Notiz",
       "color": "#FEF3C7",
       "pinned": true,
       "created": "2026-03-12T10:00:00.000Z",
       "updated": "2026-03-12T10:00:00.000Z"
+    },
+    {
+      "id": "2",
+      "title": "Event Bus Test",
+      "content": "Diese Notiz wurde als Test hinzugefuegt",
+      "color": "#DBEAFE",
+      "pinned": false,
+      "created": "2026-03-17T01:42:00.000Z",
+      "updated": "2026-03-17T01:42:00.000Z"
     }
   ]
 }

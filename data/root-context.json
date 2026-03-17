@@ -1,0 +1,91 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "created": "2026-03-17T02:00:00.000Z",
+    "description": "PulseOS Root Context — das Fundament von dem sich alles ableitet"
+  },
+
+  "identity": {
+    "name": "PulseOS",
+    "purpose": "Das erste Betriebssystem wo der User seine Apps selbst erstellt, alle Daten semantisch sind, und AI-Agenten die Arbeit clever aufteilen",
+    "owner": "Chris",
+    "icon": "🧠",
+    "philosophy": [
+      "Jede App ist ein Tor — rein und raus",
+      "Alle Daten sind semantisch durchsuchbar (Viking)",
+      "Agenten arbeiten proaktiv, nicht nur reaktiv",
+      "Action Chains verbinden Agenten zu intelligenten Workflows",
+      "User und AI arbeiten auf den gleichen Daten — live sync"
+    ]
+  },
+
+  "capabilities": {
+    "terminal": {
+      "id": "terminal",
+      "description": "Direkter Anschluss an Claude Code Session",
+      "type": "gate-bidirectional",
+      "events": ["command-executed", "output-received"]
+    },
+    "webrtc": {
+      "id": "webrtc-bridge",
+      "description": "Remote-Zugriff via WebRTC Tunnel",
+      "type": "gate-bidirectional",
+      "events": ["tunnel-request", "tunnel-response", "message-received", "message-sent"]
+    },
+    "contextFactory": {
+      "id": "context-factory",
+      "description": "Automatisches Erstellen von Agent-Contexts (App + Daten + Schema + UI + Skill)",
+      "type": "system",
+      "api": "POST /api/agent-context"
+    },
+    "viking": {
+      "id": "viking",
+      "description": "Kontextbasiertes semantisches Datenspeichern und Suche",
+      "type": "system",
+      "api": "/api/viking/*"
+    },
+    "appStore": {
+      "id": "app-store",
+      "description": "Eigene Apps — wird spaeter mit App Repo verbunden",
+      "type": "system",
+      "api": "/api/apps"
+    },
+    "pulse": {
+      "id": "pulse-engine",
+      "description": "Proaktive Engine: Scheduled Tasks, Watcher, Trigger, Action Chains",
+      "type": "system",
+      "subsystems": ["cron", "watcher", "hooks", "action-chains"]
+    }
+  },
+
+  "eventBus": {
+    "description": "Zentrale Event-Verteilung — jedes Event kann Action Chains ausloesen",
+    "eventTypes": {
+      "chat:message": "User oder Agent sendet Chat-Nachricht",
+      "chat:intent": "Erkannter Intent aus einer Nachricht (z.B. 'create-event', 'add-todo')",
+      "data:changed": "App-Daten wurden geaendert (User oder Agent)",
+      "cron:trigger": "Geplanter Task wird faellig",
+      "webrtc:message": "Nachricht ueber WebRTC-Bridge empfangen",
+      "external:webhook": "Externer Webhook-Aufruf (Mail, API, etc.)",
+      "terminal:command": "Befehl im Terminal ausgefuehrt",
+      "agent:completed": "Agent hat eine Aufgabe abgeschlossen",
+      "system:startup": "PulseOS wurde gestartet",
+      "system:health": "Periodischer Health-Check"
+    }
+  },
+
+  "actionChains": {
+    "description": "Modulare Ketten von Agent-Aktionen, ausgeloest durch Events",
+    "chains": []
+  },
+
+  "agents": {
+    "description": "Registry aller Domain-Agenten",
+    "registry": []
+  },
+
+  "scheduler": {
+    "description": "Geplante proaktive Tasks",
+    "tasks": []
+  }
+}
