@@ -733,6 +733,22 @@ body {
     <div class="sub">Schreibe im Chat was du brauchst — Widgets erscheinen hier automatisch</div>
   </div>
   <div class="canvas-grid" id="canvasGrid"></div>
+  <!-- Pending changes button -->
+  <button id="pendingBtn" onclick="commitChanges()" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:12px;border:1px solid var(--accent);background:var(--accent);color:white;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);z-index:102;box-shadow:0 4px 20px rgba(139,92,246,0.4);transition:all 0.2s;display:none;align-items:center;gap:8px;">
+    <span id="pendingIcon">💾</span> <span id="pendingLabel">0 Änderungen übernehmen</span>
+  </button>
+  <!-- Closed widgets toggle -->
+  <button id="closedToggle" onclick="toggleClosedPanel()" style="display:none;position:fixed;bottom:16px;right:16px;padding:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:var(--font);z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.3);transition:all 0.15s;">
+    🗑️ <span id="closedCount">0</span> geschlossen
+  </button>
+  <!-- Closed widgets panel -->
+  <div id="closedPanel" style="display:none;position:fixed;bottom:52px;right:16px;width:340px;max-height:300px;background:var(--bg-primary);border:1px solid var(--border);border-radius:12px;z-index:101;flex-direction:column;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.4);">
+    <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;">
+      <span>Geschlossene Widgets</span>
+      <button onclick="toggleClosedPanel()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">✕</button>
+    </div>
+    <div id="closedList" style="overflow-y:auto;flex:1;max-height:240px;"></div>
+  </div>
 </div>
 
 <!-- Template Picker Modal -->
@@ -977,6 +993,15 @@ function renderCanvas() {
     const frame = createWidgetFrame(widget, proj);
     grid.appendChild(frame);
   }
+
+  // Show/hide closed widgets toggle
+  const closedCount = (proj.closedWidgets || []).length;
+  const closedToggle = document.getElementById('closedToggle');
+  closedToggle.style.display = closedCount > 0 ? 'block' : 'none';
+  document.getElementById('closedCount').textContent = closedCount;
+  // Refresh panel if open
+  const panel = document.getElementById('closedPanel');
+  if (panel.style.display === 'flex') renderClosedPanel();
 }
 
 // ── Widget Factory ──
@@ -994,9 +1019,20 @@ function createWidgetFrame(widget, proj) {
       <div class="dot" style="background:${color}"></div>
       <div class="label">${getWidgetIcon(widget.type)} ${displayTitle}</div>
       <div class="actions">
+        <button onclick="toggleWidgetEdit('${widget.id}')" title="Widget bearbeiten" class="widget-edit-btn">✏️</button>
         <button onclick="resizeWidget('${widget.id}')" title="Resize">↔</button>
         <button onclick="removeWidget('${widget.id}')" title="Entfernen">✕</button>
       </div>
+    </div>
+    <div class="widget-cmd" id="wcmd-${widget.id}" style="display:none;padding:6px 10px;border-bottom:1px solid var(--border);background:var(--bg-base);display:none;">
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input type="text" id="wcmd-input-${widget.id}" placeholder="z.B. Zeile hinzufügen, Wert ändern..."
+          style="flex:1;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);font-size:12px;font-family:var(--font);outline:none;"
+          onkeydown="if(event.key==='Enter')sendWidgetCmd('${widget.id}')"
+        />
+        <button onclick="sendWidgetCmd('${widget.id}')" style="padding:5px 10px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:12px;cursor:pointer;font-family:var(--font);white-space:nowrap;">Senden</button>
+      </div>
+      <div id="wcmd-status-${widget.id}" style="font-size:11px;color:var(--text-muted);padding-top:4px;display:none;"></div>
     </div>
     <div class="widget-body" id="wb-${widget.id}"></div>
   `;
@@ -1078,14 +1114,33 @@ function renderTableWidget(container, widget, proj) {
   let html = '<table class="w-table"><thead><tr>';
   for (const col of cols) html += `<th>${col}</th>`;
   html += '</tr></thead><tbody>';
-  for (const row of rows) {
+  for (let ri = 0; ri < rows.length; ri++) {
     html += '<tr>';
-    for (const col of cols) html += `<td>${escapeHtml(String(row[col] ?? ''))}</td>`;
+    for (const col of cols) {
+      const val = escapeHtml(String(rows[ri][col] ?? ''));
+      html += `<td contenteditable="true" data-row="${ri}" data-col="${escapeHtml(col)}" data-key="${widget.dataKey}" onblur="updateTableCell(this)" style="cursor:text;min-width:40px;">${val}</td>`;
+    }
     html += '</tr>';
   }
   html += '</tbody></table>';
   if (rows.length === 0) html = '<div style="text-align:center;color:var(--text-muted);padding:12px;font-size:12px;">Keine Daten</div>';
   container.innerHTML = html;
+}
+
+function updateTableCell(td) {
+  const dataKey = td.dataset.key;
+  const ri = parseInt(td.dataset.row);
+  const col = td.dataset.col;
+  const newVal = td.innerText.trim();
+  const proj = getProject(state.activeProject);
+  if (!proj) return;
+  const rows = proj.data[dataKey];
+  if (!rows || !rows[ri]) return;
+  const oldVal = String(rows[ri][col] ?? '');
+  if (oldVal === newVal) return;
+  rows[ri][col] = newVal;
+  logChange(proj, `📝 Tabelle: "${col}" Zeile ${ri+1} geaendert: "${oldVal}" → "${newVal}"`);
+  save();
 }
 
 function renderTimelineWidget(container, widget, proj) {
@@ -1111,11 +1166,26 @@ function renderKpiWidget(container, widget, proj) {
   const data = proj.data[widget.dataKey] || widget.data || {};
   container.innerHTML = `
     <div class="w-kpi">
-      <div class="value">${data.value ?? '—'}</div>
-      <div class="label">${escapeHtml(data.label || widget.title || '')}</div>
+      <div class="value" contenteditable="true" data-key="${widget.dataKey}" data-field="value" onblur="updateKpiField(this)" style="cursor:text;">${data.value ?? '—'}</div>
+      <div class="label" contenteditable="true" data-key="${widget.dataKey}" data-field="label" onblur="updateKpiField(this)" style="cursor:text;">${escapeHtml(data.label || widget.title || '')}</div>
       ${data.change != null ? `<div class="change ${data.change >= 0 ? 'up' : 'down'}">${data.change >= 0 ? '+' : ''}${data.change}%</div>` : ''}
     </div>
   `;
+}
+
+function updateKpiField(el) {
+  const dataKey = el.dataset.key;
+  const field = el.dataset.field;
+  const newVal = el.innerText.trim();
+  const proj = getProject(state.activeProject);
+  if (!proj) return;
+  if (!proj.data[dataKey]) proj.data[dataKey] = {};
+  const oldVal = String(proj.data[dataKey][field] ?? '');
+  if (oldVal === newVal) return;
+  proj.data[dataKey][field] = newVal;
+  const w = proj.canvas.widgets.find(w => w.dataKey === dataKey);
+  logChange(proj, `📊 KPI "${w?.title || dataKey}": ${field} geaendert: "${oldVal}" → "${newVal}"`);
+  save();
 }
 
 function renderKanbanWidget(container, widget, proj) {
@@ -1162,6 +1232,141 @@ function renderProgressWidget(container, widget, proj) {
   `;
 }
 
+// ── Pending Changes & Changelog ──
+let pendingChanges = [];
+
+function logChange(proj, summary) {
+  // Accumulate as pending change (not written to changelog yet)
+  pendingChanges.push({ time: new Date().toISOString(), summary });
+  updatePendingBtn();
+}
+
+function flushChangelog(proj) {
+  if (!proj.changelog) proj.changelog = [];
+  for (const c of pendingChanges) {
+    proj.changelog.push(c);
+  }
+  if (proj.changelog.length > 50) proj.changelog = proj.changelog.slice(-50);
+  const flushed = [...pendingChanges];
+  pendingChanges = [];
+  updatePendingBtn();
+  return flushed;
+}
+
+function updatePendingBtn() {
+  const btn = document.getElementById('pendingBtn');
+  if (!btn) return;
+  const n = pendingChanges.length;
+  btn.style.display = n > 0 ? 'flex' : 'none';
+  document.getElementById('pendingLabel').textContent = `${n} Änderung${n !== 1 ? 'en' : ''} übernehmen`;
+}
+
+async function commitChanges() {
+  const proj = getProject(state.activeProject);
+  if (!proj || pendingChanges.length === 0) return;
+
+  const changes = flushChangelog(proj);
+
+  // Save immediately
+  saving = true;
+  try {
+    await fetch(DATA_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state)
+    });
+  } catch (e) { console.error('Save error:', e); }
+  setTimeout(() => { saving = false; }, 800);
+
+  // Build summary for AI
+  const summary = changes.map(c => c.summary).join('\n');
+  const autoMsg = `[Änderungen übernommen]\n${summary}`;
+
+  // Send to AI as automatic message
+  const userMsg = {
+    id: 'msg-' + Date.now(),
+    role: 'user',
+    text: autoMsg,
+    time: new Date().toISOString()
+  };
+  proj.chat.push(userMsg);
+  renderChat();
+
+  // Show typing
+  processing = true;
+  document.getElementById('typingIndicator').classList.add('visible');
+  document.getElementById('btnSend').disabled = true;
+
+  try {
+    let response;
+    try {
+      response = await callProjectAgent(state.activeProject, autoMsg);
+    } catch (agentErr) {
+      console.log('Agent unavailable, using local fallback:', agentErr.message);
+      response = { text: `Änderungen gespeichert:\n${summary}`, widgetActions: [] };
+    }
+
+    if (response._fromAgent) {
+      const freshRes = await fetch(DATA_URL);
+      const freshState = await freshRes.json();
+      if (freshState.projects) {
+        state.projects = freshState.projects;
+        state.activeProject = freshState.activeProject || state.activeProject;
+      }
+      const freshProj = getProject(state.activeProject);
+      if (freshProj) {
+        freshProj.chat.push({
+          id: 'msg-' + Date.now(),
+          role: 'agent',
+          text: response.text,
+          widgetActions: response.widgetActions || [],
+          time: new Date().toISOString()
+        });
+        freshProj.updated = new Date().toISOString();
+      }
+    } else {
+      proj.chat.push({
+        id: 'msg-' + Date.now(),
+        role: 'agent',
+        text: response.text,
+        widgetActions: response.widgetActions || [],
+        time: new Date().toISOString()
+      });
+      proj.updated = new Date().toISOString();
+    }
+
+    saving = true;
+    try {
+      await fetch(DATA_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state)
+      });
+    } catch (e) { console.error('Save error:', e); }
+    setTimeout(() => { saving = false; }, 800);
+
+  } catch (e) {
+    proj.chat.push({
+      id: 'msg-err-' + Date.now(),
+      role: 'system',
+      text: 'Fehler: ' + e.message,
+      time: new Date().toISOString()
+    });
+    save();
+  }
+
+  processing = false;
+  document.getElementById('typingIndicator').classList.remove('visible');
+  document.getElementById('btnSend').disabled = false;
+  renderChat();
+  renderCanvas();
+}
+
+function getWidgetTitle(proj, dataKey) {
+  const w = proj.canvas.widgets.find(w => w.dataKey === dataKey);
+  return w ? w.title : dataKey;
+}
+
 // ── Widget Data Mutations ──
 function toggleTodo(dataKey, itemId) {
   const proj = getProject(state.activeProject);
@@ -1169,7 +1374,10 @@ function toggleTodo(dataKey, itemId) {
   const items = proj.data[dataKey];
   if (!items) return;
   const item = items.find(i => i.id === itemId);
-  if (item) item.done = !item.done;
+  if (item) {
+    item.done = !item.done;
+    logChange(proj, `${item.done ? '✅' : '⬜'} "${item.text}" in "${getWidgetTitle(proj, dataKey)}" ${item.done ? 'erledigt' : 'wieder offen'}`);
+  }
   save();
   renderCanvas();
 }
@@ -1181,6 +1389,7 @@ function addTodo(dataKey, input) {
   if (!proj) return;
   if (!proj.data[dataKey]) proj.data[dataKey] = [];
   proj.data[dataKey].push({ id: 't-' + Date.now(), text, done: false });
+  logChange(proj, `➕ Neue Aufgabe "${text}" in "${getWidgetTitle(proj, dataKey)}" hinzugefuegt`);
   input.value = '';
   save();
   renderCanvas();
@@ -1190,16 +1399,186 @@ function updateNoteContent(dataKey, text) {
   const proj = getProject(state.activeProject);
   if (!proj) return;
   if (!proj.data[dataKey]) proj.data[dataKey] = {};
+  const oldText = proj.data[dataKey].text || '';
   proj.data[dataKey].text = text;
+  if (oldText !== text) {
+    logChange(proj, `📝 Notiz "${getWidgetTitle(proj, dataKey)}" bearbeitet`);
+  }
   save();
 }
 
 function removeWidget(widgetId) {
   const proj = getProject(state.activeProject);
   if (!proj) return;
+  const w = proj.canvas.widgets.find(w => w.id === widgetId);
+  if (!w) return;
+  // Move to closedWidgets instead of deleting
+  if (!proj.closedWidgets) proj.closedWidgets = [];
+  proj.closedWidgets.push({ ...w, closedAt: new Date().toISOString() });
   proj.canvas.widgets = proj.canvas.widgets.filter(w => w.id !== widgetId);
+  logChange(proj, `🗑️ Widget "${w.title}" geschlossen`);
   document.getElementById('projectSub').textContent = `${proj.canvas.widgets.length} Widgets`;
   save();
+  renderCanvas();
+}
+
+function restoreWidget(widgetId) {
+  const proj = getProject(state.activeProject);
+  if (!proj || !proj.closedWidgets) return;
+  const idx = proj.closedWidgets.findIndex(w => w.id === widgetId);
+  if (idx === -1) return;
+  const w = proj.closedWidgets.splice(idx, 1)[0];
+  delete w.closedAt;
+  proj.canvas.widgets.push(w);
+  logChange(proj, `♻️ Widget "${w.title}" wiederhergestellt`);
+  document.getElementById('projectSub').textContent = `${proj.canvas.widgets.length} Widgets`;
+  save();
+  renderCanvas();
+}
+
+function toggleClosedPanel() {
+  const panel = document.getElementById('closedPanel');
+  panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+  if (panel.style.display === 'flex') renderClosedPanel();
+}
+
+function renderClosedPanel() {
+  const proj = getProject(state.activeProject);
+  const list = document.getElementById('closedList');
+  const closed = proj?.closedWidgets || [];
+  if (closed.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:16px;font-size:12px;">Keine geschlossenen Widgets</div>';
+    return;
+  }
+  list.innerHTML = closed.map(w => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px;">
+      <span>${getWidgetIcon(w.type)}</span>
+      <span style="flex:1;color:var(--text-secondary)">${escapeHtml(w.title)}</span>
+      <button onclick="restoreWidget('${w.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--accent-dim);color:var(--accent);font-size:11px;cursor:pointer;font-family:var(--font);">Wiederherstellen</button>
+    </div>
+  `).join('');
+}
+
+function toggleWidgetEdit(widgetId) {
+  const cmd = document.getElementById('wcmd-' + widgetId);
+  if (!cmd) return;
+  const isOpen = cmd.style.display === 'block';
+  // Close all other open cmd panels
+  document.querySelectorAll('.widget-cmd').forEach(el => el.style.display = 'none');
+  if (!isOpen) {
+    cmd.style.display = 'block';
+    const input = document.getElementById('wcmd-input-' + widgetId);
+    if (input) input.focus();
+  }
+}
+
+async function sendWidgetCmd(widgetId) {
+  const input = document.getElementById('wcmd-input-' + widgetId);
+  const status = document.getElementById('wcmd-status-' + widgetId);
+  const text = input?.value.trim();
+  if (!text || processing) return;
+
+  const proj = getProject(state.activeProject);
+  if (!proj) return;
+  const widget = proj.canvas.widgets.find(w => w.id === widgetId);
+  if (!widget) return;
+
+  // Show status
+  status.style.display = 'block';
+  status.textContent = 'Wird verarbeitet...';
+  status.style.color = 'var(--accent)';
+  input.disabled = true;
+
+  // Build context message that focuses on this widget
+  const widgetData = proj.data[widget.dataKey] || widget.data || {};
+  const widgetMeta = { id: widget.id, type: widget.type, title: widget.title, size: widget.size, dataKey: widget.dataKey, config: widget.config || {} };
+  const contextMsg = `[Widget-Bearbeitung: "${widget.title}"]\nWidget-Definition: ${JSON.stringify(widgetMeta)}\nAktueller Inhalt (proj.data["${widget.dataKey}"]): ${JSON.stringify(widgetData).slice(0, 1500)}\n\nDu kannst ALLES an diesem Widget aendern:\n- Daten/Inhalt (proj.data["${widget.dataKey}"])\n- Widget-Eigenschaften (title, size, type, config, color)\n- Struktur (Spalten hinzufuegen/entfernen bei Tabellen, neue Items bei Todo/Kanban/Timeline)\n- Widget-Typ komplett aendern (z.B. von table zu kanban)\n\nAnweisung vom User: ${text}`;
+
+  // Add to chat as user message
+  proj.chat.push({
+    id: 'msg-' + Date.now(),
+    role: 'user',
+    text: `✏️ ${widget.title}: ${text}`,
+    time: new Date().toISOString()
+  });
+  renderChat();
+
+  // Save before agent call
+  saving = true;
+  try {
+    await fetch(DATA_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state)
+    });
+  } catch (e) { console.error('Save error:', e); }
+  setTimeout(() => { saving = false; }, 800);
+
+  processing = true;
+  try {
+    let response;
+    try {
+      response = await callProjectAgent(state.activeProject, contextMsg);
+    } catch (agentErr) {
+      console.log('Agent unavailable:', agentErr.message);
+      response = { text: 'Agent nicht verfuegbar. Bitte aendere die Daten manuell.', widgetActions: [] };
+    }
+
+    if (response._fromAgent) {
+      const freshRes = await fetch(DATA_URL);
+      const freshState = await freshRes.json();
+      if (freshState.projects) {
+        state.projects = freshState.projects;
+        state.activeProject = freshState.activeProject || state.activeProject;
+      }
+      const freshProj = getProject(state.activeProject);
+      if (freshProj) {
+        freshProj.chat.push({
+          id: 'msg-' + Date.now(),
+          role: 'agent',
+          text: response.text,
+          widgetActions: response.widgetActions || [],
+          time: new Date().toISOString()
+        });
+        freshProj.updated = new Date().toISOString();
+      }
+    } else {
+      proj.chat.push({
+        id: 'msg-' + Date.now(),
+        role: 'agent',
+        text: response.text,
+        widgetActions: response.widgetActions || [],
+        time: new Date().toISOString()
+      });
+      proj.updated = new Date().toISOString();
+    }
+
+    saving = true;
+    try {
+      await fetch(DATA_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state)
+      });
+    } catch (e) { console.error('Save error:', e); }
+    setTimeout(() => { saving = false; }, 800);
+
+    status.textContent = 'Erledigt!';
+    status.style.color = 'var(--green)';
+    input.value = '';
+    setTimeout(() => {
+      status.style.display = 'none';
+      document.getElementById('wcmd-' + widgetId).style.display = 'none';
+    }, 1500);
+
+  } catch (e) {
+    status.textContent = 'Fehler: ' + e.message;
+    status.style.color = 'var(--red)';
+  }
+
+  processing = false;
+  input.disabled = false;
+  renderChat();
   renderCanvas();
 }
 
@@ -1211,6 +1590,7 @@ function resizeWidget(widgetId) {
   const sizes = ['sm', 'md', 'lg', 'full'];
   const idx = sizes.indexOf(w.size || 'md');
   w.size = sizes[(idx + 1) % sizes.length];
+  logChange(proj, `↔️ Widget "${w.title}" Groesse geaendert zu ${w.size}`);
   save();
   renderCanvas();
 }

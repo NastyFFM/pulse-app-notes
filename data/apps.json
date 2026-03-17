@@ -108,8 +108,8 @@
       "icon": "📁",
       "color": "#6366F1",
       "description": "Browse project files and folders",
-      "installed": false,
-      "position": 10
+      "installed": true,
+      "position": 15
     },
     {
       "id": "picviewer",
@@ -335,6 +335,15 @@
       "description": "Chat-gesteuerte Projekt-Kontexte mit dynamischen Widget-Canvas",
       "installed": true,
       "position": 37
+    },
+    {
+      "id": "triangulation",
+      "name": "Triangulation",
+      "icon": "📍",
+      "color": "#ef4444",
+      "description": "Trilateration: 3 Standorte + Distanzen → Schnittpunkt auf der Karte",
+      "installed": true,
+      "position": 38
     }
   ]
 }

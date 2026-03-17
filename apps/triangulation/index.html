@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Triangulation</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --border: #334155;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --accent: #ef4444;
+  --accent2: #3b82f6;
+  --accent3: #22c55e;
+  --radius: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+
+.sidebar {
+  width: 340px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sidebar-header p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+.point-card {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.point-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.point-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.point-header span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.field-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.field-row label {
+  font-size: 11px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 3px;
+}
+.field-row .field { flex: 1; }
+.field-row input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+.field-row input:focus { border-color: var(--accent2); }
+
+.radius-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.radius-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+.radius-val {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 60px;
+  text-align: right;
+}
+
+.result-box {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.result-box h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.result-coords {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.result-info {
+  font-size: 12px;
+  color: var(--muted);
+}
+.no-result {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.btn-reset {
+  margin: 16px;
+  padding: 10px;
+  background: rgba(239,68,68,0.15);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+.btn-reset:hover { background: rgba(239,68,68,0.25); }
+
+.instructions {
+  padding: 16px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+#map {
+  flex: 1;
+  z-index: 1;
+}
+
+/* Leaflet dark tiles */
+.leaflet-tile-pane { filter: brightness(0.7) contrast(1.1) saturate(0.8); }
+.leaflet-control-zoom a {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+.leaflet-control-attribution { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>📍 Triangulation</h1>
+    <p>Setze 3 Punkte mit Distanzen — der Schnittpunkt zeigt den Standort des Objekts.</p>
+  </div>
+
+  <div id="pointCards"></div>
+
+  <div class="result-box" id="resultBox">
+    <h3>🎯 Ergebnis</h3>
+    <div class="no-result" id="resultContent">Noch nicht genug Daten. Setze alle 3 Punkte und Distanzen.</div>
+  </div>
+
+  <div class="btn-reset" onclick="resetToDefault()">Auf Köln-Default zurücksetzen</div>
+
+  <div class="instructions">
+    <strong>Anleitung:</strong><br>
+    • Koordinaten eingeben oder Pins auf der Karte ziehen<br>
+    • Distanz pro Punkt zum gesuchten Objekt einstellen<br>
+    • Der rote Marker zeigt den errechneten Schnittpunkt<br>
+    • Default: 3 Punkte um Köln → Kölner Dom
+  </div>
+</div>
+
+<div id="map"></div>
+
+<script>
+const COLORS = ['#ef4444', '#3b82f6', '#22c55e'];
+const LABELS = ['Punkt A', 'Punkt B', 'Punkt C'];
+
+// Default: 3 points around Cologne, all pointing to Kölner Dom (50.9413, 6.9583)
+const DEFAULT_POINTS = [
+  { lat: 50.9580, lng: 6.9200, radius: 3.8 },  // Ehrenfeld (NW)
+  { lat: 50.9220, lng: 6.9900, radius: 3.5 },  // Deutz (SE)
+  { lat: 50.9500, lng: 6.9800, radius: 1.5 },  // Altstadt-Nord (NE)
+];
+
+let points = JSON.parse(JSON.stringify(DEFAULT_POINTS));
+let map, markers = [], circles = [], resultMarker = null;
+
+// ── Init Map ──
+function initMap() {
+  map = L.map('map', { zoomControl: true }).setView([50.941, 6.958], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+  }).addTo(map);
+
+  // Create markers and circles for each point
+  points.forEach((p, i) => {
+    const marker = L.marker([p.lat, p.lng], {
+      draggable: true,
+      icon: createIcon(COLORS[i], LABELS[i][LABELS[i].length - 1])
+    }).addTo(map);
+
+    marker.on('dragend', (e) => {
+      const pos = e.target.getLatLng();
+      points[i].lat = Math.round(pos.lat * 10000) / 10000;
+      points[i].lng = Math.round(pos.lng * 10000) / 10000;
+      updateUI();
+      calculate();
+    });
+
+    markers.push(marker);
+
+    const circle = L.circle([p.lat, p.lng], {
+      radius: p.radius * 1000,
+      color: COLORS[i],
+      fillColor: COLORS[i],
+      fillOpacity: 0.12,
+      weight: 2.5,
+      dashArray: '8 5'
+    }).addTo(map);
+    circles.push(circle);
+  });
+
+  updateUI();
+  calculate();
+}
+
+function createIcon(color, letter) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:32px;height:32px;border-radius:50%;
+      background:${color};border:3px solid white;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:700;font-size:14px;color:white;
+      box-shadow:0 2px 8px rgba(0,0,0,0.4);
+      transform:translate(-16px,-16px);
+    ">${letter}</div>`,
+    iconSize: [0, 0]
+  });
+}
+
+// ── Sidebar UI ──
+function updateUI() {
+  const container = document.getElementById('pointCards');
+  container.innerHTML = points.map((p, i) => `
+    <div class="point-card">
+      <div class="point-header">
+        <div class="point-dot" style="background:${COLORS[i]}"></div>
+        <span>${LABELS[i]}</span>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Breitengrad</label>
+          <input type="number" step="0.0001" value="${p.lat}" onchange="setCoord(${i},'lat',this.value)">
+        </div>
+        <div class="field">
+          <label>Längengrad</label>
+          <input type="number" step="0.0001" value="${p.lng}" onchange="setCoord(${i},'lng',this.value)">
+        </div>
+      </div>
+      <div class="radius-row">
+        <label style="font-size:11px;color:var(--muted);white-space:nowrap">Distanz:</label>
+        <input type="range" min="0.1" max="50" step="0.1" value="${p.radius}"
+          oninput="setRadius(${i},this.value)">
+        <span class="radius-val">${p.radius.toFixed(1)} km</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setCoord(i, key, val) {
+  points[i][key] = parseFloat(val) || 0;
+  markers[i].setLatLng([points[i].lat, points[i].lng]);
+  circles[i].setLatLng([points[i].lat, points[i].lng]);
+  calculate();
+  fitMap();
+}
+
+function setRadius(i, val) {
+  points[i].radius = parseFloat(val);
+  circles[i].setRadius(val * 1000);
+  // Update displayed value
+  const valSpan = document.querySelectorAll('.radius-val')[i];
+  if (valSpan) valSpan.textContent = parseFloat(val).toFixed(1) + ' km';
+  calculate();
+}
+
+// ── Trilateration Math ──
+// Uses the intersection of three circles to find the point
+function calculate() {
+  const p = points;
+  // Convert lat/lng to meters (flat earth approx, good enough for city scale)
+  const toM = (lat, lng, refLat, refLng) => {
+    const dLat = (lat - refLat) * 111320;
+    const dLng = (lng - refLng) * 111320 * Math.cos(refLat * Math.PI / 180);
+    return [dLng, dLat]; // x, y in meters
+  };
+
+  const refLat = p[0].lat, refLng = p[0].lng;
+  const [x1, y1] = [0, 0];
+  const [x2, y2] = toM(p[1].lat, p[1].lng, refLat, refLng);
+  const [x3, y3] = toM(p[2].lat, p[2].lng, refLat, refLng);
+  const r1 = p[0].radius * 1000; // km to m
+  const r2 = p[1].radius * 1000;
+  const r3 = p[2].radius * 1000;
+
+  // Trilateration equations:
+  // (x-x1)²+(y-y1)² = r1²
+  // (x-x2)²+(y-y2)² = r2²
+  // (x-x3)²+(y-y3)² = r3²
+  // Subtract eq1 from eq2 and eq3 to get two linear equations
+  const A = 2 * (x2 - x1);
+  const B = 2 * (y2 - y1);
+  const C = r1*r1 - r2*r2 - x1*x1 + x2*x2 - y1*y1 + y2*y2;
+  const D = 2 * (x3 - x1);
+  const E = 2 * (y3 - y1);
+  const F = r1*r1 - r3*r3 - x1*x1 + x3*x3 - y1*y1 + y3*y3;
+
+  const denom = A * E - D * B;
+  if (Math.abs(denom) < 0.001) {
+    showResult(null);
+    return;
+  }
+
+  const xM = (C * E - F * B) / denom;
+  const yM = (A * F - D * C) / denom;
+
+  // Convert back to lat/lng
+  const resultLat = refLat + yM / 111320;
+  const resultLng = refLng + xM / (111320 * Math.cos(refLat * Math.PI / 180));
+
+  showResult({ lat: resultLat, lng: resultLng });
+}
+
+function showResult(result) {
+  const el = document.getElementById('resultContent');
+  if (!result) {
+    el.className = 'no-result';
+    el.innerHTML = 'Kein Schnittpunkt gefunden. Die Kreise überschneiden sich möglicherweise nicht.';
+    if (resultMarker) { map.removeLayer(resultMarker); resultMarker = null; }
+    return;
+  }
+
+  const lat = Math.round(result.lat * 10000) / 10000;
+  const lng = Math.round(result.lng * 10000) / 10000;
+
+  el.className = '';
+  el.innerHTML = `
+    <div class="result-coords">${lat}, ${lng}</div>
+    <div class="result-info">Das Objekt befindet sich ungefähr hier.</div>
+  `;
+
+  if (resultMarker) {
+    resultMarker.setLatLng([lat, lng]);
+  } else {
+    resultMarker = L.marker([lat, lng], {
+      icon: L.divIcon({
+        className: '',
+        html: `<div style="
+          width:36px;height:36px;border-radius:50%;
+          background:#ef4444;border:3px solid #fbbf24;
+          display:flex;align-items:center;justify-content:center;
+          font-size:18px;color:white;
+          box-shadow:0 0 16px rgba(239,68,68,0.6);
+          transform:translate(-18px,-18px);
+          animation: pulse 2s ease-in-out infinite;
+        ">🎯</div>
+        <style>@keyframes pulse{0%,100%{box-shadow:0 0 16px rgba(239,68,68,0.6)}50%{box-shadow:0 0 30px rgba(239,68,68,0.9)}}</style>`,
+        iconSize: [0, 0]
+      }),
+      zIndexOffset: 1000
+    }).addTo(map);
+  }
+}
+
+function fitMap() {
+  const allPoints = points.map(p => [p.lat, p.lng]);
+  if (resultMarker) allPoints.push([resultMarker.getLatLng().lat, resultMarker.getLatLng().lng]);
+  if (allPoints.length > 0) {
+    const bounds = L.latLngBounds(allPoints);
+    // Expand bounds to include circles
+    const maxRadius = Math.max(...points.map(p => p.radius)) / 111.32; // km to degrees approx
+    bounds.pad(0.3);
+    map.fitBounds(bounds, { padding: [40, 40] });
+  }
+}
+
+function resetToDefault() {
+  points = JSON.parse(JSON.stringify(DEFAULT_POINTS));
+  points.forEach((p, i) => {
+    markers[i].setLatLng([p.lat, p.lng]);
+    circles[i].setLatLng([p.lat, p.lng]);
+    circles[i].setRadius(p.radius * 1000);
+  });
+  updateUI();
+  calculate();
+  fitMap();
+}
+
+// ── Init ──
+initMap();
+setTimeout(fitMap, 300);
+</script>
+</body>
+</html>

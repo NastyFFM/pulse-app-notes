@@ -2227,10 +2227,19 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
         const project = projData.projects.find(p => p.id === projectId);
         if (!project) return jsonRes(res, { ok: false, error: 'Project not found' });
 
-        // Build context for Claude
+        // Build context for Claude — include actual widget data so agent sees user changes
         const widgetTypes = ['todo', 'notes', 'table', 'timeline', 'kanban', 'kpi', 'links', 'progress'];
-        const existingWidgets = project.canvas.widgets.map(w => `${w.type}: "${w.title}" (dataKey: ${w.dataKey})`).join('\n  ');
+        const existingWidgets = project.canvas.widgets.map(w => {
+          // project.data[dataKey] has user edits, w.data is initial state — prefer project.data
+          const data = project.data[w.dataKey] || w.data || {};
+          const dataStr = JSON.stringify(data).slice(0, 800);
+          const configStr = w.config ? ` config: ${JSON.stringify(w.config)}` : '';
+          return `${w.type}: "${w.title}" (dataKey: ${w.dataKey}, size: ${w.size || 'md'}${configStr})\n    Aktueller Inhalt: ${dataStr}`;
+        }).join('\n  ');
         const recentChat = project.chat.slice(-6).map(m => `${m.role}: ${m.text}`).join('\n');
+
+        // Include changelog so agent sees what user changed
+        const changelog = (project.changelog || []).slice(-15).map(c => `[${c.time}] ${c.summary}`).join('\n');
 
         const prompt = `Du bist der Projekt-Agent fuer PulseOS. Der User arbeitet am Projekt "${project.name}".
 
@@ -2250,7 +2259,12 @@ WICHTIG: Antworte NUR mit einem JSON-Objekt, kein anderer Text davor oder danach
     {
       "action": "update",
       "dataKey": "existierender-dataKey",
-      "data": { ... aktualisierte Daten ... }
+      "data": { ... aktualisierte Daten ... },
+      "title": "optional: neuer Titel",
+      "size": "optional: sm|md|lg|full",
+      "type": "optional: neuer Widget-Typ",
+      "config": { "optional": "neue Config z.B. columns" },
+      "color": "optional: neue Farbe"
     }
   ]
 }
@@ -2267,7 +2281,12 @@ Widget-Datenformate:
 
 Bestehendes Projekt:
   Name: ${project.name}
-  Widgets: ${existingWidgets || 'keine'}
+
+  Aktuelle Widgets mit ihrem AKTUELLEN Inhalt (vom User bearbeitet):
+  ${existingWidgets || 'keine'}
+
+${changelog ? `Aenderungs-Log (was der User zuletzt an den Widgets geaendert hat):
+${changelog}` : ''}
 
 Letzte Chat-Nachrichten:
 ${recentChat}
@@ -2275,11 +2294,15 @@ ${recentChat}
 Neue Nachricht vom User: ${text}
 
 Regeln:
+- WICHTIG: Du SIEHST den aktuellen Widget-Inhalt oben! Wenn der User fragt "was habe ich geaendert", schau ins Aenderungs-Log und in die aktuellen Widget-Daten!
+- Beziehe dich IMMER auf die tatsaechlichen Daten in den Widgets wenn der User danach fragt
 - Erstelle Widgets wenn der User etwas braucht (Planung, Listen, Tracking etc.)
 - Befuelle Widgets mit sinnvollen Daten basierend auf dem Kontext
 - Wenn der User etwas beschreibt (z.B. eine Reise), erstelle passende Widgets MIT Inhalten
 - Du kannst mehrere Widgets gleichzeitig erstellen
-- Aktualisiere bestehende Widgets ueber "updates" wenn der User Aenderungen will
+- Aktualisiere bestehende Widgets ueber "updates" wenn der User Aenderungen will. Du kannst dabei ALLES aendern: data, title, size, type, config, color
+- WICHTIG bei Typ-Wechsel: Wenn du den Widget-Typ aenderst (z.B. kanban→table), MUSST du im update-Objekt IMMER "type", "config" UND "data" mitschicken! Beispiel: {"dataKey":"x","type":"table","config":{"columns":["A","B"]},"data":{"rows":[{"A":"1","B":"2"}]}}
+- Bei Widget-Bearbeitungsbefehlen (markiert mit [Widget-Bearbeitung:]): aendere das spezifische Widget ueber updates mit dem angegebenen dataKey
 - Antworte immer auf Deutsch
 - Antworte NUR mit dem JSON, nichts anderes`;
 
@@ -2306,6 +2329,15 @@ Regeln:
         proc.on('close', (code) => {
           clearTimeout(timeout);
 
+          if (code !== 0 || !stdout.trim()) {
+            console.error('[project-chat] claude -p failed. code:', code, 'stderr:', stderr.slice(0, 500), 'stdout:', stdout.slice(0, 200));
+            return jsonRes(res, {
+              ok: true,
+              text: stderr ? `Agent-Fehler: ${stderr.slice(0, 200)}` : 'Der Agent konnte nicht gestartet werden. Ist claude CLI installiert?',
+              widgetActions: [], widgetsCreated: 0, widgetsUpdated: 0
+            });
+          }
+
           try {
             // Parse claude response — extract JSON from the output
             let parsed;
@@ -2313,18 +2345,28 @@ Regeln:
               // --output-format json wraps in { result: "..." }
               const envelope = JSON.parse(stdout);
               const resultText = envelope.result || envelope.content || stdout;
-              // Find JSON in the result text
-              const jsonMatch = resultText.match(/\{[\s\S]*\}/);
-              if (jsonMatch) {
-                parsed = JSON.parse(jsonMatch[0]);
+              // Find the outermost JSON object in the result
+              // Use bracket counting for reliable extraction
+              let depth = 0, start = -1, end = -1;
+              for (let i = 0; i < resultText.length; i++) {
+                if (resultText[i] === '{') { if (depth === 0) start = i; depth++; }
+                else if (resultText[i] === '}') { depth--; if (depth === 0 && start >= 0) { end = i + 1; break; } }
+              }
+              if (start >= 0 && end > start) {
+                parsed = JSON.parse(resultText.slice(start, end));
               } else {
                 parsed = { text: resultText, widgets: [], updates: [] };
               }
-            } catch {
-              // Try direct parse
-              const jsonMatch = stdout.match(/\{[\s\S]*\}/);
-              if (jsonMatch) {
-                parsed = JSON.parse(jsonMatch[0]);
+            } catch (innerErr) {
+              console.error('[project-chat] Inner parse error:', innerErr.message);
+              // Try direct parse from raw stdout
+              let depth = 0, start = -1, end = -1;
+              for (let i = 0; i < stdout.length; i++) {
+                if (stdout[i] === '{') { if (depth === 0) start = i; depth++; }
+                else if (stdout[i] === '}') { depth--; if (depth === 0 && start >= 0) { end = i + 1; break; } }
+              }
+              if (start >= 0 && end > start) {
+                parsed = JSON.parse(stdout.slice(start, end));
               } else {
                 parsed = { text: stdout.trim() || 'Ich konnte die Anfrage nicht verarbeiten.', widgets: [], updates: [] };
               }
@@ -2343,7 +2385,8 @@ Regeln:
                     title: w.title || w.type,
                     size: w.size || 'md',
                     dataKey,
-                    color: project.color,
+                    color: w.color || project.color,
+                    config: w.config || {},
                     data: w.data || {}
                   };
                   project.canvas.widgets.push(widget);
@@ -2357,12 +2400,24 @@ Regeln:
               }
             }
 
-            // Apply widget updates
+            // Apply widget updates (data AND widget properties)
             if (parsed.updates && Array.isArray(parsed.updates)) {
               for (const u of parsed.updates) {
-                if (u.dataKey && u.data) {
-                  project.data[u.dataKey] = u.data.items || u.data.columns || u.data.rows || u.data.links || u.data;
-                  widgetActions.push({ icon: '✏️', label: `Widget aktualisiert` });
+                if (u.dataKey) {
+                  // Update data if provided
+                  if (u.data) {
+                    project.data[u.dataKey] = u.data.items || u.data.columns || u.data.rows || u.data.links || u.data;
+                  }
+                  // Update widget properties if provided
+                  const widget = project.canvas.widgets.find(w => w.dataKey === u.dataKey);
+                  if (widget) {
+                    if (u.title) widget.title = u.title;
+                    if (u.size) widget.size = u.size;
+                    if (u.type) widget.type = u.type;
+                    if (u.config) widget.config = u.config;
+                    if (u.color) widget.color = u.color;
+                  }
+                  widgetActions.push({ icon: '✏️', label: `${widget?.title || 'Widget'} aktualisiert` });
                 }
               }
             }
