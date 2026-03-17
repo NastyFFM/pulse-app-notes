@@ -1,6 +1,6 @@
 # PulseOS Context Engine — Architekturplan
 
-> **Status:** Phase 1-7 ✅, Phase 8 🔧 in Arbeit. dataRef API + Frontend rendering done.
+> **Status:** Phase 1-8 ✅, Phase 9 🔲 nächster Schritt.
 > **Letzte Aktualisierung:** 2026-03-17
 > **Session-Einstieg:** Lies dieses Dokument. Prüfe den Status jeder Phase. Mach da weiter wo ✅ aufhört und 🔲 anfängt.
 
@@ -487,8 +487,8 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 
 ---
 
-### Phase 8: dataRef — Live-Datenreferenzen
-> **Status:** 🔧 In Arbeit (2026-03-17)
+### Phase 8: dataRef — Live-Datenreferenzen ✅
+> **Status:** ✅ Fertig (2026-03-17)
 >
 > **Ziel:** Ein Widget zeigt Daten aus einem anderen Context.
 > Änderungen propagieren live über SSE.
@@ -509,19 +509,19 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 - [x] SSE-Listener für `dataref-update` Event → Canvas neu rendern
 - [x] `saveDataRef()` Hilfsfunktion zum Schreiben an Remote-Context
 - [x] Visueller Hinweis: "📌 Daten aus [Context-Name]" Badge im Widget-Header + Body
-- [ ] Bearbeitung eines dataRef-Widgets → `PUT` an den Source-Context (nicht lokal speichern)
-- [ ] dataRef-Erstellung: Widget-Edit-Panel → "Daten verlinken" Button → Context+DataKey Picker
+- [x] Bearbeitung eines dataRef-Widgets → `PUT` an den Source-Context (nicht lokal speichern) — `saveWidgetData()` routing
+- [x] dataRef-Erstellung: Widget-Edit-Panel → "Daten verlinken" Button → Context+DataKey Picker — `showDataRefPicker()`
 
 **homeContext-Routing (AI-seitig):**
-- [ ] AI im `/api/context-chat` Prompt: wenn Daten thematisch "nach oben" gehören → `write-data` Action mit `targetContextId` statt lokalem Speichern
-- [ ] AI erstellt automatisch ein dataRef-Widget im aktuellen Context das auf die Quelle zeigt
-- [ ] Prompt-Regeln: "Gewicht → Root", "Budget → nächster Parent mit Budget-Widget"
+- [x] AI im `/api/context-chat` Prompt: wenn Daten thematisch "nach oben" gehören → `write-data` Action mit `targetContextId` statt lokalem Speichern
+- [x] AI erstellt automatisch ein dataRef-Widget im aktuellen Context das auf die Quelle zeigt — via `dataRef: { contextId, dataKey }`
+- [x] Prompt-Regeln: "Gewicht → Root", "Budget → nächster Parent mit Budget-Widget"
 
 **Akzeptanzkriterien:**
-- 🔲 Widget mit `dataRef` zeigt Live-Daten aus anderem Context
-- 🔲 Bearbeitung in Ref-Widget schreibt in Source-Context
-- 🔲 SSE propagiert Änderungen an alle Referenzen
-- 🔲 AI nutzt homeContext-Routing für neue Daten
+- ✅ Widget mit `dataRef` zeigt Live-Daten aus anderem Context
+- ✅ Bearbeitung in Ref-Widget schreibt in Source-Context (`saveWidgetData()`)
+- ✅ SSE propagiert Änderungen an alle Referenzen (`notifyDataRefSubscribers()`)
+- ✅ AI nutzt homeContext-Routing für neue Daten (Prompt-Regeln + `write-data` Action)
 
 ---
 
@@ -660,10 +660,8 @@ Phase 10 (Templates + Patterns)
 Phase 11 (Dashboard + System)
 ```
 
-Phase 1-6 ✅ abgeschlossen.
-Phase 7 braucht Phase 3 + 6 (Zoom muss funktionieren).
-Phase 8 braucht Phase 7 (L0 muss Quick-Actions können für Ref-Widgets).
-Phase 9 braucht Phase 8 (dataRef muss existieren für inherited Edits).
+Phase 1-8 ✅ abgeschlossen.
+Phase 9 braucht Phase 8 ✅ (dataRef muss existieren für inherited Edits).
 Phase 10 braucht Phase 9 (Schemas validiert → Templates sicher).
 Phase 11 braucht Phase 10 (Templates für Dashboard-Presets).
 

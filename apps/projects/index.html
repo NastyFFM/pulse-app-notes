@@ -1337,6 +1337,26 @@ async function saveDataRef(contextId, dataKey, value) {
   }
 }
 
+// Find widget by dataKey and check if it has a dataRef
+function findWidgetDataRef(dataKey) {
+  const proj = state.activeContext;
+  if (!proj) return null;
+  const w = (proj.widgets || []).find(w => w.dataKey === dataKey || (w.dataRef && w.dataRef.dataKey === dataKey));
+  if (w && w.dataRef) return w.dataRef;
+  return null;
+}
+
+// Save widget data — automatically routes to remote context if dataRef exists
+function saveWidgetData(dataKey) {
+  const ref = findWidgetDataRef(dataKey);
+  if (ref) {
+    const proj = state.activeContext;
+    saveDataRef(ref.contextId, ref.dataKey, proj.data[dataKey]);
+  } else {
+    save();
+  }
+}
+
 function save() {
   if (!state.activeContextId || !state.activeContext) return;
   clearTimeout(saveTimeout);
@@ -1852,6 +1872,10 @@ function createWidgetFrame(widget, proj, inherited = false) {
         <button onclick="sendWidgetCmd('${widgetId}')" style="padding:5px 10px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:12px;cursor:pointer;font-family:var(--font);white-space:nowrap;">Senden</button>
       </div>
       <div id="wcmd-status-${widgetId}" style="font-size:11px;color:var(--text-muted);padding-top:4px;display:none;"></div>
+      ${!inherited ? `<div style="display:flex;gap:6px;margin-top:4px;">
+        <button onclick="showDataRefPicker('${widget.id}')" style="padding:3px 8px;border-radius:6px;border:1px dashed var(--border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:var(--font);" title="Daten aus anderem Context verlinken">📌 Daten verlinken</button>
+        ${widget.dataRef ? `<button onclick="removeDataRef('${widget.id}')" style="padding:3px 8px;border-radius:6px;border:1px dashed var(--red);background:transparent;color:var(--red);font-size:10px;cursor:pointer;font-family:var(--font);" title="Verlinkung entfernen">✕ Ref entfernen</button>` : ''}
+      </div>` : ''}
     </div>
     <div class="l0-actions" id="l0-${widgetId}">${getL0ActionsHtml(widget, proj, widgetId)}</div>
     <div class="widget-body" id="wb-${widgetId}"></div>
@@ -2213,7 +2237,7 @@ function updateKpiField(el) {
   proj.data[dataKey][field] = newVal;
   const w = (proj.widgets || []).find(w => w.dataKey === dataKey);
   logChange(proj, `📊 KPI "${w?.title || dataKey}": ${field} geaendert: "${oldVal}" → "${newVal}"`);
-  save();
+  saveWidgetData(dataKey);
 }
 
 function renderKanbanWidget(container, widget, proj) {
@@ -2409,7 +2433,7 @@ function toggleTodo(dataKey, itemId) {
     item.done = !item.done;
     logChange(proj, `${item.done ? '✅' : '⬜'} "${item.text}" in "${getWidgetTitle(proj, dataKey)}" ${item.done ? 'erledigt' : 'wieder offen'}`);
   }
-  save();
+  saveWidgetData(dataKey);
   renderCanvas();
 }
 
@@ -2422,7 +2446,7 @@ function addTodo(dataKey, input) {
   proj.data[dataKey].push({ id: 't-' + Date.now(), text, done: false });
   logChange(proj, `➕ Neue Aufgabe "${text}" in "${getWidgetTitle(proj, dataKey)}" hinzugefuegt`);
   input.value = '';
-  save();
+  saveWidgetData(dataKey);
   renderCanvas();
 }
 
@@ -2435,7 +2459,7 @@ function updateNoteContent(dataKey, text) {
   if (oldText !== text) {
     logChange(proj, `📝 Notiz "${getWidgetTitle(proj, dataKey)}" bearbeitet`);
   }
-  save();
+  saveWidgetData(dataKey);
 }
 
 function removeWidget(widgetId) {
@@ -2491,6 +2515,92 @@ function renderClosedPanel() {
       <button onclick="restoreWidget('${w.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--accent-dim);color:var(--accent);font-size:11px;cursor:pointer;font-family:var(--font);">Wiederherstellen</button>
     </div>
   `).join('');
+}
+
+// ── dataRef Picker ──
+async function showDataRefPicker(widgetId) {
+  const proj = state.activeContext;
+  if (!proj) return;
+  const widget = (proj.widgets || []).find(w => w.id === widgetId);
+  if (!widget) return;
+
+  // Build a simple picker dialog
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:flex;align-items:center;justify-content:center;';
+
+  // Fetch all contexts
+  const otherContexts = state.contexts.filter(c => c.id !== state.activeContextId);
+
+  let html = `<div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:400px;width:90%;max-height:70vh;overflow-y:auto;">
+    <h3 style="margin-bottom:12px;font-size:14px;">📌 Daten verlinken</h3>
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">Wähle einen Context und Datenschlüssel. Das Widget zeigt dann Live-Daten aus diesem Context.</p>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Context:</label>
+      <select id="dataref-ctx-select" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);font-size:12px;font-family:var(--font);">
+        ${otherContexts.map(c => `<option value="${c.id}">${c.icon || '🧩'} ${escapeHtml(c.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Datenschlüssel:</label>
+      <select id="dataref-key-select" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);font-size:12px;font-family:var(--font);">
+        <option value="">Lade...</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button id="dataref-cancel" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:var(--font);">Abbrechen</button>
+      <button id="dataref-confirm" style="padding:6px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:12px;cursor:pointer;font-family:var(--font);">Verlinken</button>
+    </div>
+  </div>`;
+
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+
+  const ctxSelect = overlay.querySelector('#dataref-ctx-select');
+  const keySelect = overlay.querySelector('#dataref-key-select');
+
+  // Load data keys when context changes
+  async function loadKeys() {
+    const ctxId = ctxSelect.value;
+    if (!ctxId) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/context/${ctxId}`);
+      const ctx = await res.json();
+      const keys = Object.keys(ctx.data || {});
+      keySelect.innerHTML = keys.length > 0
+        ? keys.map(k => `<option value="${k}">${escapeHtml(k)}</option>`).join('')
+        : '<option value="">Keine Daten vorhanden</option>';
+    } catch {
+      keySelect.innerHTML = '<option value="">Fehler beim Laden</option>';
+    }
+  }
+
+  ctxSelect.addEventListener('change', loadKeys);
+  loadKeys(); // Initial load
+
+  overlay.querySelector('#dataref-cancel').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  overlay.querySelector('#dataref-confirm').addEventListener('click', () => {
+    const ctxId = ctxSelect.value;
+    const dataKey = keySelect.value;
+    if (!ctxId || !dataKey) return;
+
+    widget.dataRef = { contextId: ctxId, dataKey };
+    if (!widget.dataKey) widget.dataKey = dataKey;
+    save();
+    renderCanvas();
+    overlay.remove();
+  });
+}
+
+function removeDataRef(widgetId) {
+  const proj = state.activeContext;
+  if (!proj) return;
+  const widget = (proj.widgets || []).find(w => w.id === widgetId);
+  if (!widget) return;
+  delete widget.dataRef;
+  save();
+  renderCanvas();
 }
 
 function toggleWidgetEdit(widgetId) {

@@ -3117,13 +3117,16 @@ Geerbte Widgets (von uebergeordneten Contexts, scope: inherited):
 Verfuegbare Schemas (nutze diese fuer korrekte Datenformate):
   ${schemasText}
 
-Regeln fuer homeContext-Routing:
-- Wenn der User ein persoenliches Attribut eingibt (Gewicht, Alter, Name):
-  → Erstelle das Widget mit "homeContext": "${rootContextId}" (Root-Context)
-- Wenn Daten projekt-uebergreifend relevant sind:
-  → Erstelle mit "homeContext": "${parentContextId}" (naechster gemeinsamer Parent)
+Regeln fuer homeContext-Routing (nutze "actions" mit type "write-data"):
+- Wenn der User ein persoenliches Attribut eingibt (Gewicht, Alter, Name, Groesse):
+  → "write-data" Action mit "homeContext": "${rootContextId}" (Root-Context)
+  → Das Widget wird automatisch im Root erstellt UND ein dataRef-Widget im aktuellen Context
+- Wenn Daten projekt-uebergreifend relevant sind (Budget, KPIs, Metriken):
+  → "write-data" Action mit "homeContext": "${parentContextId}" (naechster Parent)
+  → Beispiel: Budget-Widget gehoert zum naechsten Parent der ein Budget-Widget hat
 - Wenn Daten nur lokal relevant sind:
-  → Erstelle im aktuellen Context (kein homeContext noetig)
+  → Erstelle im aktuellen Context (normales "create" Widget, kein write-data noetig)
+- WICHTIG: Bei "write-data" wird automatisch ein Referenz-Widget im aktuellen Context erstellt das auf die Quelle zeigt. Du musst KEIN separates Widget erstellen!
 
 Bestehender Context:
   Name: ${context.name}
@@ -3343,11 +3346,13 @@ Regeln:
                         dataKey: action.dataKey,
                         color: freshContext.color,
                         config: action.widgetConfig?.config || {},
-                        data: action.data,
-                        scope: 'inherited',
-                        homeContext: action.homeContext,
+                        data: {},
+                        dataRef: { contextId: action.homeContext, dataKey: action.dataKey },
                         zoomLevel: 'L1'
                       });
+
+                      // Notify dataRef subscribers about the new data
+                      notifyDataRefSubscribers(action.homeContext, action.dataKey);
 
                       widgetActions.push({ icon: '🏠', label: `Daten in ${action.homeContext} gespeichert`, action: 'write-data', dataKey: action.dataKey, homeContext: action.homeContext });
                       actionsExecuted++;
