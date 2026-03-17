@@ -1579,6 +1579,62 @@ const server = http.createServer((req, res) => {
     } catch { return []; }
   }
 
+  // ── Broadcast to child contexts (for inherited widget updates) ──
+  function broadcastToChildren(parentCtxId) {
+    try {
+      const allCtxs = readAllContexts(false);
+      for (const ctx of allCtxs) {
+        if (ctx.parentId === parentCtxId) {
+          broadcast('liveos', { type: 'context-change', contextId: ctx.id, time: Date.now() });
+        }
+      }
+    } catch (e) {
+      console.error('broadcastToChildren error:', e.message);
+    }
+  }
+
+  // ── Schema Validation ──
+  function validateAgainstSchema(data, schemaId) {
+    const schemasDir = path.join(__dirname, 'data', 'schemas');
+    const fp = path.join(schemasDir, schemaId + '.json');
+    try {
+      if (!fs.existsSync(fp)) return { valid: true }; // No schema = no validation
+      const schema = JSON.parse(fs.readFileSync(fp, 'utf8'));
+      const errors = [];
+      const fields = schema.fields || {};
+
+      // For array-based data (todo items, timeline items, etc.), validate each item
+      const items = Array.isArray(data) ? data : (data.items || data.rows || [data]);
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!item || typeof item !== 'object') continue;
+        for (const [fieldName, fieldDef] of Object.entries(fields)) {
+          if (fieldDef.auto) continue; // Skip auto-generated fields
+          const value = item[fieldName];
+          // Required check
+          if (fieldDef.required && (value === undefined || value === null || value === '')) {
+            errors.push({ item: i, field: fieldName, error: `"${fieldDef.label || fieldName}" ist erforderlich` });
+          }
+          if (value === undefined || value === null) continue;
+          // Type checks
+          if (fieldDef.type === 'number' && typeof value !== 'number' && isNaN(Number(value))) {
+            errors.push({ item: i, field: fieldName, error: `"${fieldDef.label || fieldName}" muss eine Zahl sein` });
+          }
+          if (fieldDef.type === 'boolean' && typeof value !== 'boolean') {
+            errors.push({ item: i, field: fieldName, error: `"${fieldDef.label || fieldName}" muss true/false sein` });
+          }
+          if (fieldDef.type === 'enum' && fieldDef.options && !fieldDef.options.includes(value)) {
+            errors.push({ item: i, field: fieldName, error: `"${fieldDef.label || fieldName}" muss einer von [${fieldDef.options.join(', ')}] sein` });
+          }
+        }
+      }
+      return errors.length > 0 ? { valid: false, errors } : { valid: true };
+    } catch (e) {
+      console.error('Schema validation error:', e.message);
+      return { valid: true }; // Don't block on validation errors
+    }
+  }
+
   // GET /api/schemas — List all schemas
   // GET /api/schemas/:id — Get specific schema
   if (url === '/api/schemas' && req.method === 'GET') {
@@ -1744,9 +1800,25 @@ const server = http.createServer((req, res) => {
     if (req.method === 'PUT') return readBody(req, b => {
       try {
         const ctx = JSON.parse(b);
+        // Validate widgets that have a schema field
+        const validationErrors = [];
+        for (const w of (ctx.widgets || [])) {
+          if (w.schema && ctx.data && ctx.data[w.dataKey]) {
+            const result = validateAgainstSchema(ctx.data[w.dataKey], w.schema);
+            if (!result.valid) {
+              validationErrors.push({ widget: w.title || w.dataKey, schema: w.schema, errors: result.errors });
+            }
+          }
+        }
+        if (validationErrors.length > 0) {
+          res.writeHead(400);
+          return res.end(JSON.stringify({ error: 'Schema-Validierung fehlgeschlagen', validationErrors }));
+        }
         ctx.updated = new Date().toISOString();
         fs.writeFileSync(ctxFile, JSON.stringify(ctx, null, 2));
         broadcast('liveos', { type: 'context-change', contextId: ctxId, time: Date.now() });
+        // Notify child contexts that may have inherited widgets from this context
+        broadcastToChildren(ctxId);
         vikingSyncContextDebounced(ctxId);
         jsonRes(res, { ok: true });
       } catch (e) {
@@ -3116,6 +3188,12 @@ Geerbte Widgets (von uebergeordneten Contexts, scope: inherited):
 
 Verfuegbare Schemas (nutze diese fuer korrekte Datenformate):
   ${schemasText}
+
+SCHEMA-VALIDIERUNG: Wenn ein Widget das Feld "schema" hat, MUESSEN die Daten exakt dem Schema entsprechen.
+- Pflichtfelder (required: true) duerfen nicht leer sein
+- Enum-Felder muessen einen der erlaubten Werte haben
+- Zahlenfelder muessen Zahlen sein, Boolean-Felder true/false
+- Bei neuen Widgets: Setze "schema": "schemaId" wenn ein passendes Schema existiert (task, event, metric, etc.)
 
 Regeln fuer homeContext-Routing (nutze "actions" mit type "write-data"):
 - Wenn der User ein persoenliches Attribut eingibt (Gewicht, Alter, Name, Groesse):

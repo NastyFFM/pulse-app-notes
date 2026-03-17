@@ -1365,11 +1365,15 @@ function save() {
     if (saving) return;
     saving = true;
     try {
-      await fetch(`${API_BASE}/api/context/${state.activeContextId}`, {
+      const resp = await fetch(`${API_BASE}/api/context/${state.activeContextId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(state.activeContext)
       });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        if (err.validationErrors) showValidationToast(err.validationErrors);
+      }
       // Also update the L0 entry in state.contexts
       const idx = state.contexts.findIndex(c => c.id === state.activeContextId);
       if (idx >= 0) {
@@ -1391,13 +1395,33 @@ async function saveImmediate() {
   const myVersion = ++saveVersion;
   saving = true;
   try {
-    await fetch(`${API_BASE}/api/context/${state.activeContextId}`, {
+    const resp = await fetch(`${API_BASE}/api/context/${state.activeContextId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(state.activeContext)
     });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      if (err.validationErrors) showValidationToast(err.validationErrors);
+    }
   } catch (e) { console.error('Save error:', e); }
   setTimeout(() => { if (saveVersion === myVersion) saving = false; }, 800);
+}
+
+// ── Schema Validation Toast ──
+function showValidationToast(validationErrors) {
+  const existing = document.getElementById('__validation-toast');
+  if (existing) existing.remove();
+  const msgs = validationErrors.map(ve =>
+    `<b>${escapeHtml(ve.widget)}</b>: ${ve.errors.map(e => e.error).join(', ')}`
+  ).join('<br>');
+  const toast = document.createElement('div');
+  toast.id = '__validation-toast';
+  toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:10000;background:var(--red);color:white;padding:12px 18px;border-radius:12px;font-size:12px;font-family:var(--font);max-width:400px;box-shadow:0 4px 16px rgba(0,0,0,.3);line-height:1.5;cursor:pointer;';
+  toast.innerHTML = `<div style="font-weight:700;margin-bottom:4px;">⚠️ Schema-Validierung fehlgeschlagen</div>${msgs}`;
+  toast.onclick = () => toast.remove();
+  document.body.appendChild(toast);
+  setTimeout(() => { if (toast.parentNode) toast.remove(); }, 8000);
 }
 
 // ── SSE Live Sync ──
@@ -1410,6 +1434,11 @@ function connectSSE() {
         reloadContextList();
         if (d.contextId === state.activeContextId) {
           selectProject(state.activeContextId);
+        }
+        // If a parent context changed, reload scope chain to update inherited widgets
+        const isParent = (state.inheritedSources || []).some(s => s.id === d.contextId);
+        if (isParent && state.activeContextId && d.contextId !== state.activeContextId) {
+          loadScopeChain().then(() => renderCanvas());
         }
       }
       // dataRef update: re-render widgets that reference the changed data
@@ -1872,10 +1901,13 @@ function createWidgetFrame(widget, proj, inherited = false) {
         <button onclick="sendWidgetCmd('${widgetId}')" style="padding:5px 10px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:12px;cursor:pointer;font-family:var(--font);white-space:nowrap;">Senden</button>
       </div>
       <div id="wcmd-status-${widgetId}" style="font-size:11px;color:var(--text-muted);padding-top:4px;display:none;"></div>
-      ${!inherited ? `<div style="display:flex;gap:6px;margin-top:4px;">
+      ${inherited ? `<div style="display:flex;gap:6px;margin-top:4px;align-items:center;">
+        <span style="font-size:10px;color:var(--yellow);background:rgba(255,200,0,.1);padding:2px 8px;border-radius:6px;">↗️ Änderung wird in <b>${escapeHtml(widget._inheritedFrom || 'Parent')}</b> gespeichert</span>
+        <button onclick="overrideInheritedWidget('${widget.id}','${widget._inheritedFromId || ''}')" style="padding:3px 8px;border-radius:6px;border:1px dashed var(--border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:var(--font);" title="Lokale Kopie erstellen (bricht Vererbung)">📋 Lokal überschreiben</button>
+      </div>` : `<div style="display:flex;gap:6px;margin-top:4px;">
         <button onclick="showDataRefPicker('${widget.id}')" style="padding:3px 8px;border-radius:6px;border:1px dashed var(--border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:var(--font);" title="Daten aus anderem Context verlinken">📌 Daten verlinken</button>
         ${widget.dataRef ? `<button onclick="removeDataRef('${widget.id}')" style="padding:3px 8px;border-radius:6px;border:1px dashed var(--red);background:transparent;color:var(--red);font-size:10px;cursor:pointer;font-family:var(--font);" title="Verlinkung entfernen">✕ Ref entfernen</button>` : ''}
-      </div>` : ''}
+      </div>`}
     </div>
     <div class="l0-actions" id="l0-${widgetId}">${getL0ActionsHtml(widget, proj, widgetId)}</div>
     <div class="widget-body" id="wb-${widgetId}"></div>
@@ -2603,6 +2635,36 @@ function removeDataRef(widgetId) {
   renderCanvas();
 }
 
+// ── Scope-Override: Copy inherited widget locally (breaks inheritance) ──
+function overrideInheritedWidget(inheritedWidgetId, fromContextId) {
+  const proj = state.activeContext;
+  if (!proj) return;
+  const widget = (state.inheritedWidgets || []).find(w => w.id === inheritedWidgetId);
+  if (!widget) return;
+  if (!confirm(`Lokale Kopie von "${widget.title}" erstellen?\nDas Widget wird nicht mehr automatisch vom Parent aktualisiert.`)) return;
+  // Create local copy
+  const localCopy = {
+    id: 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+    type: widget.type,
+    title: widget.title,
+    size: widget.size || 'md',
+    dataKey: widget.dataKey + '-local',
+    color: widget.color || proj.color,
+    config: JSON.parse(JSON.stringify(widget.config || {})),
+    scope: 'local',
+    zoomLevel: widget.zoomLevel || 'L1'
+  };
+  // Copy data from inherited data
+  const inheritedValue = state.inheritedData[widget.dataKey] || widget.data || {};
+  if (!proj.data) proj.data = {};
+  proj.data[localCopy.dataKey] = JSON.parse(JSON.stringify(inheritedValue));
+  if (!proj.widgets) proj.widgets = [];
+  proj.widgets.push(localCopy);
+  logChange(proj, `📋 Lokale Kopie von "${widget.title}" erstellt (Vererbung getrennt)`);
+  save();
+  renderCanvas();
+}
+
 function toggleWidgetEdit(widgetId) {
   const cmd = document.getElementById('wcmd-' + widgetId);
   if (!cmd) return;
@@ -2625,19 +2687,35 @@ async function sendWidgetCmd(widgetId) {
 
   const proj = state.activeContext;
   if (!proj) return;
-  const widget = (proj.widgets || []).find(w => w.id === widgetId);
-  if (!widget) return;
+
+  // Support inherited widgets (prefixed with 'inh-')
+  const isInherited = widgetId.startsWith('inh-');
+  const realWidgetId = isInherited ? widgetId.slice(4) : widgetId;
+  let widget, targetContextId, targetContextName;
+
+  if (isInherited) {
+    widget = (state.inheritedWidgets || []).find(w => w.id === realWidgetId);
+    if (!widget) return;
+    targetContextId = widget._inheritedFromId || widget.fromContext;
+    targetContextName = widget._inheritedFrom || 'Parent';
+  } else {
+    widget = (proj.widgets || []).find(w => w.id === widgetId);
+    if (!widget) return;
+    targetContextId = state.activeContextId;
+    targetContextName = proj.name;
+  }
 
   // Show status
   status.style.display = 'block';
-  status.textContent = 'Wird verarbeitet...';
+  status.textContent = isInherited ? `Wird in "${targetContextName}" gespeichert...` : 'Wird verarbeitet...';
   status.style.color = 'var(--accent)';
   input.disabled = true;
 
   // Build context message that focuses on this widget
-  const widgetData = proj.data[widget.dataKey] || widget.data || {};
+  const widgetData = isInherited ? (state.inheritedData[widget.dataKey] || widget.data || {}) : (proj.data[widget.dataKey] || widget.data || {});
   const widgetMeta = { id: widget.id, type: widget.type, title: widget.title, size: widget.size, dataKey: widget.dataKey, config: widget.config || {} };
-  const contextMsg = `[Widget-Bearbeitung: "${widget.title}"]\nWidget-Definition: ${JSON.stringify(widgetMeta)}\nAktueller Inhalt (proj.data["${widget.dataKey}"]): ${JSON.stringify(widgetData).slice(0, 1500)}\n\nDu kannst ALLES an diesem Widget aendern:\n- Daten/Inhalt (proj.data["${widget.dataKey}"])\n- Widget-Eigenschaften (title, size, type, config, color)\n- Struktur (Spalten hinzufuegen/entfernen bei Tabellen, neue Items bei Todo/Kanban/Timeline)\n- Widget-Typ komplett aendern (z.B. von table zu kanban)\n\nAnweisung vom User: ${text}`;
+  const inheritedNote = isInherited ? `\nWICHTIG: Dieses Widget ist GEERBT von Context "${targetContextName}" (${targetContextId}). Aenderungen werden dort gespeichert.\n` : '';
+  const contextMsg = `[Widget-Bearbeitung: "${widget.title}"]${inheritedNote}\nWidget-Definition: ${JSON.stringify(widgetMeta)}\nAktueller Inhalt (proj.data["${widget.dataKey}"]): ${JSON.stringify(widgetData).slice(0, 1500)}\n\nDu kannst ALLES an diesem Widget aendern:\n- Daten/Inhalt (proj.data["${widget.dataKey}"])\n- Widget-Eigenschaften (title, size, type, config, color)\n- Struktur (Spalten hinzufuegen/entfernen bei Tabellen, neue Items bei Todo/Kanban/Timeline)\n- Widget-Typ komplett aendern (z.B. von table zu kanban)\n\nAnweisung vom User: ${text}`;
 
   // Add to chat as user message
   proj.chat.push({
@@ -2655,25 +2733,29 @@ async function sendWidgetCmd(widgetId) {
   try {
     let response;
     try {
-      response = await callProjectAgent(state.activeContextId, contextMsg);
+      // Route to correct context for inherited widgets
+      response = await callProjectAgent(isInherited ? targetContextId : state.activeContextId, contextMsg);
     } catch (agentErr) {
       console.log('Agent unavailable:', agentErr.message);
       response = { text: 'Agent nicht verfuegbar. Bitte aendere die Daten manuell.', widgetActions: [] };
     }
 
     if (response._fromAgent) {
-      // Reload context from API
-      await selectProject(state.activeContextId);
-      const freshProj = state.activeContext;
-      if (freshProj) {
-        freshProj.chat.push({
-          id: 'msg-' + Date.now(),
-          role: 'agent',
-          text: response.text,
-          widgetActions: response.widgetActions || [],
-          time: new Date().toISOString()
-        });
-        freshProj.updated = new Date().toISOString();
+      // Reload both contexts if inherited
+      if (isInherited) await selectProject(state.activeContextId);
+      else {
+        await selectProject(state.activeContextId);
+        const freshProj = state.activeContext;
+        if (freshProj) {
+          freshProj.chat.push({
+            id: 'msg-' + Date.now(),
+            role: 'agent',
+            text: response.text,
+            widgetActions: response.widgetActions || [],
+            time: new Date().toISOString()
+          });
+          freshProj.updated = new Date().toISOString();
+        }
       }
     } else {
       proj.chat.push({

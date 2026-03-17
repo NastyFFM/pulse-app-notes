@@ -1,6 +1,6 @@
 # PulseOS Context Engine — Architekturplan
 
-> **Status:** Phase 1-8 ✅, Phase 9 🔲 nächster Schritt.
+> **Status:** Phase 1-9 ✅, Phase 10 🔲 nächster Schritt.
 > **Letzte Aktualisierung:** 2026-03-17
 > **Session-Einstieg:** Lies dieses Dokument. Prüfe den Status jeder Phase. Mach da weiter wo ✅ aufhört und 🔲 anfängt.
 
@@ -525,28 +525,28 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 
 ---
 
-### Phase 9: Geerbte Widget-Edits + Schema-Validierung
-> **Status:** 🔲 Wartend auf Phase 8
+### Phase 9: Geerbte Widget-Edits + Schema-Validierung ✅
+> **Status:** ✅ Fertig (2026-03-17)
 >
 > **Ziel:** Geerbte Widgets editierbar machen + Datenintegrität sichern.
 
 **Geerbte Widget-Edits:**
-- [ ] Edit eines inherited Widgets → `PUT /api/context/:parentId` (nicht lokaler Context)
-- [ ] UI: Edit-Modus zeigt "Änderung wird in [Parent-Name] gespeichert" Hinweis
-- [ ] SSE: Parent-Save triggert Re-Render in allen Kind-Contexts
-- [ ] Scope-Override: Kind kann inherited Widget lokal überschreiben (lokale Kopie, bricht Vererbung)
+- [x] Edit eines inherited Widgets → `PUT /api/context/:parentId` (nicht lokaler Context) — `sendWidgetCmd` erkennt `inh-` Prefix, routet Agent zum Parent
+- [x] UI: Edit-Modus zeigt "Änderung wird in [Parent-Name] gespeichert" Hinweis — gelbes Badge im Edit-Panel
+- [x] SSE: Parent-Save triggert Re-Render in allen Kind-Contexts — `broadcastToChildren()` + SSE-Handler prüft `inheritedSources`
+- [x] Scope-Override: Kind kann inherited Widget lokal überschreiben (lokale Kopie, bricht Vererbung) — `overrideInheritedWidget()` mit Bestätigungsdialog
 
 **Schema-Validierung (server.js):**
-- [ ] Funktion `validateAgainstSchema(data, schemaId)` implementieren
-- [ ] Bei `PUT /api/context/:id` → alle Widgets mit `schema` Feld validieren
-- [ ] Validierungsfehler: 400 Response mit Details, Frontend zeigt Fehler-Toast
-- [ ] AI-Prompt: Schemas als Constraint "Daten MÜSSEN diesem Schema entsprechen"
+- [x] Funktion `validateAgainstSchema(data, schemaId)` implementieren — prüft required, type, enum, number, boolean
+- [x] Bei `PUT /api/context/:id` → alle Widgets mit `schema` Feld validieren — 400 Response mit Details
+- [x] Validierungsfehler: 400 Response mit Details, Frontend zeigt Fehler-Toast — `showValidationToast()`
+- [x] AI-Prompt: Schemas als Constraint "Daten MÜSSEN diesem Schema entsprechen" — explizite Regeln im Prompt
 
 **Akzeptanzkriterien:**
-- 🔲 Geerbtes Widget editiert → Parent wird aktualisiert
-- 🔲 Alle Kind-Contexts sehen die Änderung live
-- 🔲 Schema-Validierung verhindert invalide Daten
-- 🔲 AI hält sich an Schemas
+- ✅ Geerbtes Widget editiert → Parent wird aktualisiert
+- ✅ Alle Kind-Contexts sehen die Änderung live
+- ✅ Schema-Validierung verhindert invalide Daten
+- ✅ AI hält sich an Schemas
 
 ---
 
@@ -660,8 +660,7 @@ Phase 10 (Templates + Patterns)
 Phase 11 (Dashboard + System)
 ```
 
-Phase 1-8 ✅ abgeschlossen.
-Phase 9 braucht Phase 8 ✅ (dataRef muss existieren für inherited Edits).
+Phase 1-9 ✅ abgeschlossen.
 Phase 10 braucht Phase 9 (Schemas validiert → Templates sicher).
 Phase 11 braucht Phase 10 (Templates für Dashboard-Presets).
 
