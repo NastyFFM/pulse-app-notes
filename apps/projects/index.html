@@ -499,6 +499,35 @@ body {
 .widget-frame.size-lg { width: 580px; }
 .widget-frame.size-full { width: 100%; }
 
+/* Zoom Levels */
+.widget-frame.zoom-l0 {
+  max-height: 44px;
+  overflow: hidden;
+}
+.widget-frame.zoom-l0 .widget-body { display: none; }
+.widget-frame.zoom-l0 .widget-cmd { display: none !important; }
+.widget-frame.zoom-l0 .widget-head .actions { display: none; }
+.widget-frame.zoom-l0 .widget-head .label { font-size: 12px; }
+
+.widget-frame.zoom-l2 {
+  grid-column: 1 / -1;
+}
+
+.widget-zoom-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.widget-zoom-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+
 .widget-head {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
@@ -1327,29 +1356,25 @@ function renderCanvas() {
     grid.appendChild(frame);
   }
 
-  // Render subproject cards
+  // Render child contexts that are NOT already represented as context-type widgets
   if (hasChildren) {
-    const section = document.createElement('div');
-    section.className = 'subprojects-section';
-    section.style.gridColumn = '1 / -1';
-    let html = '<div class="sp-section-title">📂 Unterprojekte</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">';
-    for (const child of children) {
-      const wCount = child.widgetCount || 0;
-      html += `<div class="subproject-card" onclick="selectProject('${child.id}')">
-        <div class="sp-header">
-          <div class="sp-icon" style="background:${(child.color || '#8B5CF6')}22">${child.icon || '🧩'}</div>
-          <div>
-            <div class="sp-name">${child.name}</div>
-            <div class="sp-meta">
-              <span>${wCount} Widgets</span>
-            </div>
-          </div>
-        </div>
-      </div>`;
+    const existingContextRefs = new Set(
+      (proj.widgets || []).filter(w => w.type === 'context' && w.contextRef).map(w => w.contextRef)
+    );
+    const unrepresented = children.filter(c => !existingContextRefs.has(c.id));
+    for (const child of unrepresented) {
+      const virtualWidget = {
+        id: '__virtual-ctx-' + child.id,
+        type: 'context',
+        title: child.name,
+        size: 'sm',
+        contextRef: child.id,
+        color: child.color,
+        zoomLevel: 'L1'
+      };
+      const frame = createWidgetFrame(virtualWidget, proj);
+      grid.appendChild(frame);
     }
-    html += '</div>';
-    section.innerHTML = html;
-    grid.appendChild(section);
   }
 
   // Show/hide closed widgets toggle
@@ -1426,18 +1451,23 @@ function dismissChangeBanner(btn, id) {
 // ── Widget Factory ──
 function createWidgetFrame(widget, proj) {
   const frame = document.createElement('div');
-  frame.className = `widget-frame size-${widget.size || 'md'}`;
+  const zoomLevel = widget.zoomLevel || 'L1';
+  const zoomClass = zoomLevel === 'L0' ? ' zoom-l0' : zoomLevel === 'L2' ? ' zoom-l2' : '';
+  frame.className = `widget-frame size-${widget.size || 'md'}${zoomClass}`;
   frame.dataset.widgetId = widget.id;
 
   const color = widget.color || proj.color || 'var(--accent)';
 
   const typeLabel = getWidgetLabel(widget.type);
   const displayTitle = widget.title !== typeLabel ? widget.title : typeLabel;
+  const badge = zoomLevel === 'L0' ? ` · ${getL0Badge(widget, proj)}` : '';
+  const zoomIcon = zoomLevel === 'L0' ? '🔹' : zoomLevel === 'L2' ? '🔷' : '🔸';
   frame.innerHTML = `
     <div class="widget-head">
       <div class="dot" style="background:${color}"></div>
-      <div class="label">${getWidgetIcon(widget.type)} ${displayTitle}</div>
+      <div class="label">${getWidgetIcon(widget.type)} ${displayTitle}${badge}</div>
       <div class="actions">
+        <button onclick="cycleZoom('${widget.id}')" title="Zoom" class="widget-zoom-btn">${zoomIcon}</button>
         <button onclick="toggleWidgetEdit('${widget.id}')" title="Widget bearbeiten" class="widget-edit-btn">✏️</button>
         <button onclick="resizeWidget('${widget.id}')" title="Resize">↔</button>
         <button onclick="removeWidget('${widget.id}')" title="Entfernen">✕</button>
@@ -1490,6 +1520,26 @@ function renderWidgetContent(container, widget, proj) {
     case 'progress':
       renderProgressWidget(container, widget, proj);
       break;
+    case 'context': {
+      const refCtx = state.contexts.find(c => c.id === widget.contextRef);
+      if (!refCtx) {
+        container.innerHTML = '<div style="padding:16px;color:var(--text-muted);">Context nicht gefunden</div>';
+        break;
+      }
+      container.innerHTML = `
+        <div onclick="selectProject('${refCtx.id}')" style="cursor:pointer;padding:16px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:24px;width:40px;height:40px;border-radius:10px;background:${refCtx.color || '#8B5CF6'}22;display:flex;align-items:center;justify-content:center;">${refCtx.icon || '🧩'}</div>
+            <div>
+              <div style="font-weight:600;font-size:14px;">${refCtx.name}</div>
+              <div style="font-size:11px;color:var(--text-muted);">${refCtx.widgetCount || 0} Widgets</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Klicken zum Eintauchen →</div>
+        </div>
+      `;
+      break;
+    }
     case 'text':
       container.innerHTML = `<div class="w-note-content">${escapeHtml(data.text || widget.text || '')}</div>`;
       break;
@@ -2290,6 +2340,59 @@ async function processProjectMessage(text, proj) {
   return { text: responseText, widgetActions };
 }
 
+// ── Zoom Level ──
+function cycleZoom(widgetId) {
+  const proj = getProject(state.activeContextId);
+  if (!proj) return;
+  const w = (proj.widgets || []).find(w => w.id === widgetId);
+  if (!w) return;
+  const levels = ['L0', 'L1', 'L2'];
+  const idx = levels.indexOf(w.zoomLevel || 'L1');
+  w.zoomLevel = levels[(idx + 1) % 3];
+  save();
+  renderCanvas();
+}
+
+function getL0Badge(widget, proj) {
+  const data = proj.data?.[widget.dataKey] || widget.data || {};
+  switch (widget.type) {
+    case 'todo': {
+      const items = proj.data?.[widget.dataKey] || widget.data?.items || [];
+      const done = Array.isArray(items) ? items.filter(i => i.done).length : 0;
+      const total = Array.isArray(items) ? items.length : 0;
+      return `${done}/${total} ✓`;
+    }
+    case 'kpi': {
+      const kpiData = proj.data?.[widget.dataKey] || widget.data || {};
+      return kpiData.value ?? '—';
+    }
+    case 'table': {
+      const rows = proj.data?.[widget.dataKey] || widget.data?.rows || [];
+      return `${Array.isArray(rows) ? rows.length : 0} Zeilen`;
+    }
+    case 'kanban': {
+      const kanbanData = proj.data?.[widget.dataKey] || widget.data || {};
+      const cols = kanbanData.columns || [];
+      return cols.map(c => (c.items || []).length).join('/');
+    }
+    case 'notes': {
+      const noteData = proj.data?.[widget.dataKey] || widget.data || {};
+      const txt = noteData.text || '';
+      return txt.slice(0, 30) + (txt.length > 30 ? '…' : '');
+    }
+    case 'context': {
+      const refCtx = state.contexts.find(c => c.id === widget.contextRef);
+      return refCtx ? `${refCtx.widgetCount || 0} W` : '—';
+    }
+    case 'timeline': {
+      const tItems = proj.data?.[widget.dataKey] || widget.data?.items || [];
+      return `${Array.isArray(tItems) ? tItems.length : 0} Items`;
+    }
+    default:
+      return '';
+  }
+}
+
 // ── Helpers ──
 function extractTitle(text, fallback) {
   // Try to extract a quoted title first
@@ -2312,12 +2415,12 @@ function extractListItems(text) {
 }
 
 function getWidgetIcon(type) {
-  const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉', text: '📄' };
+  const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉', text: '📄', context: '📂' };
   return icons[type] || '🧩';
 }
 
 function getWidgetLabel(type) {
-  const labels = { todo: 'Aufgaben', notes: 'Notizen', table: 'Tabelle', timeline: 'Timeline', kpi: 'KPI', kanban: 'Board', links: 'Links', progress: 'Fortschritt', text: 'Text' };
+  const labels = { todo: 'Aufgaben', notes: 'Notizen', table: 'Tabelle', timeline: 'Timeline', kpi: 'KPI', kanban: 'Board', links: 'Links', progress: 'Fortschritt', text: 'Text', context: 'Kontext' };
   return labels[type] || type;
 }
 
