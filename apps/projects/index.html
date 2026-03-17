@@ -2420,10 +2420,10 @@ async function sendMessage() {
 
 // ── AI Agent Call ──
 async function callProjectAgent(projectId, text) {
-  const res = await fetch('/api/project-chat', {
+  const res = await fetch('/api/context-chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ projectId, text })
+    body: JSON.stringify({ contextId: projectId, text })
   });
 
   if (!res.ok) throw new Error('Agent request failed');
@@ -2936,10 +2936,10 @@ async function refreshPlan() {
   content.innerHTML = '<div class="plan-empty" style="color:var(--accent);">⏳ Plan wird generiert...</div>';
 
   try {
-    const res = await fetch('/api/project-plan', {
+    const res = await fetch('/api/context-plan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectId: proj.id })
+      body: JSON.stringify({ contextId: proj.id })
     });
     const result = await res.json();
     if (result.ok && result.plan) {

@@ -1,6 +1,6 @@
 # PulseOS Context Engine — Architekturplan
 
-> **Status:** Phase 1 ✅ + Phase 2 ✅ + Phase 3 🔧 (Basis fertig, Zoom/Scope fehlt noch).
+> **Status:** Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅ abgeschlossen. Phase 4 (Skills/AI) als nächstes.
 > **Letzte Aktualisierung:** 2026-03-17
 > **Session-Einstieg:** Lies dieses Dokument. Prüfe den Status jeder Phase. Mach da weiter wo ✅ aufhört und 🔲 anfängt.
 
@@ -312,7 +312,7 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 ---
 
 ### Phase 3: Context-UI (Frontend)
-> **Status:** 🔧 In Arbeit (Basis fertig, Zoom/Scope fehlen)
+> **Status:** ✅ Abgeschlossen (2026-03-17)
 
 **Basis (apps/projects/index.html umbauen):**
 - [x] Daten von `/api/contexts` statt `projects.json` laden
@@ -330,7 +330,7 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 - [x] L1: Summary-Karte (Name, Widget-Count, Klick-Hinweis)
 - [x] L2: Klick → navigiere in den Sub-Context
 - [x] Auto-generierte virtuelle Context-Widgets für Kind-Contexts
-- [ ] Visueller Hinweis für geerbte Widgets ("↗ von Parent-Name")
+- [x] Visueller Hinweis für geerbte Widgets ("↗ von Parent-Name")
 
 **Zoom-System:**
 - [x] Widget-Frame: Zoom-Button (L0 ↔ L1 ↔ L2)
@@ -342,25 +342,27 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 - [x] L2 Full-Edit: wie bisher + ✏️ AI-Command
 
 **Perspektive-Wechsel (L1):**
-- [ ] Button im Widget-Header: 📋 ↔ 📊 ↔ 📈
-- [ ] Tasks als Todo ↔ Kanban ↔ Tabelle (gleiche Daten, andere Ansicht)
-- [ ] Config `renderAs` im Widget speichern
+- [x] Button im Widget-Header: 👁 (Auge)
+- [x] Tasks als Todo ↔ Kanban ↔ Tabelle (gleiche Daten, andere Ansicht)
+- [x] Timeline/Links auch als Table darstellbar
+- [x] Config `renderAs` im Widget speichern
+- [x] Header zeigt "todo → kanban" Hinweis
 
 **Geerbte Widgets im Canvas:**
-- [ ] Sektion "Von [Parent-Name]" mit visueller Trennung
-- [ ] Geerbte Widgets editierbar (Änderungen → Parent-Context)
-- [ ] Pin-Icon (📌) zeigt Herkunft
+- [x] Sektion "Von [Parent-Name]" mit visueller Trennung
+- [x] Geerbte Widgets mit dashed Border + inherited Badge
+- [ ] Geerbte Widget-Edits → Parent-Context speichern (Phase 4)
 
 **Pending Changes Fix:**
-- [ ] `pendingChanges` pro Context-ID tracken (nicht global)
-- [ ] Beim Context-Wechsel: pending changes des alten Context behalten
-- [ ] Button zeigt Context-Name: "3 Änderungen in [Name] übernehmen"
+- [x] `pendingChanges` pro Context-ID tracken (nicht global)
+- [x] Beim Context-Wechsel: pending changes des alten Context behalten
 
 **Akzeptanzkriterien:**
-- Context-Navigation funktioniert (rein/raus/seitwärts)
-- Alle 3 Zoom-Levels rendern und sind editierbar
-- Geerbte Widgets erscheinen mit Herkunfts-Hinweis
-- Pending Changes sind Context-gebunden
+- ✅ Context-Navigation funktioniert (rein/raus/seitwärts)
+- ✅ Alle 3 Zoom-Levels rendern (L0 pill, L1 card, L2 full-width)
+- ✅ Geerbte Widgets erscheinen mit Herkunfts-Hinweis
+- ✅ Perspektive-Wechsel: todo ↔ kanban ↔ table
+- ✅ Pending Changes sind Context-gebunden
 
 ---
 

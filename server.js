@@ -2661,6 +2661,452 @@ Regeln:
     });
   }
 
+  // ── Context Chat (Phase 4 — works with context files instead of projects.json) ──
+  if (url === '/api/context-chat' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { contextId, text } = JSON.parse(b);
+        if (!contextId || !text) return jsonRes(res, { ok: false, error: 'contextId and text required' });
+
+        // Read current context
+        const ctxFile = path.join(ROOT, 'data', 'contexts', contextId + '.json');
+        if (!fs.existsSync(ctxFile)) return jsonRes(res, { ok: false, error: 'Context not found' });
+        const context = JSON.parse(fs.readFileSync(ctxFile, 'utf8'));
+
+        // Build context for Claude — include actual widget data
+        const existingWidgets = (context.widgets || []).map(w => {
+          const data = (context.data && context.data[w.dataKey]) || w.data || {};
+          const dataStr = JSON.stringify(data).slice(0, 800);
+          const configStr = w.config ? ` config: ${JSON.stringify(w.config)}` : '';
+          const scopeStr = w.scope ? ` scope: ${w.scope}` : '';
+          return `${w.type}: "${w.title}" (dataKey: ${w.dataKey}, size: ${w.size || 'md'}${configStr}${scopeStr})\n    Aktueller Inhalt: ${dataStr}`;
+        }).join('\n  ');
+        const recentChat = (context.chat || []).slice(-6).map(m => `${m.role}: ${m.text}`).join('\n');
+        const changelog = (context.changelog || []).slice(-15).map(c => `[${c.time}] ${c.summary}`).join('\n');
+
+        // Build cross-context widget library from ALL context files
+        const contextDir = path.join(ROOT, 'data', 'contexts');
+        let allContexts = [];
+        try {
+          allContexts = fs.readdirSync(contextDir)
+            .filter(f => f.endsWith('.json'))
+            .map(f => { try { return JSON.parse(fs.readFileSync(path.join(contextDir, f), 'utf8')); } catch { return null; } })
+            .filter(Boolean);
+        } catch {}
+
+        const otherContexts = allContexts.filter(c => c.id !== contextId);
+        let widgetLibrary = '';
+        if (otherContexts.length > 0) {
+          const libraryEntries = [];
+          for (const oc of otherContexts) {
+            if (!oc.widgets || oc.widgets.length === 0) continue;
+            const widgets = oc.widgets.map(w => {
+              const data = (oc.data && oc.data[w.dataKey]) || w.data || {};
+              const dataStr = JSON.stringify(data).slice(0, 400);
+              const configStr = w.config ? ` config: ${JSON.stringify(w.config)}` : '';
+              return `    - ${w.type}: "${w.title}" (size: ${w.size || 'md'}${configStr}) → ${dataStr}`;
+            }).join('\n');
+            libraryEntries.push(`  Context "${oc.name}" (${oc.id}):\n${widgets}`);
+          }
+          if (libraryEntries.length > 0) widgetLibrary = libraryEntries.join('\n');
+        }
+
+        // Build context tree text
+        function buildTreeText(contexts, parentId, indent) {
+          indent = indent || '';
+          return contexts
+            .filter(c => (c.parentId || null) === parentId)
+            .map(c => {
+              const marker = c.id === contextId ? ' ← DU BIST HIER' : '';
+              const widgets = (c.widgets || []).map(w => w.title).join(', ');
+              return `${indent}${c.icon || '📁'} ${c.name} (${c.id})${marker}\n${indent}  Widgets: ${widgets || 'keine'}\n${buildTreeText(contexts, c.id, indent + '  ')}`;
+            }).join('');
+        }
+        const contextTreeText = buildTreeText(allContexts, null, '  ');
+
+        // Find root context and parent context for homeContext routing
+        let rootContextId = contextId;
+        let parentContextId = context.parentId || contextId;
+        const findRoot = (id) => {
+          const c = allContexts.find(x => x.id === id);
+          if (c && c.parentId) return findRoot(c.parentId);
+          return id;
+        };
+        rootContextId = findRoot(contextId);
+
+        // Build inherited widgets text (from parent contexts via scope chain)
+        let inheritedWidgetsText = 'keine';
+        const parentChain = [];
+        let walkId = context.parentId;
+        while (walkId) {
+          const parent = allContexts.find(c => c.id === walkId);
+          if (!parent) break;
+          parentChain.push(parent);
+          walkId = parent.parentId;
+        }
+        if (parentChain.length > 0) {
+          const inherited = [];
+          for (const p of parentChain) {
+            const pWidgets = (p.widgets || []).filter(w => w.scope !== 'local');
+            if (pWidgets.length > 0) {
+              inherited.push(...pWidgets.map(w => `${w.type}: "${w.title}" (von ${p.name}, dataKey: ${w.dataKey})`));
+            }
+          }
+          if (inherited.length > 0) inheritedWidgetsText = inherited.join('\n  ');
+        }
+
+        // Read schemas
+        let schemasText = 'keine';
+        try {
+          const schemasDir = path.join(ROOT, 'data', 'schemas');
+          const schemaFiles = fs.readdirSync(schemasDir).filter(f => f.endsWith('.json'));
+          const schemas = schemaFiles.map(f => {
+            const s = JSON.parse(fs.readFileSync(path.join(schemasDir, f), 'utf8'));
+            return `${s.id}: ${s.label} — Felder: ${Object.keys(s.fields).join(', ')} — Renders: ${s.renders.join(', ')}`;
+          }).join('\n  ');
+          if (schemas) schemasText = schemas;
+        } catch {}
+
+        const prompt = `Du bist der Context-Agent fuer PulseOS. Der User arbeitet im Context "${context.name}" (${contextId}).
+
+WICHTIG: Antworte NUR mit einem JSON-Objekt, kein anderer Text davor oder danach. Das JSON muss diese Struktur haben:
+{
+  "text": "Deine Antwort an den User (deutsch, freundlich, kompakt)",
+  "widgets": [
+    {
+      "action": "create",
+      "type": "todo|notes|table|timeline|kanban|kpi|links|progress",
+      "title": "Widget-Titel",
+      "size": "sm|md|lg|full",
+      "data": { ... passende Daten fuer den Widget-Typ ... },
+      "detail": "Kurze Beschreibung was erstellt wurde und warum"
+    }
+  ],
+  "updates": [
+    {
+      "action": "update",
+      "dataKey": "existierender-dataKey",
+      "data": { ... aktualisierte Daten ... },
+      "title": "optional: neuer Titel",
+      "size": "optional: sm|md|lg|full",
+      "type": "optional: neuer Widget-Typ",
+      "config": { "optional": "neue Config z.B. columns" },
+      "color": "optional: neue Farbe",
+      "detail": "Kurze Beschreibung was geaendert wurde"
+    }
+  ],
+  "actions": [
+    {
+      "type": "create-subcontext",
+      "name": "Unterprojekt-Name",
+      "icon": "emoji",
+      "color": "#hex"
+    },
+    {
+      "type": "write-data",
+      "homeContext": "context-id-wo-daten-hin-sollen",
+      "dataKey": "schluessel-name",
+      "data": { ... },
+      "widgetConfig": { "type": "kpi", "title": "Widget-Titel" }
+    }
+  ]
+}
+
+Widget-Datenformate:
+- todo: { "items": [{ "id": "t-1", "text": "Aufgabe", "done": false, "priority": "high|medium|low" }] }
+- notes: { "text": "Notiz-Inhalt" }
+- table: { "rows": [{ "spalte1": "wert1", "spalte2": "wert2" }] }, config: { "columns": ["spalte1", "spalte2"] }
+- timeline: { "items": [{ "title": "Event", "description": "...", "time": "...", "color": "#hex" }] }
+- kanban: { "columns": [{ "id": "col1", "name": "Name", "items": [{ "text": "Task" }] }] }
+- kpi: { "value": "42", "label": "Metrik-Name", "change": 5.2 }
+- links: { "links": [{ "title": "Name", "url": "https://...", "icon": "emoji" }] }
+- progress: { "percent": 75, "label": "Fortschritt-Name" }
+
+Context-Baum (Hierarchie):
+${contextTreeText || '  (nur dieser Context)'}
+
+Geerbte Widgets (von uebergeordneten Contexts, scope: inherited):
+  ${inheritedWidgetsText}
+
+Verfuegbare Schemas (nutze diese fuer korrekte Datenformate):
+  ${schemasText}
+
+Regeln fuer homeContext-Routing:
+- Wenn der User ein persoenliches Attribut eingibt (Gewicht, Alter, Name):
+  → Erstelle das Widget mit "homeContext": "${rootContextId}" (Root-Context)
+- Wenn Daten projekt-uebergreifend relevant sind:
+  → Erstelle mit "homeContext": "${parentContextId}" (naechster gemeinsamer Parent)
+- Wenn Daten nur lokal relevant sind:
+  → Erstelle im aktuellen Context (kein homeContext noetig)
+
+Bestehender Context:
+  Name: ${context.name}
+  ID: ${contextId}
+  Parent: ${context.parentId || 'keiner (Root)'}
+
+  Aktuelle Widgets mit ihrem AKTUELLEN Inhalt (vom User bearbeitet):
+  ${existingWidgets || 'keine'}
+
+${widgetLibrary ? `Widget-Bibliothek aus anderen Contexts (kannst du als Vorlage/Inspiration verwenden):
+${widgetLibrary}` : ''}
+
+${changelog ? `Aenderungs-Log (was der User zuletzt an den Widgets geaendert hat):
+${changelog}` : ''}
+
+Letzte Chat-Nachrichten:
+${recentChat}
+
+Neue Nachricht vom User: ${text}
+
+Regeln:
+- WICHTIG: Du SIEHST den aktuellen Widget-Inhalt oben! Wenn der User fragt "was habe ich geaendert", schau ins Aenderungs-Log und in die aktuellen Widget-Daten!
+- Beziehe dich IMMER auf die tatsaechlichen Daten in den Widgets wenn der User danach fragt
+- Erstelle Widgets wenn der User etwas braucht (Planung, Listen, Tracking etc.)
+- Befuelle Widgets mit sinnvollen Daten basierend auf dem Kontext
+- Wenn der User etwas beschreibt (z.B. eine Reise), erstelle passende Widgets MIT Inhalten
+- Du kannst mehrere Widgets gleichzeitig erstellen
+- Aktualisiere bestehende Widgets ueber "updates" wenn der User Aenderungen will
+- WICHTIG bei Typ-Wechsel: Wenn du den Widget-Typ aenderst (z.B. kanban→table), MUSST du im update-Objekt IMMER "type", "config" UND "data" mitschicken!
+- Bei Widget-Bearbeitungsbefehlen: aendere das spezifische Widget ueber updates mit dem angegebenen dataKey
+- Du kennst ALLE Widgets aus ALLEN Contexts (siehe Widget-Bibliothek). Nutze diese als Vorlage wenn passend
+- Nutze "actions" fuer context-uebergreifende Operationen (Subcontext erstellen, Daten in anderen Context schreiben)
+- Nutze die homeContext-Routing-Regeln um Daten am richtigen Ort zu speichern
+- Antworte immer auf Deutsch
+- Antworte NUR mit dem JSON, nichts anderes`;
+
+        // Spawn claude -p
+        const proc = spawn('claude', ['-p', '--output-format', 'json'], {
+          cwd: ROOT, env: process.env, stdio: ['pipe', 'pipe', 'pipe']
+        });
+        proc.stdin.write(prompt);
+        proc.stdin.end();
+
+        let stdout = '';
+        let stderr = '';
+        proc.stdout.on('data', chunk => { stdout += chunk.toString(); });
+        proc.stderr.on('data', chunk => { stderr += chunk.toString(); });
+
+        const timeout = setTimeout(() => { proc.kill('SIGTERM'); }, 60000);
+
+        proc.on('close', (code) => {
+          clearTimeout(timeout);
+
+          if (code !== 0 || !stdout.trim()) {
+            console.error('[context-chat] claude -p failed. code:', code, 'stderr:', stderr.slice(0, 500));
+            return jsonRes(res, {
+              ok: true,
+              text: stderr ? `Agent-Fehler: ${stderr.slice(0, 200)}` : 'Der Agent konnte nicht gestartet werden.',
+              widgetActions: [], widgetsCreated: 0, widgetsUpdated: 0, actionsExecuted: 0
+            });
+          }
+
+          try {
+            // Parse claude response
+            let parsed;
+            try {
+              const envelope = JSON.parse(stdout);
+              const resultText = envelope.result || envelope.content || stdout;
+              let depth = 0, start = -1, end = -1;
+              for (let i = 0; i < resultText.length; i++) {
+                if (resultText[i] === '{') { if (depth === 0) start = i; depth++; }
+                else if (resultText[i] === '}') { depth--; if (depth === 0 && start >= 0) { end = i + 1; break; } }
+              }
+              if (start >= 0 && end > start) {
+                parsed = JSON.parse(resultText.slice(start, end));
+              } else {
+                parsed = { text: resultText, widgets: [], updates: [], actions: [] };
+              }
+            } catch (innerErr) {
+              console.error('[context-chat] Inner parse error:', innerErr.message);
+              let depth = 0, start = -1, end = -1;
+              for (let i = 0; i < stdout.length; i++) {
+                if (stdout[i] === '{') { if (depth === 0) start = i; depth++; }
+                else if (stdout[i] === '}') { depth--; if (depth === 0 && start >= 0) { end = i + 1; break; } }
+              }
+              if (start >= 0 && end > start) {
+                parsed = JSON.parse(stdout.slice(start, end));
+              } else {
+                parsed = { text: stdout.trim() || 'Ich konnte die Anfrage nicht verarbeiten.', widgets: [], updates: [], actions: [] };
+              }
+            }
+
+            // Re-read context (may have changed)
+            const freshContext = JSON.parse(fs.readFileSync(ctxFile, 'utf8'));
+
+            // Apply widget creates
+            const widgetActions = [];
+            if (parsed.widgets && Array.isArray(parsed.widgets)) {
+              for (const w of parsed.widgets) {
+                if (w.action === 'create' && w.type) {
+                  const widgetId = 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+                  const dataKey = w.type + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 4);
+                  const widget = {
+                    id: widgetId, type: w.type, title: w.title || w.type,
+                    size: w.size || 'md', dataKey, color: w.color || freshContext.color,
+                    config: w.config || {}, data: w.data || {},
+                    scope: 'local', zoomLevel: 'L1'
+                  };
+                  if (!freshContext.widgets) freshContext.widgets = [];
+                  freshContext.widgets.push(widget);
+                  if (!freshContext.data) freshContext.data = {};
+                  if (w.data) {
+                    freshContext.data[dataKey] = w.data.items || w.data.columns || w.data.rows || w.data.links || w.data;
+                  }
+                  const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉' };
+                  widgetActions.push({ icon: icons[w.type] || '🧩', label: `${w.title || w.type} erstellt`, widgetId, dataKey, action: 'create', detail: w.detail || `Neues ${w.type}-Widget "${w.title}" erstellt` });
+                }
+              }
+            }
+
+            // Apply widget updates
+            if (parsed.updates && Array.isArray(parsed.updates)) {
+              for (const u of parsed.updates) {
+                if (u.dataKey) {
+                  if (!freshContext.data) freshContext.data = {};
+                  if (u.data) {
+                    freshContext.data[u.dataKey] = u.data.items || u.data.columns || u.data.rows || u.data.links || u.data;
+                  }
+                  const widget = (freshContext.widgets || []).find(w => w.dataKey === u.dataKey);
+                  if (widget) {
+                    if (u.title) widget.title = u.title;
+                    if (u.size) widget.size = u.size;
+                    if (u.type) widget.type = u.type;
+                    if (u.config) widget.config = u.config;
+                    if (u.color) widget.color = u.color;
+                  }
+                  const changes = [];
+                  if (u.title) changes.push(`Titel → "${u.title}"`);
+                  if (u.type) changes.push(`Typ → ${u.type}`);
+                  if (u.size) changes.push(`Groesse → ${u.size}`);
+                  if (u.config) changes.push('Config aktualisiert');
+                  if (u.data) changes.push('Daten aktualisiert');
+                  if (u.color) changes.push(`Farbe → ${u.color}`);
+                  widgetActions.push({ icon: '✏️', label: `${widget?.title || 'Widget'} aktualisiert`, widgetId: widget?.id, dataKey: u.dataKey, action: 'update', detail: u.detail || changes.join(', ') || 'Widget aktualisiert' });
+                }
+              }
+            }
+
+            // Handle actions (create-subcontext, write-data)
+            let actionsExecuted = 0;
+            if (parsed.actions && Array.isArray(parsed.actions)) {
+              for (const action of parsed.actions) {
+                try {
+                  if (action.type === 'create-subcontext' && action.name) {
+                    const newId = 'ctx-' + Date.now() + Math.random().toString(36).slice(2, 4);
+                    const newCtx = {
+                      id: newId,
+                      name: action.name,
+                      icon: action.icon || '📁',
+                      color: action.color || freshContext.color,
+                      parentId: contextId,
+                      created: new Date().toISOString(),
+                      updated: new Date().toISOString(),
+                      widgets: [],
+                      data: {},
+                      chat: [{ id: 'msg-1', role: 'system', text: 'Willkommen! Beschreibe was du bauen oder planen willst.', time: new Date().toISOString() }],
+                      changelog: [],
+                      plan: null, template: null, closedWidgets: [], skills: [], connections: []
+                    };
+                    fs.writeFileSync(path.join(contextDir, newId + '.json'), JSON.stringify(newCtx, null, 2));
+                    widgetActions.push({ icon: '📂', label: `Subcontext "${action.name}" erstellt`, action: 'create-subcontext', contextId: newId });
+                    actionsExecuted++;
+                  }
+
+                  if (action.type === 'write-data' && action.homeContext && action.dataKey) {
+                    const homeFile = path.join(contextDir, action.homeContext + '.json');
+                    if (fs.existsSync(homeFile)) {
+                      const homeCtx = JSON.parse(fs.readFileSync(homeFile, 'utf8'));
+                      if (!homeCtx.data) homeCtx.data = {};
+                      homeCtx.data[action.dataKey] = action.data;
+
+                      // Create widget in homeContext if widgetConfig provided
+                      if (action.widgetConfig) {
+                        if (!homeCtx.widgets) homeCtx.widgets = [];
+                        const existsInHome = homeCtx.widgets.some(w => w.dataKey === action.dataKey);
+                        if (!existsInHome) {
+                          homeCtx.widgets.push({
+                            id: 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+                            type: action.widgetConfig.type || 'kpi',
+                            title: action.widgetConfig.title || action.dataKey,
+                            size: action.widgetConfig.size || 'sm',
+                            dataKey: action.dataKey,
+                            color: homeCtx.color,
+                            config: action.widgetConfig.config || {},
+                            data: action.data,
+                            scope: 'inherited',
+                            zoomLevel: 'L1'
+                          });
+                        }
+                      }
+
+                      homeCtx.updated = new Date().toISOString();
+                      fs.writeFileSync(homeFile, JSON.stringify(homeCtx, null, 2));
+                      broadcast('liveos', { type: 'context-change', contextId: action.homeContext, time: Date.now() });
+
+                      // Create a dataRef widget in current context pointing to homeContext
+                      if (!freshContext.widgets) freshContext.widgets = [];
+                      const refWidgetId = 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+                      freshContext.widgets.push({
+                        id: refWidgetId,
+                        type: action.widgetConfig?.type || 'kpi',
+                        title: action.widgetConfig?.title || action.dataKey,
+                        size: action.widgetConfig?.size || 'sm',
+                        dataKey: action.dataKey,
+                        color: freshContext.color,
+                        config: action.widgetConfig?.config || {},
+                        data: action.data,
+                        scope: 'inherited',
+                        homeContext: action.homeContext,
+                        zoomLevel: 'L1'
+                      });
+
+                      widgetActions.push({ icon: '🏠', label: `Daten in ${action.homeContext} gespeichert`, action: 'write-data', dataKey: action.dataKey, homeContext: action.homeContext });
+                      actionsExecuted++;
+                    }
+                  }
+                } catch (actionErr) {
+                  console.error('[context-chat] Action error:', actionErr.message);
+                }
+              }
+            }
+
+            // Save updated context
+            freshContext.updated = new Date().toISOString();
+            fs.writeFileSync(ctxFile, JSON.stringify(freshContext, null, 2));
+            broadcast('liveos', { type: 'context-change', contextId, time: Date.now() });
+
+            emitEvent({ type: 'chat:message', source: 'context-agent', data: { contextId, text: parsed.text?.slice(0, 100) } });
+
+            jsonRes(res, {
+              ok: true,
+              text: parsed.text || 'Fertig!',
+              widgetActions,
+              widgetsCreated: (parsed.widgets || []).length,
+              widgetsUpdated: (parsed.updates || []).length,
+              actionsExecuted
+            });
+
+          } catch (e) {
+            console.error('[context-chat] Parse error:', e.message, 'stdout:', stdout.slice(0, 200));
+            jsonRes(res, {
+              ok: true,
+              text: 'Ich habe die Anfrage bearbeitet, konnte aber die Antwort nicht strukturiert parsen. Versuch es nochmal!',
+              widgetActions: [], widgetsCreated: 0, widgetsUpdated: 0, actionsExecuted: 0
+            });
+          }
+        });
+
+        proc.on('error', (e) => {
+          clearTimeout(timeout);
+          jsonRes(res, { ok: false, error: 'Agent error: ' + e.message });
+        });
+
+      } catch (e) {
+        jsonRes(res, { ok: false, error: e.message });
+      }
+    });
+  }
+
   // ── Project Plan Generator ──
   if (url === '/api/project-plan' && req.method === 'POST') {
     return readBody(req, b => {
@@ -2769,6 +3215,159 @@ Regeln:
             jsonRes(res, { ok: true, plan });
           } catch (e) {
             console.error('[project-plan] Parse error:', e.message, 'stdout:', stdout.slice(0, 300));
+            jsonRes(res, { ok: false, error: 'Parse error', raw: stdout.slice(0, 300) });
+          }
+        });
+      } catch (e) {
+        jsonRes(res, { ok: false, error: e.message });
+      }
+    });
+  }
+
+  // ── Context Plan Generator (Phase 4 — works with context files) ──
+  if (url === '/api/context-plan' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { contextId } = JSON.parse(b);
+        if (!contextId) return jsonRes(res, { ok: false, error: 'contextId required' });
+
+        const ctxFile = path.join(ROOT, 'data', 'contexts', contextId + '.json');
+        if (!fs.existsSync(ctxFile)) return jsonRes(res, { ok: false, error: 'Context not found' });
+        const context = JSON.parse(fs.readFileSync(ctxFile, 'utf8'));
+
+        // Build context
+        const widgets = (context.widgets || []).map(w => {
+          const data = (context.data && context.data[w.dataKey]) || w.data || {};
+          const configStr = w.config ? ` config: ${JSON.stringify(w.config)}` : '';
+          return `${w.type}: "${w.title}" (size: ${w.size || 'md'}${configStr})\n  Daten: ${JSON.stringify(data).slice(0, 400)}`;
+        }).join('\n');
+
+        const changelog = (context.changelog || []).slice(-10).map(c => `[${c.time}] ${c.summary}`).join('\n');
+        const recentChat = (context.chat || []).slice(-5).map(m => `${m.role}: ${m.text.slice(0, 150)}`).join('\n');
+
+        // Subcontexts
+        const contextDir = path.join(ROOT, 'data', 'contexts');
+        let allContexts = [];
+        try {
+          allContexts = fs.readdirSync(contextDir)
+            .filter(f => f.endsWith('.json'))
+            .map(f => { try { return JSON.parse(fs.readFileSync(path.join(contextDir, f), 'utf8')); } catch { return null; } })
+            .filter(Boolean);
+        } catch {}
+
+        const children = allContexts.filter(c => c.parentId === contextId);
+        let subInfo = '';
+        if (children.length > 0) {
+          subInfo = '\n\nUnter-Contexts:\n' + children.map(c => {
+            const cWidgets = (c.widgets || []).map(w => `${w.type}: "${w.title}"`).join(', ');
+            const cPlan = c.plan;
+            return `- "${c.name}" (${c.id}): ${cWidgets || 'keine Widgets'}${cPlan ? ', Status: ' + cPlan.status : ''}`;
+          }).join('\n');
+        }
+
+        // Build context tree
+        function buildTreeText(contexts, parentId, indent) {
+          indent = indent || '';
+          return contexts
+            .filter(c => (c.parentId || null) === parentId)
+            .map(c => {
+              const marker = c.id === contextId ? ' ← AKTUELL' : '';
+              return `${indent}${c.icon || '📁'} ${c.name} (${c.id})${marker}\n${buildTreeText(contexts, c.id, indent + '  ')}`;
+            }).join('');
+        }
+        const contextTreeText = buildTreeText(allContexts, null, '  ');
+
+        // Read schemas
+        let schemasText = '';
+        try {
+          const schemasDir = path.join(ROOT, 'data', 'schemas');
+          const schemaFiles = fs.readdirSync(schemasDir).filter(f => f.endsWith('.json'));
+          schemasText = schemaFiles.map(f => {
+            const s = JSON.parse(fs.readFileSync(path.join(schemasDir, f), 'utf8'));
+            return `${s.id}: ${s.label} — Felder: ${Object.keys(s.fields).join(', ')}`;
+          }).join('\n  ');
+        } catch {}
+
+        const prompt = `Analysiere diesen Context und erstelle einen Implementierungsplan. Antworte NUR mit einem JSON-Objekt, kein anderer Text:
+
+{
+  "status": "Kurzer Status-Text (z.B. 'Phase 2/4', '70% fertig', 'Planung')",
+  "phases": [
+    {
+      "title": "Phasenname",
+      "state": "done|active|pending",
+      "items": [{ "text": "Aufgabe/Schritt", "done": true }]
+    }
+  ],
+  "summary": "1-2 Saetze Zusammenfassung des aktuellen Stands"
+}
+
+Context: "${context.name}" (${contextId})
+
+Context-Baum:
+${contextTreeText || '  (nur dieser Context)'}
+
+${schemasText ? 'Verfuegbare Schemas:\n  ' + schemasText : ''}
+
+Widgets:
+${widgets || 'keine'}
+
+${changelog ? 'Changelog:\n' + changelog : ''}
+
+Chat-Verlauf:
+${recentChat}
+${subInfo}
+
+Regeln:
+- Leite die Phasen aus dem Context-Inhalt ab (Widgets, Chat, Daten)
+- Markiere erledigte Aufgaben basierend auf vorhandenen Daten und Changelog
+- Wenn Widgets bereits Daten enthalten (nicht nur Platzhalter), gelten zugehoerige Aufgaben als erledigt
+- Phasen sollen das Projekt logisch strukturieren
+- Maximal 5 Phasen mit je 2-5 Items
+- Beziehe Unter-Contexts in die Bewertung ein
+- Antworte NUR mit dem JSON-Objekt`;
+
+        const proc = spawn('claude', ['-p', '--output-format', 'json'], {
+          cwd: ROOT, env: process.env, stdio: ['pipe', 'pipe', 'pipe']
+        });
+        proc.stdin.write(prompt);
+        proc.stdin.end();
+
+        let stdout = '';
+        let stderr = '';
+        proc.stdout.on('data', chunk => { stdout += chunk.toString(); });
+        proc.stderr.on('data', chunk => { stderr += chunk.toString(); });
+
+        proc.on('close', code => {
+          if (code !== 0) {
+            console.error('[context-plan] claude failed:', stderr.slice(0, 300));
+            return jsonRes(res, { ok: false, error: 'AI error' });
+          }
+
+          try {
+            let aiText = stdout;
+            try {
+              const outerJson = JSON.parse(stdout);
+              aiText = outerJson.result || outerJson.text || outerJson.content || stdout;
+            } catch (e) {}
+
+            const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+              return jsonRes(res, { ok: false, error: 'No JSON in response', raw: aiText.slice(0, 300) });
+            }
+
+            const plan = JSON.parse(jsonMatch[0]);
+            plan.updatedAt = new Date().toISOString();
+
+            // Save plan to context
+            const freshCtx = JSON.parse(fs.readFileSync(ctxFile, 'utf8'));
+            freshCtx.plan = plan;
+            fs.writeFileSync(ctxFile, JSON.stringify(freshCtx, null, 2));
+            broadcast('liveos', { type: 'context-change', contextId, time: Date.now() });
+
+            jsonRes(res, { ok: true, plan });
+          } catch (e) {
+            console.error('[context-plan] Parse error:', e.message, 'stdout:', stdout.slice(0, 300));
             jsonRes(res, { ok: false, error: 'Parse error', raw: stdout.slice(0, 300) });
           }
         });
