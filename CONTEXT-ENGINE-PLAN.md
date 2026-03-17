@@ -1,6 +1,6 @@
 # PulseOS Context Engine — Architekturplan
 
-> **Status:** Phase 1-7 ✅ abgeschlossen. Phase 8 (dataRef Live-Sync) als nächstes.
+> **Status:** Phase 1-7 ✅, Phase 8 🔧 in Arbeit. dataRef API + Frontend rendering done.
 > **Letzte Aktualisierung:** 2026-03-17
 > **Session-Einstieg:** Lies dieses Dokument. Prüfe den Status jeder Phase. Mach da weiter wo ✅ aufhört und 🔲 anfängt.
 
@@ -488,27 +488,28 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 ---
 
 ### Phase 8: dataRef — Live-Datenreferenzen
-> **Status:** 🔲 Nächste Phase
+> **Status:** 🔧 In Arbeit (2026-03-17)
 >
 > **Ziel:** Ein Widget zeigt Daten aus einem anderen Context.
 > Änderungen propagieren live über SSE.
 
 **Server-API (server.js):**
-- [ ] `GET /api/context/:id/data/:dataKey` — einzelnen Datensatz lesen
-- [ ] `PUT /api/context/:id/data/:dataKey` — einzelnen Datensatz schreiben
-- [ ] SSE: Bei Daten-Änderung → broadcast an alle Contexts die via dataRef referenzieren
-- [ ] `GET /api/context/:id/refs` — alle eingehenden dataRefs auf diesen Context
+- [x] `GET /api/context/:id/data/:dataKey` — einzelnen Datensatz lesen
+- [x] `PUT /api/context/:id/data/:dataKey` — einzelnen Datensatz schreiben
+- [x] SSE: Bei Daten-Änderung → broadcast an alle Contexts die via dataRef referenzieren (`notifyDataRefSubscribers`)
+- [x] `GET /api/context/:id/refs` — alle eingehenden dataRefs auf diesen Context
 
 **dataRef-Registry (server.js):**
-- [ ] Beim Context-Save: dataRefs extrahieren und in Index speichern (`data/dataref-index.json`)
-- [ ] Index-Struktur: `{ "ctx-source:dataKey": ["ctx-ref1:widgetId", "ctx-ref2:widgetId"] }`
-- [ ] Bei Änderung von Source-Daten → alle referenzierenden Contexts via SSE benachrichtigen
+- [x] Bei PUT auf dataKey: alle Contexts scannen → betroffene via SSE benachrichtigen (live scan statt Index-Datei)
+- [ ] Beim Context-Save: dataRefs extrahieren und in Index speichern (`data/dataref-index.json`) — Optional, Performance-Optimierung
+- [ ] Index-Struktur: `{ "ctx-source:dataKey": ["ctx-ref1:widgetId", "ctx-ref2:widgetId"] }` — Optional
 
 **Frontend (apps/projects/index.html):**
-- [ ] Widget erkennt `dataRef` → lädt Daten von `GET /api/context/:id/data/:dataKey`
-- [ ] SSE-Listener für referenzierte Contexts: bei `data-change` Event → Widget neu laden
+- [x] Widget erkennt `dataRef` → lädt Daten von `GET /api/context/:id/data/:dataKey`
+- [x] SSE-Listener für `dataref-update` Event → Canvas neu rendern
+- [x] `saveDataRef()` Hilfsfunktion zum Schreiben an Remote-Context
+- [x] Visueller Hinweis: "📌 Daten aus [Context-Name]" Badge im Widget-Header + Body
 - [ ] Bearbeitung eines dataRef-Widgets → `PUT` an den Source-Context (nicht lokal speichern)
-- [ ] Visueller Hinweis: "📌 Daten aus [Context-Name]" Badge im Widget-Header
 - [ ] dataRef-Erstellung: Widget-Edit-Panel → "Daten verlinken" Button → Context+DataKey Picker
 
 **homeContext-Routing (AI-seitig):**

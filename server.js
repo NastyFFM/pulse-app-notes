@@ -1771,6 +1771,75 @@ const server = http.createServer((req, res) => {
     }
   }
 
+  // ── dataRef API: Read/Write individual data keys from a context ──
+  // GET /api/context/:id/data/:dataKey — read single data entry
+  // PUT /api/context/:id/data/:dataKey — write single data entry (triggers SSE to all refs)
+  const dataRefMatch = url.match(/^\/api\/context\/([a-z0-9_-]+)\/data\/([a-zA-Z0-9_-]+)$/);
+  if (dataRefMatch) {
+    const srcCtxId = dataRefMatch[1];
+    const dataKey = dataRefMatch[2];
+    if (!isValidCtxId(srcCtxId)) { res.writeHead(400); return res.end(JSON.stringify({ error: 'Invalid context ID' })); }
+    const srcCtxFile = path.join(CTX_DIR, srcCtxId + '.json');
+    if (!fs.existsSync(srcCtxFile)) { res.writeHead(404); return res.end(JSON.stringify({ error: 'Context not found' })); }
+
+    if (req.method === 'GET') {
+      const ctx = JSON.parse(fs.readFileSync(srcCtxFile, 'utf8'));
+      return jsonRes(res, { dataKey, value: ctx.data?.[dataKey] ?? null, contextId: srcCtxId, contextName: ctx.name });
+    }
+
+    if (req.method === 'PUT') return readBody(req, b => {
+      try {
+        const { value } = JSON.parse(b);
+        const ctx = JSON.parse(fs.readFileSync(srcCtxFile, 'utf8'));
+        if (!ctx.data) ctx.data = {};
+        ctx.data[dataKey] = value;
+        ctx.updated = new Date().toISOString();
+        fs.writeFileSync(srcCtxFile, JSON.stringify(ctx, null, 2));
+        // Broadcast change to source context
+        broadcast('liveos', { type: 'context-change', contextId: srcCtxId, time: Date.now() });
+        // Broadcast to all contexts that reference this data via dataRef
+        notifyDataRefSubscribers(srcCtxId, dataKey);
+        vikingSyncContextDebounced(srcCtxId);
+        jsonRes(res, { ok: true });
+      } catch (e) {
+        res.writeHead(400); res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+  }
+
+  // GET /api/context/:id/refs — list all incoming dataRefs pointing to this context
+  const refsMatch = url.match(/^\/api\/context\/([a-z0-9_-]+)\/refs$/);
+  if (refsMatch && req.method === 'GET') {
+    const targetCtxId = refsMatch[1];
+    const allCtxs = readAllContexts(false);
+    const refs = [];
+    for (const ctx of allCtxs) {
+      for (const w of (ctx.widgets || [])) {
+        if (w.dataRef && w.dataRef.contextId === targetCtxId) {
+          refs.push({ fromContextId: ctx.id, fromContextName: ctx.name, widgetId: w.id, widgetTitle: w.title, dataKey: w.dataRef.dataKey });
+        }
+      }
+    }
+    return jsonRes(res, { refs });
+  }
+
+  // ── dataRef notification helper ──
+  function notifyDataRefSubscribers(srcCtxId, dataKey) {
+    try {
+      const allCtxs = readAllContexts(false);
+      for (const ctx of allCtxs) {
+        for (const w of (ctx.widgets || [])) {
+          if (w.dataRef && w.dataRef.contextId === srcCtxId && w.dataRef.dataKey === dataKey) {
+            broadcast(ctx.id, { type: 'dataref-update', sourceContextId: srcCtxId, dataKey, time: Date.now() });
+            break; // One notification per context is enough
+          }
+        }
+      }
+    } catch (e) {
+      console.error('notifyDataRefSubscribers error:', e.message);
+    }
+  }
+
   // Widget data endpoint (generic, context-relative)
   const qsParsed = new URL(req.url, 'http://localhost');
   const widgetSource = qsParsed.searchParams.get('source');

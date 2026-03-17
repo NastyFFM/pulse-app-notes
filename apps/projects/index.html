@@ -685,6 +685,19 @@ body {
 }
 .l0-kanban-col .count { font-weight: 600; color: var(--text-primary); }
 
+/* dataRef source badge */
+.dataref-source-badge {
+  padding: 4px 10px;
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--accent-dim);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.dataref-source-badge b { color: var(--accent); font-weight: 500; }
+
 /* L0 Timeline */
 .l0-next-event {
   font-size: 11px;
@@ -1311,6 +1324,19 @@ async function reloadContextList() {
   }
 }
 
+// Save data to a remote context via dataRef
+async function saveDataRef(contextId, dataKey, value) {
+  try {
+    await fetch(`${API_BASE}/api/context/${contextId}/data/${dataKey}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value })
+    });
+  } catch (e) {
+    console.error('saveDataRef error:', e);
+  }
+}
+
 function save() {
   if (!state.activeContextId || !state.activeContext) return;
   clearTimeout(saveTimeout);
@@ -1364,6 +1390,15 @@ function connectSSE() {
         reloadContextList();
         if (d.contextId === state.activeContextId) {
           selectProject(state.activeContextId);
+        }
+      }
+      // dataRef update: re-render widgets that reference the changed data
+      if (d.type === 'dataref-update' && state.activeContext) {
+        const affectedWidgets = (state.activeContext.widgets || []).filter(w =>
+          w.dataRef && w.dataRef.contextId === d.sourceContextId && w.dataRef.dataKey === d.dataKey
+        );
+        if (affectedWidgets.length > 0) {
+          renderCanvas(); // Re-render to fetch fresh data
         }
       }
       if (d.type === 'context-deleted' && d.contextId === state.activeContextId) {
@@ -1788,6 +1823,7 @@ function createWidgetFrame(widget, proj, inherited = false) {
   const badge = zoomLevel === 'L0' ? ` · ${getL0Badge(widget, proj)}` : '';
   const zoomIcon = zoomLevel === 'L0' ? '🔹' : '🔸';
   const inheritedBadge = inherited ? `<span class="inherited-badge">\u2197 ${escapeHtml(widget._inheritedFrom || 'Parent')}</span>` : '';
+  const dataRefBadge = widget.dataRef ? `<span class="inherited-badge" style="color:var(--blue);">📌 ${escapeHtml(state.contexts.find(c => c.id === widget.dataRef.contextId)?.name || widget.dataRef.contextId)}</span>` : '';
   const perspectiveHint = (widget.renderAs && widget.renderAs !== widget.type) ? `<span class="perspective-hint">${widget.type} \u2192 ${widget.renderAs}</span>` : '';
   const availableRenders = getAvailableRenders(widget);
   const perspectiveBtn = availableRenders.length > 1 && !inherited ? `<button onclick="cyclePerspective('${widget.id}')" title="Ansicht wechseln" class="widget-perspective-btn">\uD83D\uDC41</button>` : '';
@@ -1798,7 +1834,7 @@ function createWidgetFrame(widget, proj, inherited = false) {
   frame.innerHTML = `
     <div class="widget-head">
       <div class="dot" style="background:${color}"></div>
-      <div class="label">${getWidgetIcon(renderType)} ${displayTitle}${inheritedBadge}${perspectiveHint}${badge}</div>
+      <div class="label">${getWidgetIcon(renderType)} ${displayTitle}${inheritedBadge}${dataRefBadge}${perspectiveHint}${badge}</div>
       <div class="actions">
         ${perspectiveBtn}
         <button onclick="cycleZoom('${widget.id}')" title="${zoomLevel === 'L0' ? 'Vergrößern' : 'Minimieren'}" class="widget-zoom-btn">${zoomIcon}</button>
@@ -1830,6 +1866,53 @@ function createWidgetFrame(widget, proj, inherited = false) {
   }
 
   return frame;
+}
+
+async function loadDataRef(container, widget, proj) {
+  const { contextId, dataKey } = widget.dataRef;
+  container.innerHTML = '<div style="padding:12px;color:var(--text-muted);font-size:11px;">📌 Lade Daten…</div>';
+  try {
+    const res = await fetch(`${API_BASE}/api/context/${contextId}/data/${dataKey}`);
+    if (!res.ok) {
+      container.innerHTML = '<div style="padding:12px;color:var(--red);font-size:11px;">❌ Daten nicht gefunden</div>';
+      return;
+    }
+    const result = await res.json();
+    // Inject remote data into a virtual proj object and render normally
+    const virtualProj = {
+      ...proj,
+      data: { ...proj.data, [widget.dataKey || dataKey]: result.value }
+    };
+    // Set the dataKey to use for rendering if not set
+    const virtualWidget = { ...widget, dataKey: widget.dataKey || dataKey };
+    delete virtualWidget.dataRef; // Prevent infinite recursion
+
+    const renderType = virtualWidget.renderAs || virtualWidget.type;
+    const sourceType = virtualWidget.type;
+    if (renderType !== sourceType) {
+      renderCrossType(container, virtualWidget, virtualProj, sourceType, renderType);
+    } else {
+      switch (renderType) {
+        case 'todo': renderTodoWidget(container, virtualWidget, virtualProj); break;
+        case 'notes': renderNotesWidget(container, virtualWidget, virtualProj); break;
+        case 'table': renderTableWidget(container, virtualWidget, virtualProj); break;
+        case 'timeline': renderTimelineWidget(container, virtualWidget, virtualProj); break;
+        case 'kpi': renderKpiWidget(container, virtualWidget, virtualProj); break;
+        case 'kanban': renderKanbanWidget(container, virtualWidget, virtualProj); break;
+        case 'progress': renderProgressWidget(container, virtualWidget, virtualProj); break;
+        default: container.innerHTML = `<div style="padding:12px;color:var(--text-muted);font-size:12px;">📌 ${escapeHtml(JSON.stringify(result.value).slice(0, 100))}</div>`;
+      }
+    }
+
+    // Add source badge
+    const srcName = result.contextName || contextId;
+    const badge = document.createElement('div');
+    badge.className = 'dataref-source-badge';
+    badge.innerHTML = `📌 Daten aus <b>${escapeHtml(srcName)}</b>`;
+    container.prepend(badge);
+  } catch (e) {
+    container.innerHTML = `<div style="padding:12px;color:var(--red);font-size:11px;">❌ ${escapeHtml(e.message)}</div>`;
+  }
 }
 
 function renderCrossType(container, widget, proj, sourceType, renderType) {
@@ -1955,6 +2038,12 @@ function renderCrossType(container, widget, proj, sourceType, renderType) {
 }
 
 function renderWidgetContent(container, widget, proj) {
+  // If widget has a dataRef, load remote data first
+  if (widget.dataRef && widget.dataRef.contextId && widget.dataRef.dataKey) {
+    loadDataRef(container, widget, proj);
+    return;
+  }
+
   const data = proj.data[widget.dataKey] || widget.data || {};
   const renderType = widget.renderAs || widget.type;
   const sourceType = widget.type;
