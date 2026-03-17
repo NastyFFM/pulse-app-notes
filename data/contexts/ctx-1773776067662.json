@@ -1,0 +1,1158 @@
+{
+  "id": "ctx-1773776067662",
+  "name": "Neues Projekt",
+  "icon": "🔧",
+  "color": "#f59e0b",
+  "chat": [
+    {
+      "id": "msg-sys-1773776067663",
+      "role": "system",
+      "text": "Neues Projekt erstellt! Beschreibe was du bauen oder planen willst.",
+      "time": "2026-03-17T19:34:27.663Z"
+    },
+    {
+      "id": "msg-1773776074786",
+      "role": "user",
+      "text": "Erstelle mir ein Fitness-Dashboard mit Gewicht, Trainingsplan und Ernährung\"",
+      "time": "2026-03-17T19:34:34.786Z"
+    },
+    {
+      "id": "msg-1773776116874",
+      "role": "agent",
+      "text": "Hier ist dein Fitness-Dashboard! Ich habe Widgets für Gewicht-Tracking, einen Trainingsplan und einen Ernährungsplan erstellt. Passe die Werte nach deinen eigenen Zielen an!",
+      "widgetActions": [
+        {
+          "icon": "📈",
+          "label": "Aktuelles Gewicht erstellt",
+          "widgetId": "w-1773776116808-6qv1",
+          "dataKey": "kpi-1773776116808-bp",
+          "action": "create",
+          "detail": "KPI-Widget zum Gewicht-Tracking mit Start/Ziel-Info"
+        },
+        {
+          "icon": "📉",
+          "label": "Fortschritt zum Ziel erstellt",
+          "widgetId": "w-1773776116808-diws",
+          "dataKey": "progress-1773776116808-y1",
+          "action": "create",
+          "detail": "Fortschrittsbalken zum Zielgewicht"
+        },
+        {
+          "icon": "📊",
+          "label": "Gewichtsverlauf erstellt",
+          "widgetId": "w-1773776116808-vws4",
+          "dataKey": "table-1773776116808-08",
+          "action": "create",
+          "detail": "Tabelle zum wöchentlichen Eintragen des Gewichts"
+        },
+        {
+          "icon": "📋",
+          "label": "Trainingsplan (Woche) erstellt",
+          "widgetId": "w-1773776116808-98al",
+          "dataKey": "kanban-1773776116808-yv",
+          "action": "create",
+          "detail": "Wöchentlicher Trainingsplan als Kanban-Board"
+        },
+        {
+          "icon": "📋",
+          "label": "Ernährungsplan (Woche) erstellt",
+          "widgetId": "w-1773776116808-n4su",
+          "dataKey": "kanban-1773776116808-zt",
+          "action": "create",
+          "detail": "Wöchentlicher Ernährungsplan als Kanban-Board"
+        },
+        {
+          "icon": "📝",
+          "label": "Fitness-Grundregeln erstellt",
+          "widgetId": "w-1773776116808-s99b",
+          "dataKey": "notes-1773776116808-eu",
+          "action": "create",
+          "detail": "Wichtige Grundregeln für Fitness-Erfolg"
+        },
+        {
+          "icon": "✅",
+          "label": "Fitness-Ziele & Setup erstellt",
+          "widgetId": "w-1773776116808-13zk",
+          "dataKey": "todo-1773776116808-9l",
+          "action": "create",
+          "detail": "Checkliste für den Start des Fitness-Projekts"
+        }
+      ],
+      "time": "2026-03-17T19:35:16.874Z"
+    },
+    {
+      "id": "msg-1773776188250",
+      "role": "agent",
+      "text": "Super! Du hast dein Startgewicht auf 88 kg eingetragen und die erste Setup-Aufgabe als erledigt markiert. Das ist ein guter Start! 💪 Der Gewichtsverlauf zeigt jetzt auch 88 kg als Ausgangspunkt. Möchtest du noch dein Zielgewicht festlegen, damit der Fortschrittsbalken aktiviert werden kann?",
+      "widgetActions": [
+        {
+          "icon": "✏️",
+          "label": "Gewichtsverlauf aktualisiert",
+          "widgetId": "w-1773776116808-vws4",
+          "dataKey": "table-1773776116808-08",
+          "action": "update",
+          "detail": "Startgewicht 88 kg im Verlauf eingetragen"
+        },
+        {
+          "icon": "✏️",
+          "label": "Aktuelles Gewicht aktualisiert",
+          "widgetId": "w-1773776116808-6qv1",
+          "dataKey": "kpi-1773776116808-bp",
+          "action": "update",
+          "detail": "Subtitle aktualisiert um auf fehlendes Zielgewicht hinzuweisen"
+        }
+      ],
+      "time": "2026-03-17T19:36:28.250Z"
+    }
+  ],
+  "widgets": [
+    {
+      "id": "w-1773776116808-6qv1",
+      "type": "kpi",
+      "title": "Aktuelles Gewicht",
+      "size": "md",
+      "dataKey": "kpi-1773776116808-bp",
+      "color": "#f59e0b",
+      "config": {},
+      "data": {
+        "value": "-- kg",
+        "label": "Mein Gewicht",
+        "change": 0,
+        "subtitle": "Trage dein Start- und Zielgewicht ein"
+      },
+      "scope": "local",
+      "zoomLevel": "L1"
+    },
+    {
+      "id": "w-1773776116808-diws",
+      "type": "progress",
+      "title": "Fortschritt zum Ziel",
+      "size": "md",
+      "dataKey": "progress-1773776116808-y1",
+      "color": "#f59e0b",
+      "config": {},
+      "data": {
+        "percent": 0,
+        "label": "Startgewicht → Zielgewicht"
+      },
+      "scope": "local",
+      "zoomLevel": "L1"
+    },
+    {
+      "id": "w-1773776116808-vws4",
+      "type": "table",
+      "title": "Gewichtsverlauf",
+      "size": "lg",
+      "dataKey": "table-1773776116808-08",
+      "color": "#f59e0b",
+      "config": {},
+      "data": {
+        "rows": [
+          {
+            "Datum": "17.03.2026",
+            "Gewicht (kg)": "--",
+            "Körperfett (%)": "--",
+            "Notiz": "Projektstart"
+          }
+        ]
+      },
+      "scope": "local",
+      "zoomLevel": "L1"
+    },
+    {
+      "id": "w-1773776116808-98al",
+      "type": "kanban",
+      "title": "Trainingsplan (Woche)",
+      "size": "full",
+      "dataKey": "kanban-1773776116808-yv",
+      "color": "#f59e0b",
+      "config": {},
+      "data": {
+        "columns": [
+          {
+            "id": "mon",
+            "name": "Montag",
+            "items": [
+              {
+                "text": "💪 Oberkörper: Brust & Trizeps"
+              },
+              {
+                "text": "🏃 Aufwärmen: 10 min Cardio"
+              },
+              {
+                "text": "📋 Bankdrücken 4x8"
+              },
+              {
+                "text": "📋 Dips 3x10"
+              }
+            ]
+          },
+          {
+            "id": "die",
+            "name": "Dienstag",
+            "items": [
+              {
+                "text": "🦵 Unterkörper: Beine & Po"
+              },
+              {
+                "text": "📋 Kniebeugen 4x8"
+              },
+              {
+                "text": "📋 Ausfallschritte 3x12"
+              },
+              {
+                "text": "📋 Beinpresse 3x10"
+              }
+            ]
+          },
+          {
+            "id": "mit",
+            "name": "Mittwoch",
+            "items": [
+              {
+                "text": "😴 Aktive Erholung"
+              },
+              {
+                "text": "🧘 Yoga oder Stretching 30 min"
+              },
+              {
+                "text": "🚶 Spaziergang 20 min"
+              }
+            ]
+          },
+          {
+            "id": "don",
+            "name": "Donnerstag",
+            "items": [
+              {
+                "text": "💪 Rücken & Bizeps"
+              },
+              {
+                "text": "📋 Klimmzüge 3x8"
+              },
+              {
+                "text": "📋 Rudern 4x10"
+              },
+              {
+                "text": "📋 Bizepscurls 3x12"
+              }
+            ]
+          },
+          {
+            "id": "fre",
+            "name": "Freitag",
+            "items": [
+              {
+                "text": "🏃 Cardio & Core"
+              },
+              {
+                "text": "📋 Laufen 30 min"
+              },
+              {
+                "text": "📋 Planke 3x60s"
+              },
+              {
+                "text": "📋 Crunch 3x20"
+              }
+            ]
+          },
+          {
+            "id": "sam",
+            "name": "Samstag",
+            "items": [
+              {
+                "text": "🏋️ Ganzkörper (optional)"
+              },
+              {
+                "text": "📋 Liegestütze 3x15"
+              },
+              {
+                "text": "📋 Burpees 3x10"
+              }
+            ]
+          },
+          {
+            "id": "son",
+            "name": "Sonntag",
+            "items": [
+              {
+                "text": "😴 Ruhetag"
+              },
+              {
+                "text": "🍳 Mahlzeiten für die Woche vorbereiten"
+              }
+            ]
+          }
+        ]
+      },
+      "scope": "local",
+      "zoomLevel": "L1"
+    },
+    {
+      "id": "w-1773776116808-n4su",
+      "type": "kanban",
+      "title": "Ernährungsplan (Woche)",
+      "size": "full",
+      "dataKey": "kanban-1773776116808-zt",
+      "color": "#f59e0b",
+      "config": {},
+      "data": {
+        "columns": [
+          {
+            "id": "frueh",
+            "name": "🌅 Frühstück",
+            "items": [
+              {
+                "text": "Mo: Haferflocken mit Beeren & Nüssen"
+              },
+              {
+                "text": "Di: Rührei mit Vollkornbrot"
+              },
+              {
+                "text": "Mi: Skyr mit Banane & Granola"
+              },
+              {
+                "text": "Do: Avocado-Toast mit Ei"
+              },
+              {
+                "text": "Fr: Protein-Smoothie"
+              },
+              {
+                "text": "Sa: Pfannkuchen (Protein)"
+              },
+              {
+                "text": "So: Vollkorn-Müsli"
+              }
+            ]
+          },
+          {
+            "id": "mittag",
+            "name": "🍽️ Mittagessen",
+            "items": [
+              {
+                "text": "Mo: Hähnchenbrust mit Quinoa & Gemüse"
+              },
+              {
+                "text": "Di: Linsensuppe mit Brot"
+              },
+              {
+                "text": "Mi: Thunfisch-Salat"
+              },
+              {
+                "text": "Do: Putenbrust mit Süßkartoffel"
+              },
+              {
+                "text": "Fr: Lachs mit Reis"
+              },
+              {
+                "text": "Sa: Hähnchen-Wrap"
+              },
+              {
+                "text": "So: Vollkorn-Pasta mit Tomatensauce"
+              }
+            ]
+          },
+          {
+            "id": "abend",
+            "name": "🌙 Abendessen",
+            "items": [
+              {
+                "text": "Mo: Lachs mit Brokkoli"
+              },
+              {
+                "text": "Di: Rührei mit Spinat"
+              },
+              {
+                "text": "Mi: Hüttenkäse mit Gurke"
+              },
+              {
+                "text": "Do: Hähnchensalat"
+              },
+              {
+                "text": "Fr: Gemüse-Omelette"
+              },
+              {
+                "text": "Sa: Gegrilltes Gemüse & Tofu"
+              },
+              {
+                "text": "So: Suppe & Brot"
+              }
+            ]
+          },
+          {
+            "id": "snacks",
+            "name": "🍎 Snacks",
+            "items": [
+              {
+                "text": "Proteinriegel (nach Training)"
+              },
+              {
+                "text": "Griechischer Joghurt"
+              },
+              {
+                "text": "Handvoll Nüsse"
+              },
+              {
+                "text": "Obst (Apfel, Banane)"
+              },
+              {
+                "text": "Quark mit Beeren"
+              }
+            ]
+          }
+        ]
+      },
+      "scope": "local",
+      "zoomLevel": "L1"
+    },
+    {
+      "id": "w-1773776116808-s99b",
+      "type": "notes",
+      "title": "Fitness-Grundregeln",
+      "size": "md",
+      "dataKey": "notes-1773776116808-eu",
+      "color": "#f59e0b",
+      "config": {},
+      "data": {
+        "text": "💧 Wasser: mind. 2,5–3 Liter täglich\n🥩 Protein: 1,6–2g pro kg Körpergewicht\n🔥 Kaloriendefizit: 300–500 kcal für Gewichtsabnahme\n😴 Schlaf: 7–8 Stunden für optimale Erholung\n📏 Progression: Gewichte jede Woche leicht steigern\n📸 Fotos: alle 2 Wochen für sichtbaren Fortschritt\n⚖️ Wiegen: immer morgens, nüchtern, gleicher Tag"
+      },
+      "scope": "local",
+      "zoomLevel": "L1"
+    },
+    {
+      "id": "w-1773776116808-13zk",
+      "type": "todo",
+      "title": "Fitness-Ziele & Setup",
+      "size": "lg",
+      "dataKey": "todo-1773776116808-9l",
+      "color": "#f59e0b",
+      "config": {},
+      "data": {
+        "items": [
+          {
+            "id": "f-1",
+            "text": "Startgewicht & Zielgewicht festlegen",
+            "done": false,
+            "priority": "high"
+          },
+          {
+            "id": "f-2",
+            "text": "Kalorienbedarf berechnen (TDEE)",
+            "done": false,
+            "priority": "high"
+          },
+          {
+            "id": "f-3",
+            "text": "Trainingsplan auf eigene Ziele anpassen",
+            "done": false,
+            "priority": "high"
+          },
+          {
+            "id": "f-4",
+            "text": "Kühlschrank mit gesunden Lebensmitteln befüllen",
+            "done": false,
+            "priority": "medium"
+          },
+          {
+            "id": "f-5",
+            "text": "Wöchentlichen Wieg-Termin festlegen (z.B. Mo morgens)",
+            "done": false,
+            "priority": "medium"
+          },
+          {
+            "id": "f-6",
+            "text": "Fortschrittsfotos machen (Startbild)",
+            "done": false,
+            "priority": "low"
+          },
+          {
+            "id": "f-7",
+            "text": "Trainings-Tracking-App oder Heft einrichten",
+            "done": false,
+            "priority": "low"
+          }
+        ]
+      },
+      "scope": "local",
+      "zoomLevel": "L1",
+      "renderAs": "table"
+    }
+  ],
+  "data": {
+    "kpi-1773776116808-bp": {
+      "value": "88 kg",
+      "label": "Mein Gewicht",
+      "change": 0,
+      "subtitle": "Startgewicht eingetragen – Zielgewicht noch festlegen"
+    },
+    "progress-1773776116808-y1": {
+      "percent": 0,
+      "label": "Startgewicht → Zielgewicht"
+    },
+    "table-1773776116808-08": [
+      {
+        "Datum": "17.03.2026",
+        "Gewicht (kg)": "88",
+        "Körperfett (%)": "--",
+        "Notiz": "Projektstart ✅"
+      }
+    ],
+    "kanban-1773776116808-yv": [
+      {
+        "id": "mon",
+        "name": "Montag",
+        "items": [
+          {
+            "text": "💪 Oberkörper: Brust & Trizeps"
+          },
+          {
+            "text": "🏃 Aufwärmen: 10 min Cardio"
+          },
+          {
+            "text": "📋 Bankdrücken 4x8"
+          },
+          {
+            "text": "📋 Dips 3x10"
+          }
+        ]
+      },
+      {
+        "id": "die",
+        "name": "Dienstag",
+        "items": [
+          {
+            "text": "🦵 Unterkörper: Beine & Po"
+          },
+          {
+            "text": "📋 Kniebeugen 4x8"
+          },
+          {
+            "text": "📋 Ausfallschritte 3x12"
+          },
+          {
+            "text": "📋 Beinpresse 3x10"
+          }
+        ]
+      },
+      {
+        "id": "mit",
+        "name": "Mittwoch",
+        "items": [
+          {
+            "text": "😴 Aktive Erholung"
+          },
+          {
+            "text": "🧘 Yoga oder Stretching 30 min"
+          },
+          {
+            "text": "🚶 Spaziergang 20 min"
+          }
+        ]
+      },
+      {
+        "id": "don",
+        "name": "Donnerstag",
+        "items": [
+          {
+            "text": "💪 Rücken & Bizeps"
+          },
+          {
+            "text": "📋 Klimmzüge 3x8"
+          },
+          {
+            "text": "📋 Rudern 4x10"
+          },
+          {
+            "text": "📋 Bizepscurls 3x12"
+          }
+        ]
+      },
+      {
+        "id": "fre",
+        "name": "Freitag",
+        "items": [
+          {
+            "text": "🏃 Cardio & Core"
+          },
+          {
+            "text": "📋 Laufen 30 min"
+          },
+          {
+            "text": "📋 Planke 3x60s"
+          },
+          {
+            "text": "📋 Crunch 3x20"
+          }
+        ]
+      },
+      {
+        "id": "sam",
+        "name": "Samstag",
+        "items": [
+          {
+            "text": "🏋️ Ganzkörper (optional)"
+          },
+          {
+            "text": "📋 Liegestütze 3x15"
+          },
+          {
+            "text": "📋 Burpees 3x10"
+          }
+        ]
+      },
+      {
+        "id": "son",
+        "name": "Sonntag",
+        "items": [
+          {
+            "text": "😴 Ruhetag"
+          },
+          {
+            "text": "🍳 Mahlzeiten für die Woche vorbereiten"
+          }
+        ]
+      }
+    ],
+    "kanban-1773776116808-zt": [
+      {
+        "id": "frueh",
+        "name": "🌅 Frühstück",
+        "items": [
+          {
+            "text": "Mo: Haferflocken mit Beeren & Nüssen"
+          },
+          {
+            "text": "Di: Rührei mit Vollkornbrot"
+          },
+          {
+            "text": "Mi: Skyr mit Banane & Granola"
+          },
+          {
+            "text": "Do: Avocado-Toast mit Ei"
+          },
+          {
+            "text": "Fr: Protein-Smoothie"
+          },
+          {
+            "text": "Sa: Pfannkuchen (Protein)"
+          },
+          {
+            "text": "So: Vollkorn-Müsli"
+          }
+        ]
+      },
+      {
+        "id": "mittag",
+        "name": "🍽️ Mittagessen",
+        "items": [
+          {
+            "text": "Mo: Hähnchenbrust mit Quinoa & Gemüse"
+          },
+          {
+            "text": "Di: Linsensuppe mit Brot"
+          },
+          {
+            "text": "Mi: Thunfisch-Salat"
+          },
+          {
+            "text": "Do: Putenbrust mit Süßkartoffel"
+          },
+          {
+            "text": "Fr: Lachs mit Reis"
+          },
+          {
+            "text": "Sa: Hähnchen-Wrap"
+          },
+          {
+            "text": "So: Vollkorn-Pasta mit Tomatensauce"
+          }
+        ]
+      },
+      {
+        "id": "abend",
+        "name": "🌙 Abendessen",
+        "items": [
+          {
+            "text": "Mo: Lachs mit Brokkoli"
+          },
+          {
+            "text": "Di: Rührei mit Spinat"
+          },
+          {
+            "text": "Mi: Hüttenkäse mit Gurke"
+          },
+          {
+            "text": "Do: Hähnchensalat"
+          },
+          {
+            "text": "Fr: Gemüse-Omelette"
+          },
+          {
+            "text": "Sa: Gegrilltes Gemüse & Tofu"
+          },
+          {
+            "text": "So: Suppe & Brot"
+          }
+        ]
+      },
+      {
+        "id": "snacks",
+        "name": "🍎 Snacks",
+        "items": [
+          {
+            "text": "Proteinriegel (nach Training)"
+          },
+          {
+            "text": "Griechischer Joghurt"
+          },
+          {
+            "text": "Handvoll Nüsse"
+          },
+          {
+            "text": "Obst (Apfel, Banane)"
+          },
+          {
+            "text": "Quark mit Beeren"
+          }
+        ]
+      }
+    ],
+    "notes-1773776116808-eu": {
+      "text": "💧 Wasser: mind. 2,5–3 Liter täglich\n🥩 Protein: 1,6–2g pro kg Körpergewicht\n🔥 Kaloriendefizit: 300–500 kcal für Gewichtsabnahme\n😴 Schlaf: 7–8 Stunden für optimale Erholung\n📏 Progression: Gewichte jede Woche leicht steigern\n📸 Fotos: alle 2 Wochen für sichtbaren Fortschritt\n⚖️ Wiegen: immer morgens, nüchtern, gleicher Tag"
+    },
+    "todo-1773776116808-9l": [
+      {
+        "id": "f-1",
+        "text": "Startgewicht & Zielgewicht festlegen",
+        "done": "Ja",
+        "priority": "high"
+      },
+      {
+        "id": "f-2",
+        "text": "Kalorienbedarf berechnen (TDEE)",
+        "done": false,
+        "priority": "high"
+      },
+      {
+        "id": "f-3",
+        "text": "Trainingsplan auf eigene Ziele anpassen",
+        "done": false,
+        "priority": "high"
+      },
+      {
+        "id": "f-4",
+        "text": "Kühlschrank mit gesunden Lebensmitteln befüllen",
+        "done": false,
+        "priority": "medium"
+      },
+      {
+        "id": "f-5",
+        "text": "Wöchentlichen Wieg-Termin festlegen (z.B. Mo morgens)",
+        "done": false,
+        "priority": "medium"
+      },
+      {
+        "id": "f-6",
+        "text": "Fortschrittsfotos machen (Startbild)",
+        "done": false,
+        "priority": "low"
+      },
+      {
+        "id": "f-7",
+        "text": "Trainings-Tracking-App oder Heft einrichten",
+        "done": false,
+        "priority": "low"
+      }
+    ]
+  },
+  "connections": [],
+  "skills": [],
+  "created": "2026-03-17T19:34:27.667Z",
+  "updated": "2026-03-17T19:36:28.252Z",
+  "canvas": {
+    "widgets": [
+      {
+        "id": "w-1773776116808-6qv1",
+        "type": "kpi",
+        "title": "Aktuelles Gewicht",
+        "size": "md",
+        "dataKey": "kpi-1773776116808-bp",
+        "color": "#f59e0b",
+        "config": {},
+        "data": {
+          "value": "-- kg",
+          "label": "Mein Gewicht",
+          "change": 0,
+          "subtitle": "Trage dein Start- und Zielgewicht ein"
+        },
+        "scope": "local",
+        "zoomLevel": "L1"
+      },
+      {
+        "id": "w-1773776116808-diws",
+        "type": "progress",
+        "title": "Fortschritt zum Ziel",
+        "size": "md",
+        "dataKey": "progress-1773776116808-y1",
+        "color": "#f59e0b",
+        "config": {},
+        "data": {
+          "percent": 0,
+          "label": "Startgewicht → Zielgewicht"
+        },
+        "scope": "local",
+        "zoomLevel": "L1"
+      },
+      {
+        "id": "w-1773776116808-vws4",
+        "type": "table",
+        "title": "Gewichtsverlauf",
+        "size": "lg",
+        "dataKey": "table-1773776116808-08",
+        "color": "#f59e0b",
+        "config": {},
+        "data": {
+          "rows": [
+            {
+              "Datum": "17.03.2026",
+              "Gewicht (kg)": "--",
+              "Körperfett (%)": "--",
+              "Notiz": "Projektstart"
+            }
+          ]
+        },
+        "scope": "local",
+        "zoomLevel": "L1"
+      },
+      {
+        "id": "w-1773776116808-98al",
+        "type": "kanban",
+        "title": "Trainingsplan (Woche)",
+        "size": "full",
+        "dataKey": "kanban-1773776116808-yv",
+        "color": "#f59e0b",
+        "config": {},
+        "data": {
+          "columns": [
+            {
+              "id": "mon",
+              "name": "Montag",
+              "items": [
+                {
+                  "text": "💪 Oberkörper: Brust & Trizeps"
+                },
+                {
+                  "text": "🏃 Aufwärmen: 10 min Cardio"
+                },
+                {
+                  "text": "📋 Bankdrücken 4x8"
+                },
+                {
+                  "text": "📋 Dips 3x10"
+                }
+              ]
+            },
+            {
+              "id": "die",
+              "name": "Dienstag",
+              "items": [
+                {
+                  "text": "🦵 Unterkörper: Beine & Po"
+                },
+                {
+                  "text": "📋 Kniebeugen 4x8"
+                },
+                {
+                  "text": "📋 Ausfallschritte 3x12"
+                },
+                {
+                  "text": "📋 Beinpresse 3x10"
+                }
+              ]
+            },
+            {
+              "id": "mit",
+              "name": "Mittwoch",
+              "items": [
+                {
+                  "text": "😴 Aktive Erholung"
+                },
+                {
+                  "text": "🧘 Yoga oder Stretching 30 min"
+                },
+                {
+                  "text": "🚶 Spaziergang 20 min"
+                }
+              ]
+            },
+            {
+              "id": "don",
+              "name": "Donnerstag",
+              "items": [
+                {
+                  "text": "💪 Rücken & Bizeps"
+                },
+                {
+                  "text": "📋 Klimmzüge 3x8"
+                },
+                {
+                  "text": "📋 Rudern 4x10"
+                },
+                {
+                  "text": "📋 Bizepscurls 3x12"
+                }
+              ]
+            },
+            {
+              "id": "fre",
+              "name": "Freitag",
+              "items": [
+                {
+                  "text": "🏃 Cardio & Core"
+                },
+                {
+                  "text": "📋 Laufen 30 min"
+                },
+                {
+                  "text": "📋 Planke 3x60s"
+                },
+                {
+                  "text": "📋 Crunch 3x20"
+                }
+              ]
+            },
+            {
+              "id": "sam",
+              "name": "Samstag",
+              "items": [
+                {
+                  "text": "🏋️ Ganzkörper (optional)"
+                },
+                {
+                  "text": "📋 Liegestütze 3x15"
+                },
+                {
+                  "text": "📋 Burpees 3x10"
+                }
+              ]
+            },
+            {
+              "id": "son",
+              "name": "Sonntag",
+              "items": [
+                {
+                  "text": "😴 Ruhetag"
+                },
+                {
+                  "text": "🍳 Mahlzeiten für die Woche vorbereiten"
+                }
+              ]
+            }
+          ]
+        },
+        "scope": "local",
+        "zoomLevel": "L1"
+      },
+      {
+        "id": "w-1773776116808-n4su",
+        "type": "kanban",
+        "title": "Ernährungsplan (Woche)",
+        "size": "full",
+        "dataKey": "kanban-1773776116808-zt",
+        "color": "#f59e0b",
+        "config": {},
+        "data": {
+          "columns": [
+            {
+              "id": "frueh",
+              "name": "🌅 Frühstück",
+              "items": [
+                {
+                  "text": "Mo: Haferflocken mit Beeren & Nüssen"
+                },
+                {
+                  "text": "Di: Rührei mit Vollkornbrot"
+                },
+                {
+                  "text": "Mi: Skyr mit Banane & Granola"
+                },
+                {
+                  "text": "Do: Avocado-Toast mit Ei"
+                },
+                {
+                  "text": "Fr: Protein-Smoothie"
+                },
+                {
+                  "text": "Sa: Pfannkuchen (Protein)"
+                },
+                {
+                  "text": "So: Vollkorn-Müsli"
+                }
+              ]
+            },
+            {
+              "id": "mittag",
+              "name": "🍽️ Mittagessen",
+              "items": [
+                {
+                  "text": "Mo: Hähnchenbrust mit Quinoa & Gemüse"
+                },
+                {
+                  "text": "Di: Linsensuppe mit Brot"
+                },
+                {
+                  "text": "Mi: Thunfisch-Salat"
+                },
+                {
+                  "text": "Do: Putenbrust mit Süßkartoffel"
+                },
+                {
+                  "text": "Fr: Lachs mit Reis"
+                },
+                {
+                  "text": "Sa: Hähnchen-Wrap"
+                },
+                {
+                  "text": "So: Vollkorn-Pasta mit Tomatensauce"
+                }
+              ]
+            },
+            {
+              "id": "abend",
+              "name": "🌙 Abendessen",
+              "items": [
+                {
+                  "text": "Mo: Lachs mit Brokkoli"
+                },
+                {
+                  "text": "Di: Rührei mit Spinat"
+                },
+                {
+                  "text": "Mi: Hüttenkäse mit Gurke"
+                },
+                {
+                  "text": "Do: Hähnchensalat"
+                },
+                {
+                  "text": "Fr: Gemüse-Omelette"
+                },
+                {
+                  "text": "Sa: Gegrilltes Gemüse & Tofu"
+                },
+                {
+                  "text": "So: Suppe & Brot"
+                }
+              ]
+            },
+            {
+              "id": "snacks",
+              "name": "🍎 Snacks",
+              "items": [
+                {
+                  "text": "Proteinriegel (nach Training)"
+                },
+                {
+                  "text": "Griechischer Joghurt"
+                },
+                {
+                  "text": "Handvoll Nüsse"
+                },
+                {
+                  "text": "Obst (Apfel, Banane)"
+                },
+                {
+                  "text": "Quark mit Beeren"
+                }
+              ]
+            }
+          ]
+        },
+        "scope": "local",
+        "zoomLevel": "L1"
+      },
+      {
+        "id": "w-1773776116808-s99b",
+        "type": "notes",
+        "title": "Fitness-Grundregeln",
+        "size": "md",
+        "dataKey": "notes-1773776116808-eu",
+        "color": "#f59e0b",
+        "config": {},
+        "data": {
+          "text": "💧 Wasser: mind. 2,5–3 Liter täglich\n🥩 Protein: 1,6–2g pro kg Körpergewicht\n🔥 Kaloriendefizit: 300–500 kcal für Gewichtsabnahme\n😴 Schlaf: 7–8 Stunden für optimale Erholung\n📏 Progression: Gewichte jede Woche leicht steigern\n📸 Fotos: alle 2 Wochen für sichtbaren Fortschritt\n⚖️ Wiegen: immer morgens, nüchtern, gleicher Tag"
+        },
+        "scope": "local",
+        "zoomLevel": "L1"
+      },
+      {
+        "id": "w-1773776116808-13zk",
+        "type": "todo",
+        "title": "Fitness-Ziele & Setup",
+        "size": "lg",
+        "dataKey": "todo-1773776116808-9l",
+        "color": "#f59e0b",
+        "config": {},
+        "data": {
+          "items": [
+            {
+              "id": "f-1",
+              "text": "Startgewicht & Zielgewicht festlegen",
+              "done": false,
+              "priority": "high"
+            },
+            {
+              "id": "f-2",
+              "text": "Kalorienbedarf berechnen (TDEE)",
+              "done": false,
+              "priority": "high"
+            },
+            {
+              "id": "f-3",
+              "text": "Trainingsplan auf eigene Ziele anpassen",
+              "done": false,
+              "priority": "high"
+            },
+            {
+              "id": "f-4",
+              "text": "Kühlschrank mit gesunden Lebensmitteln befüllen",
+              "done": false,
+              "priority": "medium"
+            },
+            {
+              "id": "f-5",
+              "text": "Wöchentlichen Wieg-Termin festlegen (z.B. Mo morgens)",
+              "done": false,
+              "priority": "medium"
+            },
+            {
+              "id": "f-6",
+              "text": "Fortschrittsfotos machen (Startbild)",
+              "done": false,
+              "priority": "low"
+            },
+            {
+              "id": "f-7",
+              "text": "Trainings-Tracking-App oder Heft einrichten",
+              "done": false,
+              "priority": "low"
+            }
+          ]
+        },
+        "scope": "local",
+        "zoomLevel": "L1",
+        "renderAs": "table"
+      }
+    ]
+  },
+  "children": [],
+  "changelog": [
+    {
+      "time": "2026-03-17T19:35:49.668Z",
+      "summary": "📊 KPI \"Aktuelles Gewicht\": value geaendert: \"-- kg\" → \"88 kg\""
+    },
+    {
+      "time": "2026-03-17T19:36:08.305Z",
+      "summary": "📝 Tabelle: \"done\" Zeile 1 geaendert: \"false\" → \"Ja\""
+    }
+  ]
+}

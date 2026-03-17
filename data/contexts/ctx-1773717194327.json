@@ -5,7 +5,7 @@
   "color": "#3B82F6",
   "parentId": null,
   "created": "2026-03-17T03:13:14.327Z",
-  "updated": "2026-03-17T04:37:27.234Z",
+  "updated": "2026-03-17T19:55:24.346Z",
   "widgets": [
     {
       "id": "w-1773717241433-krzx",
@@ -20,7 +20,7 @@
         "change": 0
       },
       "scope": "local",
-      "zoomLevel": "L1"
+      "zoomLevel": "L0"
     },
     {
       "id": "w-1773717241433-c9p7",
@@ -64,7 +64,8 @@
         ]
       },
       "scope": "local",
-      "zoomLevel": "L1"
+      "zoomLevel": "L1",
+      "renderAs": "kanban"
     },
     {
       "id": "w-1773717241433-gxo9",
@@ -192,7 +193,8 @@
         ]
       },
       "scope": "local",
-      "zoomLevel": "L1"
+      "zoomLevel": "L1",
+      "renderAs": "kanban"
     },
     {
       "id": "w-1773717241433-nlgk",
@@ -981,5 +983,226 @@
   "template": null,
   "closedWidgets": [],
   "skills": [],
-  "connections": []
+  "connections": [],
+  "canvas": {
+    "widgets": [
+      {
+        "id": "w-1773717241433-krzx",
+        "type": "kpi",
+        "title": "Aktuelles Gewicht",
+        "size": "lg",
+        "dataKey": "kpi-1773717241433-9e",
+        "color": "#3B82F6",
+        "data": {
+          "value": "– kg",
+          "label": "Startgewicht eintragen!",
+          "change": 0
+        },
+        "scope": "local",
+        "zoomLevel": "L0"
+      },
+      {
+        "id": "w-1773717241433-c9p7",
+        "type": "todo",
+        "title": "Erste Schritte",
+        "size": "lg",
+        "dataKey": "todo-1773717241433-cn",
+        "color": "#3B82F6",
+        "data": {
+          "items": [
+            {
+              "id": "t-1",
+              "text": "Startgewicht & Zielgewicht festlegen",
+              "done": false,
+              "priority": "high"
+            },
+            {
+              "id": "t-2",
+              "text": "Kalorienbedarf berechnen (TDEE)",
+              "done": false,
+              "priority": "high"
+            },
+            {
+              "id": "t-3",
+              "text": "Ernährungsplan erstellen",
+              "done": false,
+              "priority": "medium"
+            },
+            {
+              "id": "t-4",
+              "text": "Bewegungsroutine festlegen",
+              "done": false,
+              "priority": "medium"
+            },
+            {
+              "id": "t-5",
+              "text": "Wöchentliches Wiegen (gleicher Tag, gleiche Uhrzeit)",
+              "done": false,
+              "priority": "low"
+            }
+          ]
+        },
+        "scope": "local",
+        "zoomLevel": "L1",
+        "renderAs": "kanban"
+      },
+      {
+        "id": "w-1773717241433-gxo9",
+        "type": "table",
+        "title": "Gewichtsverlauf",
+        "size": "lg",
+        "dataKey": "table-1773717241433-6v",
+        "color": "#3B82F6",
+        "data": {
+          "rows": [
+            {
+              "Datum": "17.03.2026",
+              "Gewicht (kg)": "–",
+              "Notiz": "Start – bitte eintragen"
+            }
+          ]
+        },
+        "scope": "local",
+        "zoomLevel": "L1"
+      },
+      {
+        "id": "w-1773717241433-e9zi",
+        "type": "kanban",
+        "title": "Wochenplan",
+        "size": "lg",
+        "dataKey": "kanban-1773717241433-bj",
+        "color": "#3B82F6",
+        "data": {
+          "columns": [
+            {
+              "id": "mo",
+              "name": "Montag",
+              "items": [
+                {
+                  "text": "30 Min Spaziergang"
+                },
+                {
+                  "text": "Meal Prep vorbereiten"
+                }
+              ]
+            },
+            {
+              "id": "di",
+              "name": "Dienstag",
+              "items": [
+                {
+                  "text": "Krafttraining"
+                },
+                {
+                  "text": "Gemüse-Einkauf"
+                }
+              ]
+            },
+            {
+              "id": "mi",
+              "name": "Mittwoch",
+              "items": [
+                {
+                  "text": "30 Min Cardio"
+                }
+              ]
+            },
+            {
+              "id": "do",
+              "name": "Donnerstag",
+              "items": [
+                {
+                  "text": "Krafttraining"
+                }
+              ]
+            },
+            {
+              "id": "fr",
+              "name": "Freitag",
+              "items": [
+                {
+                  "text": "Aktive Erholung (Yoga/Dehnen)"
+                }
+              ]
+            },
+            {
+              "id": "sa",
+              "name": "Samstag",
+              "items": [
+                {
+                  "text": "Längere Aktivität (Wandern, Radfahren)"
+                }
+              ]
+            },
+            {
+              "id": "so",
+              "name": "Sonntag",
+              "items": [
+                {
+                  "text": "Ruhetag & Wiegen"
+                },
+                {
+                  "text": "Woche reflektieren"
+                }
+              ]
+            }
+          ]
+        },
+        "config": {},
+        "scope": "local",
+        "zoomLevel": "L1"
+      },
+      {
+        "id": "w-1773717352194-9nrf",
+        "type": "table",
+        "title": "Gewicht eintragen",
+        "size": "lg",
+        "dataKey": "table-1773717352194-f8",
+        "color": "#3B82F6",
+        "data": {
+          "rows": [
+            {
+              "Feld": "Aktuelles Gewicht (kg)",
+              "Wert": ""
+            },
+            {
+              "Feld": "Zielgewicht (kg)",
+              "Wert": ""
+            }
+          ]
+        },
+        "scope": "local",
+        "zoomLevel": "L1",
+        "renderAs": "kanban"
+      },
+      {
+        "id": "w-1773717241433-nlgk",
+        "type": "notes",
+        "title": "Tipps & Grundregeln",
+        "size": "md",
+        "dataKey": "notes-1773717241433-wa",
+        "color": "#3B82F6",
+        "data": {
+          "text": "📌 Kaloriendefizit: ca. 300-500 kcal unter deinem Tagesbedarf\n📌 Eiweißreich essen (1,5-2g pro kg Körpergewicht)\n📌 Viel Wasser trinken (mind. 2-3 Liter/Tag)\n📌 Ausreichend Schlaf (7-8 Stunden)\n📌 Fortschritt messen: Gewicht + Fotos + Maße\n📌 Nicht zu streng sein – Nachhaltigkeit > Perfektion"
+        },
+        "scope": "local",
+        "zoomLevel": "L1"
+      },
+      {
+        "id": "w-1773719464886-de3t",
+        "type": "progress",
+        "title": "Fortschritt zum Zielgewicht",
+        "size": "md",
+        "dataKey": "progress-1773719464886-qi",
+        "color": "#3B82F6",
+        "data": {
+          "percent": 0,
+          "label": "88 → 80 kg (0 von 8 kg abgenommen)"
+        },
+        "scope": "local",
+        "zoomLevel": "L1"
+      }
+    ]
+  },
+  "children": []
 }
