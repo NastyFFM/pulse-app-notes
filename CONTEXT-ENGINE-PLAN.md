@@ -1,6 +1,6 @@
 # PulseOS Context Engine — Architekturplan
 
-> **Status:** Phase 1-5 ✅ abgeschlossen. Phase 6 (Polish) optional.
+> **Status:** Phase 1-5 ✅ abgeschlossen. Phase 7 (L0 Quick-Actions) als nächstes.
 > **Letzte Aktualisierung:** 2026-03-17
 > **Session-Einstieg:** Lies dieses Dokument. Prüfe den Status jeder Phase. Mach da weiter wo ✅ aufhört und 🔲 anfängt.
 
@@ -423,17 +423,187 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 
 ---
 
-### Phase 6: Polish & Erweiterungen
-> **Status:** 🔲 Nicht begonnen
+### Phase 6: Bugfixes & UX-Polish
+> **Status:** ✅ Abgeschlossen (2026-03-17)
 
-- [ ] Performance: Lazy-Loading für tiefe Context-Bäume
-- [ ] Zirkuläre Referenzen: Visited-Set bei Scope-Chain-Traversierung
-- [ ] Widget-Templates: Save/Load für wiederverwendbare Widgets
-- [ ] Linked Widgets: dataRef mit Live-Sync (SSE cross-context)
-- [ ] ActionChains aktivieren: Event → Chain → Aktion
-- [ ] Proaktive System-Agents: Timer, Sync, Watcher
-- [ ] Dashboard-Integration: Context-Launcher statt App-Launcher
-- [ ] LiveOS-Merge: Canvas-System von LiveOS in Context-UI integrieren
+- [x] Zoom-Toggle vereinfacht: L1 ↔ L0 statt verwirrendem 3-Stufen-Zyklus
+- [x] Virtuelle Context-Widgets (Unterprojekte) sind jetzt zoombar
+- [x] Sidebar re-rendert korrekt bei Projekt-Wechsel (Hierarchie-Bug)
+- [x] Zoom-Button bleibt in L0-Modus sichtbar (CSS-Fix)
+
+---
+
+### Phase 7: L0 Quick-Actions (Interaktives Minimieren)
+> **Status:** 🔲 Nächste Phase
+>
+> **Ziel:** L0 ist nicht nur "minimiert", sondern eine interaktive Kompaktansicht.
+> Jeder Widget-Typ zeigt in L0 einen Badge UND erlaubt 1-Klick-Aktionen.
+
+**Todo-Widget L0:**
+- [ ] Checkbox-Toggles direkt in der Pill-Zeile (Mini-Checkboxen neben Badge)
+- [ ] "+" Button zum schnellen Hinzufügen eines Items
+- [ ] Badge zeigt `3/7 ✓` (done/total)
+
+**KPI-Widget L0:**
+- [ ] Wert inline editierbar (klick auf Zahl → Input)
+- [ ] Trend-Pfeil (↑/↓/→) basierend auf vorherigem Wert
+- [ ] Badge zeigt aktuellen Wert + Einheit
+
+**Notes-Widget L0:**
+- [ ] Erste Zeile als Preview-Text in der Pill
+- [ ] Klick auf Text → expand zu L1
+- [ ] Badge zeigt Zeichenanzahl
+
+**Table-Widget L0:**
+- [ ] Zeilenanzahl als Badge
+- [ ] Letzte Zeile als Mini-Preview
+- [ ] "+" Button für neue Zeile
+
+**Kanban-Widget L0:**
+- [ ] Spalten-Counts als farbige Mini-Badges (`3 | 2 | 5`)
+- [ ] Klick auf Spalten-Badge → filtert in L1
+
+**Context-Widget L0:**
+- [x] Icon + Name + Widget-Count Badge (bereits implementiert)
+- [ ] Status-Indicator: letztes Update-Datum als relative Zeit
+
+**Timeline-Widget L0:**
+- [ ] Nächstes/aktuelles Event als Badge
+- [ ] Countdown oder relative Zeit
+
+**CSS/UX für L0 Quick-Actions:**
+- [ ] L0-Pill-Höhe auf 48px erhöhen (statt 44px) für Klick-Targets
+- [ ] Quick-Action Buttons: 20x20px, transparent, hover-Effekt
+- [ ] Inline-Inputs: 60px breit, kein Border, transparent bg, Fokus-Ring
+
+**Akzeptanzkriterien:**
+- 🔲 Jeder Widget-Typ hat mindestens eine L0-Aktion (nicht nur Badge)
+- 🔲 Quick-Actions speichern sofort (kein extra Save nötig)
+- 🔲 L0-Pill bleibt kompakt (max 48px Höhe, max 1 Zeile)
+- 🔲 Tastatur: Enter bestätigt, Escape bricht ab
+
+---
+
+### Phase 8: dataRef — Live-Datenreferenzen
+> **Status:** 🔲 Wartend auf Phase 7
+>
+> **Ziel:** Ein Widget zeigt Daten aus einem anderen Context.
+> Änderungen propagieren live über SSE.
+
+**Server-API (server.js):**
+- [ ] `GET /api/context/:id/data/:dataKey` — einzelnen Datensatz lesen
+- [ ] `PUT /api/context/:id/data/:dataKey` — einzelnen Datensatz schreiben
+- [ ] SSE: Bei Daten-Änderung → broadcast an alle Contexts die via dataRef referenzieren
+- [ ] `GET /api/context/:id/refs` — alle eingehenden dataRefs auf diesen Context
+
+**dataRef-Registry (server.js):**
+- [ ] Beim Context-Save: dataRefs extrahieren und in Index speichern (`data/dataref-index.json`)
+- [ ] Index-Struktur: `{ "ctx-source:dataKey": ["ctx-ref1:widgetId", "ctx-ref2:widgetId"] }`
+- [ ] Bei Änderung von Source-Daten → alle referenzierenden Contexts via SSE benachrichtigen
+
+**Frontend (apps/projects/index.html):**
+- [ ] Widget erkennt `dataRef` → lädt Daten von `GET /api/context/:id/data/:dataKey`
+- [ ] SSE-Listener für referenzierte Contexts: bei `data-change` Event → Widget neu laden
+- [ ] Bearbeitung eines dataRef-Widgets → `PUT` an den Source-Context (nicht lokal speichern)
+- [ ] Visueller Hinweis: "📌 Daten aus [Context-Name]" Badge im Widget-Header
+- [ ] dataRef-Erstellung: Widget-Edit-Panel → "Daten verlinken" Button → Context+DataKey Picker
+
+**homeContext-Routing (AI-seitig):**
+- [ ] AI im `/api/context-chat` Prompt: wenn Daten thematisch "nach oben" gehören → `write-data` Action mit `targetContextId` statt lokalem Speichern
+- [ ] AI erstellt automatisch ein dataRef-Widget im aktuellen Context das auf die Quelle zeigt
+- [ ] Prompt-Regeln: "Gewicht → Root", "Budget → nächster Parent mit Budget-Widget"
+
+**Akzeptanzkriterien:**
+- 🔲 Widget mit `dataRef` zeigt Live-Daten aus anderem Context
+- 🔲 Bearbeitung in Ref-Widget schreibt in Source-Context
+- 🔲 SSE propagiert Änderungen an alle Referenzen
+- 🔲 AI nutzt homeContext-Routing für neue Daten
+
+---
+
+### Phase 9: Geerbte Widget-Edits + Schema-Validierung
+> **Status:** 🔲 Wartend auf Phase 8
+>
+> **Ziel:** Geerbte Widgets editierbar machen + Datenintegrität sichern.
+
+**Geerbte Widget-Edits:**
+- [ ] Edit eines inherited Widgets → `PUT /api/context/:parentId` (nicht lokaler Context)
+- [ ] UI: Edit-Modus zeigt "Änderung wird in [Parent-Name] gespeichert" Hinweis
+- [ ] SSE: Parent-Save triggert Re-Render in allen Kind-Contexts
+- [ ] Scope-Override: Kind kann inherited Widget lokal überschreiben (lokale Kopie, bricht Vererbung)
+
+**Schema-Validierung (server.js):**
+- [ ] Funktion `validateAgainstSchema(data, schemaId)` implementieren
+- [ ] Bei `PUT /api/context/:id` → alle Widgets mit `schema` Feld validieren
+- [ ] Validierungsfehler: 400 Response mit Details, Frontend zeigt Fehler-Toast
+- [ ] AI-Prompt: Schemas als Constraint "Daten MÜSSEN diesem Schema entsprechen"
+
+**Akzeptanzkriterien:**
+- 🔲 Geerbtes Widget editiert → Parent wird aktualisiert
+- 🔲 Alle Kind-Contexts sehen die Änderung live
+- 🔲 Schema-Validierung verhindert invalide Daten
+- 🔲 AI hält sich an Schemas
+
+---
+
+### Phase 10: Widget-Templates & Pattern-Speicher
+> **Status:** 🔲 Wartend auf Phase 9
+>
+> **Ziel:** Bewährte Widget-Kombinationen speichern und wiederverwenden.
+
+**Widget-Templates:**
+- [ ] "Als Template speichern" Button im Widget-Header (Speichert Widget + Datenstruktur)
+- [ ] `data/templates/` Verzeichnis mit Template-JSON-Dateien
+- [ ] Template-Picker in der Chat-Sidebar: "Template einfügen" → Liste → Klick → Widget erstellt
+- [ ] Template enthält: Widget-Config + leere Datenstruktur + Schema-Referenz
+
+**Context-Templates:**
+- [ ] Ganzen Context als Template speichern (alle Widgets + Struktur, ohne Daten)
+- [ ] "Neues Projekt aus Template" Option bei Context-Erstellung
+- [ ] Vordefinierte Templates: "Budget-Dashboard", "Projekt-Tracker", "Tagebuch"
+
+**Viking Pattern-Speicher:**
+- [ ] Bewährte Widget-Kombinationen in `viking://patterns/` speichern
+- [ ] AI fragt Viking: "Gibt es ein Pattern für X?" → schlägt Template vor
+- [ ] Pattern-Learning: häufig genutzte Widget-Kombis automatisch als Pattern erkennen
+
+**Akzeptanzkriterien:**
+- 🔲 Widget als Template speicherbar und wieder einfügbar
+- 🔲 Context-Templates für häufige Projekt-Typen
+- 🔲 AI nutzt Viking-Patterns für Vorschläge
+
+---
+
+### Phase 11: Dashboard & System-Integration
+> **Status:** 🔲 Wartend auf Phase 10
+>
+> **Ziel:** PulseOS Desktop wird zum Context-Browser.
+
+**Dashboard-Integration:**
+- [ ] `dashboard.html`: Context-Launcher neben App-Launcher
+- [ ] Root-Context als "Desktop" — Widgets auf dem Desktop = Root-Widgets in L0
+- [ ] Dock zeigt favorisierte Contexts als Icons
+- [ ] Klick auf Context-Icon → öffnet Projects-App mit diesem Context
+
+**Proaktive System-Agents:**
+- [ ] Timer-Agent: Cron-basiert, prüft Events/Deadlines, erstellt Reminder-Widgets
+- [ ] Sync-Agent: Externe APIs (Wetter, Kalender) → Viking importieren
+- [ ] Watcher-Agent: Schwellwerte überwachen (Budget < 100€ → Alert-Widget)
+
+**Cleanup:**
+- [ ] 13 idle Context-Agents aus `data/agents.json` entfernen
+- [ ] Alte `apps/projects/data/projects.json` archivieren/entfernen
+- [ ] LiveOS-Canvas Konzepte in Context-UI evaluieren
+
+**Performance:**
+- [ ] Lazy-Loading: Context-Baum nur 2 Ebenen tief laden, Rest on-demand
+- [ ] Zirkuläre Referenzen: Visited-Set bei Scope-Chain + dataRef Traversierung
+- [ ] Context-Cache: L0-Daten im Memory cachen (Invalidierung via SSE)
+
+**Akzeptanzkriterien:**
+- 🔲 Dashboard zeigt Context-Baum neben Apps
+- 🔲 Proaktive Agents laufen und erstellen Widgets
+- 🔲 Performance bleibt gut bei 50+ Contexts
 
 ---
 
@@ -467,32 +637,63 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 Phase 1 (Schemas) ──────────┐
                              ├──→ Phase 4 (Skills/AI)
 Phase 2 (Context-Store) ────┤
-                             ├──→ Phase 3 (UI)
+                             ├──→ Phase 3 (UI) ──→ Phase 6 (Bugfixes)
                              │
                              └──→ Phase 5 (Viking)
                                         │
-Phase 6 (Polish) ←──────────────────────┘
+Phase 7 (L0 Quick-Actions) ←───────────┘  ← NÄCHSTE PHASE
+        │
+        ▼
+Phase 8 (dataRef Live-Sync)
+        │
+        ▼
+Phase 9 (Inherited Edits + Validierung)
+        │
+        ▼
+Phase 10 (Templates + Patterns)
+        │
+        ▼
+Phase 11 (Dashboard + System)
 ```
 
-Phase 1 + 2 können parallel gebaut werden.
-Phase 3 braucht Phase 2.
-Phase 4 braucht Phase 1 + 2.
-Phase 5 braucht Phase 2 + 4.
+Phase 1-6 ✅ abgeschlossen.
+Phase 7 braucht Phase 3 + 6 (Zoom muss funktionieren).
+Phase 8 braucht Phase 7 (L0 muss Quick-Actions können für Ref-Widgets).
+Phase 9 braucht Phase 8 (dataRef muss existieren für inherited Edits).
+Phase 10 braucht Phase 9 (Schemas validiert → Templates sicher).
+Phase 11 braucht Phase 10 (Templates für Dashboard-Presets).
 
 ---
 
 ## Aktuelle Dateien (Referenz)
 
-**Server:** `/Users/chris.pohl/Documents/GitHub/PulseOS/server.js` (~3144 Zeilen)
-**Projects App:** `/Users/chris.pohl/Documents/GitHub/PulseOS/apps/projects/index.html` (~2535 Zeilen)
-**Context View Widget:** `/Users/chris.pohl/Documents/GitHub/PulseOS/widgets/context-view.js` (~623 Zeilen)
-**Viking Bridge:** `/Users/chris.pohl/Documents/GitHub/PulseOS/viking-bridge.py` (~340 Zeilen)
-**Supervisor:** `/Users/chris.pohl/Documents/GitHub/PulseOS/supervisor.js`
-**Agents Registry:** `/Users/chris.pohl/Documents/GitHub/PulseOS/data/agents.json`
-**Action Chains:** `/Users/chris.pohl/Documents/GitHub/PulseOS/data/action-chains.json`
-**Root Context:** `/Users/chris.pohl/Documents/GitHub/PulseOS/data/root-context.json`
-**Bestehende Contexts:** `/Users/chris.pohl/Documents/GitHub/PulseOS/data/contexts/`
-**Project Data:** `/Users/chris.pohl/Documents/GitHub/PulseOS/apps/projects/data/projects.json`
+**Server:** `server.js` (~3800+ Zeilen)
+**Projects App:** `apps/projects/index.html` (~2800+ Zeilen)
+**Context View Widget:** `widgets/context-view.js` (~623 Zeilen)
+**Viking Bridge:** `viking-bridge.py` (~340 Zeilen)
+**Supervisor:** `supervisor.js`
+**Schemas:** `data/schemas/` (8 Dateien: task, note, event, metric, measurement, link, record, progress)
+**Contexts:** `data/contexts/` (ctx-*.json Dateien, jeweils mit eigenem Unterverzeichnis)
+**Agents Registry:** `data/agents.json`
+**Root Context:** `data/root-context.json`
+
+**Wichtige Code-Stellen in server.js:**
+- Context CRUD API: ~Zeile 1567-1750
+- Viking Sync: ~Zeile 498-580
+- Context Search: ~Zeile 2749
+- Context Chat: ~Zeile 2841
+- Context Plan: ~Zeile 3447
+
+**Wichtige Code-Stellen in apps/projects/index.html:**
+- State-Objekt: `state = { contexts, activeContextId, activeContext, inheritedWidgets, ... }`
+- Zoom CSS: ~Zeile 578
+- createWidgetFrame(): ~Zeile 1666
+- cycleZoom(): ~Zeile 2728
+- renderCanvas(): ~Zeile 1520
+- renderProjectList(): ~Zeile 1445
+- selectProject(): ~Zeile 1369
+- createProject(): ~Zeile 1274
+- Chat sendMessage(): ~Zeile 2412
 
 ---
 
@@ -501,13 +702,16 @@ Phase 5 braucht Phase 2 + 4.
 Wenn du eine neue Session startest:
 
 1. **Lies dieses Dokument** (`CONTEXT-ENGINE-PLAN.md`)
-2. **Prüfe Phase-Status**: Welche Checkboxen sind ✅?
-3. **Lies die letzte Phase** die in Arbeit war (🔧)
-4. **Prüfe `data/schemas/`** — existiert es? Wieviele Schemas?
-5. **Prüfe `data/contexts/`** — gibt es migrierte Context-Dateien?
-6. **Prüfe `server.js`** — gibt es `/api/contexts` und `/api/context-chat` Endpoints?
-7. **Prüfe `apps/projects/index.html`** — lädt es von `/api/contexts`?
-8. **Mach da weiter wo 🔲 anfängt**
+2. **Prüfe Phase-Status**: Welche Phasen sind ✅? Welche ist 🔧 (in Arbeit) oder 🔲 (nächste)?
+3. **Lies die nächste 🔲 Phase** und ihre Checkboxen — hier weitermachen
+4. **Schnellcheck** (nur wenn unsicher):
+   - `data/schemas/` → 8 JSON-Dateien? ✅
+   - `data/contexts/` → Context-Dateien vorhanden? ✅
+   - `server.js` → `/api/contexts`, `/api/context-chat`, `/api/context-search` existieren? ✅
+   - `apps/projects/index.html` → lädt von `/api/contexts`, Zoom = L0↔L1 Toggle? ✅
+5. **Frage den User** was er als nächstes möchte, falls die nächste Phase nicht klar ist
+6. **Nach jeder Teilaufgabe**: Checkbox in diesem Dokument updaten (🔲 → ✅)
+7. **Nach jedem Commit**: Kurz den Phase-Status oben im Dokument aktualisieren
 
 ---
 
@@ -523,3 +727,7 @@ Wenn du eine neue Session startest:
 | 2026-03-17 | Viking als Pattern-Speicher | Gibt AI echtes Gedächtnis über bewährte Widget-Kombinationen. |
 | 2026-03-17 | ContextView als Basis-Renderer | Existiert bereits (623 Zeilen), kann auto-detect, ist reaktiv. Nicht nochmal bauen. |
 | 2026-03-17 | Pending Changes pro Context | Bug: User editiert in Context A, wechselt zu B, committed → falscher Context. |
+| 2026-03-17 | Zoom = L0↔L1 Toggle, kein 3-Stufen-Zyklus | 3 Stufen verwirrend: L2→L1 nicht sichtbar, 2x klicken zum Schrumpfen. Resize-Button (↔) für Größe. |
+| 2026-03-17 | L0 muss interaktiv sein, nicht nur minimiert | Reine Pill ohne Aktionen ist nutzlos. Quick-Actions (Toggle, Edit, +) machen L0 zur Power-Ansicht. |
+| 2026-03-17 | dataRef vor Templates | Datenfluss ist architektonisch wichtiger als Templates. Templates brauchen stabile Datenstruktur. |
+| 2026-03-17 | Phasen 7-11 statt eine "Phase 6 Polish" | Jede Phase hat klare Akzeptanzkriterien und Abhängigkeiten. Besser planbar, Session-übergreifend trackbar. |
