@@ -1259,6 +1259,9 @@ body {
       <button onclick="createProject()" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);font-size:13px;cursor:pointer;font-family:var(--font);">
         📝 Leeres Projekt
       </button>
+      <button onclick="closeTemplateModal();showWidgetTemplatePicker()" style="padding:10px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);font-size:13px;cursor:pointer;font-family:var(--font);">
+        🧩 Widget einfügen
+      </button>
       <button onclick="closeTemplateModal()" style="padding:10px 16px;border-radius:8px;border:none;background:var(--bg-secondary);color:var(--text-muted);font-size:13px;cursor:pointer;font-family:var(--font);">
         Abbrechen
       </button>
@@ -1901,11 +1904,12 @@ function createWidgetFrame(widget, proj, inherited = false) {
         <button onclick="sendWidgetCmd('${widgetId}')" style="padding:5px 10px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:12px;cursor:pointer;font-family:var(--font);white-space:nowrap;">Senden</button>
       </div>
       <div id="wcmd-status-${widgetId}" style="font-size:11px;color:var(--text-muted);padding-top:4px;display:none;"></div>
-      ${inherited ? `<div style="display:flex;gap:6px;margin-top:4px;align-items:center;">
+      ${inherited ? `<div style="display:flex;gap:6px;margin-top:4px;align-items:center;flex-wrap:wrap;">
         <span style="font-size:10px;color:var(--yellow);background:rgba(255,200,0,.1);padding:2px 8px;border-radius:6px;">↗️ Änderung wird in <b>${escapeHtml(widget._inheritedFrom || 'Parent')}</b> gespeichert</span>
         <button onclick="overrideInheritedWidget('${widget.id}','${widget._inheritedFromId || ''}')" style="padding:3px 8px;border-radius:6px;border:1px dashed var(--border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:var(--font);" title="Lokale Kopie erstellen (bricht Vererbung)">📋 Lokal überschreiben</button>
-      </div>` : `<div style="display:flex;gap:6px;margin-top:4px;">
+      </div>` : `<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
         <button onclick="showDataRefPicker('${widget.id}')" style="padding:3px 8px;border-radius:6px;border:1px dashed var(--border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:var(--font);" title="Daten aus anderem Context verlinken">📌 Daten verlinken</button>
+        <button onclick="saveWidgetAsTemplate('${widget.id}')" style="padding:3px 8px;border-radius:6px;border:1px dashed var(--border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:var(--font);" title="Widget als Template speichern">💾 Als Template</button>
         ${widget.dataRef ? `<button onclick="removeDataRef('${widget.id}')" style="padding:3px 8px;border-radius:6px;border:1px dashed var(--red);background:transparent;color:var(--red);font-size:10px;cursor:pointer;font-family:var(--font);" title="Verlinkung entfernen">✕ Ref entfernen</button>` : ''}
       </div>`}
     </div>
@@ -3510,7 +3514,7 @@ async function openTemplateModal() {
   modal.style.display = 'flex';
 
   try {
-    const res = await fetch('/api/project-templates');
+    const res = await fetch(`${API_BASE}/api/context-templates`);
     const data = await res.json();
     const list = document.getElementById('templateList');
     const templates = data.templates || [];
@@ -3523,12 +3527,12 @@ async function openTemplateModal() {
     const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉' };
     list.innerHTML = templates.map(tpl => `
       <div class="tpl-card" onclick="createFromTemplate('${tpl.id}')">
-        <div class="tpl-icon" style="background:${tpl.color}22">${tpl.icon}</div>
+        <div class="tpl-icon" style="background:${tpl.color || '#8B5CF6'}22">${tpl.icon || '📁'}</div>
         <div class="tpl-info">
-          <div class="tpl-name">${escapeHtml(tpl.name)}</div>
+          <div class="tpl-name">${escapeHtml(tpl.name)}${tpl.source === 'builtin' ? ' <span style="font-size:9px;color:var(--text-muted);background:var(--bg-secondary);padding:1px 5px;border-radius:4px;">Built-in</span>' : ''}</div>
           <div class="tpl-desc">${escapeHtml(tpl.description || '')}</div>
           <div class="tpl-widgets">
-            ${tpl.widgets.map(w => `<span>${icons[w.type] || '🧩'} ${w.title}</span>`).join('')}
+            ${(tpl.widgets || []).map(w => `<span>${icons[w.type] || '🧩'} ${w.title}</span>`).join('')}
           </div>
           ${tpl.usageCount > 0 ? `<div class="tpl-usage">${tpl.usageCount}x verwendet</div>` : ''}
         </div>
@@ -3546,15 +3550,16 @@ function closeTemplateModal() {
 async function createFromTemplate(templateId) {
   closeTemplateModal();
   try {
-    const res = await fetch('/api/project-from-template', {
+    const parentId = state.activeContext?.parentId || undefined;
+    const res = await fetch(`${API_BASE}/api/context-from-template`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ templateId })
+      body: JSON.stringify({ templateId, parentId })
     });
     const data = await res.json();
     if (data.ok) {
-      await load();
-      selectProject(data.projectId);
+      await reloadContextList();
+      await selectProject(data.contextId || data.projectId);
     }
   } catch (e) {
     console.error('Template creation error:', e);
@@ -3569,18 +3574,17 @@ async function saveAsTemplate() {
   }
 
   try {
-    const res = await fetch('/api/project-save-as-template', {
+    const res = await fetch(`${API_BASE}/api/context-templates`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectId: proj.id })
+      body: JSON.stringify({ contextId: proj.id })
     });
     const data = await res.json();
     if (data.ok) {
-      // Add system message
       proj.chat.push({
         id: 'msg-tpl-' + Date.now(),
         role: 'system',
-        text: `Projekt als Template "${data.name}" gespeichert! Du kannst es bei neuen Projekten wiederverwenden.`,
+        text: `Context als Template "${data.name}" gespeichert! Du kannst es bei neuen Projekten wiederverwenden.`,
         time: new Date().toISOString()
       });
       save();
@@ -3588,6 +3592,93 @@ async function saveAsTemplate() {
     }
   } catch (e) {
     console.error('Save template error:', e);
+  }
+}
+
+// ── Widget Template Functions ──
+async function saveWidgetAsTemplate(widgetId) {
+  const proj = state.activeContext;
+  if (!proj) return;
+  const widget = (proj.widgets || []).find(w => w.id === widgetId);
+  if (!widget) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/widget-templates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contextId: proj.id, widgetId })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      proj.chat.push({
+        id: 'msg-wtpl-' + Date.now(),
+        role: 'system',
+        text: `Widget "${widget.title}" als Template gespeichert!`,
+        time: new Date().toISOString()
+      });
+      renderChat();
+    }
+  } catch (e) {
+    console.error('Save widget template error:', e);
+  }
+}
+
+async function showWidgetTemplatePicker() {
+  const proj = state.activeContext;
+  if (!proj) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/widget-templates`);
+    const data = await res.json();
+    const templates = data.templates || [];
+    if (templates.length === 0) {
+      alert('Noch keine Widget-Templates gespeichert. Nutze "Als Template" im Widget-Menu.');
+      return;
+    }
+
+    const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉' };
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = `
+      <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:16px;width:420px;max-height:60vh;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <h3 style="font-size:14px;font-weight:600;">🧩 Widget-Template einfuegen</h3>
+          <button onclick="this.closest('div[style*=fixed]').remove()" style="background:none;border:none;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button>
+        </div>
+        <div style="padding:12px 18px;overflow-y:auto;flex:1;">
+          ${templates.map(tpl => `
+            <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;cursor:pointer;border:1px solid var(--border);margin-bottom:6px;transition:background .15s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''" onclick="insertWidgetTemplate('${tpl.id}');this.closest('div[style*=fixed]').remove();">
+              <div style="font-size:20px;">${icons[tpl.type] || '🧩'}</div>
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:600;">${escapeHtml(tpl.title)}</div>
+                <div style="font-size:10px;color:var(--text-muted);">${tpl.type} · ${tpl.size} ${tpl.sourceContext ? '· aus ' + escapeHtml(tpl.sourceContext) : ''}</div>
+              </div>
+              ${tpl.usageCount > 0 ? `<span style="font-size:9px;color:var(--text-muted);">${tpl.usageCount}x</span>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+  } catch (e) {
+    console.error('Widget template picker error:', e);
+  }
+}
+
+async function insertWidgetTemplate(templateId) {
+  const proj = state.activeContext;
+  if (!proj) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/widget-from-template`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templateId, contextId: proj.id })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      await selectProject(state.activeContextId);
+    }
+  } catch (e) {
+    console.error('Insert widget template error:', e);
   }
 }
 

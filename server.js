@@ -2514,96 +2514,293 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
   }
 
   // --- Project Templates API ---
-  if (url === '/api/project-templates') {
-    const tplFile = path.join(ROOT, 'apps', 'projects', 'data', 'templates.json');
-    if (req.method === 'GET') return jsonRes(res, safeReadJSON(tplFile, { templates: [] }));
+  // ── Context Templates API ──
+  const CTX_TPL_FILE = path.join(ROOT, 'data', 'templates', 'context-templates.json');
+  const WIDGET_TPL_FILE = path.join(ROOT, 'data', 'templates', 'widget-templates.json');
+
+  // Ensure templates directory exists
+  try { fs.mkdirSync(path.join(ROOT, 'data', 'templates'), { recursive: true }); } catch {}
+
+  // GET /api/context-templates — list all context templates
+  // POST /api/context-templates — create/save a context template
+  if (url === '/api/context-templates') {
+    if (req.method === 'GET') {
+      const data = safeReadJSON(CTX_TPL_FILE, null);
+      let templates;
+      try { templates = JSON.parse(data); } catch { templates = { templates: getBuiltinContextTemplates() }; }
+      if (!templates || !templates.templates) templates = { templates: getBuiltinContextTemplates() };
+      return jsonRes(res, templates);
+    }
     if (req.method === 'POST') return readBody(req, b => {
       try {
-        const tpl = JSON.parse(b);
-        if (!tpl.name) return jsonRes(res, { ok: false, error: 'name required' });
-        const data = JSON.parse(safeReadJSON(tplFile, { templates: [] }));
-        tpl.id = tpl.id || 'tpl-' + Date.now();
-        tpl.created = new Date().toISOString();
-        tpl.usageCount = 0;
-        data.templates.push(tpl);
-        fs.writeFileSync(tplFile, JSON.stringify(data, null, 2));
-        jsonRes(res, { ok: true, id: tpl.id });
-      } catch (e) { jsonRes(res, { ok: false, error: e.message }); }
-    });
-  }
+        const { contextId } = JSON.parse(b);
+        if (!contextId) return jsonRes(res, { ok: false, error: 'contextId required' });
+        const ctxFile = path.join(CTX_DIR, contextId + '.json');
+        if (!fs.existsSync(ctxFile)) return jsonRes(res, { ok: false, error: 'Context not found' });
+        const ctx = JSON.parse(fs.readFileSync(ctxFile, 'utf8'));
 
-  // Save existing project as template
-  if (url === '/api/project-save-as-template' && req.method === 'POST') {
-    return readBody(req, b => {
-      try {
-        const { projectId } = JSON.parse(b);
-        const projFile = path.join(ROOT, 'apps', 'projects', 'data', 'projects.json');
-        const projData = JSON.parse(safeReadJSON(projFile, { projects: [] }));
-        const project = projData.projects.find(p => p.id === projectId);
-        if (!project) return jsonRes(res, { ok: false, error: 'Project not found' });
-
-        const widgets = project.canvas.widgets.map(w => ({
-          type: w.type, title: w.title, size: w.size, config: w.config || {},
-          defaultData: w.data || project.data[w.dataKey] || {}
+        const widgets = (ctx.widgets || []).map(w => ({
+          type: w.type, title: w.title, size: w.size || 'md',
+          config: w.config || {}, schema: w.schema || null, scope: w.scope || 'local',
+          defaultData: ctx.data && ctx.data[w.dataKey] ? JSON.parse(JSON.stringify(ctx.data[w.dataKey])) : {}
         }));
 
         const tpl = {
-          id: 'tpl-' + Date.now(), name: project.name, icon: project.icon, color: project.color,
-          description: `Template aus Projekt "${project.name}"`, tags: [],
-          created: new Date().toISOString(), usageCount: 0, widgets
+          id: 'ctpl-' + Date.now(), name: ctx.name, icon: ctx.icon || '📁', color: ctx.color || '#8B5CF6',
+          description: `Template aus Context "${ctx.name}"`, tags: [],
+          created: new Date().toISOString(), usageCount: 0, widgets,
+          source: 'user'
         };
 
-        const tplFile = path.join(ROOT, 'apps', 'projects', 'data', 'templates.json');
-        const tplData = JSON.parse(safeReadJSON(tplFile, { templates: [] }));
-        tplData.templates.push(tpl);
-        fs.writeFileSync(tplFile, JSON.stringify(tplData, null, 2));
+        let data;
+        try { data = JSON.parse(safeReadJSON(CTX_TPL_FILE, '{"templates":[]}')); }
+        catch { data = { templates: [] }; }
+        data.templates.push(tpl);
+        fs.writeFileSync(CTX_TPL_FILE, JSON.stringify(data, null, 2));
         jsonRes(res, { ok: true, id: tpl.id, name: tpl.name });
       } catch (e) { jsonRes(res, { ok: false, error: e.message }); }
     });
   }
 
-  // Create project from template
-  if (url === '/api/project-from-template' && req.method === 'POST') {
+  // POST /api/context-from-template — create new context from template
+  if (url === '/api/context-from-template' && req.method === 'POST') {
     return readBody(req, b => {
       try {
-        const { templateId, name } = JSON.parse(b);
-        const tplFile = path.join(ROOT, 'apps', 'projects', 'data', 'templates.json');
-        const tplData = JSON.parse(safeReadJSON(tplFile, { templates: [] }));
-        const tpl = tplData.templates.find(t => t.id === templateId);
+        const { templateId, parentId } = JSON.parse(b);
+        // Load templates (user + builtin)
+        let data;
+        try { data = JSON.parse(safeReadJSON(CTX_TPL_FILE, '{"templates":[]}')); }
+        catch { data = { templates: [] }; }
+        const allTemplates = [...(data.templates || []), ...getBuiltinContextTemplates()];
+        const tpl = allTemplates.find(t => t.id === templateId);
         if (!tpl) return jsonRes(res, { ok: false, error: 'Template not found' });
 
-        const projId = 'proj-' + Date.now();
-        const project = {
-          id: projId, name: name || tpl.name, icon: tpl.icon, color: tpl.color,
-          parentId: null, created: new Date().toISOString(), updated: new Date().toISOString(),
+        const ctxId = 'ctx-' + Date.now();
+        const ctx = {
+          id: ctxId, name: tpl.name, icon: tpl.icon, color: tpl.color,
+          parentId: parentId || undefined,
+          created: new Date().toISOString(), updated: new Date().toISOString(),
+          widgets: [], data: {},
           chat: [{ id: 'msg-sys-' + Date.now(), role: 'system',
             text: `Projekt aus Template "${tpl.name}" erstellt! ${tpl.widgets.length} Widgets sind bereit.`,
             time: new Date().toISOString() }],
-          canvas: { widgets: [] }, data: {}, children: []
+          changelog: [], plan: null, template: tpl.id,
+          closedWidgets: [], skills: [], connections: []
         };
 
         for (const tw of tpl.widgets) {
           const wId = 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
           const dataKey = tw.type + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 4);
-          project.canvas.widgets.push({
+          ctx.widgets.push({
             id: wId, type: tw.type, title: tw.title, size: tw.size || 'md',
             dataKey, color: tpl.color, config: tw.config || {},
-            data: JSON.parse(JSON.stringify(tw.defaultData || {}))
+            schema: tw.schema || undefined, scope: tw.scope || 'local',
+            zoomLevel: 'L1'
           });
-          const dd = tw.defaultData || {};
-          project.data[dataKey] = dd.items || dd.columns || dd.rows || dd.links || dd;
+          ctx.data[dataKey] = JSON.parse(JSON.stringify(tw.defaultData || {}));
         }
 
-        const projFile = path.join(ROOT, 'apps', 'projects', 'data', 'projects.json');
-        const projData = JSON.parse(safeReadJSON(projFile, { projects: [] }));
-        projData.projects.push(project);
-        projData.activeProject = projId;
-        fs.writeFileSync(projFile, JSON.stringify(projData, null, 2));
-        broadcast('projects', { type: 'change', file: 'projects.json', time: Date.now() });
+        fs.writeFileSync(path.join(CTX_DIR, ctxId + '.json'), JSON.stringify(ctx, null, 2));
+        broadcast('liveos', { type: 'context-change', contextId: ctxId, time: Date.now() });
+
+        // Update usage count
+        const userTpl = (data.templates || []).find(t => t.id === templateId);
+        if (userTpl) {
+          userTpl.usageCount = (userTpl.usageCount || 0) + 1;
+          fs.writeFileSync(CTX_TPL_FILE, JSON.stringify(data, null, 2));
+        }
+
+        jsonRes(res, { ok: true, contextId: ctxId, name: ctx.name, widgets: ctx.widgets.length });
+      } catch (e) { jsonRes(res, { ok: false, error: e.message }); }
+    });
+  }
+
+  // ── Widget Templates API ──
+  // GET /api/widget-templates — list all widget templates
+  // POST /api/widget-templates — save a widget as template
+  if (url === '/api/widget-templates') {
+    if (req.method === 'GET') {
+      let data;
+      try { data = JSON.parse(safeReadJSON(WIDGET_TPL_FILE, '{"templates":[]}')); }
+      catch { data = { templates: [] }; }
+      return jsonRes(res, data);
+    }
+    if (req.method === 'POST') return readBody(req, b => {
+      try {
+        const { contextId, widgetId } = JSON.parse(b);
+        if (!contextId || !widgetId) return jsonRes(res, { ok: false, error: 'contextId and widgetId required' });
+        const ctxFile = path.join(CTX_DIR, contextId + '.json');
+        if (!fs.existsSync(ctxFile)) return jsonRes(res, { ok: false, error: 'Context not found' });
+        const ctx = JSON.parse(fs.readFileSync(ctxFile, 'utf8'));
+        const widget = (ctx.widgets || []).find(w => w.id === widgetId);
+        if (!widget) return jsonRes(res, { ok: false, error: 'Widget not found' });
+
+        const tpl = {
+          id: 'wtpl-' + Date.now(),
+          type: widget.type, title: widget.title, size: widget.size || 'md',
+          config: widget.config || {}, schema: widget.schema || null,
+          defaultData: ctx.data && ctx.data[widget.dataKey] ? JSON.parse(JSON.stringify(ctx.data[widget.dataKey])) : {},
+          created: new Date().toISOString(), usageCount: 0,
+          sourceContext: ctx.name
+        };
+
+        let data;
+        try { data = JSON.parse(safeReadJSON(WIDGET_TPL_FILE, '{"templates":[]}')); }
+        catch { data = { templates: [] }; }
+        data.templates.push(tpl);
+        fs.writeFileSync(WIDGET_TPL_FILE, JSON.stringify(data, null, 2));
+        jsonRes(res, { ok: true, id: tpl.id, name: tpl.title });
+      } catch (e) { jsonRes(res, { ok: false, error: e.message }); }
+    });
+  }
+
+  // POST /api/widget-from-template — insert widget template into context
+  if (url === '/api/widget-from-template' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { templateId, contextId } = JSON.parse(b);
+        let data;
+        try { data = JSON.parse(safeReadJSON(WIDGET_TPL_FILE, '{"templates":[]}')); }
+        catch { data = { templates: [] }; }
+        const tpl = (data.templates || []).find(t => t.id === templateId);
+        if (!tpl) return jsonRes(res, { ok: false, error: 'Widget template not found' });
+
+        const ctxFile = path.join(CTX_DIR, contextId + '.json');
+        if (!fs.existsSync(ctxFile)) return jsonRes(res, { ok: false, error: 'Context not found' });
+        const ctx = JSON.parse(fs.readFileSync(ctxFile, 'utf8'));
+
+        const wId = 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+        const dataKey = tpl.type + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 4);
+        if (!ctx.widgets) ctx.widgets = [];
+        if (!ctx.data) ctx.data = {};
+        ctx.widgets.push({
+          id: wId, type: tpl.type, title: tpl.title, size: tpl.size || 'md',
+          dataKey, color: ctx.color, config: tpl.config || {},
+          schema: tpl.schema || undefined, zoomLevel: 'L1'
+        });
+        ctx.data[dataKey] = JSON.parse(JSON.stringify(tpl.defaultData || {}));
+        ctx.updated = new Date().toISOString();
+        fs.writeFileSync(ctxFile, JSON.stringify(ctx, null, 2));
+        broadcast('liveos', { type: 'context-change', contextId, time: Date.now() });
 
         tpl.usageCount = (tpl.usageCount || 0) + 1;
-        fs.writeFileSync(tplFile, JSON.stringify(tplData, null, 2));
-        jsonRes(res, { ok: true, projectId: projId, name: project.name, widgets: project.canvas.widgets.length });
+        fs.writeFileSync(WIDGET_TPL_FILE, JSON.stringify(data, null, 2));
+        jsonRes(res, { ok: true, widgetId: wId });
+      } catch (e) { jsonRes(res, { ok: false, error: e.message }); }
+    });
+  }
+
+  // Builtin context templates
+  function getBuiltinContextTemplates() {
+    return [
+      {
+        id: 'builtin-budget', name: 'Budget-Dashboard', icon: '💰', color: '#22c55e',
+        description: 'Einnahmen, Ausgaben und Budget-Ziele tracken',
+        tags: ['finanzen', 'tracking'], source: 'builtin', usageCount: 0,
+        widgets: [
+          { type: 'kpi', title: 'Kontostand', size: 'sm', config: {}, schema: 'metric', defaultData: { value: '0', label: 'Kontostand', unit: '€' } },
+          { type: 'kpi', title: 'Monatsbudget', size: 'sm', config: {}, schema: 'metric', defaultData: { value: '2000', label: 'Budget', unit: '€' } },
+          { type: 'table', title: 'Ausgaben', size: 'lg', config: { columns: ['Datum', 'Beschreibung', 'Kategorie', 'Betrag'] }, defaultData: { rows: [] } },
+          { type: 'progress', title: 'Budget verbraucht', size: 'sm', config: {}, defaultData: { percent: 0, label: 'Budget' } }
+        ]
+      },
+      {
+        id: 'builtin-tracker', name: 'Projekt-Tracker', icon: '🎯', color: '#3B82F6',
+        description: 'Aufgaben, Meilensteine und Fortschritt verwalten',
+        tags: ['projekt', 'tracking'], source: 'builtin', usageCount: 0,
+        widgets: [
+          { type: 'kanban', title: 'Board', size: 'full', config: {}, defaultData: { columns: [{ id: 'todo', name: 'To Do', items: [] }, { id: 'doing', name: 'In Arbeit', items: [] }, { id: 'done', name: 'Fertig', items: [] }] } },
+          { type: 'timeline', title: 'Meilensteine', size: 'lg', config: {}, schema: 'event', defaultData: { items: [] } },
+          { type: 'progress', title: 'Gesamtfortschritt', size: 'sm', config: {}, defaultData: { percent: 0, label: 'Projekt' } },
+          { type: 'notes', title: 'Notizen', size: 'md', config: {}, defaultData: { text: '' } }
+        ]
+      },
+      {
+        id: 'builtin-journal', name: 'Tagebuch', icon: '📔', color: '#ec4899',
+        description: 'Tägliche Einträge mit Stimmung und Reflexion',
+        tags: ['tagebuch', 'reflexion'], source: 'builtin', usageCount: 0,
+        widgets: [
+          { type: 'notes', title: 'Heutiger Eintrag', size: 'lg', config: {}, defaultData: { text: '' } },
+          { type: 'kpi', title: 'Stimmung', size: 'sm', config: {}, defaultData: { value: '7', label: 'Stimmung', unit: '/10' } },
+          { type: 'todo', title: 'Dankbarkeit', size: 'md', config: {}, defaultData: { items: [] } },
+          { type: 'timeline', title: 'Highlights', size: 'md', config: {}, schema: 'event', defaultData: { items: [] } }
+        ]
+      }
+    ];
+  }
+
+  // Legacy project templates (backwards compatibility)
+  if (url === '/api/project-templates') {
+    const tplFile = path.join(ROOT, 'apps', 'projects', 'data', 'templates.json');
+    if (req.method === 'GET') return jsonRes(res, safeReadJSON(tplFile, { templates: [] }));
+  }
+  if (url === '/api/project-save-as-template' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { projectId } = JSON.parse(b);
+        // Redirect to context template save
+        const ctxFile = path.join(CTX_DIR, projectId + '.json');
+        if (fs.existsSync(ctxFile)) {
+          // Forward to context template system
+          const ctx = JSON.parse(fs.readFileSync(ctxFile, 'utf8'));
+          const widgets = (ctx.widgets || []).map(w => ({
+            type: w.type, title: w.title, size: w.size || 'md',
+            config: w.config || {}, schema: w.schema || null,
+            defaultData: ctx.data && ctx.data[w.dataKey] ? JSON.parse(JSON.stringify(ctx.data[w.dataKey])) : {}
+          }));
+          const tpl = {
+            id: 'ctpl-' + Date.now(), name: ctx.name, icon: ctx.icon || '📁', color: ctx.color || '#8B5CF6',
+            description: `Template aus Context "${ctx.name}"`, tags: [],
+            created: new Date().toISOString(), usageCount: 0, widgets, source: 'user'
+          };
+          let data;
+          try { data = JSON.parse(safeReadJSON(CTX_TPL_FILE, '{"templates":[]}')); }
+          catch { data = { templates: [] }; }
+          data.templates.push(tpl);
+          fs.writeFileSync(CTX_TPL_FILE, JSON.stringify(data, null, 2));
+          return jsonRes(res, { ok: true, id: tpl.id, name: tpl.name });
+        }
+        jsonRes(res, { ok: false, error: 'Context not found' });
+      } catch (e) { jsonRes(res, { ok: false, error: e.message }); }
+    });
+  }
+  if (url === '/api/project-from-template' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { templateId } = JSON.parse(b);
+        // Forward to context template system
+        let data;
+        try { data = JSON.parse(safeReadJSON(CTX_TPL_FILE, '{"templates":[]}')); }
+        catch { data = { templates: [] }; }
+        const allTemplates = [...(data.templates || []), ...getBuiltinContextTemplates()];
+        // Also check legacy templates
+        const legacyFile = path.join(ROOT, 'apps', 'projects', 'data', 'templates.json');
+        let legacyData;
+        try { legacyData = JSON.parse(safeReadJSON(legacyFile, '{"templates":[]}')); } catch { legacyData = { templates: [] }; }
+        const combined = [...allTemplates, ...(legacyData.templates || [])];
+        const tpl = combined.find(t => t.id === templateId);
+        if (!tpl) return jsonRes(res, { ok: false, error: 'Template not found' });
+
+        const ctxId = 'ctx-' + Date.now();
+        const ctx = {
+          id: ctxId, name: tpl.name, icon: tpl.icon, color: tpl.color,
+          created: new Date().toISOString(), updated: new Date().toISOString(),
+          widgets: [], data: {},
+          chat: [{ id: 'msg-sys-' + Date.now(), role: 'system',
+            text: `Projekt aus Template "${tpl.name}" erstellt!`,
+            time: new Date().toISOString() }],
+          changelog: [], plan: null, template: tpl.id,
+          closedWidgets: [], skills: [], connections: []
+        };
+        for (const tw of tpl.widgets) {
+          const wId = 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+          const dataKey = tw.type + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 4);
+          ctx.widgets.push({ id: wId, type: tw.type, title: tw.title, size: tw.size || 'md', dataKey, color: tpl.color, config: tw.config || {}, zoomLevel: 'L1' });
+          ctx.data[dataKey] = JSON.parse(JSON.stringify(tw.defaultData || {}));
+        }
+        fs.writeFileSync(path.join(CTX_DIR, ctxId + '.json'), JSON.stringify(ctx, null, 2));
+        broadcast('liveos', { type: 'context-change', contextId: ctxId, time: Date.now() });
+        jsonRes(res, { ok: true, projectId: ctxId, name: ctx.name, widgets: ctx.widgets.length });
       } catch (e) { jsonRes(res, { ok: false, error: e.message }); }
     });
   }

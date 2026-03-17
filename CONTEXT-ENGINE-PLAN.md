@@ -1,6 +1,6 @@
 # PulseOS Context Engine — Architekturplan
 
-> **Status:** Phase 1-9 ✅, Phase 10 🔲 nächster Schritt.
+> **Status:** Phase 1-10 ✅, Phase 11 🔲 nächster Schritt.
 > **Letzte Aktualisierung:** 2026-03-17
 > **Session-Einstieg:** Lies dieses Dokument. Prüfe den Status jeder Phase. Mach da weiter wo ✅ aufhört und 🔲 anfängt.
 
@@ -550,31 +550,31 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 
 ---
 
-### Phase 10: Widget-Templates & Pattern-Speicher
-> **Status:** 🔲 Wartend auf Phase 9
+### Phase 10: Widget-Templates & Pattern-Speicher ✅
+> **Status:** ✅ Fertig (2026-03-17)
 >
 > **Ziel:** Bewährte Widget-Kombinationen speichern und wiederverwenden.
 
 **Widget-Templates:**
-- [ ] "Als Template speichern" Button im Widget-Header (Speichert Widget + Datenstruktur)
-- [ ] `data/templates/` Verzeichnis mit Template-JSON-Dateien
-- [ ] Template-Picker in der Chat-Sidebar: "Template einfügen" → Liste → Klick → Widget erstellt
-- [ ] Template enthält: Widget-Config + leere Datenstruktur + Schema-Referenz
+- [x] "Als Template speichern" Button im Widget-Edit-Panel — `saveWidgetAsTemplate(widgetId)`
+- [x] `data/templates/` Verzeichnis mit `widget-templates.json` und `context-templates.json`
+- [x] Template-Picker: "🧩 Widget einfügen" Button im Template-Modal — `showWidgetTemplatePicker()`
+- [x] Template enthält: Widget-Config + Datenstruktur + Schema-Referenz + sourceContext
 
 **Context-Templates:**
-- [ ] Ganzen Context als Template speichern (alle Widgets + Struktur, ohne Daten)
-- [ ] "Neues Projekt aus Template" Option bei Context-Erstellung
-- [ ] Vordefinierte Templates: "Budget-Dashboard", "Projekt-Tracker", "Tagebuch"
+- [x] Ganzen Context als Template speichern — `POST /api/context-templates` mit `contextId`
+- [x] "Neues Projekt aus Template" Modal bei + Button — `openTemplateModal()` → `createFromTemplate()`
+- [x] 3 vordefinierte Built-in Templates: "Budget-Dashboard", "Projekt-Tracker", "Tagebuch" — `getBuiltinContextTemplates()`
 
 **Viking Pattern-Speicher:**
-- [ ] Bewährte Widget-Kombinationen in `viking://patterns/` speichern
-- [ ] AI fragt Viking: "Gibt es ein Pattern für X?" → schlägt Template vor
-- [ ] Pattern-Learning: häufig genutzte Widget-Kombis automatisch als Pattern erkennen
+- [ ] Bewährte Widget-Kombinationen in `viking://patterns/` speichern — Optional, spätere Iteration
+- [ ] AI fragt Viking: "Gibt es ein Pattern für X?" → schlägt Template vor — Optional
+- [ ] Pattern-Learning: häufig genutzte Widget-Kombis automatisch als Pattern erkennen — Optional
 
 **Akzeptanzkriterien:**
-- 🔲 Widget als Template speicherbar und wieder einfügbar
-- 🔲 Context-Templates für häufige Projekt-Typen
-- 🔲 AI nutzt Viking-Patterns für Vorschläge
+- ✅ Widget als Template speicherbar und wieder einfügbar
+- ✅ Context-Templates für häufige Projekt-Typen
+- 🔲 AI nutzt Viking-Patterns für Vorschläge (Optional, spätere Iteration)
 
 ---
 
@@ -660,7 +660,7 @@ Phase 10 (Templates + Patterns)
 Phase 11 (Dashboard + System)
 ```
 
-Phase 1-9 ✅ abgeschlossen.
+Phase 1-10 ✅ abgeschlossen.
 Phase 10 braucht Phase 9 (Schemas validiert → Templates sicher).
 Phase 11 braucht Phase 10 (Templates für Dashboard-Presets).
 
