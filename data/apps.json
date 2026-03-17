@@ -281,6 +281,51 @@
       "description": "Tägliche Tagebucheinträge mit Stimmung und Datum",
       "installed": false,
       "position": 28
+    },
+    {
+      "id": "viking",
+      "name": "Viking Context DB",
+      "icon": "🏴",
+      "color": "#f59e0b",
+      "description": "OpenViking Context Database — Resources, Memories & Skills",
+      "installed": true,
+      "position": 9
+    },
+    {
+      "id": "context-demo",
+      "name": "Context Demo",
+      "icon": "🔮",
+      "color": "#8B5CF6",
+      "description": "Universal Context View — auto-generated reactive UI from JSON data",
+      "installed": true,
+      "position": 8
+    },
+    {
+      "id": "calendar-agent",
+      "name": "Kalender Agent",
+      "icon": "📅",
+      "color": "#3B82F6",
+      "description": "Verwaltet Termine, Events und Erinnerungen",
+      "installed": true,
+      "position": 34
+    },
+    {
+      "id": "budget-agent",
+      "name": "Budget Agent",
+      "icon": "💰",
+      "color": "#22c55e",
+      "description": "Trackt Einnahmen, Ausgaben und Budget-Ziele",
+      "installed": true,
+      "position": 35
+    },
+    {
+      "id": "notes-agent",
+      "name": "Notes Agent",
+      "icon": "📝",
+      "color": "#f59e0b",
+      "description": "Verwaltet Notizen, Ideen und Wissenssammlungen",
+      "installed": true,
+      "position": 36
     }
   ]
 }

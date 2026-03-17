@@ -102,10 +102,51 @@ Then open `http://localhost:3000`.
 
 ## Apps Available
 
-alarm, budget, calendar, camera, chat, dashboard, diary, doom, drumcomputer, eggtimer, filebrowser, flappy, imagegen, kanban, mindmap, news-channels, notes, orchestrator, picviewer, pipette, podcast, pulse, radio, recipes, social-trends, terminal, tetris, tickets, travel-planner, weather, whiteboard, youtube, calendar-view
+alarm, budget, calendar, camera, chat, context-demo, dashboard, diary, doom, drumcomputer, eggtimer, filebrowser, flappy, imagegen, kanban, mindmap, news-channels, notes, orchestrator, picviewer, pipette, podcast, pulse, radio, recipes, social-trends, terminal, tetris, tickets, travel-planner, viking, weather, whiteboard, youtube, calendar-view
 
 ## Data Patterns
 
 - App-specific data: `apps/<name>/data/`
 - Global runtime state: `data/` (agents.json, modify-queue.json)
 - Kanban-style boards use a JSON-only pattern: HTML is static renderer, all state lives in board.json, polling every 2s detects changes
+
+## OpenViking Integration
+
+PulseOS integrates with [OpenViking](https://github.com/volcengine/openviking) — an agent-native context database.
+
+### Architecture
+
+```
+viking-bridge.py    – Python bridge server (port 1934), proxied via server.js
+data/viking/        – Viking filesystem storage (resources, memories, agent data)
+~/.openviking/ov.conf – Viking configuration
+```
+
+### How it works
+
+1. `server.js` auto-starts `viking-bridge.py` on startup (port 1934)
+2. All `/api/viking/*` requests are proxied from server.js → Viking bridge
+3. The Viking app (`apps/viking/`) provides a UI for browsing/searching Viking data
+4. PulseOS app data can be imported into Viking as resources
+5. Viking uses a `viking://` URI scheme with three scopes: resources, user, agent
+6. Each resource has three layers: L0 (abstract ~100 tokens), L1 (overview ~1-2k tokens), L2 (full content)
+
+### Key Endpoints (proxied through server.js)
+
+- `GET /api/viking/status` — Viking health check
+- `GET /api/viking/ls?uri=viking://resources/` — List directory contents
+- `GET /api/viking/read?uri=...` — Read full content (L2)
+- `GET /api/viking/abstract?uri=...` — Get L0 abstract
+- `GET /api/viking/overview?uri=...` — Get L1 overview
+- `POST /api/viking/search` — Semantic search `{ query, target_uri, limit }`
+- `POST /api/viking/import-app` — Import PulseOS app data `{ appId }`
+- `POST /api/viking/import-all-apps` — Import all apps at once
+- `GET /api/viking/tree` — Full filesystem tree
+
+### Context View Widget
+
+The `widgets/context-view.js` widget provides universal reactive UI for any JSON data:
+- Auto-detects data structure → table/cards/form layout
+- Bidirectional sync: user edits → PUT → SSE; agent writes → SSE → auto-reload
+- Optional `schema.json` for UI hints (field types, badge colors, layout)
+- Usage: `ContextView.init({ el, appId, dataFile, schema, readOnly })`

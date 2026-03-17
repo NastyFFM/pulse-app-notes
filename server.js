@@ -478,6 +478,22 @@ ${htmlContent}`;
   }
 }, 5000); // 5s interval — fast offline detection for chat messages
 
+// --- Viking auto-sync: import app data into Viking after changes ---
+const vikingImportTimers = new Map();
+function vikingImportApp(appId) {
+  if (!appId) return;
+  // Debounce: wait 2s after last change before importing (avoids rapid successive imports)
+  if (vikingImportTimers.has(appId)) clearTimeout(vikingImportTimers.get(appId));
+  vikingImportTimers.set(appId, setTimeout(() => {
+    vikingImportTimers.delete(appId);
+    const req = http.request({ hostname: 'localhost', port: 1934, path: '/api/viking/import-app', method: 'POST', headers: { 'Content-Type': 'application/json' } }, () => {});
+    req.on('error', () => {}); // Ignore if Viking not running
+    req.write(JSON.stringify({ appId }));
+    req.end();
+    console.log(`[viking] Auto-sync: importing ${appId}`);
+  }, 2000));
+}
+
 // --- SSE ---
 const sseClients = new Map();
 const debounceTimers = new Map();
@@ -543,6 +559,17 @@ const server = http.createServer((req, res) => {
   if (req.method === 'GET' && url === '/theme.css') {
     const css = path.join(ROOT, 'widgets', 'liveos-theme.css');
     if (fs.existsSync(css)) { res.writeHead(200, { 'Content-Type': 'text/css', 'Cache-Control': 'no-cache' }); return res.end(fs.readFileSync(css)); }
+    res.writeHead(404); return res.end('Not found');
+  }
+  // Serve widget assets (JS/CSS)
+  const widgetAssetMatch = url.match(/^\/widgets\/([a-z0-9_-]+\.(js|css))$/);
+  if (req.method === 'GET' && widgetAssetMatch) {
+    const assetFile = path.join(ROOT, 'widgets', widgetAssetMatch[1]);
+    const types = { js: 'application/javascript', css: 'text/css' };
+    if (fs.existsSync(assetFile)) {
+      res.writeHead(200, { 'Content-Type': types[widgetAssetMatch[2]], 'Cache-Control': 'no-cache' });
+      return res.end(fs.readFileSync(assetFile));
+    }
     res.writeHead(404); return res.end('Not found');
   }
 
@@ -892,6 +919,7 @@ const server = http.createServer((req, res) => {
         // Broadcast to app scope so iframe reloads
         if (appId) {
           broadcast(appId, { type: 'change', file: 'index.html', time: Date.now() });
+          vikingImportApp(appId);
         }
         console.log(`[modify-done] ${requestId} status=${status || 'done'} summary=${(summary || '').slice(0, 80)}`);
         jsonRes(res, { ok: true });
@@ -1203,6 +1231,384 @@ window.__CONFIG = ${config};
     return res.end(html);
   }
 
+  // --- Agent Context Creator ---
+  // Creates a full agent context: app + data + schema + viking context + skill
+  if (url === '/api/agent-context' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const spec = JSON.parse(b);
+        const agentId = spec.id || spec.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const agentName = spec.name || agentId;
+        const description = spec.description || `${agentName} Agent`;
+        const icon = spec.icon || '🤖';
+        const color = spec.color || '#0ea5e9';
+        const fields = spec.fields || {}; // { fieldName: { type, label, ... } }
+        const initialData = spec.data || {};
+        const instructions = spec.instructions || '';
+
+        const appDir = path.join(ROOT, 'apps', agentId);
+        const dataDir = path.join(appDir, 'data');
+
+        // 1. Create app directory + data dir
+        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+
+        // 2. Create app.json
+        fs.writeFileSync(path.join(appDir, 'app.json'), JSON.stringify({
+          name: agentName,
+          icon: icon,
+          color: color,
+          description: description,
+          agentManaged: true
+        }, null, 2));
+
+        // 3. Create schema.json from fields spec
+        const schema = { _title: agentName, _icon: icon, _layout: 'auto' };
+        if (fields && Object.keys(fields).length > 0) {
+          Object.entries(fields).forEach(([key, fieldSpec]) => {
+            schema[key] = typeof fieldSpec === 'string' ? { type: fieldSpec } : fieldSpec;
+          });
+          // Detect list field
+          if (initialData) {
+            for (const [key, val] of Object.entries(initialData)) {
+              if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object') {
+                schema._listField = key;
+                schema._layout = 'table';
+                break;
+              }
+            }
+          }
+        }
+        fs.writeFileSync(path.join(dataDir, 'schema.json'), JSON.stringify(schema, null, 2));
+
+        // 4. Create initial data file (context.json)
+        const contextData = Object.keys(initialData).length > 0 ? initialData : {
+          title: agentName,
+          status: 'active',
+          lastUpdate: new Date().toISOString()
+        };
+        fs.writeFileSync(path.join(dataDir, 'context.json'), JSON.stringify(contextData, null, 2));
+
+        // 5. Create index.html using Context View widget
+        const indexHtml = `<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${agentName}</title>
+  <link rel="stylesheet" href="/widgets/context-view.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; background: #0a0e17; }
+  </style>
+</head>
+<body>
+  <div id="context-root"></div>
+  <script src="/widgets/context-view.js"></script>
+  <script>
+    ContextView.init({
+      el: '#context-root',
+      appId: '${agentId}',
+      dataFile: 'context'
+    });
+  </script>
+</body>
+</html>`;
+        fs.writeFileSync(path.join(appDir, 'index.html'), indexHtml);
+
+        // 6. Create agent skill file
+        const skillDir = path.join(ROOT, '.claude', 'skills', agentId);
+        if (!fs.existsSync(skillDir)) fs.mkdirSync(skillDir, { recursive: true });
+        const skillMd = `---
+name: ${agentId}
+description: ${description} - manages ${agentId} data and responds to user queries
+model: sonnet
+tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Glob
+  - Grep
+---
+
+# ${agentName} Agent
+
+Du bist der ${agentName}-Agent fuer PulseOS (localhost:3000).
+Dein Datenverzeichnis: apps/${agentId}/data/
+
+## Deine Aufgaben
+${instructions || `- Verwalte die ${agentName}-Daten in apps/${agentId}/data/context.json
+- Beantworte Fragen zum Thema ${agentName}
+- Aktualisiere Daten wenn der User es wuenscht`}
+
+## Daten lesen/schreiben
+
+Lesen:
+\`\`\`bash
+curl -s http://localhost:3000/app/${agentId}/api/context
+\`\`\`
+
+Schreiben (triggert automatisch SSE → UI aktualisiert sich):
+\`\`\`bash
+curl -s -X PUT http://localhost:3000/app/${agentId}/api/context \\
+  -H "Content-Type: application/json" \\
+  -d '<neues JSON>'
+\`\`\`
+
+## Viking Context
+Dein Viking-Kontext: viking://agent/${agentId}/
+Nutze Viking fuer Langzeit-Erinnerungen und Wissensaufbau.
+
+## Regeln
+- Antworte auf Deutsch
+- Halte Daten konsistent — die UI zeigt alles live an
+- Nach Aenderungen immer die API nutzen (nicht direkt Dateien schreiben), damit SSE funktioniert
+`;
+        fs.writeFileSync(path.join(skillDir, 'SKILL.md'), skillMd);
+
+        // 7. Register in apps.json
+        try {
+          const appsFile = path.join(ROOT, 'data', 'apps.json');
+          const appsData = JSON.parse(safeReadJSON(appsFile, { meta: {}, apps: [] }));
+          if (!appsData.apps.find(a => a.id === agentId)) {
+            appsData.apps.push({
+              id: agentId,
+              name: agentName,
+              icon: icon,
+              color: color,
+              description: description,
+              installed: true,
+              position: appsData.apps.length + 1
+            });
+            fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+          }
+        } catch (e) {
+          console.error('[agent-context] apps.json error:', e.message);
+        }
+
+        // 8. Register agent in agents.json
+        updateAgent('agent-' + agentId, {
+          type: 'context',
+          model: 'sonnet',
+          status: 'idle',
+          contextApp: agentId,
+          lastActivity: new Date().toISOString()
+        });
+
+        // 9. Try to register in Viking (async, don't wait)
+        const vikingReq = http.request({
+          hostname: 'localhost', port: 1934,
+          path: '/api/viking/import-app',
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 5000
+        });
+        vikingReq.on('error', () => {}); // Ignore if Viking not running
+        vikingReq.write(JSON.stringify({ appId: agentId }));
+        vikingReq.end();
+
+        broadcast('dashboard', { type: 'change', file: 'apps.json', time: Date.now() });
+
+        console.log(`[agent-context] Created: ${agentId} (${agentName} ${icon})`);
+        jsonRes(res, {
+          ok: true,
+          agentId: agentId,
+          appUrl: `/app/${agentId}/`,
+          paths: {
+            app: `apps/${agentId}/`,
+            data: `apps/${agentId}/data/context.json`,
+            schema: `apps/${agentId}/data/schema.json`,
+            skill: `.claude/skills/${agentId}/SKILL.md`,
+            viking: `viking://agent/${agentId}/`
+          }
+        });
+      } catch (e) {
+        console.error('[agent-context] Error:', e);
+        jsonRes(res, { ok: false, error: e.message });
+      }
+    });
+  }
+
+  // List all agent contexts
+  if (url === '/api/agent-contexts' && req.method === 'GET') {
+    try {
+      const appsFile = path.join(ROOT, 'data', 'apps.json');
+      const appsData = JSON.parse(safeReadJSON(appsFile, { meta: {}, apps: [] }));
+      const agentsData = readAgents();
+
+      const contexts = appsData.apps.map(app => {
+        const appJsonPath = path.join(ROOT, 'apps', app.id, 'app.json');
+        let appMeta = {};
+        try { appMeta = JSON.parse(fs.readFileSync(appJsonPath, 'utf8')); } catch {}
+        const agent = agentsData.agents.find(a => a.id === 'agent-' + app.id || a.contextApp === app.id);
+        return {
+          id: app.id,
+          name: app.name,
+          icon: app.icon,
+          description: app.description,
+          agentManaged: appMeta.agentManaged || false,
+          hasData: fs.existsSync(path.join(ROOT, 'apps', app.id, 'data')),
+          hasSkill: fs.existsSync(path.join(ROOT, '.claude', 'skills', app.id, 'SKILL.md')),
+          hasSchema: fs.existsSync(path.join(ROOT, 'apps', app.id, 'data', 'schema.json')),
+          agentStatus: agent ? agent.status : null,
+          appUrl: `/app/${app.id}/`
+        };
+      });
+      return jsonRes(res, { ok: true, contexts });
+    } catch (e) {
+      return jsonRes(res, { ok: false, error: e.message });
+    }
+  }
+
+  // Upgrade existing app to agent context (add schema + skill + viking)
+  if (url === '/api/agent-context/upgrade' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { appId, fields, instructions } = JSON.parse(b);
+        const appDir = path.join(ROOT, 'apps', appId);
+        if (!fs.existsSync(appDir)) return jsonRes(res, { ok: false, error: 'App not found' });
+
+        // Read app.json for metadata
+        let appMeta = {};
+        try { appMeta = JSON.parse(fs.readFileSync(path.join(appDir, 'app.json'), 'utf8')); } catch {}
+        const agentName = appMeta.name || appId;
+        const icon = appMeta.icon || '🤖';
+
+        // Create schema if not exists
+        const schemaPath = path.join(appDir, 'data', 'schema.json');
+        if (!fs.existsSync(schemaPath) && fields) {
+          const schema = { _title: agentName, _icon: icon, _layout: 'auto', ...fields };
+          fs.writeFileSync(schemaPath, JSON.stringify(schema, null, 2));
+        }
+
+        // Create skill if not exists
+        const skillDir = path.join(ROOT, '.claude', 'skills', appId);
+        if (!fs.existsSync(path.join(skillDir, 'SKILL.md'))) {
+          if (!fs.existsSync(skillDir)) fs.mkdirSync(skillDir, { recursive: true });
+          // Find data files
+          const dataFiles = fs.existsSync(path.join(appDir, 'data'))
+            ? fs.readdirSync(path.join(appDir, 'data')).filter(f => f.endsWith('.json') && !f.startsWith('_'))
+            : [];
+          const primaryData = dataFiles[0] || 'context.json';
+          const dataFileName = primaryData.replace('.json', '');
+
+          const skillMd = `---
+name: ${appId}
+description: ${appMeta.description || agentName + ' Agent'}
+model: sonnet
+tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Glob
+  - Grep
+---
+
+# ${agentName} Agent
+
+Du bist der ${agentName}-Agent fuer PulseOS.
+Dein Datenverzeichnis: apps/${appId}/data/
+
+${instructions || `## Aufgaben
+- Verwalte die ${agentName}-Daten
+- Beantworte Fragen zum Thema ${agentName}`}
+
+## Daten
+${dataFiles.map(f => `- apps/${appId}/data/${f}`).join('\n')}
+
+## API
+Lesen: \`GET /app/${appId}/api/${dataFileName}\`
+Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
+`;
+          fs.writeFileSync(path.join(skillDir, 'SKILL.md'), skillMd);
+        }
+
+        // Mark as agent-managed
+        appMeta.agentManaged = true;
+        fs.writeFileSync(path.join(appDir, 'app.json'), JSON.stringify(appMeta, null, 2));
+
+        // Register agent
+        updateAgent('agent-' + appId, {
+          type: 'context',
+          model: 'sonnet',
+          status: 'idle',
+          contextApp: appId,
+          lastActivity: new Date().toISOString()
+        });
+
+        // Import to Viking
+        const vikingReq = http.request({
+          hostname: 'localhost', port: 1934,
+          path: '/api/viking/import-app',
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 5000
+        });
+        vikingReq.on('error', () => {});
+        vikingReq.write(JSON.stringify({ appId }));
+        vikingReq.end();
+
+        console.log(`[agent-context] Upgraded: ${appId}`);
+        jsonRes(res, { ok: true, appId, upgraded: true });
+      } catch (e) {
+        jsonRes(res, { ok: false, error: e.message });
+      }
+    });
+  }
+
+  // --- Viking Bridge Proxy ---
+  // Proxies /api/viking/* requests to the Viking bridge server on port 1934
+  const VIKING_BRIDGE_PORT = 1934;
+  if (url.startsWith('/api/viking/')) {
+    const vikingPath = url.replace('/api/viking', '/api/viking');
+    const qsParsedV = new URL(req.url, 'http://localhost');
+
+    if (req.method === 'GET') {
+      const vikingUrl = `http://localhost:${VIKING_BRIDGE_PORT}${vikingPath}${qsParsedV.search || ''}`;
+      http.get(vikingUrl, { timeout: 15000 }, proxyRes => {
+        let body = '';
+        proxyRes.on('data', c => body += c);
+        proxyRes.on('end', () => {
+          res.writeHead(proxyRes.statusCode || 200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(body);
+        });
+      }).on('error', e => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'Viking Bridge nicht erreichbar. Starte: python3 viking-bridge.py', detail: e.message }));
+      }).on('timeout', function() { this.destroy(); });
+      return;
+    }
+
+    if (req.method === 'POST') {
+      return readBody(req, b => {
+        const options = {
+          hostname: 'localhost',
+          port: VIKING_BRIDGE_PORT,
+          path: vikingPath + (qsParsedV.search || ''),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(b) },
+          timeout: 30000
+        };
+        const proxyReq = http.request(options, proxyRes => {
+          let body = '';
+          proxyRes.on('data', c => body += c);
+          proxyRes.on('end', () => {
+            res.writeHead(proxyRes.statusCode || 200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+            res.end(body);
+          });
+        });
+        proxyReq.on('error', e => {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: 'Viking Bridge nicht erreichbar. Starte: python3 viking-bridge.py', detail: e.message }));
+        });
+        proxyReq.on('timeout', () => { proxyReq.destroy(); });
+        proxyReq.write(b);
+        proxyReq.end();
+      });
+    }
+  }
+
   // Widget types registry
   if (url === '/api/widget-types' && req.method === 'GET') {
     return jsonRes(res, safeReadJSON(path.join(ROOT, 'data', 'widget-types.json'), { types: [] }));
@@ -1302,6 +1708,7 @@ window.__CONFIG = ${config};
       if (req.method === 'PUT') return readBody(req, b => {
         fs.writeFileSync(file, JSON.stringify(JSON.parse(b), null, 2));
         broadcast(appId, { type: 'change', file: apiMatch[1] + '.json', time: Date.now() });
+        vikingImportApp(appId);
         jsonRes(res, { ok: true });
       });
     }
@@ -1418,6 +1825,7 @@ window.__CONFIG = ${config};
         if (!appId) return jsonRes(res, { ok: false, error: 'appId required' });
         const filename = file || 'data.json';
         broadcast(appId, { type: 'change', file: filename, time: Date.now() });
+        vikingImportApp(appId);
         console.log(`[notify] Broadcast change for ${appId}/${filename}`);
         jsonRes(res, { ok: true });
       } catch(e) {
@@ -1805,5 +2213,33 @@ server.listen(PORT, () => {
     worker.stderr.on('data', c => process.stderr.write('[chat-worker] ' + c));
     worker.on('error', e => console.error('[chat-worker] failed to start:', e.message));
     console.log('[chat-worker] Started');
+  }
+
+  // Auto-start Viking bridge if viking-bridge.py exists
+  const vikingBridgePath = path.join(ROOT, 'viking-bridge.py');
+  if (fs.existsSync(vikingBridgePath)) {
+    // Check if already running on port 1934
+    const checkReq = http.get('http://localhost:1934/api/viking/status', { timeout: 2000 }, (r) => {
+      let body = '';
+      r.on('data', c => body += c);
+      r.on('end', () => {
+        try {
+          const d = JSON.parse(body);
+          if (d.ok) { console.log(`[viking] Bridge already running (v${d.version})`); return; }
+        } catch {}
+        startVikingBridge();
+      });
+    });
+    checkReq.on('error', () => startVikingBridge());
+    checkReq.on('timeout', () => { checkReq.destroy(); startVikingBridge(); });
+
+    function startVikingBridge() {
+      const vb = spawn('python3', [vikingBridgePath], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'], detached: false });
+      vb.stdout.on('data', c => process.stdout.write('[viking] ' + c));
+      vb.stderr.on('data', c => process.stderr.write('[viking] ' + c));
+      vb.on('error', e => console.error('[viking] failed to start:', e.message));
+      vb.on('close', code => console.log(`[viking] Bridge exited (code=${code})`));
+      console.log('[viking] Bridge starting on port 1934');
+    }
   }
 });

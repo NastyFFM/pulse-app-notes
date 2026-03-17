@@ -1,0 +1,7 @@
+{
+  "name": "Notes Agent",
+  "icon": "📝",
+  "color": "#f59e0b",
+  "description": "Verwaltet Notizen, Ideen und Wissenssammlungen",
+  "agentManaged": true
+}

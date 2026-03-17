@@ -1,0 +1,10 @@
+{
+  "bridgePort": 1934,
+  "vikingPort": 1933,
+  "status": "stopped",
+  "lastSync": null,
+  "importedApps": [],
+  "totalResources": 0,
+  "totalMemories": 0,
+  "totalAgentData": 0
+}

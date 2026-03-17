@@ -1,0 +1,335 @@
+/* PulseOS Context View — Universal Reactive Data UI */
+
+.cv-root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0a0e17;
+  color: #e2e8f0;
+  min-height: 100%;
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ── Header ── */
+.cv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #1e293b;
+}
+.cv-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cv-meta {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* ── Sync Dot ── */
+.cv-sync-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+.cv-sync-dot.cv-saving {
+  background: #0ea5e9;
+  box-shadow: 0 0 8px #0ea5e9;
+  animation: cv-pulse 0.6s ease;
+}
+@keyframes cv-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.8); }
+  100% { transform: scale(1); }
+}
+
+/* ── Summary Bar ── */
+.cv-summary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.cv-summary-item {
+  background: #111827;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.cv-summary-label {
+  color: #64748b;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.cv-summary-value {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ── Table View ── */
+.cv-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+}
+.cv-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.cv-table th {
+  background: #111827;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #64748b;
+  border-bottom: 1px solid #1e293b;
+  white-space: nowrap;
+}
+.cv-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid #1e293b;
+  vertical-align: middle;
+}
+.cv-table tr:hover {
+  background: rgba(14, 165, 233, 0.04);
+}
+.cv-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Cards View ── */
+.cv-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+.cv-card {
+  background: #111827;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 14px;
+}
+.cv-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  gap: 8px;
+}
+.cv-card-label {
+  color: #64748b;
+  font-size: 11px;
+  flex-shrink: 0;
+  min-width: 70px;
+}
+.cv-card-value {
+  flex: 1;
+  text-align: right;
+}
+.cv-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #1e293b;
+}
+
+/* ── Form View ── */
+.cv-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cv-form-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #111827;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+}
+.cv-form-label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+.cv-form-value {
+  flex: 1;
+}
+.cv-form-section {
+  padding: 10px 12px;
+  background: #111827;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+}
+.cv-form-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+.cv-form-preview {
+  font-size: 12px;
+  color: #475569;
+  font-style: italic;
+}
+
+/* ── Input Fields ── */
+.cv-input, .cv-select, .cv-textarea {
+  width: 100%;
+  padding: 5px 8px;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.cv-input:focus, .cv-select:focus, .cv-textarea:focus {
+  border-color: #0ea5e9;
+}
+.cv-input[readonly], .cv-select:disabled, .cv-textarea[readonly] {
+  opacity: 0.6;
+  cursor: default;
+}
+.cv-textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+.cv-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #0ea5e9;
+  cursor: pointer;
+}
+
+/* ── Badge ── */
+.cv-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* ── Color Picker ── */
+.cv-color-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cv-color {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #1e293b;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+}
+.cv-color-label {
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* ── Tags ── */
+.cv-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.cv-tag {
+  background: #1e293b;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+.cv-tag:hover {
+  background: #334155;
+}
+
+/* ── Buttons ── */
+.cv-btn {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.cv-btn-add {
+  background: #1e293b;
+  color: #94a3b8;
+  width: 100%;
+}
+.cv-btn-add:hover {
+  background: #334155;
+  color: #e2e8f0;
+}
+.cv-btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #475569;
+  font-family: inherit;
+}
+.cv-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+.cv-add-bar {
+  margin-top: 8px;
+}
+
+/* ── Empty State ── */
+.cv-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #475569;
+  font-size: 14px;
+}
+
+/* ── Error ── */
+.cv-error {
+  text-align: center;
+  padding: 40px 20px;
+  color: #ef4444;
+  font-size: 14px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 500px) {
+  .cv-form-row { flex-direction: column; align-items: stretch; gap: 4px; }
+  .cv-form-label { min-width: 0; }
+  .cv-cards { grid-template-columns: 1fr; }
+}

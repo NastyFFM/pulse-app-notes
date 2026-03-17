@@ -1,0 +1,7 @@
+{
+  "name": "Budget Agent",
+  "icon": "💰",
+  "color": "#22c55e",
+  "description": "Trackt Einnahmen, Ausgaben und Budget-Ziele",
+  "agentManaged": true
+}

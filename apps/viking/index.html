@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viking Context DB</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; background: #0a0e17; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; }
+
+    .app-root { display: flex; height: 100%; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: 220px; background: #111827; border-right: 1px solid #1e293b; display: flex; flex-direction: column; flex-shrink: 0; }
+    .sidebar-header { padding: 14px 16px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 8px; }
+    .sidebar-header h1 { font-size: 15px; font-weight: 700; }
+    .sidebar-status { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+    .sidebar-status.online { background: rgba(34,197,94,.15); color: #22c55e; }
+    .sidebar-status.offline { background: rgba(239,68,68,.15); color: #ef4444; }
+
+    .scope-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .scope-item { padding: 8px 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background .15s; }
+    .scope-item:hover { background: rgba(14,165,233,.06); }
+    .scope-item.active { background: rgba(14,165,233,.12); border-right: 2px solid #0ea5e9; }
+    .scope-icon { font-size: 16px; width: 24px; text-align: center; }
+    .scope-label { font-size: 12px; font-weight: 600; color: #94a3b8; }
+    .scope-count { margin-left: auto; font-size: 10px; color: #475569; background: #1e293b; padding: 1px 6px; border-radius: 8px; }
+
+    .scope-divider { height: 1px; background: #1e293b; margin: 8px 16px; }
+
+    .sidebar-actions { padding: 10px 12px; border-top: 1px solid #1e293b; display: flex; flex-direction: column; gap: 6px; }
+    .sidebar-btn { padding: 7px 12px; background: #1e293b; border: none; border-radius: 6px; color: #94a3b8; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; text-align: left; display: flex; align-items: center; gap: 6px; transition: all .15s; }
+    .sidebar-btn:hover { background: #334155; color: #e2e8f0; }
+    .sidebar-btn.primary { background: #0ea5e9; color: #fff; }
+    .sidebar-btn.primary:hover { background: #0284c7; }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .toolbar { padding: 10px 16px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 10px; background: #0d1117; }
+    .toolbar-title { font-size: 14px; font-weight: 600; color: #f1f5f9; }
+    .toolbar-breadcrumb { font-size: 11px; color: #64748b; }
+    .toolbar-spacer { flex: 1; }
+    .toolbar-search { padding: 5px 10px; background: #111827; border: 1px solid #1e293b; border-radius: 6px; color: #e2e8f0; font-size: 12px; outline: none; width: 200px; font-family: inherit; }
+    .toolbar-search:focus { border-color: #0ea5e9; }
+    .toolbar-search::placeholder { color: #475569; }
+
+    /* ── Content ── */
+    .content { flex: 1; overflow-y: auto; padding: 16px; }
+
+    /* ── Items Grid ── */
+    .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+    .item-card { background: #111827; border: 1px solid #1e293b; border-radius: 8px; padding: 14px; cursor: pointer; transition: all .15s; }
+    .item-card:hover { border-color: #334155; transform: translateY(-1px); }
+    .item-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .item-card-icon { font-size: 20px; }
+    .item-card-name { font-size: 13px; font-weight: 600; color: #f1f5f9; flex: 1; }
+    .item-card-type { font-size: 10px; color: #64748b; background: #1e293b; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; }
+    .item-card-uri { font-size: 11px; color: #475569; font-family: 'SF Mono', Monaco, monospace; margin-bottom: 6px; word-break: break-all; }
+    .item-card-abstract { font-size: 12px; color: #64748b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* ── Detail Panel ── */
+    .detail-panel { background: #111827; border: 1px solid #1e293b; border-radius: 8px; padding: 20px; }
+    .detail-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #1e293b; }
+    .detail-back { background: none; border: none; color: #64748b; cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 4px; }
+    .detail-back:hover { background: #1e293b; color: #e2e8f0; }
+    .detail-title { font-size: 16px; font-weight: 700; color: #f1f5f9; }
+    .detail-uri { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: #0ea5e9; }
+
+    .detail-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+    .detail-tab { padding: 5px 12px; background: #1e293b; border: none; border-radius: 6px; color: #64748b; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .detail-tab.active { background: #0ea5e9; color: #fff; }
+
+    .detail-content { font-size: 13px; line-height: 1.6; white-space: pre-wrap; color: #94a3b8; background: #0a0e17; border: 1px solid #1e293b; border-radius: 6px; padding: 14px; max-height: 400px; overflow-y: auto; }
+
+    /* ── Search Results ── */
+    .search-result { background: #111827; border: 1px solid #1e293b; border-radius: 8px; padding: 14px; margin-bottom: 8px; }
+    .search-score { font-size: 11px; color: #f59e0b; font-weight: 700; }
+    .search-uri { font-size: 11px; color: #0ea5e9; font-family: 'SF Mono', Monaco, monospace; }
+
+    /* ── Import Panel ── */
+    .import-panel { background: #111827; border: 1px solid #1e293b; border-radius: 8px; padding: 20px; }
+    .import-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 12px; }
+    .import-app { padding: 10px 12px; background: #0a0e17; border: 1px solid #1e293b; border-radius: 6px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all .15s; }
+    .import-app:hover { border-color: #334155; }
+    .import-app.imported { border-color: #22c55e; opacity: 0.6; }
+    .import-app-icon { font-size: 18px; }
+    .import-app-name { font-size: 12px; font-weight: 600; color: #94a3b8; }
+
+    /* ── Stats Row ── */
+    .stats-row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .stat-card { flex: 1; background: #111827; border: 1px solid #1e293b; border-radius: 8px; padding: 14px; text-align: center; }
+    .stat-value { font-size: 24px; font-weight: 800; color: #f1f5f9; }
+    .stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .3px; margin-top: 2px; }
+
+    /* ── Loading / Error / Empty ── */
+    .loading { text-align: center; padding: 40px; color: #475569; }
+    .loading-spinner { display: inline-block; width: 24px; height: 24px; border: 2px solid #1e293b; border-top-color: #0ea5e9; border-radius: 50%; animation: spin .6s linear infinite; margin-bottom: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-msg { text-align: center; padding: 20px; color: #ef4444; font-size: 13px; }
+    .empty-msg { text-align: center; padding: 40px; color: #475569; }
+    .empty-msg .empty-icon { font-size: 40px; margin-bottom: 10px; }
+
+    /* ── Toast ── */
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px 16px; color: #e2e8f0; font-size: 12px; font-weight: 600; z-index: 999; opacity: 0; transform: translateY(10px); transition: all .3s; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { border-color: #22c55e; }
+    .toast.error { border-color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <span style="font-size:20px">🏴</span>
+        <h1>Viking</h1>
+        <span class="sidebar-status offline" id="status-badge">offline</span>
+      </div>
+
+      <div class="scope-list" id="scope-list">
+        <div class="scope-item active" data-scope="dashboard" onclick="navigate('dashboard')">
+          <span class="scope-icon">📊</span>
+          <span class="scope-label">Dashboard</span>
+        </div>
+        <div class="scope-divider"></div>
+        <div class="scope-item" data-scope="resources" onclick="navigate('resources')">
+          <span class="scope-icon">📦</span>
+          <span class="scope-label">Resources</span>
+          <span class="scope-count" id="count-resources">—</span>
+        </div>
+        <div class="scope-item" data-scope="user" onclick="navigate('user')">
+          <span class="scope-icon">🧠</span>
+          <span class="scope-label">Memories</span>
+          <span class="scope-count" id="count-user">—</span>
+        </div>
+        <div class="scope-item" data-scope="agent" onclick="navigate('agent')">
+          <span class="scope-icon">🤖</span>
+          <span class="scope-label">Agent Data</span>
+          <span class="scope-count" id="count-agent">—</span>
+        </div>
+        <div class="scope-divider"></div>
+        <div class="scope-item" data-scope="search" onclick="navigate('search')">
+          <span class="scope-icon">🔍</span>
+          <span class="scope-label">Search</span>
+        </div>
+        <div class="scope-item" data-scope="import" onclick="navigate('import')">
+          <span class="scope-icon">📥</span>
+          <span class="scope-label">Import Apps</span>
+        </div>
+      </div>
+
+      <div class="sidebar-actions">
+        <button class="sidebar-btn" onclick="refreshAll()">🔄 Refresh</button>
+        <button class="sidebar-btn primary" onclick="navigate('search')">🔍 Suche</button>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+      <div class="toolbar">
+        <span class="toolbar-title" id="toolbar-title">Dashboard</span>
+        <span class="toolbar-breadcrumb" id="toolbar-breadcrumb"></span>
+        <span class="toolbar-spacer"></span>
+        <input type="text" class="toolbar-search" id="search-input" placeholder="Suchen… (Enter)" onkeydown="if(event.key==='Enter'){doSearch(this.value);}">
+      </div>
+      <div class="content" id="content">
+        <div class="loading"><div class="loading-spinner"></div><br>Verbinde mit Viking…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const BRIDGE = '/api/viking'; // Proxied through PulseOS server.js
+    let currentScope = 'dashboard';
+    let currentDetail = null;
+    let statusData = null;
+    let treeData = {};
+
+    // ── Navigation ──
+    function navigate(scope, detail) {
+      currentScope = scope;
+      currentDetail = detail || null;
+
+      // Update sidebar active
+      document.querySelectorAll('.scope-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.scope === scope);
+      });
+
+      const title = document.getElementById('toolbar-title');
+      const breadcrumb = document.getElementById('toolbar-breadcrumb');
+      const titles = { dashboard: 'Dashboard', resources: 'Resources', user: 'Memories', agent: 'Agent Data', search: 'Semantische Suche', import: 'App Import' };
+      title.textContent = titles[scope] || scope;
+      breadcrumb.textContent = detail ? `viking://${scope}/${detail}` : '';
+
+      renderContent();
+    }
+
+    // ── Fetch Helpers ──
+    async function vikingGet(endpoint, params = {}) {
+      const qs = new URLSearchParams(params).toString();
+      const url = `${BRIDGE}${endpoint}${qs ? '?' + qs : ''}`;
+      const r = await fetch(url);
+      return r.json();
+    }
+
+    async function vikingPost(endpoint, body = {}) {
+      const r = await fetch(`${BRIDGE}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      return r.json();
+    }
+
+    // ── Data Loading ──
+    async function loadStatus() {
+      try {
+        statusData = await vikingGet('/status');
+        const badge = document.getElementById('status-badge');
+        if (statusData.ok) {
+          badge.textContent = `v${statusData.version}`;
+          badge.className = 'sidebar-status online';
+          // Update counts
+          if (statusData.scopes) {
+            document.getElementById('count-resources').textContent = statusData.scopes.resources || 0;
+            document.getElementById('count-user').textContent = statusData.scopes.user || 0;
+            document.getElementById('count-agent').textContent = statusData.scopes.agent || 0;
+          }
+        } else {
+          badge.textContent = 'offline';
+          badge.className = 'sidebar-status offline';
+        }
+      } catch (e) {
+        document.getElementById('status-badge').textContent = 'offline';
+        document.getElementById('status-badge').className = 'sidebar-status offline';
+        statusData = { ok: false, error: e.message };
+      }
+    }
+
+    async function loadTree() {
+      try {
+        const result = await vikingGet('/tree');
+        if (result.ok) treeData = result.tree;
+      } catch {}
+    }
+
+    async function loadScope(scope) {
+      const uriMap = { resources: 'viking://resources/', user: 'viking://user/', agent: 'viking://agent/' };
+      return vikingGet('/ls', { uri: uriMap[scope] || `viking://${scope}/` });
+    }
+
+    async function refreshAll() {
+      await Promise.all([loadStatus(), loadTree()]);
+      renderContent();
+      showToast('Aktualisiert', 'success');
+    }
+
+    // ── Rendering ──
+    function renderContent() {
+      const content = document.getElementById('content');
+
+      if (currentDetail) {
+        renderDetail(content);
+        return;
+      }
+
+      switch (currentScope) {
+        case 'dashboard': renderDashboard(content); break;
+        case 'resources':
+        case 'user':
+        case 'agent':
+          renderScopeItems(content, currentScope); break;
+        case 'search': renderSearchView(content); break;
+        case 'import': renderImportView(content); break;
+      }
+    }
+
+    async function renderDashboard(el) {
+      if (!statusData?.ok) {
+        el.innerHTML = `
+          <div class="error-msg">
+            <p style="font-size:40px;margin-bottom:12px">🏴</p>
+            <p style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:8px">Viking Bridge nicht erreichbar</p>
+            <p>Starte den Bridge Server:</p>
+            <p style="font-family:monospace;background:#111827;padding:8px 12px;border-radius:6px;margin-top:8px;color:#0ea5e9">python3 viking-bridge.py</p>
+          </div>`;
+        return;
+      }
+
+      const sc = statusData.scopes || {};
+      el.innerHTML = `
+        <div class="stats-row">
+          <div class="stat-card" onclick="navigate('resources')" style="cursor:pointer">
+            <div class="stat-value">${sc.resources || 0}</div>
+            <div class="stat-label">📦 Resources</div>
+          </div>
+          <div class="stat-card" onclick="navigate('user')" style="cursor:pointer">
+            <div class="stat-value">${sc.user || 0}</div>
+            <div class="stat-label">🧠 Memories</div>
+          </div>
+          <div class="stat-card" onclick="navigate('agent')" style="cursor:pointer">
+            <div class="stat-value">${sc.agent || 0}</div>
+            <div class="stat-label">🤖 Agent Data</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="detail-panel">
+            <h3 style="font-size:13px;font-weight:700;color:#f1f5f9;margin-bottom:10px">⚡ Quick Actions</h3>
+            <button class="sidebar-btn" style="width:100%;margin-bottom:6px" onclick="navigate('import')">📥 PulseOS Apps importieren</button>
+            <button class="sidebar-btn" style="width:100%;margin-bottom:6px" onclick="navigate('search')">🔍 Semantische Suche</button>
+            <button class="sidebar-btn" style="width:100%" onclick="addResourcePrompt()">➕ Resource hinzufuegen</button>
+          </div>
+          <div class="detail-panel">
+            <h3 style="font-size:13px;font-weight:700;color:#f1f5f9;margin-bottom:10px">ℹ️ System Info</h3>
+            <div style="font-size:12px;color:#64748b;line-height:1.8">
+              <div>Version: <span style="color:#94a3b8">${statusData.version || '?'}</span></div>
+              <div>Daten: <span style="color:#94a3b8;font-family:monospace;font-size:11px">${statusData.dataPath || '?'}</span></div>
+              <div>Sprache: <span style="color:#94a3b8">Deutsch</span></div>
+              <div>Bridge Port: <span style="color:#94a3b8">1934</span></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function renderScopeItems(el, scope) {
+      el.innerHTML = '<div class="loading"><div class="loading-spinner"></div><br>Lade…</div>';
+
+      const result = await loadScope(scope);
+      if (!result.ok) {
+        el.innerHTML = `<div class="error-msg">Fehler: ${result.error}</div>`;
+        return;
+      }
+
+      if (!result.items || result.items.length === 0) {
+        const hints = {
+          resources: 'Importiere PulseOS Apps oder fuege Dateien/URLs hinzu.',
+          user: 'Memories werden automatisch aus Agent-Interaktionen extrahiert.',
+          agent: 'Agent-spezifische Daten (Skills, Cases, Patterns).'
+        };
+        el.innerHTML = `
+          <div class="empty-msg">
+            <div class="empty-icon">${scope === 'resources' ? '📦' : scope === 'user' ? '🧠' : '🤖'}</div>
+            <div style="font-size:14px;font-weight:600;color:#94a3b8;margin-bottom:4px">Noch keine Eintraege</div>
+            <div style="font-size:12px">${hints[scope] || ''}</div>
+            ${scope === 'resources' ? '<button class="sidebar-btn primary" style="margin-top:12px" onclick="navigate(\'import\')">📥 Apps importieren</button>' : ''}
+          </div>`;
+        return;
+      }
+
+      const icons = { dir: '📁', file: '📄', resource: '📦', memory: '🧠', skill: '⚡' };
+      el.innerHTML = `<div class="items-grid">
+        ${result.items.map(item => `
+          <div class="item-card" onclick="openDetail('${scope}', '${item.uri || item.name}')">
+            <div class="item-card-header">
+              <span class="item-card-icon">${icons[item.type] || '📄'}</span>
+              <span class="item-card-name">${item.name}</span>
+              <span class="item-card-type">${item.type}</span>
+            </div>
+            <div class="item-card-uri">${item.uri || ''}</div>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+
+    async function openDetail(scope, uri) {
+      currentDetail = uri;
+      document.getElementById('toolbar-breadcrumb').textContent = uri;
+      renderDetail(document.getElementById('content'));
+    }
+
+    async function renderDetail(el) {
+      el.innerHTML = '<div class="loading"><div class="loading-spinner"></div><br>Lade Details…</div>';
+
+      let activeTab = 'overview';
+      let tabs = { abstract: '', overview: '', content: '' };
+
+      // Load all levels in parallel
+      try {
+        const [absR, ovR, contentR] = await Promise.all([
+          vikingGet('/abstract', { uri: currentDetail }),
+          vikingGet('/overview', { uri: currentDetail }),
+          vikingGet('/read', { uri: currentDetail }),
+        ]);
+        tabs.abstract = absR.ok ? absR.abstract : absR.error || 'Nicht verfuegbar';
+        tabs.overview = ovR.ok ? ovR.overview : ovR.error || 'Nicht verfuegbar';
+        tabs.content = contentR.ok ? contentR.content : contentR.error || 'Nicht verfuegbar';
+      } catch (e) {
+        tabs.abstract = tabs.overview = tabs.content = 'Fehler: ' + e.message;
+      }
+
+      function renderTabs() {
+        el.innerHTML = `
+          <div class="detail-panel">
+            <div class="detail-header">
+              <button class="detail-back" onclick="currentDetail=null;renderContent()">←</button>
+              <div>
+                <div class="detail-title">${currentDetail.split('/').pop() || currentDetail}</div>
+                <div class="detail-uri">${currentDetail}</div>
+              </div>
+            </div>
+            <div class="detail-tabs">
+              <button class="detail-tab ${activeTab === 'abstract' ? 'active' : ''}" onclick="window.__setTab('abstract')">L0 Abstract</button>
+              <button class="detail-tab ${activeTab === 'overview' ? 'active' : ''}" onclick="window.__setTab('overview')">L1 Overview</button>
+              <button class="detail-tab ${activeTab === 'content' ? 'active' : ''}" onclick="window.__setTab('content')">L2 Full Content</button>
+            </div>
+            <div class="detail-content">${escHtml(tabs[activeTab])}</div>
+          </div>`;
+      }
+
+      window.__setTab = (tab) => { activeTab = tab; renderTabs(); };
+      renderTabs();
+    }
+
+    // ── Search ──
+    function renderSearchView(el) {
+      el.innerHTML = `
+        <div class="detail-panel">
+          <h3 style="font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:12px">🔍 Semantische Suche</h3>
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <input type="text" id="search-query" class="toolbar-search" style="flex:1;width:auto" placeholder="Was suchst du?" onkeydown="if(event.key==='Enter')runSearch()">
+            <select id="search-scope" style="padding:5px 8px;background:#111827;border:1px solid #1e293b;border-radius:6px;color:#e2e8f0;font-size:12px;outline:none">
+              <option value="viking://resources/">Resources</option>
+              <option value="viking://user/">Memories</option>
+              <option value="viking://agent/">Agent Data</option>
+            </select>
+            <button class="sidebar-btn primary" onclick="runSearch()">Suchen</button>
+          </div>
+          <div id="search-results"></div>
+        </div>`;
+    }
+
+    async function runSearch() {
+      const query = document.getElementById('search-query').value.trim();
+      if (!query) return;
+      const scope = document.getElementById('search-scope').value;
+      const results = document.getElementById('search-results');
+      results.innerHTML = '<div class="loading"><div class="loading-spinner"></div><br>Suche…</div>';
+
+      const r = await vikingPost('/search', { query, target_uri: scope, limit: 10 });
+      if (!r.ok || !r.results?.length) {
+        results.innerHTML = `<div class="empty-msg">Keine Ergebnisse${r.error ? ': ' + r.error : ''}</div>`;
+        return;
+      }
+
+      results.innerHTML = r.results.map(item => `
+        <div class="search-result" onclick="openDetail('search','${item.uri}')" style="cursor:pointer">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span class="search-score">${(item.score * 100).toFixed(1)}%</span>
+            <span style="font-size:12px;font-weight:600;color:#f1f5f9">${item.name || '—'}</span>
+          </div>
+          <div class="search-uri">${item.uri}</div>
+          ${item.abstract ? `<div style="font-size:12px;color:#64748b;margin-top:6px">${escHtml(item.abstract).substring(0, 200)}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function doSearch(query) {
+      navigate('search');
+      setTimeout(() => {
+        const input = document.getElementById('search-query');
+        if (input) { input.value = query; runSearch(); }
+      }, 50);
+    }
+
+    // ── Import ──
+    async function renderImportView(el) {
+      el.innerHTML = '<div class="loading"><div class="loading-spinner"></div><br>Lade Apps…</div>';
+
+      // Get list of all PulseOS apps
+      try {
+        const appsRes = await fetch('/api/apps');
+        const appsData = await appsRes.json();
+        const apps = appsData.apps || [];
+
+        // Also scan app directories via a heuristic (apps listed in dashboard)
+        const appDirs = await fetch('/api/app-list').then(r => r.json()).catch(() => []);
+
+        el.innerHTML = `
+          <div class="import-panel">
+            <h3 style="font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:4px">📥 PulseOS Apps in Viking importieren</h3>
+            <p style="font-size:12px;color:#64748b;margin-bottom:12px">Importiert App-Daten (JSON) als Viking Resources. Die Daten sind dann per semantischer Suche auffindbar.</p>
+            <button class="sidebar-btn primary" style="margin-bottom:16px" onclick="importAllApps()">🚀 Alle Apps importieren</button>
+            <div id="import-status"></div>
+          </div>`;
+      } catch (e) {
+        el.innerHTML = `<div class="error-msg">Fehler beim Laden: ${e.message}</div>`;
+      }
+    }
+
+    async function importAllApps() {
+      const status = document.getElementById('import-status');
+      status.innerHTML = '<div class="loading"><div class="loading-spinner"></div><br>Importiere alle Apps…</div>';
+
+      try {
+        const r = await vikingPost('/import-all-apps');
+        if (r.ok) {
+          const apps = r.apps || {};
+          const entries = Object.entries(apps);
+          status.innerHTML = `
+            <div style="color:#22c55e;font-weight:600;margin-bottom:10px">✅ ${entries.length} Apps verarbeitet</div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              ${entries.map(([id, result]) => `
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0a0e17;border-radius:4px">
+                  <span style="color:${result.ok ? '#22c55e' : '#ef4444'}">${result.ok ? '✅' : '❌'}</span>
+                  <span style="font-weight:600;color:#94a3b8;flex:1">${id}</span>
+                  <span style="font-size:11px;color:#475569">${result.ok ? result.files?.join(', ') || '' : result.error || ''}</span>
+                </div>
+              `).join('')}
+            </div>`;
+          await loadStatus();
+        } else {
+          status.innerHTML = `<div class="error-msg">Fehler: ${r.error}</div>`;
+        }
+      } catch (e) {
+        status.innerHTML = `<div class="error-msg">Fehler: ${e.message}</div>`;
+      }
+    }
+
+    async function addResourcePrompt() {
+      const pathOrUrl = prompt('Pfad oder URL der Resource:');
+      if (!pathOrUrl) return;
+      showToast('Importiere…');
+      const r = await vikingPost('/add-resource', { path: pathOrUrl });
+      if (r.ok) {
+        showToast('Resource hinzugefuegt!', 'success');
+        await refreshAll();
+      } else {
+        showToast('Fehler: ' + (r.error || ''), 'error');
+      }
+    }
+
+    // ── Helpers ──
+    function escHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function showToast(msg, type = '') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast show' + (type ? ' ' + type : '');
+      setTimeout(() => t.className = 'toast', 2500);
+    }
+
+    // ── Init ──
+    async function init() {
+      await Promise.all([loadStatus(), loadTree()]);
+      navigate('dashboard');
+    }
+
+    init();
+    // Poll status every 30s
+    setInterval(loadStatus, 30000);
+  </script>
+</body>
+</html>

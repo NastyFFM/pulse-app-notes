@@ -3,5 +3,6 @@
   "name": "Kalender",
   "icon": "📅",
   "color": "#10B981",
-  "description": "Termine und Deadlines verwalten"
+  "description": "Termine und Deadlines verwalten",
+  "agentManaged": true
 }
