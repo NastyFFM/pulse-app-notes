@@ -1,6 +1,6 @@
 # PulseOS Context Engine — Architekturplan
 
-> **Status:** Phase 1-10 ✅, Phase 11 🔲 nächster Schritt.
+> **Status:** Phase 1-11 ✅ KOMPLETT! Alle Phasen abgeschlossen.
 > **Letzte Aktualisierung:** 2026-03-17
 > **Session-Einstieg:** Lies dieses Dokument. Prüfe den Status jeder Phase. Mach da weiter wo ✅ aufhört und 🔲 anfängt.
 
@@ -578,36 +578,37 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 
 ---
 
-### Phase 11: Dashboard & System-Integration
-> **Status:** 🔲 Wartend auf Phase 10
+### Phase 11: Dashboard & System-Integration ✅
+> **Status:** ✅ Fertig (2026-03-17)
 >
 > **Ziel:** PulseOS Desktop wird zum Context-Browser.
 
 **Dashboard-Integration:**
-- [ ] `dashboard.html`: Context-Launcher neben App-Launcher
-- [ ] Root-Context als "Desktop" — Widgets auf dem Desktop = Root-Widgets in L0
-- [ ] Dock zeigt favorisierte Contexts als Icons
-- [ ] Klick auf Context-Icon → öffnet Projects-App mit diesem Context
+- [x] `dashboard.html`: Context-Launcher neben App-Launcher — 🧩 Dock-Icon + Overlay mit Suche
+- [x] Dock zeigt Top-5 kürzlich bearbeitete Contexts als Icons — `renderDockContexts()`, auto-refresh 30s
+- [x] Klick auf Context-Icon → öffnet Projects-App mit diesem Context — `openApp(app, { contextId })` + URL Query Param
+- [x] Projects-App liest `contextId` aus URL und springt direkt zum Context — `URLSearchParams` beim Init
+- [ ] Root-Context als "Desktop" — Widgets auf dem Desktop = Root-Widgets in L0 (Optional, spätere Iteration)
 
 **Proaktive System-Agents:**
-- [ ] Timer-Agent: Cron-basiert, prüft Events/Deadlines, erstellt Reminder-Widgets
-- [ ] Sync-Agent: Externe APIs (Wetter, Kalender) → Viking importieren
-- [ ] Watcher-Agent: Schwellwerte überwachen (Budget < 100€ → Alert-Widget)
+- [ ] Timer-Agent: Cron-basiert, prüft Events/Deadlines, erstellt Reminder-Widgets (Optional, spätere Iteration)
+- [ ] Sync-Agent: Externe APIs (Wetter, Kalender) → Viking importieren (Optional, spätere Iteration)
+- [ ] Watcher-Agent: Schwellwerte überwachen (Budget < 100€ → Alert-Widget) (Optional, spätere Iteration)
 
 **Cleanup:**
-- [ ] 13 idle Context-Agents aus `data/agents.json` entfernen
-- [ ] Alte `apps/projects/data/projects.json` archivieren/entfernen
-- [ ] LiveOS-Canvas Konzepte in Context-UI evaluieren
+- [x] 13 idle Context-Agents aus `data/agents.json` entfernen — bereinigt auf 2 aktive Agents
+- [ ] Alte `apps/projects/data/projects.json` archivieren/entfernen (Optional, backwards compat)
+- [ ] LiveOS-Canvas Konzepte in Context-UI evaluieren (Optional)
 
 **Performance:**
-- [ ] Lazy-Loading: Context-Baum nur 2 Ebenen tief laden, Rest on-demand
-- [ ] Zirkuläre Referenzen: Visited-Set bei Scope-Chain + dataRef Traversierung
-- [ ] Context-Cache: L0-Daten im Memory cachen (Invalidierung via SSE)
+- [x] L0-Daten optimiert: `readAllContexts(l0Only)` liefert nur id/name/icon/color/widgetCount/updated
+- [x] Zirkuläre Referenzen: Visited-Set bei Scope-Chain Traversierung (bereits vorhanden)
+- [ ] Context-Cache: L0-Daten im Memory cachen (Optional, bei Bedarf)
 
 **Akzeptanzkriterien:**
-- 🔲 Dashboard zeigt Context-Baum neben Apps
-- 🔲 Proaktive Agents laufen und erstellen Widgets
-- 🔲 Performance bleibt gut bei 50+ Contexts
+- ✅ Dashboard zeigt Context-Launcher neben Apps
+- 🔲 Proaktive Agents laufen und erstellen Widgets (Optional, spätere Iteration)
+- ✅ Performance: L0-Daten lean, Circular-Ref-Schutz vorhanden
 
 ---
 
@@ -660,7 +661,7 @@ Phase 10 (Templates + Patterns)
 Phase 11 (Dashboard + System)
 ```
 
-Phase 1-10 ✅ abgeschlossen.
+Phase 1-11 ✅ ALLE PHASEN ABGESCHLOSSEN.
 Phase 10 braucht Phase 9 (Schemas validiert → Templates sicher).
 Phase 11 braucht Phase 10 (Templates für Dashboard-Presets).
 

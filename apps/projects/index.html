@@ -3873,8 +3873,16 @@ async function refreshPlan() {
 })();
 
 // ── Init ──
-load();
-connectSSE();
+(async function init() {
+  await load();
+  connectSSE();
+  // If contextId passed via URL query param (from dashboard), open that context
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetCtx = urlParams.get('contextId');
+  if (targetCtx && state.contexts.some(c => c.id === targetCtx)) {
+    await selectProject(targetCtx);
+  }
+})();
 </script>
 </body>
 </html>

@@ -1571,7 +1571,7 @@ const server = http.createServer((req, res) => {
         try {
           const ctx = JSON.parse(fs.readFileSync(path.join(CTX_DIR, f), 'utf8'));
           if (l0Only) {
-            return { id: ctx.id, name: ctx.name, icon: ctx.icon, color: ctx.color, parentId: ctx.parentId || null, widgetCount: (ctx.widgets || []).length };
+            return { id: ctx.id, name: ctx.name, icon: ctx.icon, color: ctx.color, parentId: ctx.parentId || null, widgetCount: (ctx.widgets || []).length, updated: ctx.updated || ctx.created || null, widgets: (ctx.widgets || []).slice(0, 6).map(w => ({ type: w.type })) };
           }
           return ctx;
         } catch { return null; }

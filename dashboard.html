@@ -142,9 +142,16 @@ body{font-family:system-ui,sans-serif;background:#0F172A;min-height:100vh;color:
       <span class="dock-label">Apps</span>
       <svg width="20" height="20" viewBox="0 0 20 20" fill="white"><rect x="2" y="2" width="6" height="6" rx="1.5"/><rect x="12" y="2" width="6" height="6" rx="1.5"/><rect x="2" y="12" width="6" height="6" rx="1.5"/><rect x="12" y="12" width="6" height="6" rx="1.5"/></svg>
     </div>
+    <div class="dock-icon" style="background:linear-gradient(135deg,#22c55e,#3B82F6)" onclick="toggleContextLauncher()" id="dock-ctx-launcher" title="Contexts">
+      <span class="dock-label">Contexts</span>
+      🧩
+    </div>
     <div class="dock-sep"></div>
     <!-- Dynamic dock icons for open windows inserted here -->
     <div id="dock-dynamic" style="display:flex;gap:6px"></div>
+    <div class="dock-sep" id="dock-sep-ctx" style="display:none"></div>
+    <!-- Context favorites dock icons inserted here -->
+    <div id="dock-contexts" style="display:flex;gap:6px"></div>
     <div class="dock-sep" id="dock-sep-end" style="display:none"></div>
     <div class="dock-icon" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6)" onclick="toggleStore()" id="dock-store" title="App Store">
       <span class="dock-label">Store</span>
@@ -164,6 +171,15 @@ body{font-family:system-ui,sans-serif;background:#0F172A;min-height:100vh;color:
     <button class="launcher-close" onclick="toggleLauncher()">✕</button>
   </div>
   <div class="launcher-grid" id="launcherGrid"></div>
+</div>
+
+<!-- Context Launcher Overlay -->
+<div class="launcher-overlay" id="contextLauncher" style="display:none;">
+  <div class="launcher-header">
+    <input class="launcher-search" id="ctxLauncherSearch" placeholder="Context suchen..." oninput="filterContexts(this.value)" autofocus>
+    <button class="launcher-close" onclick="toggleContextLauncher()">✕</button>
+  </div>
+  <div class="launcher-grid" id="ctxLauncherGrid" style="max-width:800px;"></div>
 </div>
 
 <!-- Store Overlay -->
@@ -557,13 +573,17 @@ document.addEventListener('keydown', e => {
 });
 
 // --- Window Manager ---
-function openApp(app) {
-  // Pulse is now a regular app window
+function openApp(app, opts) {
+  opts = opts || {};
+  const contextId = opts.contextId || null;
+  const titleSuffix = opts.titleSuffix || '';
 
-  const existing = openWindows.find(w => w.appId === app.id && !w.minimized && !w.closed);
+  // For context-specific windows, check if already open with same context
+  const matchKey = contextId ? app.id + ':' + contextId : app.id;
+  const existing = openWindows.find(w => w.matchKey === matchKey && !w.minimized && !w.closed);
   if (existing) { focusWindow(existing.winId); return; }
 
-  const minimized = openWindows.find(w => w.appId === app.id && w.minimized);
+  const minimized = openWindows.find(w => w.matchKey === matchKey && w.minimized);
   if (minimized) { minimized.minimized = false; minimized.el.classList.remove('minimized'); focusWindow(minimized.winId); renderDockWindows(); return; }
 
   const winId = 'win-' + (++windowIdCounter);
@@ -576,9 +596,12 @@ function openApp(app) {
   w.style.top = (60 + openWindows.filter(x => !x.closed).length * 30) + 'px';
   w.style.zIndex = ++nextZ;
 
+  const iframeSrc = contextId ? `/app/${app.id}/?contextId=${contextId}` : `/app/${app.id}/`;
+  const displayName = titleSuffix ? `${app.name} — ${titleSuffix}` : app.name;
+
   w.innerHTML = `
     <div class="win-titlebar" onmousedown="startDrag(event,'${winId}')" ontouchstart="startDrag(event,'${winId}')">
-      <div class="win-title"><span class="dot" style="background:${app.color}"></span>${app.name}</div>
+      <div class="win-title"><span class="dot" style="background:${app.color}"></span>${displayName}</div>
       <div class="win-btns">
         <button class="win-btn" onclick="historyWin('${winId}','${app.id}')" title="Versionen">🕐</button>
         <button class="win-btn" onclick="editWin('${winId}')" title="App anpassen (AI)">✏️</button>
@@ -587,7 +610,7 @@ function openApp(app) {
         <button class="win-btn close" onclick="closeWin('${winId}')" title="Close">×</button>
       </div>
     </div>
-    <iframe src="/app/${app.id}/"></iframe>
+    <iframe src="${iframeSrc}"></iframe>
     <div class="resize-handle r" onmousedown="startResize(event,'${winId}','r')" ontouchstart="startResize(event,'${winId}','r')"></div>
     <div class="resize-handle b" onmousedown="startResize(event,'${winId}','b')" ontouchstart="startResize(event,'${winId}','b')"></div>
     <div class="resize-handle br" onmousedown="startResize(event,'${winId}','br')" ontouchstart="startResize(event,'${winId}','br')"></div>
@@ -601,7 +624,7 @@ function openApp(app) {
   w.addEventListener('touchstart', () => focusWindow(winId));
   document.body.appendChild(w);
 
-  const winObj = { winId, appId: app.id, el: w, minimized: false, maximized: false, closed: false, savedRect: null };
+  const winObj = { winId, appId: app.id, matchKey: contextId ? app.id + ':' + contextId : app.id, el: w, minimized: false, maximized: false, closed: false, savedRect: null, contextId };
   openWindows.push(winObj);
   addFeed(`${app.name} geoeffnet`, 'mutation');
   renderDockWindows();
@@ -1113,6 +1136,107 @@ setInterval(generateStateSummary, 60000);
     if (bridgePeers[targetId]) { try { bridgePeers[targetId].close(); } catch {} delete bridgePeers[targetId]; }
   }
 })();
+
+// ── Context Launcher & Dock Favorites ──
+let ctxLauncherOpen = false;
+let contextList = [];
+
+async function loadContexts() {
+  try {
+    const r = await fetch('/api/contexts');
+    const data = await r.json();
+    contextList = (data.contexts || []).sort((a, b) => (b.updated || '').localeCompare(a.updated || ''));
+    renderDockContexts();
+  } catch (e) { console.error('Context load error:', e); }
+}
+
+function renderDockContexts() {
+  const dyn = document.getElementById('dock-contexts');
+  const sep = document.getElementById('dock-sep-ctx');
+  if (!dyn) return;
+  dyn.innerHTML = '';
+  // Show top 5 most recently updated contexts in dock
+  const recent = contextList.slice(0, 5);
+  sep.style.display = recent.length > 0 ? '' : 'none';
+  recent.forEach(ctx => {
+    const el = document.createElement('div');
+    el.className = 'dock-icon';
+    el.style.background = ctx.color || '#8B5CF6';
+    el.style.fontSize = '16px';
+    el.title = ctx.name || ctx.id;
+    el.innerHTML = `<span class="dock-label">${ctx.name || ctx.id}</span>${ctx.icon || '📁'}`;
+    el.onclick = () => openContext(ctx);
+    dyn.appendChild(el);
+  });
+}
+
+function openContext(ctx) {
+  if (ctxLauncherOpen) toggleContextLauncher();
+  const projectsApp = state && state.apps ? state.apps.find(a => a.id === 'projects') : null;
+  if (projectsApp) {
+    openApp(projectsApp, { contextId: ctx.id, titleSuffix: ctx.name });
+  }
+}
+
+function toggleContextLauncher() {
+  const overlay = document.getElementById('contextLauncher');
+  ctxLauncherOpen = !ctxLauncherOpen;
+  overlay.style.display = ctxLauncherOpen ? 'flex' : 'none';
+  if (ctxLauncherOpen) {
+    loadContexts().then(() => renderContextGrid(contextList));
+    document.getElementById('ctxLauncherSearch').value = '';
+    document.getElementById('ctxLauncherSearch').focus();
+  }
+}
+
+function renderContextGrid(contexts) {
+  const grid = document.getElementById('ctxLauncherGrid');
+  if (!grid) return;
+  if (contexts.length === 0) {
+    grid.innerHTML = '<div style="text-align:center;color:#7a7e96;padding:40px;grid-column:1/-1;">Keine Contexts vorhanden</div>';
+    return;
+  }
+  const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉', context: '📂' };
+  grid.innerHTML = contexts.map(ctx => {
+    const widgetCount = ctx.widgetCount || (ctx.canvas && ctx.canvas.widgets ? ctx.canvas.widgets.length : 0);
+    const widgetIcons = (ctx.widgets || []).slice(0, 5).map(w => icons[w.type] || '🧩').join(' ');
+    const age = ctx.updated ? getRelativeTime(new Date(ctx.updated)) : '';
+    return `
+      <div class="launcher-icon" onclick="openContext(${JSON.stringify(ctx).replace(/"/g, '&quot;')})" style="cursor:pointer;">
+        <div class="icon" style="background:${ctx.color || '#8B5CF6'};font-size:28px;">${ctx.icon || '📁'}</div>
+        <div class="name">${ctx.name || ctx.id}</div>
+        <div style="font-size:9px;color:#7a7e96;margin-top:2px;">${widgetIcons || ''} ${widgetCount ? widgetCount + ' Widgets' : ''}</div>
+        ${age ? `<div style="font-size:8px;color:#565869;margin-top:1px;">${age}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function filterContexts(query) {
+  const q = query.toLowerCase();
+  const filtered = contextList.filter(c => (c.name || '').toLowerCase().includes(q) || (c.id || '').toLowerCase().includes(q));
+  renderContextGrid(filtered);
+}
+
+function getRelativeTime(date) {
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'gerade eben';
+  if (mins < 60) return mins + ' Min';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + ' Std';
+  const days = Math.floor(hrs / 24);
+  return days + ' Tage';
+}
+
+// Load contexts on startup
+loadContexts();
+// Refresh contexts every 30s
+setInterval(loadContexts, 30000);
+
+// Close context launcher on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && ctxLauncherOpen) toggleContextLauncher();
+});
 </script>
 </body>
 </html>
