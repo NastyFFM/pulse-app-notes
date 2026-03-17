@@ -891,6 +891,72 @@ body {
 }
 .btn-save-template:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
 
+/* Inherited Widgets */
+.inherited-section {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}
+.inherited-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.inherited-label::before {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.inherited-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.widget-frame.inherited-widget {
+  opacity: 0.85;
+  border-style: dashed;
+}
+.widget-frame.inherited-widget:hover {
+  opacity: 1;
+}
+.inherited-badge {
+  font-size: 9px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+/* Perspective Toggle */
+.widget-perspective-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.widget-perspective-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.perspective-hint {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
 /* Scrollbars */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -1001,7 +1067,7 @@ body {
 // contexts: L0 list from /api/contexts (id, name, icon, color, parentId, widgetCount)
 // activeContextId: currently selected context ID
 // activeContext: full context object from /api/context/:id
-let state = { contexts: [], activeContextId: null, activeContext: null };
+let state = { contexts: [], activeContextId: null, activeContext: null, inheritedWidgets: [], inheritedData: {}, inheritedSources: [] };
 let saving = false;
 let saveTimeout = null;
 let saveVersion = 0; // track save generation to ignore stale SSE reloads
@@ -1181,6 +1247,43 @@ async function deleteProject(id) {
   if (state.activeContextId) await selectProject(state.activeContextId);
 }
 
+async function loadScopeChain() {
+  if (!state.activeContextId) return;
+  const ctx = state.activeContext;
+  if (!ctx || !ctx.parentId) {
+    state.inheritedWidgets = [];
+    state.inheritedData = {};
+    state.inheritedSources = [];
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/context/${state.activeContextId}/scope-chain`);
+    const data = await res.json();
+    // Map inherited widgets with source context name from chain
+    const chainMap = {};
+    for (const c of (data.chain || [])) {
+      chainMap[c.id] = c.name;
+    }
+    state.inheritedWidgets = (data.inheritedWidgets || []).map(w => ({
+      ...w,
+      _inheritedFrom: chainMap[w.fromContext] || 'Parent',
+      _inheritedFromId: w.fromContext
+    }));
+    // Flatten inheritedData: { key: { value, fromContext } } → { key: value }
+    const flatData = {};
+    for (const [k, v] of Object.entries(data.inheritedData || {})) {
+      flatData[k] = v.value;
+    }
+    state.inheritedData = flatData;
+    state.inheritedSources = data.chain || [];
+  } catch(e) {
+    console.error('Scope chain load error:', e);
+    state.inheritedWidgets = [];
+    state.inheritedData = {};
+    state.inheritedSources = [];
+  }
+}
+
 async function selectProject(id) {
   state.activeContextId = id;
 
@@ -1221,6 +1324,7 @@ async function selectProject(id) {
   renderBreadcrumb(proj);
   renderPlan(proj);
   renderChat();
+  await loadScopeChain();
   renderCanvas();
   updatePendingBtn();
 }
@@ -1341,8 +1445,9 @@ function renderCanvas() {
   const children = state.contexts.filter(c => c.parentId === proj.id);
   const hasWidgets = (proj.widgets || []).length > 0;
   const hasChildren = children.length > 0;
+  const hasInherited = (state.inheritedWidgets || []).length > 0;
 
-  if (!hasWidgets && !hasChildren) {
+  if (!hasWidgets && !hasChildren && !hasInherited) {
     empty.style.display = 'block';
     grid.innerHTML = '';
     return;
@@ -1352,8 +1457,38 @@ function renderCanvas() {
   grid.innerHTML = '';
 
   for (const widget of (proj.widgets || [])) {
-    const frame = createWidgetFrame(widget, proj);
+    const frame = createWidgetFrame(widget, proj, false);
     grid.appendChild(frame);
+  }
+
+  // Render inherited widgets from scope chain
+  if (state.inheritedWidgets && state.inheritedWidgets.length > 0) {
+    const inheritSection = document.createElement('div');
+    inheritSection.className = 'inherited-section';
+    inheritSection.style.gridColumn = '1 / -1';
+
+    // Group by source context
+    const sourceMap = {};
+    for (const w of state.inheritedWidgets) {
+      const src = w._inheritedFrom || 'Parent';
+      if (!sourceMap[src]) sourceMap[src] = [];
+      sourceMap[src].push(w);
+    }
+
+    let html = '';
+    for (const [sourceName, widgets] of Object.entries(sourceMap)) {
+      html += `<div class="inherited-label">\u2197 Von ${escapeHtml(sourceName)}</div>`;
+    }
+    inheritSection.innerHTML = html;
+    grid.appendChild(inheritSection);
+
+    for (const w of state.inheritedWidgets) {
+      // Create widget frame with inherited flag
+      const mergedProj = { ...proj, data: { ...proj.data, ...state.inheritedData } };
+      const frame = createWidgetFrame(w, mergedProj, true);
+      frame.classList.add('inherited-widget');
+      grid.appendChild(frame);
+    }
   }
 
   // Render child contexts that are NOT already represented as context-type widgets
@@ -1449,7 +1584,7 @@ function dismissChangeBanner(btn, id) {
 }
 
 // ── Widget Factory ──
-function createWidgetFrame(widget, proj) {
+function createWidgetFrame(widget, proj, inherited = false) {
   const frame = document.createElement('div');
   const zoomLevel = widget.zoomLevel || 'L1';
   const zoomClass = zoomLevel === 'L0' ? ' zoom-l0' : zoomLevel === 'L2' ? ' zoom-l2' : '';
@@ -1458,32 +1593,42 @@ function createWidgetFrame(widget, proj) {
 
   const color = widget.color || proj.color || 'var(--accent)';
 
+  const renderType = widget.renderAs || widget.type;
   const typeLabel = getWidgetLabel(widget.type);
   const displayTitle = widget.title !== typeLabel ? widget.title : typeLabel;
   const badge = zoomLevel === 'L0' ? ` · ${getL0Badge(widget, proj)}` : '';
   const zoomIcon = zoomLevel === 'L0' ? '🔹' : zoomLevel === 'L2' ? '🔷' : '🔸';
+  const inheritedBadge = inherited ? `<span class="inherited-badge">\u2197 ${escapeHtml(widget._inheritedFrom || 'Parent')}</span>` : '';
+  const perspectiveHint = (widget.renderAs && widget.renderAs !== widget.type) ? `<span class="perspective-hint">${widget.type} \u2192 ${widget.renderAs}</span>` : '';
+  const availableRenders = getAvailableRenders(widget);
+  const perspectiveBtn = availableRenders.length > 1 && !inherited ? `<button onclick="cyclePerspective('${widget.id}')" title="Ansicht wechseln" class="widget-perspective-btn">\uD83D\uDC41</button>` : '';
+  const removeBtn = inherited ? '' : `<button onclick="removeWidget('${widget.id}')" title="Entfernen">\u2715</button>`;
+  const widgetId = inherited ? ('inh-' + widget.id) : widget.id;
+  frame.dataset.widgetId = widgetId;
+
   frame.innerHTML = `
     <div class="widget-head">
       <div class="dot" style="background:${color}"></div>
-      <div class="label">${getWidgetIcon(widget.type)} ${displayTitle}${badge}</div>
+      <div class="label">${getWidgetIcon(renderType)} ${displayTitle}${inheritedBadge}${perspectiveHint}${badge}</div>
       <div class="actions">
+        ${perspectiveBtn}
         <button onclick="cycleZoom('${widget.id}')" title="Zoom" class="widget-zoom-btn">${zoomIcon}</button>
-        <button onclick="toggleWidgetEdit('${widget.id}')" title="Widget bearbeiten" class="widget-edit-btn">✏️</button>
-        <button onclick="resizeWidget('${widget.id}')" title="Resize">↔</button>
-        <button onclick="removeWidget('${widget.id}')" title="Entfernen">✕</button>
+        <button onclick="toggleWidgetEdit('${widgetId}')" title="Widget bearbeiten" class="widget-edit-btn">\u270F\uFE0F</button>
+        <button onclick="resizeWidget('${widget.id}')" title="Resize">\u2194</button>
+        ${removeBtn}
       </div>
     </div>
-    <div class="widget-cmd" id="wcmd-${widget.id}" style="display:none;padding:6px 10px;border-bottom:1px solid var(--border);background:var(--bg-base);display:none;">
+    <div class="widget-cmd" id="wcmd-${widgetId}" style="display:none;padding:6px 10px;border-bottom:1px solid var(--border);background:var(--bg-base);display:none;">
       <div style="display:flex;gap:6px;align-items:center;">
-        <input type="text" id="wcmd-input-${widget.id}" placeholder="z.B. Zeile hinzufügen, Wert ändern..."
+        <input type="text" id="wcmd-input-${widgetId}" placeholder="z.B. Zeile hinzuf\u00FCgen, Wert \u00E4ndern..."
           style="flex:1;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);font-size:12px;font-family:var(--font);outline:none;"
-          onkeydown="if(event.key==='Enter')sendWidgetCmd('${widget.id}')"
+          onkeydown="if(event.key==='Enter')sendWidgetCmd('${widgetId}')"
         />
-        <button onclick="sendWidgetCmd('${widget.id}')" style="padding:5px 10px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:12px;cursor:pointer;font-family:var(--font);white-space:nowrap;">Senden</button>
+        <button onclick="sendWidgetCmd('${widgetId}')" style="padding:5px 10px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:12px;cursor:pointer;font-family:var(--font);white-space:nowrap;">Senden</button>
       </div>
-      <div id="wcmd-status-${widget.id}" style="font-size:11px;color:var(--text-muted);padding-top:4px;display:none;"></div>
+      <div id="wcmd-status-${widgetId}" style="font-size:11px;color:var(--text-muted);padding-top:4px;display:none;"></div>
     </div>
-    <div class="widget-body" id="wb-${widget.id}"></div>
+    <div class="widget-body" id="wb-${widgetId}"></div>
   `;
 
   const body = frame.querySelector('.widget-body');
@@ -1492,10 +1637,140 @@ function createWidgetFrame(widget, proj) {
   return frame;
 }
 
+function renderCrossType(container, widget, proj, sourceType, renderType) {
+  const rawData = proj.data[widget.dataKey] || widget.data || {};
+
+  // todo → table: items become rows
+  if (sourceType === 'todo' && renderType === 'table') {
+    const items = proj.data[widget.dataKey] || widget.data?.items || [];
+    const virtualWidget = { ...widget, type: 'table', config: { columns: ['text', 'done', 'priority'] } };
+    const rows = (Array.isArray(items) ? items : []).map(i => ({ text: i.text, done: i.done ? 'Ja' : 'Nein', priority: i.priority || '' }));
+    const virtualProj = { ...proj, data: { ...proj.data, [widget.dataKey]: rows } };
+    renderTableWidget(container, virtualWidget, virtualProj);
+    return;
+  }
+
+  // todo → kanban: group by priority or done status
+  if (sourceType === 'todo' && renderType === 'kanban') {
+    const items = proj.data[widget.dataKey] || widget.data?.items || [];
+    const arr = Array.isArray(items) ? items : [];
+    const columns = [
+      { id: 'open', name: 'Offen', items: arr.filter(i => !i.done).map(i => ({ text: i.text })) },
+      { id: 'done', name: 'Erledigt', items: arr.filter(i => i.done).map(i => ({ text: i.text })) }
+    ];
+    const virtualWidget = { ...widget, type: 'kanban' };
+    const virtualProj = { ...proj, data: { ...proj.data, [widget.dataKey]: { columns } } };
+    renderKanbanWidget(container, virtualWidget, virtualProj);
+    return;
+  }
+
+  // kanban → table: flatten all items with column name
+  if (sourceType === 'kanban' && renderType === 'table') {
+    const kanbanData = proj.data[widget.dataKey] || widget.data || {};
+    const columns = kanbanData.columns || [];
+    const rows = [];
+    for (const col of columns) {
+      for (const item of (col.items || [])) {
+        rows.push({ status: col.name, text: typeof item === 'string' ? item : item.text || item.title || '' });
+      }
+    }
+    const virtualWidget = { ...widget, type: 'table', config: { columns: ['status', 'text'] } };
+    const virtualProj = { ...proj, data: { ...proj.data, [widget.dataKey]: rows } };
+    renderTableWidget(container, virtualWidget, virtualProj);
+    return;
+  }
+
+  // kanban → todo: flatten all items
+  if (sourceType === 'kanban' && renderType === 'todo') {
+    const kanbanData = proj.data[widget.dataKey] || widget.data || {};
+    const columns = kanbanData.columns || [];
+    const items = [];
+    for (const col of columns) {
+      for (const item of (col.items || [])) {
+        const text = typeof item === 'string' ? item : item.text || item.title || '';
+        const isDone = col.name.toLowerCase().includes('done') || col.name.toLowerCase().includes('erledigt');
+        items.push({ id: 't-' + Math.random().toString(36).slice(2, 6), text, done: isDone });
+      }
+    }
+    const virtualWidget = { ...widget, type: 'todo' };
+    const virtualProj = { ...proj, data: { ...proj.data, [widget.dataKey]: items } };
+    renderTodoWidget(container, virtualWidget, virtualProj);
+    return;
+  }
+
+  // table → todo: rows become items
+  if (sourceType === 'table' && renderType === 'todo') {
+    const rows = proj.data[widget.dataKey] || widget.data?.rows || [];
+    const arr = Array.isArray(rows) ? rows : [];
+    const items = arr.map((r, i) => ({
+      id: 't-' + i,
+      text: r.text || r.name || r.title || Object.values(r).filter(v => typeof v === 'string').join(' | '),
+      done: r.done === true || r.done === 'Ja' || r.status === 'done'
+    }));
+    const virtualWidget = { ...widget, type: 'todo' };
+    const virtualProj = { ...proj, data: { ...proj.data, [widget.dataKey]: items } };
+    renderTodoWidget(container, virtualWidget, virtualProj);
+    return;
+  }
+
+  // table → kanban: group by first column or 'status'
+  if (sourceType === 'table' && renderType === 'kanban') {
+    const rows = proj.data[widget.dataKey] || widget.data?.rows || [];
+    const arr = Array.isArray(rows) ? rows : [];
+    const groupKey = arr.length > 0 ? (arr[0].status !== undefined ? 'status' : Object.keys(arr[0])[0]) : 'group';
+    const groups = {};
+    for (const r of arr) {
+      const g = r[groupKey] || 'Andere';
+      if (!groups[g]) groups[g] = [];
+      const text = Object.entries(r).filter(([k]) => k !== groupKey && k !== 'id').map(([, v]) => v).join(' | ');
+      groups[g].push({ text });
+    }
+    const columns = Object.entries(groups).map(([name, items]) => ({ id: name.toLowerCase(), name, items }));
+    if (columns.length === 0) columns.push({ id: 'default', name: 'Items', items: [] });
+    const virtualWidget = { ...widget, type: 'kanban' };
+    const virtualProj = { ...proj, data: { ...proj.data, [widget.dataKey]: { columns } } };
+    renderKanbanWidget(container, virtualWidget, virtualProj);
+    return;
+  }
+
+  // timeline → table
+  if (sourceType === 'timeline' && renderType === 'table') {
+    const items = proj.data[widget.dataKey] || widget.data?.items || [];
+    const arr = Array.isArray(items) ? items : [];
+    const rows = arr.map(i => ({ title: i.title, description: i.description || '', time: i.time || '' }));
+    const virtualWidget = { ...widget, type: 'table', config: { columns: ['title', 'description', 'time'] } };
+    const virtualProj = { ...proj, data: { ...proj.data, [widget.dataKey]: rows } };
+    renderTableWidget(container, virtualWidget, virtualProj);
+    return;
+  }
+
+  // links → table
+  if (sourceType === 'links' && renderType === 'table') {
+    const links = proj.data[widget.dataKey] || widget.data?.links || [];
+    const arr = Array.isArray(links) ? links : [];
+    const rows = arr.map(l => ({ title: l.title || l.url, url: l.url || '', icon: l.icon || '' }));
+    const virtualWidget = { ...widget, type: 'table', config: { columns: ['title', 'url'] } };
+    const virtualProj = { ...proj, data: { ...proj.data, [widget.dataKey]: rows } };
+    renderTableWidget(container, virtualWidget, virtualProj);
+    return;
+  }
+
+  // Fallback: render as original type
+  container.innerHTML = `<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px;">Ansicht "${renderType}" nicht verfuegbar fuer "${sourceType}"</div>`;
+}
+
 function renderWidgetContent(container, widget, proj) {
   const data = proj.data[widget.dataKey] || widget.data || {};
+  const renderType = widget.renderAs || widget.type;
+  const sourceType = widget.type;
 
-  switch (widget.type) {
+  // Cross-type rendering: adapt data for different perspectives
+  if (renderType !== sourceType) {
+    renderCrossType(container, widget, proj, sourceType, renderType);
+    return;
+  }
+
+  switch (renderType) {
     case 'todo':
       renderTodoWidget(container, widget, proj);
       break;
@@ -2338,6 +2613,35 @@ async function processProjectMessage(text, proj) {
   }
 
   return { text: responseText, widgetActions };
+}
+
+// ── Perspective Switch ──
+function getAvailableRenders(widget) {
+  const type = widget.type;
+  if (type === 'todo' || type === 'kanban' || type === 'table') {
+    return ['todo', 'kanban', 'table'];
+  }
+  if (type === 'timeline') return ['timeline', 'table'];
+  if (type === 'links') return ['links', 'table'];
+  if (type === 'kpi') return ['kpi'];
+  if (type === 'notes') return ['notes'];
+  if (type === 'progress') return ['progress'];
+  if (type === 'context') return ['context'];
+  return [type];
+}
+
+function cyclePerspective(widgetId) {
+  const proj = getProject(state.activeContextId);
+  if (!proj) return;
+  const w = (proj.widgets || []).find(w => w.id === widgetId);
+  if (!w) return;
+  const renders = getAvailableRenders(w);
+  if (renders.length <= 1) return;
+  const currentRender = w.renderAs || w.type;
+  const idx = renders.indexOf(currentRender);
+  w.renderAs = renders[(idx + 1) % renders.length];
+  save();
+  renderCanvas();
 }
 
 // ── Zoom Level ──

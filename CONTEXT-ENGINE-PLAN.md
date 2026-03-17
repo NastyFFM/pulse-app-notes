@@ -326,19 +326,20 @@ viking://patterns/{patternId}  → Bewährte Widget-Kombinationen
 - [x] Pending Changes pro Context (nicht global)
 
 **Widget-Type "context":**
-- [ ] L0: Dock-Icon (60x60, Icon + Name + Badge)
-- [ ] L1: Summary-Karte (Name, Widget-Count, Key-Metriken, letzte Aktivität)
-- [ ] L2: Klick → navigiere in den Sub-Context
+- [x] L0: Compact pill mit Badge (Widget-Count)
+- [x] L1: Summary-Karte (Name, Widget-Count, Klick-Hinweis)
+- [x] L2: Klick → navigiere in den Sub-Context
+- [x] Auto-generierte virtuelle Context-Widgets für Kind-Contexts
 - [ ] Visueller Hinweis für geerbte Widgets ("↗ von Parent-Name")
 
 **Zoom-System:**
-- [ ] Widget-Frame: Zoom-Button (L0 ↔ L1 ↔ L2)
-- [ ] L0-Rendering für alle 8 Widget-Typen (Pill/Mini-Ansicht)
-- [ ] L1-Rendering = aktuelle Ansicht (bereits implementiert)
-- [ ] L2-Rendering = erweiterte Vollansicht
+- [x] Widget-Frame: Zoom-Button (L0 ↔ L1 ↔ L2)
+- [x] L0-Rendering: Compact Pill mit L0-Badge pro Widget-Typ
+- [x] L1-Rendering = aktuelle Ansicht (bereits implementiert)
+- [x] L2-Rendering = erweiterte Vollansicht (grid-column: 1/-1)
 - [ ] L0 Quick-Actions: Toggle, Zähler ändern, Status wechseln
-- [ ] L1 Inline-Edit: wie bisher (contenteditable, onblur)
-- [ ] L2 Full-Edit: wie bisher + ✏️ AI-Command
+- [x] L1 Inline-Edit: wie bisher (contenteditable, onblur)
+- [x] L2 Full-Edit: wie bisher + ✏️ AI-Command
 
 **Perspektive-Wechsel (L1):**
 - [ ] Button im Widget-Header: 📋 ↔ 📊 ↔ 📈
