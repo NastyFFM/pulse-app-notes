@@ -1034,17 +1034,39 @@ function renderCanvas() {
   // Refresh panel if open
   const panel = document.getElementById('closedPanel');
   if (panel.style.display === 'flex') renderClosedPanel();
+
+  // Re-apply AI change banners after re-render
+  if (activeChangeBanners.length > 0) applyChangeBanners();
 }
 
 // ── AI Change Highlights ──
+let activeChangeBanners = []; // persists across re-renders
+
 function highlightAiChanges(widgetActions) {
   if (!widgetActions || widgetActions.length === 0) return;
   for (const action of widgetActions) {
+    if (!action.widgetId && !action.dataKey) continue;
+    // Store banner data with timestamp for auto-dismiss
+    activeChangeBanners.push({ ...action, addedAt: Date.now() });
+  }
+  applyChangeBanners();
+  // Auto-dismiss all banners after 20s
+  setTimeout(() => {
+    activeChangeBanners = [];
+    document.querySelectorAll('.widget-change-banner').forEach(b => b.remove());
+    document.querySelectorAll('.widget-frame.ai-changed').forEach(f => {
+      f.classList.remove('ai-changed');
+      f.style.borderColor = '';
+    });
+  }, 20000);
+}
+
+function applyChangeBanners() {
+  for (const action of activeChangeBanners) {
     let frame = null;
     if (action.widgetId) {
       frame = document.querySelector(`.widget-frame[data-widget-id="${action.widgetId}"]`);
     }
-    // Fallback: find by dataKey if widgetId didn't match
     if (!frame && action.dataKey) {
       const proj = getProject(state.activeProject);
       const w = proj?.canvas.widgets.find(w => w.dataKey === action.dataKey);
@@ -1055,33 +1077,24 @@ function highlightAiChanges(widgetActions) {
     // Add glow animation
     frame.classList.add('ai-changed');
 
-    // Insert change banner after widget-head
-    const head = frame.querySelector('.widget-head');
-    const cmd = frame.querySelector('.widget-cmd');
-    const insertBefore = cmd || frame.querySelector('.widget-body');
+    // Skip if banner already exists on this widget
+    if (frame.querySelector('.widget-change-banner')) continue;
 
-    // Remove existing banner if any
-    const existing = frame.querySelector('.widget-change-banner');
-    if (existing) existing.remove();
-
+    const insertBefore = frame.querySelector('.widget-cmd') || frame.querySelector('.widget-body');
     const banner = document.createElement('div');
     banner.className = 'widget-change-banner';
     banner.innerHTML = `
       <span class="change-icon">${action.action === 'create' ? '✨' : '✏️'}</span>
       <span class="change-text">${escapeHtml(action.detail || action.label)}</span>
-      <button class="change-dismiss" onclick="this.parentElement.remove()">✕</button>
+      <button class="change-dismiss" onclick="dismissChangeBanner(this, '${action.widgetId || action.dataKey}')">✕</button>
     `;
     frame.insertBefore(banner, insertBefore);
-
-    // Remove glow class after animation (but keep banner)
-    setTimeout(() => {
-      frame.classList.remove('ai-changed');
-      frame.style.borderColor = '';
-    }, 4000);
-
-    // Auto-dismiss banner after 15s
-    setTimeout(() => { if (banner.parentElement) banner.remove(); }, 15000);
   }
+}
+
+function dismissChangeBanner(btn, id) {
+  btn.parentElement.remove();
+  activeChangeBanners = activeChangeBanners.filter(a => (a.widgetId || a.dataKey) !== id);
 }
 
 // ── Widget Factory ──
