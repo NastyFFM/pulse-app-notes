@@ -1,0 +1,17 @@
+{
+  "id": "record",
+  "icon": "🗂️",
+  "label": "Datensatz",
+  "labelPlural": "Datensätze",
+  "description": "Ein generischer Datensatz mit flexiblen Feldern für beliebige Datenstrukturen",
+  "fields": {
+    "id": { "type": "string", "required": true, "auto": true, "label": "ID" }
+  },
+  "dynamicFields": true,
+  "renders": ["table", "kanban", "todo"],
+  "defaultRender": "table",
+  "constraints": {
+    "uniqueKey": "id",
+    "sortBy": "id"
+  }
+}

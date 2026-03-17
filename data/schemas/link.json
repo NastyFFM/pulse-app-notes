@@ -1,0 +1,22 @@
+{
+  "id": "link",
+  "icon": "🔗",
+  "label": "Link",
+  "labelPlural": "Links",
+  "description": "Ein gespeicherter Link oder Lesezeichen mit Titel und Beschreibung",
+  "fields": {
+    "id": { "type": "string", "required": true, "auto": true, "label": "ID" },
+    "title": { "type": "string", "required": true, "label": "Titel" },
+    "url": { "type": "string", "required": true, "label": "URL" },
+    "description": { "type": "string", "required": false, "label": "Beschreibung" },
+    "category": { "type": "string", "required": false, "label": "Kategorie" },
+    "icon": { "type": "string", "required": false, "label": "Icon" },
+    "pinned": { "type": "boolean", "required": false, "default": false, "label": "Angepinnt" }
+  },
+  "renders": ["links", "table"],
+  "defaultRender": "links",
+  "constraints": {
+    "uniqueKey": "id",
+    "sortBy": "title"
+  }
+}

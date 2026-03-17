@@ -1,0 +1,25 @@
+{
+  "id": "event",
+  "icon": "📅",
+  "label": "Termin",
+  "labelPlural": "Termine",
+  "description": "Ein Termin oder Ereignis mit Datum, Uhrzeit und Ort",
+  "fields": {
+    "id": { "type": "string", "required": true, "auto": true, "label": "ID" },
+    "title": { "type": "string", "required": true, "label": "Titel" },
+    "date": { "type": "date", "required": true, "label": "Datum" },
+    "time": { "type": "string", "required": false, "label": "Uhrzeit" },
+    "endDate": { "type": "date", "required": false, "label": "Enddatum" },
+    "endTime": { "type": "string", "required": false, "label": "Endzeit" },
+    "location": { "type": "string", "required": false, "label": "Ort" },
+    "description": { "type": "text", "required": false, "label": "Beschreibung" },
+    "category": { "type": "enum", "required": false, "options": ["meeting", "deadline", "reminder", "personal", "travel"], "label": "Kategorie" },
+    "allDay": { "type": "boolean", "required": false, "default": false, "label": "Ganztägig" }
+  },
+  "renders": ["timeline", "table", "calendar"],
+  "defaultRender": "timeline",
+  "constraints": {
+    "uniqueKey": "id",
+    "sortBy": "date"
+  }
+}

@@ -1474,48 +1474,216 @@ const server = http.createServer((req, res) => {
   }
 
   // --- Live.OS Context API ---
+  const CTX_DIR = path.join(ROOT, 'data', 'contexts');
+
+  // Helper: validate context ID (no path traversal)
+  function isValidCtxId(id) { return /^[a-z0-9][a-z0-9_-]*$/.test(id); }
+
+  // Helper: read all context files (full or L0)
+  function readAllContexts(l0Only) {
+    try {
+      const files = fs.readdirSync(CTX_DIR).filter(f => f.endsWith('.json') && !f.startsWith('_'));
+      return files.map(f => {
+        try {
+          const ctx = JSON.parse(fs.readFileSync(path.join(CTX_DIR, f), 'utf8'));
+          if (l0Only) {
+            return { id: ctx.id, name: ctx.name, icon: ctx.icon, color: ctx.color, parentId: ctx.parentId || null, widgetCount: (ctx.widgets || []).length };
+          }
+          return ctx;
+        } catch { return null; }
+      }).filter(Boolean);
+    } catch { return []; }
+  }
+
+  // GET /api/schemas — List all schemas
+  // GET /api/schemas/:id — Get specific schema
+  if (url === '/api/schemas' && req.method === 'GET') {
+    const schemasDir = path.join(__dirname, 'data', 'schemas');
+    try {
+      const files = fs.readdirSync(schemasDir).filter(f => f.endsWith('.json'));
+      const schemas = files.map(f => {
+        try { return JSON.parse(fs.readFileSync(path.join(schemasDir, f), 'utf8')); }
+        catch { return null; }
+      }).filter(Boolean);
+      return jsonRes(res, { schemas });
+    } catch { return jsonRes(res, { schemas: [] }); }
+  }
+  if (url.startsWith('/api/schemas/') && req.method === 'GET') {
+    const schemaId = url.split('/api/schemas/')[1];
+    if (!schemaId || schemaId.includes('..') || schemaId.includes('/')) return jsonRes(res, { error: 'Invalid schema ID' }, 400);
+    const fp = path.join(__dirname, 'data', 'schemas', schemaId + '.json');
+    try {
+      const schema = JSON.parse(fs.readFileSync(fp, 'utf8'));
+      return jsonRes(res, schema);
+    } catch { return jsonRes(res, { error: 'Schema not found' }, 404); }
+  }
+
+  // GET /api/contexts — List all contexts (L0: id, name, icon, color, parentId, widgetCount)
+  // POST /api/contexts — Create new context
   if (url === '/api/contexts') {
-    const ctxDir = path.join(ROOT, 'data', 'contexts');
     if (req.method === 'GET') {
-      try {
-        const files = fs.readdirSync(ctxDir).filter(f => f.endsWith('.json') && !f.startsWith('_'));
-        const contexts = files.map(f => { try { return JSON.parse(fs.readFileSync(path.join(ctxDir, f), 'utf8')); } catch { return null; } }).filter(Boolean);
-        return jsonRes(res, { contexts });
-      } catch { return jsonRes(res, { contexts: [] }); }
+      return jsonRes(res, { contexts: readAllContexts(true) });
     }
     if (req.method === 'POST') {
       return readBody(req, b => {
-        const ctx = JSON.parse(b);
-        if (!ctx.id) ctx.id = 'ctx-' + Date.now();
-        ctx.created = ctx.created || new Date().toISOString();
-        ctx.widgets = ctx.widgets || [];
-        ctx.connections = ctx.connections || [];
-        const ctxFile = path.join(ctxDir, ctx.id + '.json');
-        const ctxDataDir = path.join(ctxDir, ctx.id);
-        if (!fs.existsSync(ctxDataDir)) fs.mkdirSync(ctxDataDir, { recursive: true });
-        fs.writeFileSync(path.join(ctxDataDir, '_changelog.json'), JSON.stringify({ entries: [] }, null, 2));
-        fs.writeFileSync(ctxFile, JSON.stringify(ctx, null, 2));
-        jsonRes(res, { ok: true, id: ctx.id });
+        try {
+          const ctx = JSON.parse(b);
+          if (!ctx.id) ctx.id = 'ctx-' + Date.now();
+          if (!isValidCtxId(ctx.id)) { res.writeHead(400); return res.end(JSON.stringify({ error: 'Invalid context ID' })); }
+          ctx.created = ctx.created || new Date().toISOString();
+          ctx.updated = new Date().toISOString();
+          ctx.widgets = ctx.widgets || [];
+          ctx.connections = ctx.connections || [];
+          ctx.skills = ctx.skills || [];
+          ctx.chat = ctx.chat || [];
+          ctx.data = ctx.data || {};
+          const ctxFile = path.join(CTX_DIR, ctx.id + '.json');
+          const ctxDataDir = path.join(CTX_DIR, ctx.id);
+          if (!fs.existsSync(ctxDataDir)) fs.mkdirSync(ctxDataDir, { recursive: true });
+          fs.writeFileSync(path.join(ctxDataDir, '_changelog.json'), JSON.stringify({ entries: [] }, null, 2));
+          fs.writeFileSync(ctxFile, JSON.stringify(ctx, null, 2));
+          broadcast('liveos', { type: 'context-change', contextId: ctx.id, time: Date.now() });
+          jsonRes(res, { ok: true, id: ctx.id });
+        } catch (e) {
+          res.writeHead(400); res.end(JSON.stringify({ error: e.message }));
+        }
       });
     }
   }
 
-  const ctxMatch = url.match(/^\/api\/context\/([a-z0-9-]+)$/);
-  if (ctxMatch) {
-    const ctxId = ctxMatch[1];
-    const ctxFile = path.join(ROOT, 'data', 'contexts', ctxId + '.json');
-    if (req.method === 'GET') return jsonRes(res, safeReadJSON(ctxFile, { id: ctxId, widgets: [], connections: [] }));
-    if (req.method === 'PUT') return readBody(req, b => {
-      fs.writeFileSync(ctxFile, JSON.stringify(JSON.parse(b), null, 2));
-      broadcast('liveos', { type: 'context-change', contextId: ctxId, time: Date.now() });
-      jsonRes(res, { ok: true });
+  // GET /api/context-tree — Nested tree of all contexts (L0 data only)
+  if (url === '/api/context-tree' && req.method === 'GET') {
+    const all = readAllContexts(true);
+    const byId = {};
+    all.forEach(c => { byId[c.id] = { ...c, children: [] }; });
+    const roots = [];
+    all.forEach(c => {
+      if (c.parentId && byId[c.parentId]) {
+        byId[c.parentId].children.push(byId[c.id]);
+      } else {
+        roots.push(byId[c.id]);
+      }
     });
+    return jsonRes(res, { tree: roots });
   }
 
-  const ctxChangelogMatch = url.match(/^\/api\/context\/([a-z0-9-]+)\/changelog$/);
+  // Context sub-routes (must check before the base /api/context/:id route)
+  const ctxSummaryMatch = url.match(/^\/api\/context\/([a-z0-9_-]+)\/summary$/);
+  if (ctxSummaryMatch && req.method === 'GET') {
+    const ctxId = ctxSummaryMatch[1];
+    if (!isValidCtxId(ctxId)) { res.writeHead(400); return res.end(JSON.stringify({ error: 'Invalid context ID' })); }
+    const ctxFile = path.join(CTX_DIR, ctxId + '.json');
+    try {
+      const ctx = JSON.parse(fs.readFileSync(ctxFile, 'utf8'));
+      const widgets = ctx.widgets || [];
+      const widgetSummary = widgets.map(w => ({ id: w.instanceId || w.id, type: w.typeId || w.type, label: w.label || w.title, scope: w.scope || 'local' }));
+      const dataKeys = Object.keys(ctx.data || {});
+      const chatCount = (ctx.chat || []).length;
+      const changelogCount = (ctx.changelog || []).length;
+      return jsonRes(res, {
+        id: ctx.id,
+        name: ctx.name,
+        icon: ctx.icon,
+        color: ctx.color,
+        parentId: ctx.parentId || null,
+        widgetCount: widgets.length,
+        widgets: widgetSummary,
+        dataKeys,
+        chatCount,
+        changelogCount,
+        created: ctx.created,
+        updated: ctx.updated,
+        skills: ctx.skills || []
+      });
+    } catch {
+      res.writeHead(404); return res.end(JSON.stringify({ error: 'Context not found' }));
+    }
+  }
+
+  // GET /api/context/:id/scope-chain — Inherited widgets + data from parent chain
+  const ctxScopeMatch = url.match(/^\/api\/context\/([a-z0-9_-]+)\/scope-chain$/);
+  if (ctxScopeMatch && req.method === 'GET') {
+    const ctxId = ctxScopeMatch[1];
+    if (!isValidCtxId(ctxId)) { res.writeHead(400); return res.end(JSON.stringify({ error: 'Invalid context ID' })); }
+    const chain = [];
+    const inheritedWidgets = [];
+    const inheritedData = {};
+    let currentId = ctxId;
+    const visited = new Set();
+    // First, read the requested context itself
+    try {
+      const selfCtx = JSON.parse(fs.readFileSync(path.join(CTX_DIR, currentId + '.json'), 'utf8'));
+      chain.push({ id: selfCtx.id, name: selfCtx.name, icon: selfCtx.icon });
+      currentId = selfCtx.parentId || null;
+    } catch {
+      res.writeHead(404); return res.end(JSON.stringify({ error: 'Context not found' }));
+    }
+    // Traverse parent chain
+    while (currentId && !visited.has(currentId)) {
+      visited.add(currentId);
+      try {
+        const parentCtx = JSON.parse(fs.readFileSync(path.join(CTX_DIR, currentId + '.json'), 'utf8'));
+        chain.push({ id: parentCtx.id, name: parentCtx.name, icon: parentCtx.icon });
+        // Collect widgets with scope "inherited" or "global"
+        const parentWidgets = (parentCtx.widgets || []).filter(w => w.scope === 'inherited' || w.scope === 'global');
+        parentWidgets.forEach(w => inheritedWidgets.push({ ...w, fromContext: parentCtx.id }));
+        // Merge parent data (don't overwrite already-set keys from closer ancestors)
+        if (parentCtx.data) {
+          for (const [k, v] of Object.entries(parentCtx.data)) {
+            if (!(k in inheritedData)) inheritedData[k] = { value: v, fromContext: parentCtx.id };
+          }
+        }
+        currentId = parentCtx.parentId || null;
+      } catch { break; }
+    }
+    return jsonRes(res, { chain, inheritedWidgets, inheritedData });
+  }
+
+  const ctxChangelogMatch = url.match(/^\/api\/context\/([a-z0-9_-]+)\/changelog$/);
   if (ctxChangelogMatch && req.method === 'GET') {
-    const logFile = path.join(ROOT, 'data', 'contexts', ctxChangelogMatch[1], '_changelog.json');
+    const logFile = path.join(CTX_DIR, ctxChangelogMatch[1], '_changelog.json');
     return jsonRes(res, safeReadJSON(logFile, { entries: [] }));
+  }
+
+  // GET /api/context/:id — Full context JSON
+  // PUT /api/context/:id — Save context (triggers SSE)
+  // DELETE /api/context/:id — Delete context
+  const ctxMatch = url.match(/^\/api\/context\/([a-z0-9_-]+)$/);
+  if (ctxMatch) {
+    const ctxId = ctxMatch[1];
+    if (!isValidCtxId(ctxId)) { res.writeHead(400); return res.end(JSON.stringify({ error: 'Invalid context ID' })); }
+    const ctxFile = path.join(CTX_DIR, ctxId + '.json');
+    if (req.method === 'GET') {
+      if (!fs.existsSync(ctxFile)) { res.writeHead(404); return res.end(JSON.stringify({ error: 'Context not found' })); }
+      return jsonRes(res, safeReadJSON(ctxFile, { id: ctxId, widgets: [], connections: [] }));
+    }
+    if (req.method === 'PUT') return readBody(req, b => {
+      try {
+        const ctx = JSON.parse(b);
+        ctx.updated = new Date().toISOString();
+        fs.writeFileSync(ctxFile, JSON.stringify(ctx, null, 2));
+        broadcast('liveos', { type: 'context-change', contextId: ctxId, time: Date.now() });
+        jsonRes(res, { ok: true });
+      } catch (e) {
+        res.writeHead(400); res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    if (req.method === 'DELETE') {
+      try {
+        if (fs.existsSync(ctxFile)) fs.unlinkSync(ctxFile);
+        // Also remove data directory if it exists
+        const ctxDataDir = path.join(CTX_DIR, ctxId);
+        if (fs.existsSync(ctxDataDir)) {
+          const files = fs.readdirSync(ctxDataDir);
+          files.forEach(f => { try { fs.unlinkSync(path.join(ctxDataDir, f)); } catch {} });
+          try { fs.rmdirSync(ctxDataDir); } catch {}
+        }
+        broadcast('liveos', { type: 'context-deleted', contextId: ctxId, time: Date.now() });
+        return jsonRes(res, { ok: true });
+      } catch (e) {
+        res.writeHead(500); return res.end(JSON.stringify({ error: e.message }));
+      }
+    }
   }
 
   // Widget data endpoint (generic, context-relative)
@@ -2241,6 +2409,26 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
         // Include changelog so agent sees what user changed
         const changelog = (project.changelog || []).slice(-15).map(c => `[${c.time}] ${c.summary}`).join('\n');
 
+        // Build cross-project widget library so AI knows all widgets across all projects
+        const otherProjects = projData.projects.filter(p => p.id !== projectId);
+        let widgetLibrary = '';
+        if (otherProjects.length > 0) {
+          const libraryEntries = [];
+          for (const op of otherProjects) {
+            if (!op.canvas || !op.canvas.widgets || op.canvas.widgets.length === 0) continue;
+            const widgets = op.canvas.widgets.map(w => {
+              const data = op.data[w.dataKey] || w.data || {};
+              const dataStr = JSON.stringify(data).slice(0, 400);
+              const configStr = w.config ? ` config: ${JSON.stringify(w.config)}` : '';
+              return `    - ${w.type}: "${w.title}" (size: ${w.size || 'md'}${configStr}) → ${dataStr}`;
+            }).join('\n');
+            libraryEntries.push(`  Projekt "${op.name}":\n${widgets}`);
+          }
+          if (libraryEntries.length > 0) {
+            widgetLibrary = libraryEntries.join('\n');
+          }
+        }
+
         const prompt = `Du bist der Projekt-Agent fuer PulseOS. Der User arbeitet am Projekt "${project.name}".
 
 WICHTIG: Antworte NUR mit einem JSON-Objekt, kein anderer Text davor oder danach. Das JSON muss diese Struktur haben:
@@ -2287,6 +2475,9 @@ Bestehendes Projekt:
   Aktuelle Widgets mit ihrem AKTUELLEN Inhalt (vom User bearbeitet):
   ${existingWidgets || 'keine'}
 
+${widgetLibrary ? `Widget-Bibliothek aus anderen Projekten (kannst du als Vorlage/Inspiration verwenden oder Varianten davon erstellen):
+${widgetLibrary}` : ''}
+
 ${changelog ? `Aenderungs-Log (was der User zuletzt an den Widgets geaendert hat):
 ${changelog}` : ''}
 
@@ -2305,6 +2496,7 @@ Regeln:
 - Aktualisiere bestehende Widgets ueber "updates" wenn der User Aenderungen will. Du kannst dabei ALLES aendern: data, title, size, type, config, color
 - WICHTIG bei Typ-Wechsel: Wenn du den Widget-Typ aenderst (z.B. kanban→table), MUSST du im update-Objekt IMMER "type", "config" UND "data" mitschicken! Beispiel: {"dataKey":"x","type":"table","config":{"columns":["A","B"]},"data":{"rows":[{"A":"1","B":"2"}]}}
 - Bei Widget-Bearbeitungsbefehlen (markiert mit [Widget-Bearbeitung:]): aendere das spezifische Widget ueber updates mit dem angegebenen dataKey
+- Du kennst ALLE Widgets aus ALLEN Projekten (siehe Widget-Bibliothek oben). Wenn der User nach vorhandenen Widgets fragt oder aehnliche Widgets will, nutze diese als Vorlage. Du kannst Varianten erstellen (z.B. kompakter, als Kanban statt Tabelle, etc.)
 - Antworte immer auf Deutsch
 - Antworte NUR mit dem JSON, nichts anderes`;
 
@@ -2463,6 +2655,123 @@ Regeln:
           jsonRes(res, { ok: false, error: 'Agent error: ' + e.message });
         });
 
+      } catch (e) {
+        jsonRes(res, { ok: false, error: e.message });
+      }
+    });
+  }
+
+  // ── Project Plan Generator ──
+  if (url === '/api/project-plan' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { projectId } = JSON.parse(b);
+        if (!projectId) return jsonRes(res, { ok: false, error: 'projectId required' });
+
+        const projFile = path.join(ROOT, 'apps', 'projects', 'data', 'projects.json');
+        const projData = JSON.parse(safeReadJSON(projFile, { projects: [] }));
+        const project = projData.projects.find(p => p.id === projectId);
+        if (!project) return jsonRes(res, { ok: false, error: 'Project not found' });
+
+        // Build context
+        const widgets = (project.canvas?.widgets || []).map(w => {
+          const data = project.data[w.dataKey] || w.data || {};
+          const configStr = w.config ? ` config: ${JSON.stringify(w.config)}` : '';
+          return `${w.type}: "${w.title}" (size: ${w.size || 'md'}${configStr})\n  Daten: ${JSON.stringify(data).slice(0, 400)}`;
+        }).join('\n');
+
+        const changelog = (project.changelog || []).slice(-10).map(c => `[${c.time}] ${c.summary}`).join('\n');
+        const recentChat = project.chat.slice(-5).map(m => `${m.role}: ${m.text.slice(0, 150)}`).join('\n');
+
+        // Subprojects
+        const children = projData.projects.filter(p => p.parentId === projectId);
+        let subInfo = '';
+        if (children.length > 0) {
+          subInfo = '\n\nUnterprojekte:\n' + children.map(c => {
+            const cWidgets = (c.canvas?.widgets || []).map(w => `${w.type}: "${w.title}"`).join(', ');
+            const cPlan = c.plan;
+            return `- "${c.name}": ${cWidgets || 'keine Widgets'}${cPlan ? ', Status: ' + cPlan.status : ''}`;
+          }).join('\n');
+        }
+
+        const prompt = `Analysiere dieses Projekt und erstelle einen Implementierungsplan. Antworte NUR mit einem JSON-Objekt, kein anderer Text:
+
+{
+  "status": "Kurzer Status-Text (z.B. 'Phase 2/4', '70% fertig', 'Planung')",
+  "phases": [
+    {
+      "title": "Phasenname",
+      "state": "done|active|pending",
+      "items": [{ "text": "Aufgabe/Schritt", "done": true }]
+    }
+  ],
+  "summary": "1-2 Saetze Zusammenfassung des aktuellen Stands"
+}
+
+Projekt: "${project.name}"
+
+Widgets:
+${widgets || 'keine'}
+
+${changelog ? 'Changelog:\n' + changelog : ''}
+
+Chat-Verlauf:
+${recentChat}
+${subInfo}
+
+Regeln:
+- Leite die Phasen aus dem Projektinhalt ab (Widgets, Chat, Daten)
+- Markiere erledigte Aufgaben basierend auf vorhandenen Daten und Changelog
+- Wenn Widgets bereits Daten enthalten (nicht nur Platzhalter), gelten zugehoerige Aufgaben als erledigt
+- Phasen sollen das Projekt logisch strukturieren
+- Maximal 5 Phasen mit je 2-5 Items
+- Beziehe Unterprojekte in die Bewertung ein
+- Antworte NUR mit dem JSON-Objekt`;
+
+        const proc = spawn('claude', ['-p', '--output-format', 'json'], {
+          cwd: ROOT, env: process.env, stdio: ['pipe', 'pipe', 'pipe']
+        });
+        proc.stdin.write(prompt);
+        proc.stdin.end();
+
+        let stdout = '';
+        let stderr = '';
+        proc.stdout.on('data', chunk => { stdout += chunk.toString(); });
+        proc.stderr.on('data', chunk => { stderr += chunk.toString(); });
+
+        proc.on('close', code => {
+          if (code !== 0) {
+            console.error('[project-plan] claude failed:', stderr.slice(0, 300));
+            return jsonRes(res, { ok: false, error: 'AI error' });
+          }
+
+          try {
+            // Parse claude JSON output
+            let aiText = stdout;
+            try {
+              const outerJson = JSON.parse(stdout);
+              aiText = outerJson.result || outerJson.text || outerJson.content || stdout;
+            } catch (e) {}
+
+            // Extract JSON object from response
+            const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+              return jsonRes(res, { ok: false, error: 'No JSON in response', raw: aiText.slice(0, 300) });
+            }
+
+            const plan = JSON.parse(jsonMatch[0]);
+            plan.updatedAt = new Date().toISOString();
+
+            // Save plan to project
+            project.plan = plan;
+            fs.writeFileSync(projFile, JSON.stringify(projData, null, 2));
+
+            jsonRes(res, { ok: true, plan });
+          } catch (e) {
+            console.error('[project-plan] Parse error:', e.message, 'stdout:', stdout.slice(0, 300));
+            jsonRes(res, { ok: false, error: 'Parse error', raw: stdout.slice(0, 300) });
+          }
+        });
       } catch (e) {
         jsonRes(res, { ok: false, error: e.message });
       }

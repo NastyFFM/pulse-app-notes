@@ -150,3 +150,9 @@ The `widgets/context-view.js` widget provides universal reactive UI for any JSON
 - Bidirectional sync: user edits → PUT → SSE; agent writes → SSE → auto-reload
 - Optional `schema.json` for UI hints (field types, badge colors, layout)
 - Usage: `ContextView.init({ el, appId, dataFile, schema, readOnly })`
+
+## Context Engine (In Entwicklung)
+
+**WICHTIG:** PulseOS wird zu einer einheitlichen Context-Architektur umgebaut. Lies `CONTEXT-ENGINE-PLAN.md` für den vollständigen Plan und aktuellen Status.
+
+Kern-Idee: Alles wird ein **Context** (Project = App = Context). Jeder Context hat Chat + Widget-Canvas. Widgets haben 3 Zoom-Stufen (L0/L1/L2) die auf Viking's Pyramide mappen. Daten fließen durch die Hierarchie (Vererbung ↓, Propagation ↑, Referenzen ↔). Skills statt dauerlaufende Agents.

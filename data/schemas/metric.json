@@ -1,0 +1,23 @@
+{
+  "id": "metric",
+  "icon": "📊",
+  "label": "Kennzahl",
+  "labelPlural": "Kennzahlen",
+  "description": "Ein einzelner KPI- oder Messwert mit optionalem Zielwert und Veränderung",
+  "fields": {
+    "value": { "type": "string", "required": true, "label": "Wert" },
+    "label": { "type": "string", "required": true, "label": "Bezeichnung" },
+    "unit": { "type": "string", "required": false, "label": "Einheit" },
+    "change": { "type": "number", "required": false, "label": "Veränderung" },
+    "changeLabel": { "type": "string", "required": false, "label": "Veränderungstext" },
+    "icon": { "type": "string", "required": false, "label": "Icon" },
+    "target": { "type": "number", "required": false, "label": "Zielwert" }
+  },
+  "renders": ["kpi"],
+  "defaultRender": "kpi",
+  "constraints": {
+    "uniqueKey": "label",
+    "sortBy": "label"
+  },
+  "singleObject": true
+}

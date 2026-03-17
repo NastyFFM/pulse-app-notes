@@ -1,0 +1,22 @@
+{
+  "id": "note",
+  "icon": "📝",
+  "label": "Notiz",
+  "labelPlural": "Notizen",
+  "description": "Eine Notiz mit Titel, Inhalt und optionalen Tags",
+  "fields": {
+    "id": { "type": "string", "required": true, "auto": true, "label": "ID" },
+    "title": { "type": "string", "required": false, "label": "Titel" },
+    "content": { "type": "text", "required": true, "label": "Inhalt" },
+    "tags": { "type": "string", "required": false, "label": "Tags" },
+    "color": { "type": "color", "required": false, "label": "Farbe" },
+    "pinned": { "type": "boolean", "required": false, "default": false, "label": "Angepinnt" },
+    "created": { "type": "datetime", "required": false, "auto": true, "label": "Erstellt" }
+  },
+  "renders": ["notes", "table"],
+  "defaultRender": "notes",
+  "constraints": {
+    "uniqueKey": "id",
+    "sortBy": "created"
+  }
+}

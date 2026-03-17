@@ -1,0 +1,28 @@
+{
+  "id": "progress",
+  "icon": "🏁",
+  "label": "Fortschritt",
+  "labelPlural": "Fortschritte",
+  "description": "Ein Fortschrittsbalken mit aktuellem Stand, Ziel und optionalen Meilensteinen",
+  "fields": {
+    "label": { "type": "string", "required": true, "label": "Bezeichnung" },
+    "current": { "type": "number", "required": true, "label": "Aktuell" },
+    "total": { "type": "number", "required": true, "label": "Gesamt" },
+    "unit": { "type": "string", "required": false, "default": "%", "label": "Einheit" },
+    "milestones": {
+      "type": "array",
+      "required": false,
+      "label": "Meilensteine",
+      "items": {
+        "label": { "type": "string", "label": "Bezeichnung" },
+        "completed": { "type": "boolean", "label": "Erreicht" }
+      }
+    }
+  },
+  "renders": ["progress", "kpi"],
+  "defaultRender": "progress",
+  "constraints": {
+    "uniqueKey": "label",
+    "sortBy": "label"
+  }
+}

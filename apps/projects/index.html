@@ -177,6 +177,157 @@ body {
   color: var(--text-muted);
 }
 
+/* ── Breadcrumb Navigation ── */
+.breadcrumb-bar {
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--border);
+  display: none;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+}
+.breadcrumb-bar.visible { display: flex; }
+.breadcrumb-bar .bc-item {
+  cursor: pointer;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  font-family: var(--font);
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all .15s;
+}
+.breadcrumb-bar .bc-item:hover { color: var(--accent); background: var(--accent-dim); }
+.breadcrumb-bar .bc-sep { color: var(--text-muted); opacity: .5; }
+.breadcrumb-bar .bc-current { color: var(--text-primary); font-weight: 500; }
+
+/* ── Subproject Button ── */
+.btn-subproject {
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font);
+  padding: 4px 8px;
+  margin: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  width: calc(100% - 24px);
+  transition: all .15s;
+}
+.btn-subproject:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+/* ── Plan Panel ── */
+.plan-panel {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-primary);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .3s ease;
+}
+.plan-panel.open { max-height: 400px; overflow-y: auto; }
+.plan-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  user-select: none;
+  transition: background .15s;
+}
+.plan-toggle:hover { background: var(--bg-secondary); }
+.plan-toggle .arrow { font-size: 10px; transition: transform .2s; }
+.plan-toggle.open .arrow { transform: rotate(90deg); }
+.plan-toggle .plan-label { flex: 1; font-weight: 500; }
+.plan-toggle .plan-status {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+.plan-toggle .btn-refresh {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all .15s;
+}
+.plan-toggle .btn-refresh:hover { color: var(--accent); background: var(--accent-dim); }
+.plan-toggle .btn-refresh.spinning { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.plan-content {
+  padding: 12px 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.plan-content .plan-phase {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--border);
+}
+.plan-content .plan-phase.active { border-left-color: var(--accent); background: var(--accent-dim); }
+.plan-content .plan-phase.done { border-left-color: var(--green); opacity: .7; }
+.plan-content .plan-phase .phase-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.plan-content .plan-phase .phase-items { padding-left: 12px; }
+.plan-content .plan-phase .phase-item { margin: 2px 0; }
+.plan-content .plan-phase .phase-item.done { text-decoration: line-through; opacity: .6; }
+.plan-content .subproject-status {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  font-size: 11px;
+}
+.plan-content .subproject-status .sp-name { font-weight: 500; color: var(--text-primary); }
+.plan-content .plan-empty {
+  text-align: center;
+  padding: 16px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Subproject Cards ── */
+.subproject-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  transition: all .2s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.subproject-card:hover { border-color: var(--accent); background: var(--accent-dim); transform: translateY(-2px); }
+.subproject-card .sp-header { display: flex; align-items: center; gap: 8px; }
+.subproject-card .sp-icon { font-size: 20px; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.subproject-card .sp-name { font-weight: 600; font-size: 14px; }
+.subproject-card .sp-meta { font-size: 11px; color: var(--text-muted); display: flex; gap: 10px; }
+.subproject-card .sp-status { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: var(--bg-secondary); color: var(--text-secondary); }
+.subproject-card .sp-widgets { font-size: 11px; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.subproject-card .sp-widgets .sp-wtag { background: var(--bg-secondary); padding: 1px 6px; border-radius: 4px; font-size: 10px; }
+.subprojects-section { margin-top: 8px; }
+.subprojects-section .sp-section-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; padding: 0 4px; }
+
 .chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -747,6 +898,18 @@ body {
     </div>
     <button class="btn-save-template" onclick="saveAsTemplate()" title="Als Template speichern">💾 Template</button>
   </div>
+  <div class="breadcrumb-bar" id="breadcrumbBar"></div>
+  <div class="plan-toggle" id="planToggle" onclick="togglePlan()">
+    <span class="arrow">▶</span>
+    <span class="plan-label">📋 Implementierungsplan</span>
+    <span class="plan-status" id="planStatus">—</span>
+    <button class="btn-refresh" id="btnRefreshPlan" onclick="event.stopPropagation();refreshPlan()" title="Plan aktualisieren">🔄</button>
+  </div>
+  <div class="plan-panel" id="planPanel">
+    <div class="plan-content" id="planContent">
+      <div class="plan-empty">Klicke 🔄 um einen Plan zu generieren</div>
+    </div>
+  </div>
   <div class="chat-messages" id="chatMessages"></div>
   <div class="typing-indicator" id="typingIndicator">
     <span></span><span></span><span></span>
@@ -806,128 +969,213 @@ body {
 
 <script>
 // ── State ──
-let state = { projects: [], activeProject: null };
+// contexts: L0 list from /api/contexts (id, name, icon, color, parentId, widgetCount)
+// activeContextId: currently selected context ID
+// activeContext: full context object from /api/context/:id
+let state = { contexts: [], activeContextId: null, activeContext: null };
 let saving = false;
 let saveTimeout = null;
 let saveVersion = 0; // track save generation to ignore stale SSE reloads
 let processing = false;
 
 const API_BASE = '';
-const DATA_URL = `${API_BASE}/app/projects/api/projects`;
+
+// Compatibility: getProject(id) returns the active context if id matches
+function getProject(id) {
+  if (id === state.activeContextId && state.activeContext) return state.activeContext;
+  return null;
+}
 
 // ── Load / Save ──
 async function load() {
   try {
-    const res = await fetch(DATA_URL);
-    const newState = await res.json();
-    if (!newState.projects) newState.projects = [];
-    state = newState;
+    const res = await fetch(`${API_BASE}/api/contexts`);
+    const data = await res.json();
+    state.contexts = data.contexts || [];
+    // Normalize: ensure each context has canvas-like structure for badge display
+    for (const c of state.contexts) {
+      if (!c.canvas) c.canvas = { widgets: [] };
+      // widgetCount comes from L0 data
+      c.canvas.widgets = new Array(c.widgetCount || 0);
+    }
     renderProjectList();
-    if (state.activeProject) {
-      selectProject(state.activeProject);
-    } else if (state.projects.length > 0) {
-      selectProject(state.projects[0].id);
+    if (state.activeContextId) {
+      await selectProject(state.activeContextId);
+    } else if (state.contexts.length > 0) {
+      await selectProject(state.contexts[0].id);
     }
   } catch (e) {
     console.error('Load error:', e);
   }
 }
 
+// Reload only the context list (L0) without re-selecting
+async function reloadContextList() {
+  try {
+    const res = await fetch(`${API_BASE}/api/contexts`);
+    const data = await res.json();
+    state.contexts = data.contexts || [];
+    for (const c of state.contexts) {
+      if (!c.canvas) c.canvas = { widgets: [] };
+      c.canvas.widgets = new Array(c.widgetCount || 0);
+    }
+    renderProjectList();
+  } catch (e) {
+    console.error('Reload context list error:', e);
+  }
+}
+
 function save() {
+  if (!state.activeContextId || !state.activeContext) return;
   clearTimeout(saveTimeout);
   const myVersion = ++saveVersion;
   saveTimeout = setTimeout(async () => {
     if (saving) return;
     saving = true;
     try {
-      await fetch(DATA_URL, {
+      await fetch(`${API_BASE}/api/context/${state.activeContextId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(state)
+        body: JSON.stringify(state.activeContext)
       });
+      // Also update the L0 entry in state.contexts
+      const idx = state.contexts.findIndex(c => c.id === state.activeContextId);
+      if (idx >= 0) {
+        state.contexts[idx].name = state.activeContext.name;
+        state.contexts[idx].icon = state.activeContext.icon;
+        state.contexts[idx].color = state.activeContext.color;
+        state.contexts[idx].widgetCount = (state.activeContext.widgets || []).length;
+        state.contexts[idx].canvas = { widgets: state.activeContext.widgets || [] };
+      }
     } catch (e) { console.error('Save error:', e); }
     // Keep saving=true for a short window to ignore SSE bounce-back
     setTimeout(() => { if (saveVersion === myVersion) saving = false; }, 500);
   }, 200);
 }
 
+// Immediate save (no debounce) - used before agent calls
+async function saveImmediate() {
+  if (!state.activeContextId || !state.activeContext) return;
+  const myVersion = ++saveVersion;
+  saving = true;
+  try {
+    await fetch(`${API_BASE}/api/context/${state.activeContextId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state.activeContext)
+    });
+  } catch (e) { console.error('Save error:', e); }
+  setTimeout(() => { if (saveVersion === myVersion) saving = false; }, 800);
+}
+
 // ── SSE Live Sync ──
 function connectSSE() {
-  const es = new EventSource(`${API_BASE}/sse/projects`);
+  const es = new EventSource(`${API_BASE}/sse/liveos`);
   es.onmessage = (e) => {
     try {
       const d = JSON.parse(e.data);
-      if (d.type === 'change' && !saving) {
-        load();
+      if (d.type === 'context-change' && !saving) {
+        reloadContextList();
+        if (d.contextId === state.activeContextId) {
+          selectProject(state.activeContextId);
+        }
+      }
+      if (d.type === 'context-deleted' && d.contextId === state.activeContextId) {
+        state.activeContextId = null;
+        state.activeContext = null;
+        reloadContextList().then(() => {
+          if (state.contexts.length > 0) selectProject(state.contexts[0].id);
+        });
       }
     } catch {}
   };
   es.onerror = () => setTimeout(connectSSE, 3000);
 }
 
-// ── Project CRUD ──
-function getProject(id) {
-  return state.projects.find(p => p.id === id);
-}
+// ── Project CRUD (now backed by Context API) ──
 
-function createProject(parentId = null) {
-  const id = 'proj-' + Date.now();
-  const proj = {
+async function createProject(parentId = null) {
+  const id = 'ctx-' + Date.now();
+  const ctx = {
     id,
     name: 'Neues Projekt',
     icon: ['🚀', '📦', '💡', '🎯', '🔧', '📊', '🌟', '🏗️'][Math.floor(Math.random() * 8)],
     color: ['#8B5CF6', '#3B82F6', '#22c55e', '#f59e0b', '#ef4444', '#ec4899'][Math.floor(Math.random() * 6)],
-    parentId,
-    created: new Date().toISOString(),
-    updated: new Date().toISOString(),
+    parentId: parentId || undefined,
     chat: [{
       id: 'msg-sys-' + Date.now(),
       role: 'system',
       text: 'Neues Projekt erstellt! Beschreibe was du bauen oder planen willst.',
       time: new Date().toISOString()
     }],
-    canvas: { widgets: [] },
+    widgets: [],
     data: {},
-    children: []
+    connections: [],
+    skills: []
   };
 
-  if (parentId) {
-    const parent = getProject(parentId);
-    if (parent) parent.children.push(id);
+  try {
+    const res = await fetch(`${API_BASE}/api/contexts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ctx)
+    });
+    const result = await res.json();
+    if (result.ok) {
+      await reloadContextList();
+      await selectProject(result.id || id);
+    }
+  } catch (e) {
+    console.error('Create context error:', e);
   }
-
-  state.projects.push(proj);
-  state.activeProject = id;
-  save();
-  renderProjectList();
-  selectProject(id);
 }
 
-function deleteProject(id) {
-  const proj = getProject(id);
-  if (!proj) return;
-  if (proj.children?.length > 0) {
-    // Remove children too
-    for (const cid of proj.children) deleteProject(cid);
+async function deleteProject(id) {
+  // Delete children first
+  const children = state.contexts.filter(c => c.parentId === id);
+  for (const child of children) {
+    await deleteProject(child.id);
   }
-  // Remove from parent
-  if (proj.parentId) {
-    const parent = getProject(proj.parentId);
-    if (parent) parent.children = parent.children.filter(c => c !== id);
+
+  try {
+    await fetch(`${API_BASE}/api/context/${id}`, { method: 'DELETE' });
+  } catch (e) {
+    console.error('Delete context error:', e);
   }
-  state.projects = state.projects.filter(p => p.id !== id);
-  if (state.activeProject === id) {
-    state.activeProject = state.projects[0]?.id || null;
+
+  state.contexts = state.contexts.filter(c => c.id !== id);
+  if (state.activeContextId === id) {
+    state.activeContextId = state.contexts[0]?.id || null;
+    state.activeContext = null;
   }
-  save();
   renderProjectList();
-  if (state.activeProject) selectProject(state.activeProject);
+  if (state.activeContextId) await selectProject(state.activeContextId);
 }
 
-function selectProject(id) {
-  state.activeProject = id;
-  const proj = getProject(id);
-  if (!proj) return;
+async function selectProject(id) {
+  state.activeContextId = id;
+
+  // Fetch the full context from the API
+  try {
+    const res = await fetch(`${API_BASE}/api/context/${id}`);
+    if (!res.ok) { console.error('Context not found:', id); return; }
+    const ctx = await res.json();
+
+    // Normalize context to have canvas-like structure for compatibility
+    if (!ctx.widgets) ctx.widgets = [];
+    if (!ctx.canvas) ctx.canvas = { widgets: ctx.widgets };
+    else ctx.canvas.widgets = ctx.widgets;
+    if (!ctx.data) ctx.data = {};
+    if (!ctx.chat) ctx.chat = [];
+    if (!ctx.children) ctx.children = [];
+
+    state.activeContext = ctx;
+  } catch (e) {
+    console.error('Load context error:', e);
+    return;
+  }
+
+  const proj = state.activeContext;
 
   // Update sidebar
   document.querySelectorAll('.project-item').forEach(el => {
@@ -936,13 +1184,46 @@ function selectProject(id) {
 
   // Update chat header
   document.getElementById('chatIcon').textContent = proj.icon;
-  document.getElementById('chatIcon').style.background = proj.color + '22';
+  document.getElementById('chatIcon').style.background = (proj.color || '#8B5CF6') + '22';
   document.getElementById('projectName').value = proj.name;
-  document.getElementById('projectSub').textContent = `${proj.canvas.widgets.length} Widget${proj.canvas.widgets.length !== 1 ? 's' : ''}`;
+  const wCount = proj.widgets.length;
+  document.getElementById('projectSub').textContent = `${wCount} Widget${wCount !== 1 ? 's' : ''}`;
 
+  renderBreadcrumb(proj);
+  renderPlan(proj);
   renderChat();
   renderCanvas();
-  save();
+  updatePendingBtn();
+}
+
+function renderBreadcrumb(proj) {
+  const bar = document.getElementById('breadcrumbBar');
+  // Build ancestor chain using L0 context list
+  const chain = [];
+  let currentId = proj.parentId;
+  const visited = new Set();
+  while (currentId && !visited.has(currentId)) {
+    visited.add(currentId);
+    const parent = state.contexts.find(c => c.id === currentId);
+    if (!parent) break;
+    chain.unshift(parent);
+    currentId = parent.parentId;
+  }
+
+  if (chain.length === 0) {
+    bar.classList.remove('visible');
+    bar.innerHTML = '';
+    return;
+  }
+
+  bar.classList.add('visible');
+  let html = '';
+  for (const ancestor of chain) {
+    html += `<button class="bc-item" onclick="selectProject('${ancestor.id}')">${ancestor.icon} ${ancestor.name}</button>`;
+    html += `<span class="bc-sep">›</span>`;
+  }
+  html += `<span class="bc-current">${proj.icon} ${proj.name}</span>`;
+  bar.innerHTML = html;
 }
 
 // ── Render Project List ──
@@ -950,34 +1231,50 @@ function renderProjectList() {
   const el = document.getElementById('projectList');
   el.innerHTML = '';
 
-  function renderLevel(projects, depth = 0) {
-    for (const p of projects) {
+  function renderLevel(contexts, depth = 0) {
+    for (const p of contexts) {
+      const children = state.contexts.filter(c => c.parentId === p.id);
+      const hasChildren = children.length > 0;
+      const isActive = state.activeContextId === p.id;
+      const wCount = p.widgetCount || 0;
+
       const div = document.createElement('div');
-      div.className = 'project-item' + (state.activeProject === p.id ? ' active' : '') + (depth > 0 ? ' nested' : '');
+      div.className = 'project-item' + (isActive ? ' active' : '') + (depth > 0 ? ' nested' : '');
       div.style.paddingLeft = (12 + depth * 16) + 'px';
       div.dataset.id = p.id;
       div.innerHTML = `
-        <span class="icon">${p.icon}</span>
+        ${hasChildren ? '<span style="font-size:10px;opacity:.5;margin-right:2px;">▾</span>' : ''}
+        <span class="icon">${p.icon || '🧩'}</span>
         <span>${p.name}</span>
-        <span class="badge">${p.canvas.widgets.length}</span>
+        <span class="badge">${wCount}${hasChildren ? ' · ' + children.length + '↓' : ''}</span>
         <button class="delete-btn" onclick="event.stopPropagation();deleteProject('${p.id}')">✕</button>
       `;
       div.onclick = () => selectProject(p.id);
       el.appendChild(div);
 
-      // Render children
-      const children = state.projects.filter(c => c.parentId === p.id);
-      if (children.length > 0) renderLevel(children, depth + 1);
+      // Render children indented
+      if (hasChildren) renderLevel(children, depth + 1);
+
+      // Show "add subproject" button for the active project
+      if (isActive) {
+        const subBtn = document.createElement('button');
+        subBtn.className = 'btn-subproject';
+        subBtn.style.marginLeft = (12 + (depth + 1) * 16) + 'px';
+        subBtn.style.width = `calc(100% - ${24 + (depth + 1) * 16}px)`;
+        subBtn.textContent = '+ Unterprojekt';
+        subBtn.onclick = (e) => { e.stopPropagation(); createProject(p.id); };
+        el.appendChild(subBtn);
+      }
     }
   }
 
-  const topLevel = state.projects.filter(p => !p.parentId);
+  const topLevel = state.contexts.filter(p => !p.parentId);
   renderLevel(topLevel);
 }
 
 // ── Render Chat ──
 function renderChat() {
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   if (!proj) return;
 
   const el = document.getElementById('chatMessages');
@@ -1006,13 +1303,17 @@ function renderChat() {
 
 // ── Render Canvas ──
 function renderCanvas() {
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   if (!proj) return;
 
   const grid = document.getElementById('canvasGrid');
   const empty = document.getElementById('canvasEmpty');
 
-  if (proj.canvas.widgets.length === 0) {
+  const children = state.contexts.filter(c => c.parentId === proj.id);
+  const hasWidgets = (proj.widgets || []).length > 0;
+  const hasChildren = children.length > 0;
+
+  if (!hasWidgets && !hasChildren) {
     empty.style.display = 'block';
     grid.innerHTML = '';
     return;
@@ -1021,9 +1322,34 @@ function renderCanvas() {
   empty.style.display = 'none';
   grid.innerHTML = '';
 
-  for (const widget of proj.canvas.widgets) {
+  for (const widget of (proj.widgets || [])) {
     const frame = createWidgetFrame(widget, proj);
     grid.appendChild(frame);
+  }
+
+  // Render subproject cards
+  if (hasChildren) {
+    const section = document.createElement('div');
+    section.className = 'subprojects-section';
+    section.style.gridColumn = '1 / -1';
+    let html = '<div class="sp-section-title">📂 Unterprojekte</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">';
+    for (const child of children) {
+      const wCount = child.widgetCount || 0;
+      html += `<div class="subproject-card" onclick="selectProject('${child.id}')">
+        <div class="sp-header">
+          <div class="sp-icon" style="background:${(child.color || '#8B5CF6')}22">${child.icon || '🧩'}</div>
+          <div>
+            <div class="sp-name">${child.name}</div>
+            <div class="sp-meta">
+              <span>${wCount} Widgets</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+    html += '</div>';
+    section.innerHTML = html;
+    grid.appendChild(section);
   }
 
   // Show/hide closed widgets toggle
@@ -1068,8 +1394,8 @@ function applyChangeBanners() {
       frame = document.querySelector(`.widget-frame[data-widget-id="${action.widgetId}"]`);
     }
     if (!frame && action.dataKey) {
-      const proj = getProject(state.activeProject);
-      const w = proj?.canvas.widgets.find(w => w.dataKey === action.dataKey);
+      const proj = state.activeContext;
+      const w = proj?.widgets?.find(w => w.dataKey === action.dataKey);
       if (w) frame = document.querySelector(`.widget-frame[data-widget-id="${w.id}"]`);
     }
     if (!frame) continue;
@@ -1225,7 +1551,7 @@ function updateTableCell(td) {
   const ri = parseInt(td.dataset.row);
   const col = td.dataset.col;
   const newVal = td.innerText.trim();
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   if (!proj) return;
   const rows = proj.data[dataKey];
   if (!rows || !rows[ri]) return;
@@ -1270,13 +1596,13 @@ function updateKpiField(el) {
   const dataKey = el.dataset.key;
   const field = el.dataset.field;
   const newVal = el.innerText.trim();
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   if (!proj) return;
   if (!proj.data[dataKey]) proj.data[dataKey] = {};
   const oldVal = String(proj.data[dataKey][field] ?? '');
   if (oldVal === newVal) return;
   proj.data[dataKey][field] = newVal;
-  const w = proj.canvas.widgets.find(w => w.dataKey === dataKey);
+  const w = (proj.widgets || []).find(w => w.dataKey === dataKey);
   logChange(proj, `📊 KPI "${w?.title || dataKey}": ${field} geaendert: "${oldVal}" → "${newVal}"`);
   save();
 }
@@ -1326,22 +1652,29 @@ function renderProgressWidget(container, widget, proj) {
 }
 
 // ── Pending Changes & Changelog ──
-let pendingChanges = [];
+// Map of projectId → array of pending changes
+let pendingChangesMap = {};
+
+function getPendingChanges(projectId) {
+  return pendingChangesMap[projectId || state.activeContextId] || [];
+}
 
 function logChange(proj, summary) {
-  // Accumulate as pending change (not written to changelog yet)
-  pendingChanges.push({ time: new Date().toISOString(), summary });
+  const pid = proj.id;
+  if (!pendingChangesMap[pid]) pendingChangesMap[pid] = [];
+  pendingChangesMap[pid].push({ time: new Date().toISOString(), summary });
   updatePendingBtn();
 }
 
 function flushChangelog(proj) {
   if (!proj.changelog) proj.changelog = [];
-  for (const c of pendingChanges) {
+  const changes = pendingChangesMap[proj.id] || [];
+  for (const c of changes) {
     proj.changelog.push(c);
   }
   if (proj.changelog.length > 50) proj.changelog = proj.changelog.slice(-50);
-  const flushed = [...pendingChanges];
-  pendingChanges = [];
+  const flushed = [...changes];
+  pendingChangesMap[proj.id] = [];
   updatePendingBtn();
   return flushed;
 }
@@ -1349,28 +1682,33 @@ function flushChangelog(proj) {
 function updatePendingBtn() {
   const btn = document.getElementById('pendingBtn');
   if (!btn) return;
-  const n = pendingChanges.length;
-  btn.style.display = n > 0 ? 'flex' : 'none';
-  document.getElementById('pendingLabel').textContent = `${n} Änderung${n !== 1 ? 'en' : ''} übernehmen`;
+  // Count changes for the CURRENT context only
+  const currentChanges = getPendingChanges(state.activeContextId);
+  const n = currentChanges.length;
+  // Also check if OTHER contexts have pending changes
+  const totalOther = Object.entries(pendingChangesMap)
+    .filter(([pid]) => pid !== state.activeContextId)
+    .reduce((sum, [, arr]) => sum + arr.length, 0);
+  btn.style.display = (n > 0 || totalOther > 0) ? 'flex' : 'none';
+  if (n > 0 && totalOther > 0) {
+    document.getElementById('pendingLabel').textContent = `${n} Änderung${n !== 1 ? 'en' : ''} übernehmen (+${totalOther} in anderen Projekten)`;
+  } else if (n > 0) {
+    document.getElementById('pendingLabel').textContent = `${n} Änderung${n !== 1 ? 'en' : ''} übernehmen`;
+  } else if (totalOther > 0) {
+    document.getElementById('pendingLabel').textContent = `${totalOther} Änderung${totalOther !== 1 ? 'en' : ''} in anderen Projekten`;
+  }
 }
 
 async function commitChanges() {
   let commitActions = [];
-  const proj = getProject(state.activeProject);
-  if (!proj || pendingChanges.length === 0) return;
+  const proj = state.activeContext;
+  const currentChanges = getPendingChanges(state.activeContextId);
+  if (!proj || currentChanges.length === 0) return;
 
   const changes = flushChangelog(proj);
 
   // Save immediately
-  saving = true;
-  try {
-    await fetch(DATA_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(state)
-    });
-  } catch (e) { console.error('Save error:', e); }
-  setTimeout(() => { saving = false; }, 800);
+  await saveImmediate();
 
   // Build summary for AI
   const summary = changes.map(c => c.summary).join('\n');
@@ -1391,23 +1729,19 @@ async function commitChanges() {
   document.getElementById('typingIndicator').classList.add('visible');
   document.getElementById('btnSend').disabled = true;
 
+  let response;
   try {
-    let response;
     try {
-      response = await callProjectAgent(state.activeProject, autoMsg);
+      response = await callProjectAgent(state.activeContextId, autoMsg);
     } catch (agentErr) {
       console.log('Agent unavailable, using local fallback:', agentErr.message);
       response = { text: `Änderungen gespeichert:\n${summary}`, widgetActions: [] };
     }
 
     if (response._fromAgent) {
-      const freshRes = await fetch(DATA_URL);
-      const freshState = await freshRes.json();
-      if (freshState.projects) {
-        state.projects = freshState.projects;
-        state.activeProject = freshState.activeProject || state.activeProject;
-      }
-      const freshProj = getProject(state.activeProject);
+      // Reload context from API (agent may have written to it)
+      await selectProject(state.activeContextId);
+      const freshProj = state.activeContext;
       if (freshProj) {
         freshProj.chat.push({
           id: 'msg-' + Date.now(),
@@ -1429,15 +1763,7 @@ async function commitChanges() {
       proj.updated = new Date().toISOString();
     }
 
-    saving = true;
-    try {
-      await fetch(DATA_URL, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(state)
-      });
-    } catch (e) { console.error('Save error:', e); }
-    setTimeout(() => { saving = false; }, 800);
+    await saveImmediate();
 
   } catch (e) {
     proj.chat.push({
@@ -1459,13 +1785,13 @@ async function commitChanges() {
 }
 
 function getWidgetTitle(proj, dataKey) {
-  const w = proj.canvas.widgets.find(w => w.dataKey === dataKey);
+  const w = (proj.widgets || []).find(w => w.dataKey === dataKey);
   return w ? w.title : dataKey;
 }
 
 // ── Widget Data Mutations ──
 function toggleTodo(dataKey, itemId) {
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   if (!proj) return;
   const items = proj.data[dataKey];
   if (!items) return;
@@ -1481,7 +1807,7 @@ function toggleTodo(dataKey, itemId) {
 function addTodo(dataKey, input) {
   const text = input.value.trim();
   if (!text) return;
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   if (!proj) return;
   if (!proj.data[dataKey]) proj.data[dataKey] = [];
   proj.data[dataKey].push({ id: 't-' + Date.now(), text, done: false });
@@ -1492,7 +1818,7 @@ function addTodo(dataKey, input) {
 }
 
 function updateNoteContent(dataKey, text) {
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   if (!proj) return;
   if (!proj.data[dataKey]) proj.data[dataKey] = {};
   const oldText = proj.data[dataKey].text || '';
@@ -1504,30 +1830,33 @@ function updateNoteContent(dataKey, text) {
 }
 
 function removeWidget(widgetId) {
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   if (!proj) return;
-  const w = proj.canvas.widgets.find(w => w.id === widgetId);
+  const w = (proj.widgets || []).find(w => w.id === widgetId);
   if (!w) return;
   // Move to closedWidgets instead of deleting
   if (!proj.closedWidgets) proj.closedWidgets = [];
   proj.closedWidgets.push({ ...w, closedAt: new Date().toISOString() });
-  proj.canvas.widgets = proj.canvas.widgets.filter(w => w.id !== widgetId);
+  proj.widgets = (proj.widgets || []).filter(w => w.id !== widgetId);
+  proj.canvas = { widgets: proj.widgets };
   logChange(proj, `🗑️ Widget "${w.title}" geschlossen`);
-  document.getElementById('projectSub').textContent = `${proj.canvas.widgets.length} Widgets`;
+  document.getElementById('projectSub').textContent = `${proj.widgets.length} Widgets`;
   save();
   renderCanvas();
 }
 
 function restoreWidget(widgetId) {
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   if (!proj || !proj.closedWidgets) return;
   const idx = proj.closedWidgets.findIndex(w => w.id === widgetId);
   if (idx === -1) return;
   const w = proj.closedWidgets.splice(idx, 1)[0];
   delete w.closedAt;
-  proj.canvas.widgets.push(w);
+  if (!proj.widgets) proj.widgets = [];
+  proj.widgets.push(w);
+  proj.canvas = { widgets: proj.widgets };
   logChange(proj, `♻️ Widget "${w.title}" wiederhergestellt`);
-  document.getElementById('projectSub').textContent = `${proj.canvas.widgets.length} Widgets`;
+  document.getElementById('projectSub').textContent = `${proj.widgets.length} Widgets`;
   save();
   renderCanvas();
 }
@@ -1539,7 +1868,7 @@ function toggleClosedPanel() {
 }
 
 function renderClosedPanel() {
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   const list = document.getElementById('closedList');
   const closed = proj?.closedWidgets || [];
   if (closed.length === 0) {
@@ -1575,9 +1904,9 @@ async function sendWidgetCmd(widgetId) {
   if (!text || processing) return;
   let lastActions = [];
 
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   if (!proj) return;
-  const widget = proj.canvas.widgets.find(w => w.id === widgetId);
+  const widget = (proj.widgets || []).find(w => w.id === widgetId);
   if (!widget) return;
 
   // Show status
@@ -1601,34 +1930,22 @@ async function sendWidgetCmd(widgetId) {
   renderChat();
 
   // Save before agent call
-  saving = true;
-  try {
-    await fetch(DATA_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(state)
-    });
-  } catch (e) { console.error('Save error:', e); }
-  setTimeout(() => { saving = false; }, 800);
+  await saveImmediate();
 
   processing = true;
   try {
     let response;
     try {
-      response = await callProjectAgent(state.activeProject, contextMsg);
+      response = await callProjectAgent(state.activeContextId, contextMsg);
     } catch (agentErr) {
       console.log('Agent unavailable:', agentErr.message);
       response = { text: 'Agent nicht verfuegbar. Bitte aendere die Daten manuell.', widgetActions: [] };
     }
 
     if (response._fromAgent) {
-      const freshRes = await fetch(DATA_URL);
-      const freshState = await freshRes.json();
-      if (freshState.projects) {
-        state.projects = freshState.projects;
-        state.activeProject = freshState.activeProject || state.activeProject;
-      }
-      const freshProj = getProject(state.activeProject);
+      // Reload context from API
+      await selectProject(state.activeContextId);
+      const freshProj = state.activeContext;
       if (freshProj) {
         freshProj.chat.push({
           id: 'msg-' + Date.now(),
@@ -1650,15 +1967,7 @@ async function sendWidgetCmd(widgetId) {
       proj.updated = new Date().toISOString();
     }
 
-    saving = true;
-    try {
-      await fetch(DATA_URL, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(state)
-      });
-    } catch (e) { console.error('Save error:', e); }
-    setTimeout(() => { saving = false; }, 800);
+    await saveImmediate();
 
     lastActions = response?.widgetActions || [];
     status.textContent = 'Erledigt!';
@@ -1682,9 +1991,9 @@ async function sendWidgetCmd(widgetId) {
 }
 
 function resizeWidget(widgetId) {
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   if (!proj) return;
-  const w = proj.canvas.widgets.find(w => w.id === widgetId);
+  const w = (proj.widgets || []).find(w => w.id === widgetId);
   if (!w) return;
   const sizes = ['sm', 'md', 'lg', 'full'];
   const idx = sizes.indexOf(w.size || 'md');
@@ -1700,7 +2009,7 @@ async function sendMessage() {
   const text = input.value.trim();
   if (!text || processing) return;
 
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   if (!proj) return;
 
   // Add user message
@@ -1716,15 +2025,7 @@ async function sendMessage() {
   renderChat();
 
   // Save immediately (not debounced) so the server has the user message before agent call
-  saving = true;
-  try {
-    await fetch(DATA_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(state)
-    });
-  } catch (e) { console.error('Save error:', e); }
-  setTimeout(() => { saving = false; }, 800);
+  await saveImmediate();
 
   // Show typing
   processing = true;
@@ -1736,24 +2037,17 @@ async function sendMessage() {
     // Try AI agent first, fall back to local pattern matching
     let response;
     try {
-      response = await callProjectAgent(state.activeProject, text);
+      response = await callProjectAgent(state.activeContextId, text);
     } catch (agentErr) {
       console.log('Agent unavailable, using local fallback:', agentErr.message);
       response = await processProjectMessage(text, proj);
     }
 
-    // If agent responded, reload full state from server (agent wrote directly to projects.json)
+    // If agent responded, reload context from API
     if (response._fromAgent) {
-      const freshRes = await fetch(DATA_URL);
-      const freshState = await freshRes.json();
-      if (freshState.projects) {
-        state.projects = freshState.projects;
-        state.activeProject = freshState.activeProject || state.activeProject;
-      }
-      // Re-get the project reference after state reload
-      const freshProj = getProject(state.activeProject);
+      await selectProject(state.activeContextId);
+      const freshProj = state.activeContext;
       if (freshProj) {
-        // Add agent response to the fresh state
         freshProj.chat.push({
           id: 'msg-' + Date.now(),
           role: 'agent',
@@ -1778,15 +2072,7 @@ async function sendMessage() {
     lastWidgetActions = response.widgetActions || [];
 
     // Save with immediate flush
-    saving = true;
-    try {
-      await fetch(DATA_URL, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(state)
-      });
-    } catch (e) { console.error('Save error:', e); }
-    setTimeout(() => { saving = false; }, 800);
+    await saveImmediate();
 
   } catch (e) {
     proj.chat.push({
@@ -1804,7 +2090,7 @@ async function sendMessage() {
   renderChat();
   renderCanvas();
   highlightAiChanges(lastWidgetActions);
-  document.getElementById('projectSub').textContent = `${getProject(state.activeProject)?.canvas.widgets.length || 0} Widgets`;
+  document.getElementById('projectSub').textContent = `${(state.activeContext?.widgets || []).length} Widgets`;
 }
 
 // ── AI Agent Call ──
@@ -1943,7 +2229,10 @@ async function processProjectMessage(text, proj) {
         proj.data[widget.dataKey] = widget.data.items || widget.data.columns || widget.data.rows || widget.data.links || widget.data;
       }
 
-      proj.canvas.widgets.push(widget);
+      if (!proj.widgets) proj.widgets = [];
+      proj.widgets.push(widget);
+      // Keep canvas.widgets in sync
+      proj.canvas = { widgets: proj.widgets };
       created.push(widget);
       widgetActions.push({ icon: getWidgetIcon(widget.type), label: p.label });
     }
@@ -2060,7 +2349,7 @@ chatInput.addEventListener('keydown', function(e) {
 
 // Project name editing
 document.getElementById('projectName').addEventListener('change', function() {
-  const proj = getProject(state.activeProject);
+  const proj = state.activeContext;
   if (proj) {
     proj.name = this.value;
     renderProjectList();
@@ -2126,8 +2415,8 @@ async function createFromTemplate(templateId) {
 }
 
 async function saveAsTemplate() {
-  const proj = getProject(state.activeProject);
-  if (!proj || proj.canvas.widgets.length === 0) {
+  const proj = state.activeContext;
+  if (!proj || (proj.widgets || []).length === 0) {
     alert('Dieses Projekt hat keine Widgets — nichts zum Speichern als Template.');
     return;
   }
@@ -2159,6 +2448,107 @@ async function saveAsTemplate() {
 document.getElementById('templateModal').addEventListener('click', function(e) {
   if (e.target === this) closeTemplateModal();
 });
+
+// ── Plan Panel ──
+function togglePlan() {
+  const toggle = document.getElementById('planToggle');
+  const panel = document.getElementById('planPanel');
+  toggle.classList.toggle('open');
+  panel.classList.toggle('open');
+}
+
+function renderPlan(proj) {
+  const content = document.getElementById('planContent');
+  const status = document.getElementById('planStatus');
+  if (!proj || !proj.plan) {
+    content.innerHTML = '<div class="plan-empty">Klicke 🔄 um einen Plan zu generieren</div>';
+    status.textContent = '—';
+    return;
+  }
+
+  const plan = proj.plan;
+  status.textContent = plan.status || '—';
+
+  let html = '';
+
+  // Render phases
+  if (plan.phases && plan.phases.length > 0) {
+    for (const phase of plan.phases) {
+      const cls = phase.state === 'done' ? 'done' : phase.state === 'active' ? 'active' : '';
+      const icon = phase.state === 'done' ? '✅' : phase.state === 'active' ? '▶' : '⬜';
+      html += `<div class="plan-phase ${cls}">`;
+      html += `<div class="phase-title">${icon} ${phase.title}</div>`;
+      if (phase.items && phase.items.length > 0) {
+        html += '<div class="phase-items">';
+        for (const item of phase.items) {
+          const itemCls = item.done ? 'done' : '';
+          html += `<div class="phase-item ${itemCls}">${item.done ? '☑' : '☐'} ${item.text}</div>`;
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+  }
+
+  // Render subproject statuses
+  const children = state.contexts.filter(c => c.parentId === proj.id);
+  if (children.length > 0) {
+    html += '<div style="margin-top:10px;font-weight:600;font-size:11px;color:var(--text-muted);margin-bottom:4px;">UNTERPROJEKTE</div>';
+    for (const child of children) {
+      const wCount = child.widgetCount || 0;
+      html += `<div class="subproject-status">
+        <span class="sp-name">${child.icon || '🧩'} ${child.name}</span>
+        <span style="float:right;color:var(--text-muted);">${wCount} Widgets</span>
+      </div>`;
+    }
+  }
+
+  if (plan.summary) {
+    html += `<div style="margin-top:10px;padding:8px;border-radius:6px;background:var(--bg-secondary);font-size:11px;color:var(--text-muted);">${plan.summary}</div>`;
+  }
+
+  content.innerHTML = html || '<div class="plan-empty">Plan ist leer</div>';
+}
+
+async function refreshPlan() {
+  const proj = state.activeContext;
+  if (!proj) return;
+
+  const btn = document.getElementById('btnRefreshPlan');
+  btn.classList.add('spinning');
+
+  // Open the plan panel if closed
+  const panel = document.getElementById('planPanel');
+  const toggle = document.getElementById('planToggle');
+  if (!panel.classList.contains('open')) {
+    panel.classList.add('open');
+    toggle.classList.add('open');
+  }
+
+  const content = document.getElementById('planContent');
+  content.innerHTML = '<div class="plan-empty" style="color:var(--accent);">⏳ Plan wird generiert...</div>';
+
+  try {
+    const res = await fetch('/api/project-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId: proj.id })
+    });
+    const result = await res.json();
+    if (result.ok && result.plan) {
+      proj.plan = result.plan;
+      renderPlan(proj);
+    } else {
+      console.error('Plan error:', result.error, result.raw);
+      content.innerHTML = `<div class="plan-empty">Plan konnte nicht generiert werden</div>`;
+    }
+  } catch (e) {
+    console.error('Plan refresh error:', e);
+    content.innerHTML = `<div class="plan-empty">Fehler bei der Plan-Generierung</div>`;
+  } finally {
+    btn.classList.remove('spinning');
+  }
+}
 
 // ── Init ──
 load();

@@ -1,0 +1,29 @@
+{
+  "id": "measurement",
+  "icon": "📈",
+  "label": "Messwert",
+  "labelPlural": "Messwerte",
+  "description": "Ein Messwert mit Verlauf und Trend, z.B. Gewicht, Umsatz oder Temperatur",
+  "fields": {
+    "label": { "type": "string", "required": true, "label": "Bezeichnung" },
+    "unit": { "type": "string", "required": true, "label": "Einheit" },
+    "current": { "type": "number", "required": false, "label": "Aktueller Wert" },
+    "target": { "type": "number", "required": false, "label": "Zielwert" },
+    "history": {
+      "type": "array",
+      "required": false,
+      "label": "Verlauf",
+      "items": {
+        "date": { "type": "date", "label": "Datum" },
+        "value": { "type": "number", "label": "Wert" }
+      }
+    },
+    "trend": { "type": "enum", "required": false, "options": ["up", "down", "stable"], "label": "Trend" }
+  },
+  "renders": ["kpi", "chart", "table"],
+  "defaultRender": "kpi",
+  "constraints": {
+    "uniqueKey": "label",
+    "sortBy": "label"
+  }
+}

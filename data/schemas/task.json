@@ -1,0 +1,22 @@
+{
+  "id": "task",
+  "icon": "✅",
+  "label": "Aufgabe",
+  "labelPlural": "Aufgaben",
+  "description": "Eine Aufgabe oder ein To-Do-Eintrag mit Priorität und Fälligkeitsdatum",
+  "fields": {
+    "id": { "type": "string", "required": true, "auto": true, "label": "ID" },
+    "text": { "type": "string", "required": true, "label": "Aufgabe" },
+    "done": { "type": "boolean", "required": false, "default": false, "label": "Erledigt" },
+    "priority": { "type": "enum", "required": false, "options": ["high", "medium", "low"], "label": "Priorität" },
+    "dueDate": { "type": "date", "required": false, "label": "Fällig am" },
+    "assignee": { "type": "string", "required": false, "label": "Zuständig" },
+    "category": { "type": "string", "required": false, "label": "Kategorie" }
+  },
+  "renders": ["todo", "kanban", "table"],
+  "defaultRender": "todo",
+  "constraints": {
+    "uniqueKey": "id",
+    "sortBy": "priority"
+  }
+}
