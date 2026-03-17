@@ -2252,7 +2252,8 @@ WICHTIG: Antworte NUR mit einem JSON-Objekt, kein anderer Text davor oder danach
       "type": "todo|notes|table|timeline|kanban|kpi|links|progress",
       "title": "Widget-Titel",
       "size": "sm|md|lg|full",
-      "data": { ... passende Daten fuer den Widget-Typ ... }
+      "data": { ... passende Daten fuer den Widget-Typ ... },
+      "detail": "Kurze Beschreibung was erstellt wurde und warum"
     }
   ],
   "updates": [
@@ -2264,7 +2265,8 @@ WICHTIG: Antworte NUR mit einem JSON-Objekt, kein anderer Text davor oder danach
       "size": "optional: sm|md|lg|full",
       "type": "optional: neuer Widget-Typ",
       "config": { "optional": "neue Config z.B. columns" },
-      "color": "optional: neue Farbe"
+      "color": "optional: neue Farbe",
+      "detail": "Kurze Beschreibung was geaendert wurde (z.B. '3 neue Zeilen hinzugefuegt', 'Typ von Kanban zu Tabelle geaendert')"
     }
   ]
 }
@@ -2395,7 +2397,7 @@ Regeln:
                     project.data[dataKey] = w.data.items || w.data.columns || w.data.rows || w.data.links || w.data;
                   }
                   const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉' };
-                  widgetActions.push({ icon: icons[w.type] || '🧩', label: `${w.title || w.type} erstellt` });
+                  widgetActions.push({ icon: icons[w.type] || '🧩', label: `${w.title || w.type} erstellt`, widgetId, dataKey, action: 'create', detail: w.detail || `Neues ${w.type}-Widget "${w.title}" erstellt` });
                 }
               }
             }
@@ -2417,7 +2419,14 @@ Regeln:
                     if (u.config) widget.config = u.config;
                     if (u.color) widget.color = u.color;
                   }
-                  widgetActions.push({ icon: '✏️', label: `${widget?.title || 'Widget'} aktualisiert` });
+                  const changes = [];
+                  if (u.title) changes.push(`Titel → "${u.title}"`);
+                  if (u.type) changes.push(`Typ → ${u.type}`);
+                  if (u.size) changes.push(`Groesse → ${u.size}`);
+                  if (u.config) changes.push('Config aktualisiert');
+                  if (u.data) changes.push('Daten aktualisiert');
+                  if (u.color) changes.push(`Farbe → ${u.color}`);
+                  widgetActions.push({ icon: '✏️', label: `${widget?.title || 'Widget'} aktualisiert`, widgetId: widget?.id, dataKey: u.dataKey, action: 'update', detail: u.detail || changes.join(', ') || 'Widget aktualisiert' });
                 }
               }
             }

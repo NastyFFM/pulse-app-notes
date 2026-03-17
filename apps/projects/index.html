@@ -388,6 +388,38 @@ body {
 }
 .widget-head .actions button:hover { background: var(--bg-secondary); color: var(--text-primary); }
 
+/* AI Change Highlight */
+@keyframes aiGlow {
+  0% { box-shadow: 0 0 0 0 rgba(139,92,246,0.5); }
+  50% { box-shadow: 0 0 20px 4px rgba(139,92,246,0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.0); }
+}
+.widget-frame.ai-changed {
+  animation: aiGlow 1.5s ease-out;
+  border-color: var(--accent) !important;
+  transition: border-color 3s ease;
+}
+.widget-change-banner {
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(59,130,246,0.1));
+  border-bottom: 1px solid rgba(139,92,246,0.3);
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.widget-change-banner:hover { background: rgba(139,92,246,0.2); }
+.widget-change-banner .change-icon { color: var(--accent); flex-shrink: 0; }
+.widget-change-banner .change-text { flex: 1; line-height: 1.4; }
+.widget-change-banner .change-dismiss {
+  color: var(--text-muted); cursor: pointer; font-size: 14px;
+  background: none; border: none; padding: 0; flex-shrink: 0;
+}
+.widget-change-banner .change-dismiss:hover { color: var(--text-primary); }
+
 .widget-body {
   padding: 12px 14px;
   flex: 1;
@@ -1004,6 +1036,54 @@ function renderCanvas() {
   if (panel.style.display === 'flex') renderClosedPanel();
 }
 
+// ── AI Change Highlights ──
+function highlightAiChanges(widgetActions) {
+  if (!widgetActions || widgetActions.length === 0) return;
+  for (const action of widgetActions) {
+    let frame = null;
+    if (action.widgetId) {
+      frame = document.querySelector(`.widget-frame[data-widget-id="${action.widgetId}"]`);
+    }
+    // Fallback: find by dataKey if widgetId didn't match
+    if (!frame && action.dataKey) {
+      const proj = getProject(state.activeProject);
+      const w = proj?.canvas.widgets.find(w => w.dataKey === action.dataKey);
+      if (w) frame = document.querySelector(`.widget-frame[data-widget-id="${w.id}"]`);
+    }
+    if (!frame) continue;
+
+    // Add glow animation
+    frame.classList.add('ai-changed');
+
+    // Insert change banner after widget-head
+    const head = frame.querySelector('.widget-head');
+    const cmd = frame.querySelector('.widget-cmd');
+    const insertBefore = cmd || frame.querySelector('.widget-body');
+
+    // Remove existing banner if any
+    const existing = frame.querySelector('.widget-change-banner');
+    if (existing) existing.remove();
+
+    const banner = document.createElement('div');
+    banner.className = 'widget-change-banner';
+    banner.innerHTML = `
+      <span class="change-icon">${action.action === 'create' ? '✨' : '✏️'}</span>
+      <span class="change-text">${escapeHtml(action.detail || action.label)}</span>
+      <button class="change-dismiss" onclick="this.parentElement.remove()">✕</button>
+    `;
+    frame.insertBefore(banner, insertBefore);
+
+    // Remove glow class after animation (but keep banner)
+    setTimeout(() => {
+      frame.classList.remove('ai-changed');
+      frame.style.borderColor = '';
+    }, 4000);
+
+    // Auto-dismiss banner after 15s
+    setTimeout(() => { if (banner.parentElement) banner.remove(); }, 15000);
+  }
+}
+
 // ── Widget Factory ──
 function createWidgetFrame(widget, proj) {
   const frame = document.createElement('div');
@@ -1262,6 +1342,7 @@ function updatePendingBtn() {
 }
 
 async function commitChanges() {
+  let commitActions = [];
   const proj = getProject(state.activeProject);
   if (!proj || pendingChanges.length === 0) return;
 
@@ -1355,11 +1436,13 @@ async function commitChanges() {
     save();
   }
 
+  commitActions = response?.widgetActions || [];
   processing = false;
   document.getElementById('typingIndicator').classList.remove('visible');
   document.getElementById('btnSend').disabled = false;
   renderChat();
   renderCanvas();
+  highlightAiChanges(commitActions);
 }
 
 function getWidgetTitle(proj, dataKey) {
@@ -1477,6 +1560,7 @@ async function sendWidgetCmd(widgetId) {
   const status = document.getElementById('wcmd-status-' + widgetId);
   const text = input?.value.trim();
   if (!text || processing) return;
+  let lastActions = [];
 
   const proj = getProject(state.activeProject);
   if (!proj) return;
@@ -1563,6 +1647,7 @@ async function sendWidgetCmd(widgetId) {
     } catch (e) { console.error('Save error:', e); }
     setTimeout(() => { saving = false; }, 800);
 
+    lastActions = response?.widgetActions || [];
     status.textContent = 'Erledigt!';
     status.style.color = 'var(--green)';
     input.value = '';
@@ -1580,6 +1665,7 @@ async function sendWidgetCmd(widgetId) {
   input.disabled = false;
   renderChat();
   renderCanvas();
+  highlightAiChanges(lastActions);
 }
 
 function resizeWidget(widgetId) {
@@ -1631,6 +1717,7 @@ async function sendMessage() {
   processing = true;
   document.getElementById('typingIndicator').classList.add('visible');
   document.getElementById('btnSend').disabled = true;
+  let lastWidgetActions = [];
 
   try {
     // Try AI agent first, fall back to local pattern matching
@@ -1675,6 +1762,8 @@ async function sendMessage() {
       proj.updated = new Date().toISOString();
     }
 
+    lastWidgetActions = response.widgetActions || [];
+
     // Save with immediate flush
     saving = true;
     try {
@@ -1701,7 +1790,8 @@ async function sendMessage() {
   document.getElementById('btnSend').disabled = false;
   renderChat();
   renderCanvas();
-  document.getElementById('projectSub').textContent = `${proj.canvas.widgets.length} Widgets`;
+  highlightAiChanges(lastWidgetActions);
+  document.getElementById('projectSub').textContent = `${getProject(state.activeProject)?.canvas.widgets.length || 0} Widgets`;
 }
 
 // ── AI Agent Call ──
