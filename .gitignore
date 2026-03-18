@@ -134,3 +134,13 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# PulseOS runtime data
+data/viking/
+data/agents.json
+data/state.json
+data/supervisor-status.json
+data/event-log.json
+data/scheduled-tasks.json
+.DS_Store
+*.backup-*
