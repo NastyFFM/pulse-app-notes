@@ -1,233 +1,412 @@
 # PulseOS — Vision & Concept
-
-## What Is PulseOS?
-
-PulseOS is a **browser-based agentic operating system**. It bridges the gap between two worlds that currently don't talk to each other:
-
-- **Chat AI** — powerful but has no persistent GUI, no spatial workspace, no visual state
-- **Traditional OS** (Windows, macOS, iOS) — rich GUI but static, dumb, AI-bolted-on-as-afterthought
-
-PulseOS fills that gap. It's an OS where AI is native — not a sidebar, not a copilot, not an assistant widget. The AI *is* the operating system. Every piece of data, every app, every project lives in a unified structure that both humans and AI can read, write, and reason about.
-
-It runs entirely in the browser at `localhost:3000`, built with vanilla HTML/CSS/JS and a single Node.js server. No npm. No build tools. No frameworks. Just raw web technology and AI.
+> Version 2 — App Graph Architecture
 
 ---
 
-## The Three Pillars
+## Was ist PulseOS?
 
-PulseOS is not just a productivity tool. It's designed around three equal pillars:
+PulseOS ist ein **browser-basiertes agentisches Betriebssystem**. Es überbrückt die Lücke zwischen zwei Welten, die sich derzeit nicht kennen:
+
+- **Chat-KI** — mächtig, aber ohne persistentes GUI, ohne räumlichen Workspace, ohne visuellen Zustand
+- **Traditionelle Betriebssysteme** (Windows, macOS, iOS) — reiches GUI, aber statisch, dumm, KI als nachträglicher Einbau
+
+PulseOS füllt diese Lücke. Es ist ein Betriebssystem, in dem KI nativ ist — kein Sidebar, kein Copilot, kein Assistenz-Widget. Die KI *ist* das Betriebssystem. Jedes Datenelement, jede App, jedes Projekt lebt in einer einheitlichen Struktur, die sowohl Menschen als auch KI lesen, schreiben und verstehen können.
+
+---
+
+## Die drei Säulen
+
+PulseOS ist nicht nur ein Produktivitätswerkzeug. Es basiert auf drei gleichwertigen Säulen:
 
 ### 1. Work
-Projects with structured data, widgets, AI-assisted workflows. You tell the AI "track my weight" and it creates a KPI widget with history. You say "plan my trip to Barcelona" and it scaffolds a full project with budget, packing list, timeline, and hotel research as sub-contexts.
+Projekte mit strukturierten Daten, App-Graphen, KI-gestützten Workflows. Du sagst der KI „track mein Gewicht" und sie erstellt eine Metriken-App mit Verlaufsanzeige. Du sagst „plan meine Reise nach Barcelona" und sie baut einen vollständigen App-Graphen — Budget, Packliste, Timeline, Hotelrecherche — als verbundene Knoten.
 
 ### 2. Fun
-Standalone apps — games (Tetris, Flappy Bird, Doom), creative tools (drum computer, whiteboard, image generation), media (internet radio, podcast search, YouTube). These aren't productivity features. They exist because an OS should be something you *want* to use, not just something you *have* to use.
+Eigenständige Apps — Spiele (Tetris, Flappy Bird, Doom), Kreativwerkzeuge (Drum-Computer, Whiteboard, Bildgenerierung), Medien (Internetradio, Podcast-Suche, YouTube). Diese sind keine Produktivitätsfeatures. Sie existieren, weil ein Betriebssystem etwas sein soll, das man *benutzen will*, nicht nur *benutzen muss*.
 
 ### 3. Social
-WebRTC-based real-time communication. PulseOS is also a social device — not just a workspace. People connect to people, not just to AI.
+WebRTC-basierte Echtzeitkommunikation. PulseOS ist auch ein soziales Gerät — nicht nur ein Workspace. Menschen verbinden sich mit Menschen, nicht nur mit KI. Und WebRTC-Ereignisse sind selbst Pulse-Signale im System — eine eingehende Nachricht kann einen Workflow auslösen.
 
-**Design rule:** Every feature decision should serve at least one pillar. The system should feel alive and agentic, not static.
+**Design-Regel:** Jede Feature-Entscheidung soll mindestens einer Säule dienen. Das System soll lebendig und agentisch wirken, nicht statisch.
 
 ---
 
-## The Context Engine — Core Innovation
+## Die Kernverschiebung: Apps ersetzen Widgets
 
-The most important architectural decision in PulseOS: **everything is a Context**.
+### Das alte Modell (V1)
+```
+Kontext
+├── Canvas (Widgets darauf)
+│   ├── Todo-Widget
+│   ├── KPI-Widget
+│   └── App-Widget (iframe)
+└── Chat
+```
 
-### Before vs. After
+Widgets und Apps waren zwei verschiedene Systeme. Widgets waren klein, apps waren groß. Widgets lebten auf dem Canvas, Apps in Fenstern. Zwei parallele Konzepte — unnötige Komplexität.
+
+### Das neue Modell (V2)
+```
+Kontext
+├── App-Graph
+│   ├── App A (Producer)
+│   ├── App B (Transformer)
+│   └── App C (Consumer)
+└── Chat
+```
+
+**Apps sind alles.** Es gibt keine Widgets mehr als eigenes Konzept. Eine App ist gleichzeitig:
+- Ein **UI-Baustein** mit L0/L1/L2-Ansichten
+- Ein **Datenknoten** im App-Graphen
+- Ein **Kontext** mit eigenem Datenspeicher und Chat
+
+Ein KPI-Tracker ist eine App. Ein Todo-Board ist eine App. Tetris ist eine App. Die Nachrichten-Anzeige ist eine App. Alle folgen demselben Modell.
+
+---
+
+## Das App-Modell
+
+### Anatomie einer App
+
+Jede App besteht aus drei Schichten:
 
 ```
-Before:  App ≠ Project ≠ Context ≠ Agent    (4 separate systems, no shared structure)
-After:   Context = everything.               (Widgets + Chat + Skills + Data Flow = one system)
+┌─────────────────────────────────────┐
+│  VIEW LAYER                         │  L0 / L1 / L2 Ansichten
+│  Was der User sieht                 │
+├─────────────────────────────────────┤
+│  API LAYER                          │  Öffentliche Funktionen
+│  Was andere Apps & die KI sehen     │  get(), set(), subscribe()
+├─────────────────────────────────────┤
+│  DATA LAYER                         │  JSON im Speicher
+│  Was die App intern weiß            │  Laden → Arbeiten → Schreiben
+└─────────────────────────────────────┘
 ```
 
-A Context is the universal unit. A weekend trip is a Context. A budget tracker is a Context. A game of Tetris is a Context. Your entire life ("Root") is a Context. They nest, reference each other, and form a tree.
+**Kritische Regel:** Die KI schreibt niemals direkt in das JSON einer App. Sie ruft immer die API der App auf. Das stellt sicher, dass Daten immer konsistent gelesen und geschrieben werden — die App selbst ist für ihre Datenkonsistenz verantwortlich.
 
-### What a Context Contains
+### L0 / L1 / L2 — Die drei Zoom-Ebenen
 
-Every Context has:
-- **A Canvas** — a spatial workspace with draggable widgets
-- **A Chat** — AI-powered, can read/write all data in the context
-- **Widgets** — typed data views (todo lists, KPIs, kanban boards, notes, tables, timelines, progress bars, apps)
-- **Data** — JSON key-value store, schema-validated
-- **Children** — sub-contexts that inherit data and can propagate data upward
+Jede App hat drei Informationsdichte-Ebenen, die sowohl für den User als auch für die KI gelten:
 
-### The Three Zoom Levels (L0 / L1 / L2)
+| Ebene | Was der User sieht | Was die KI sieht | Tokens (~) |
+|-------|-------------------|------------------|------------|
+| **L0** | Minimierter Chip — Icon + Titel + Statusbadge | Kompakter Snapshot: Name, Status, letzter Output | ~100 |
+| **L1** | Karte — Standard-App-Ansicht | Vollständiger Datenzustand, letzte Ereignisse | ~1–2k |
+| **L2** | Vollansicht — vollständig expandiert | Alles + Konfiguration + Datenverlauf | Voll |
 
-Every widget has three information density levels, inspired by OpenViking's 3-layer information pyramid:
+Diese Hierarchie ist nicht nur UI-Design. Sie ist **Informationsarchitektur**: Wenn die KI über einen Graphen mit 20 Apps nachdenkt, liest sie sie auf L0. Wenn sie eine App konfigurieren soll, wechselt sie zu L2. Effizienz durch Zoom.
 
-| Level | What You See | What You Can Do | Tokens (~) |
-|-------|-------------|-----------------|------------|
-| **L0** | Minimized pill — icon + title + badge | Quick-actions: toggle checkbox, update KPI, see count | ~100 |
-| **L1** | Card — the standard widget view | Full inline editing, add items, reorder | ~1-2k |
-| **L2** | Full view — expanded or enter sub-context | Everything + AI commands + structural changes | Full |
+### Datenverwaltung der App
 
-This isn't just a UI feature. It's an **information architecture**. When the AI reasons about your data, it can work at L0 (quick summary), L1 (working detail), or L2 (full depth). The same hierarchy maps to how data is stored, cached, and transmitted.
-
-### Data Flow — Three Directions
-
-Data doesn't just sit in one place. It flows through the context hierarchy:
+Jede App verwaltet ihr JSON selbst:
 
 ```
-         ↑ PROPAGATION
-         │ Data rises to its "home context"
-         │ e.g., Weight → Root context ("Me")
-    ┌────┴────┐
-    │  Root   │
-    └────┬────┘
+1. Laden    — App lädt ihr JSON beim Start (oder on-demand)
+2. Arbeiten — App hält aktuellen Zustand im Speicher
+3. Schreiben — App schreibt bei Änderungen zurück
+```
+
+Kein direkter Dateizugriff von außen. Kein direktes JSON-Patching durch die KI. Immer durch die App-API.
+
+---
+
+## Der App-Graph
+
+### Grundidee
+
+Apps sind Knoten in einem gerichteten Graphen. Daten fließen entlang der Kanten — von Produzenten über Transformer zu Konsumenten.
+
+```
+[Producer A] ──► [Transformer B] ──► [Consumer C]
+     │                                    │
+     └───────────────────────────────────►│
+                                      (aggregiert)
+```
+
+### Die drei Knotentypen
+
+#### Producer — nur Ausgänge
+Ein Producer erzeugt Daten. Er hat keine Eingänge aus dem Graphen, aber er kann durch den **Pulse** ausgelöst werden.
+
+Beispiele:
+- News-Fetcher (lädt aktuelle Nachrichten von einer Quelle)
+- E-Mail-Poller (prüft Postfach auf neue Nachrichten)
+- RSS-Reader
+- Manuelle Eingabe-App (User gibt Daten ein → schickt sie weiter)
+
+#### Transformer — Eingänge + Ausgänge
+Ein Transformer empfängt Daten, verändert sie und gibt sie weiter. Die Transformation kann einfach (filtern, sortieren) oder komplex (KI-Zusammenfassung, Übersetzung) sein.
+
+Beispiele:
+- Nachrichten-Filter (behält nur Tech-News)
+- KI-Zusammenfasser (komprimiert 10 Artikel auf 3 Sätze)
+- Sentiment-Analyzer
+- Format-Converter
+
+**Wichtig:** Nicht jeder Transformer braucht KI. Reine Datentransformationen (filtern, sortieren, mappen) laufen direkt ohne KI-Aufruf. KI wird nur eingesetzt, wenn semantisches Verstehen notwendig ist.
+
+#### Consumer — nur Eingänge
+Ein Consumer empfängt Daten und tut etwas damit — anzeigen, speichern, versenden.
+
+Beispiele:
+- News-Anzeige (zeigt die 3 neuesten Nachrichten)
+- Datenbank-Schreiber (persistiert Daten)
+- Benachrichtigungs-Sender (schickt Push-Notification)
+- Dashboard-Widget (visualisiert Kennzahlen)
+
+### Datenübergabe zwischen Knoten
+
+Wenn eine App einen Output produziert, übergibt sie die Daten an den nächsten Knoten durch direkten API-Aufruf. Kein Umweg über die KI, kein zentraler Message-Broker (außer bei Bedarf).
+
+```
+newsApp.fetchComplete(articles)
+  → filterApp.receive(articles)      // direkt, kein KI-Hop
+  → displayApp.render(filteredNews)  // direkt, kein KI-Hop
+```
+
+Die KI orchestriert den Graphen beim Aufbau — sie verdrahtet die Knoten. Danach läuft der Datenfluss autonom.
+
+---
+
+## Der Pulse — Das Herzschlagsystem
+
+### Was ist ein Pulse?
+
+Ein Pulse ist ein **Auslösesignal**. Er sagt einem oder mehreren Producers: "Es ist Zeit, aktiv zu werden."
+
+Ein Pulse ist **nicht nur eine Uhr**. Jedes externe Ereignis kann ein Pulse-Signal sein:
+
+| Pulse-Typ | Beschreibung | Beispiel |
+|-----------|-------------|---------|
+| **Clock** | Zeitbasiert | Alle 15 Minuten |
+| **Email** | Neue E-Mail im Postfach | Jede neue Mail von Chef |
+| **WebRTC** | Eingehende Chat-Nachricht | Jede Erwähnung des Namens |
+| **Webhook** | Externer HTTP-Trigger | GitHub Push → Deploy |
+| **Manual** | User löst manuell aus | Button "Jetzt aktualisieren" |
+| **Event** | Anderer Knoten im Graphen | Output von App A → triggert App B |
+
+### Pulse-Hierarchie
+
+```
+Global Pulse
+├── Systemweite Ereignisse (Clock, globale Webhooks)
+│
+└── Projekt-Pulse
+    ├── Projekt A Pulse (eigener Takt, projektspezifisch)
+    └── Projekt B Pulse (anderer Takt)
+```
+
+Jedes Projekt hat seinen eigenen Pulse-Kontext. Ein News-Projekt pulsiert alle 30 Minuten. Ein Trading-Projekt pulsiert jede Minute. Ein persönliches Tagebuch pulsiert nie — es wartet auf manuellen Input.
+
+### Pulse-Subscription
+
+Apps subscriben sich an Pulses, die für sie relevant sind:
+
+```javascript
+// App registriert sich für den Projekt-Pulse
+app.onPulse('project:news', async () => {
+  const articles = await this.fetchLatestNews();
+  this.emit('output', articles);
+});
+```
+
+---
+
+## Beispiel: Ein minimaler App-Graph
+
+Um das Konzept zu veranschaulichen — ein einfacher News-Graph:
+
+```
+[Projekt-Pulse: alle 30min]
          │
-         ↓ INHERITANCE (scope: "inherited")
-         │ Data flows automatically to children
-         │ e.g., Calendar, Budget visible in all sub-projects
-    ┌────┴────┐
-    │  Child  │
-    └─────────┘
+         ▼
+[News-Fetcher App]           ← Producer
+  Sucht aktuelle News bei    
+  Google News für "Tech"     
          │
-         ↔ REFERENCES (dataRef)
-           Same data visible in multiple contexts
-           e.g., Weight in "Diet" = Weight in "Fitness"
+         │ (übergibt: Liste von Artikeln)
+         ▼
+[Top-3 News Display App]     ← Consumer
+  Zeigt die 3 neuesten       
+  Nachrichten als Karten an  
 ```
 
-**Widget Scopes:**
-- `local` — visible only in this context (default)
-- `inherited` — visible in all child contexts
-- `global` — visible everywhere
+**Was hier passiert:**
+1. Der Projekt-Pulse feuert alle 30 Minuten
+2. Der News-Fetcher (Producer) wird geweckt, holt Artikel, gibt sie weiter
+3. Das Display (Consumer) empfängt die Artikel und rendert die Top 3
+4. Kein KI-Aufruf nötig — reiner Datenfluss
 
-**dataRef** — A widget can point to data in another context. Edit it anywhere, changes propagate everywhere via SSE (Server-Sent Events). The AI knows about these references and can create them automatically.
+**Wie man es in PulseOS erstellt:**
+- User öffnet ein Projekt
+- User sagt im Chat: "Erstelle mir einen News-Graphen — alle 30 Minuten aktuelle Tech-News, zeig mir die 3 neuesten"
+- Die KI erstellt zwei Apps, verbindet sie, setzt den Pulse
+- Fertig
 
-**homeContext Routing** — When the AI creates data, it decides where it belongs:
-- Personal attribute (weight, age) → Root context
-- Cross-project data (budget) → nearest parent with matching widget
-- Local data → current context
-
-### Skills Instead of Always-Running Agents
-
-The old model: 13 idle agent processes waiting for something to happen. Wasteful.
-
-The new model: **Skills** — reusable instruction modules that get composed into the AI prompt on-demand.
-
-| Skill | Purpose |
-|-------|---------|
-| `data-writer` | Read/write data in any context |
-| `data-router` | Decide which context data belongs to |
-| `widget-builder` | Create widgets, change types, restructure |
-| `schema-resolver` | Find or create data schemas |
-| `context-navigator` | Create sub-contexts, link contexts |
-
-One chat message = one `claude -p` call with the right skills composed in. No idle processes. No wasted compute.
-
-### Schema Registry
-
-Every piece of data can be validated against a schema. Schemas define what fields exist, what types they have, and how the data can be rendered:
-
-**Core schemas:** task, note, event, metric, measurement, link, record, progress, app
-
-A `task` schema can render as a todo list, a kanban board, or a table — same data, different views. The AI knows the schemas and uses them to create correctly structured data.
+**Wie man es erweitert:**
+- User sagt: "Filtere nur News über KI raus"
+- KI fügt einen Filter-Transformer zwischen Fetcher und Display ein
+- User sagt: "Schreib mir eine Zusammenfassung der Top-3 in mein Tagebuch"
+- KI fügt einen KI-Transformer + Tagebuch-Consumer hinzu
 
 ---
 
-## The App System
+## KI als Graph-Orchestrator
 
-PulseOS has 40+ apps, each a single HTML file in `apps/<name>/index.html`. No build step, no compilation. Apps are:
+Die KI in PulseOS hat eine klare Rolle: **Sie baut und verändert Graphen. Sie lässt die Graphen dann selbst laufen.**
 
-- **Self-contained** — one HTML file with embedded CSS and JS
-- **AI-modifiable** — the AI can rewrite any app's HTML in real-time
-- **Version-controlled** — every modification auto-saves a version backup
-- **Context-aware** — apps can be embedded as widgets inside contexts (L0 pill → L1 card → L2 full iframe)
+### Was die KI tut
 
-**App categories:**
-- **Productivity:** projects, kanban, notes, budget, calendar, tickets, diary, travel-planner
-- **Media:** radio, internet radio, podcast, youtube, mediaplayer, podcast-search
-- **Creative:** whiteboard, drumcomputer, imagegen, mindmap, pipette
-- **Games:** tetris, flappy, doom
-- **System:** terminal, filebrowser, orchestrator, viking, chat
-- **Data:** weather, news-channels, social-trends, recipes
+- **Graphen designen** — Welche Apps braucht dieser Workflow? Wie verbinden sie sich?
+- **Apps konfigurieren** — Parameter setzen via App-API (nie direktes JSON-Patching)
+- **Graphen modifizieren** — Knoten hinzufügen, umverdrahten, entfernen
+- **Daten transformieren** — Wenn ein Transformer semantisches Verstehen braucht, ist die KI der Transformer
 
-The AI can create entirely new apps from chat: "Build me a pomodoro timer" → the AI generates a complete single-file HTML app, registers it, and adds it to the dashboard.
+### Was die KI nicht tut
 
-### The PulseOS Bridge Protocol
+- Direkt JSON-Dateien von Apps schreiben
+- Im laufenden Betrieb jeden Datentransfer begleiten
+- Als Middleware zwischen Knoten sitzen (außer wenn sie Transformer-Knoten ist)
 
-Apps embedded as widgets communicate with the parent context via a bridge:
-- `PulseOS.reportStatus(text)` — live status updates shown in the widget
-- `PulseOS.logInteraction(action, detail)` — interaction tracking visible to AI
-- The AI sees the last 5 interactions when you chat about a context containing app widgets
-
----
-
-## Technical Architecture
+### Das Orchestrator-Prinzip
 
 ```
-server.js              – Single Node.js HTTP server (no Express). ~4800 lines. Port 3000.
-dashboard.html         – Desktop shell: dock, app launcher, window manager
-apps/projects/         – The Context Engine UI (~4100 lines). Canvas + Chat + Widget system.
-apps/<name>/           – 40+ apps, each a single index.html
-widgets/               – Shared widget components (context-view.js)
-data/contexts/         – Context JSON files (the "filesystem")
-data/schemas/          – 9 schema definitions
-supervisor.js          – Agent supervisor (auto-respawn via claude -p)
-viking-bridge.py       – Python bridge to OpenViking context database
+User: "Zeig mir täglich um 8 Uhr die wichtigsten News zusammengefasst"
+
+KI orchestriert:
+1. Erstelle News-Fetcher App (Producer, Pulse: täglich 07:55 Uhr)
+2. Erstelle KI-Summarizer App (Transformer, Modell: claude-sonnet)
+3. Erstelle Morning-Brief App (Consumer, Ansicht: L1 Karte)
+4. Verbinde: Fetcher → Summarizer → Brief
+5. Konfiguriere Pulse-Zeitplan
+
+→ Graph läuft ab jetzt autonom
+→ KI wird nur noch aktiviert, wenn Summarizer läuft
 ```
 
-### Key Technical Constraints
-- **No npm, no node_modules.** Only Node.js built-ins (http, fs, path, crypto, child_process).
-- **No frontend frameworks.** Vanilla ES6+ only. No React, no Vue, no bundlers.
-- **Single-file apps.** Every app is one HTML file. Complexity lives in one place.
-- **SSE for real-time.** All live updates use Server-Sent Events, not WebSockets.
-- **JSON as database.** No SQL, no MongoDB. JSON files on disk. Simple, debuggable, AI-readable.
+---
 
-### OpenViking Integration
+## Technische Architektur
 
-PulseOS integrates with OpenViking — an agent-native context database that provides semantic search and multi-layer information storage. Viking mirrors the L0/L1/L2 pyramid, enabling AI to search across all contexts efficiently.
+```
+server.js              – Single Node.js HTTP Server. Port 3000.
+dashboard.html         – Desktop-Shell: Dock, App-Launcher, Fenstermanager
+apps/<name>/           – Jede App ist ein Verzeichnis mit:
+  index.html           │   – UI (L0/L1/L2 in einem File)
+  api.js               │   – App-API (get, set, subscribe, emit)
+  data.json            │   – App-eigener Datenspeicher
+  manifest.json        │   – Metadaten: Knotentyp, Input/Output-Schema, Pulse-Subscriptions
+data/graphs/           – Graph-Definitionen (welche Apps wie verbunden sind)
+data/pulses/           – Pulse-Konfigurationen (global + pro Projekt)
+supervisor.js          – Pulse-Engine + Graph-Runner
+```
+
+### Technische Grundsätze (unverändert)
+- **Kein npm, keine node_modules.** Nur Node.js Built-ins.
+- **Keine Frontend-Frameworks.** Vanilla ES6+.
+- **SSE für Echtzeit.** Alle Live-Updates via Server-Sent Events.
+- **JSON als Datenbank.** JSON-Dateien auf Disk — einfach, debuggbar, KI-lesbar.
+- **Single-file UI.** Jede App hat ihr gesamtes UI in einer HTML-Datei.
 
 ---
 
-## What's Been Built (Implementation Status)
+## Was sich geändert hat (V1 → V2)
 
-The Context Engine was built in 12 phases, all complete:
-
-| Phase | What | Status |
-|-------|------|--------|
-| 1 | Schema Registry — 9 schemas, API endpoints | ✅ |
-| 2 | Context Store — migration from projects.json to individual context files, full CRUD API | ✅ |
-| 3 | Context Chat — AI integration with `claude -p`, action system (write-data, create-widget, etc.) | ✅ |
-| 4 | Scope Chain — inherited widgets, data inheritance through context hierarchy | ✅ |
-| 5 | Context Hierarchy — sub-contexts, tree navigation, drag-and-drop reparenting | ✅ |
-| 6 | Widget Perspectives — same data rendered as different widget types (todo ↔ kanban ↔ table) | ✅ |
-| 7 | L0 Quick-Actions — interactive minimized widgets (toggle checkboxes, edit KPIs, preview notes) | ✅ |
-| 8 | dataRef Live-Sync — cross-context data references with SSE propagation | ✅ |
-| 9 | Inherited Widget Edits + Schema Validation — edit parent data from child, `validateAgainstSchema()` | ✅ |
-| 10 | Widget & Context Templates — save and reuse widget configurations and context structures | ✅ |
-| 11 | Dashboard Integration — context-aware dashboard, system-level context features | ✅ |
-| 12 | App-Context Unification — apps as contexts, bridge protocol, AI app creation from chat | ✅ |
+| Konzept | V1 | V2 |
+|---------|----|----|
+| Atomare Einheit | Widget | App |
+| Räumlicher Workspace | Canvas mit Widgets | App-Graph |
+| Datenfluss | dataRef / SSE-Sync | Gerichteter Graph |
+| KI-Interaktion mit Daten | Direkte JSON-Writes | Nur via App-API |
+| Auslöser für Aktionen | Manuell / User-Chat | Pulse-System |
+| Agenten-Modell | Idle-Prozesse | Graph-Runner + On-Demand |
+| Kontext-Einheit | Kontext mit Canvas | Kontext mit App-Graph |
 
 ---
 
-## Design Philosophy
+## Warum PulseOS gewinnt — Die Killer-App-Argumente
 
-1. **AI-native, not AI-assisted.** The AI isn't a helper bolted onto a traditional OS. The entire data model, UI paradigm, and interaction flow are designed for AI co-habitation.
+### 1. Das Ende des Subscription-Stapels
 
-2. **Spatial over sequential.** Conversations are powerful but linear. PulseOS adds a spatial dimension — widgets on a canvas, contexts in a tree, data flowing in three directions.
+Der durchschnittliche Knowledge-Worker zahlt heute für: Notion, Trello, Zapier, Airtable, Slack, Calendly, Loom, Linear, Figma — und das Stapeln wird schlimmer, nicht besser. Jedes Tool hat sein eigenes Daten-Silo, sein eigenes Pricing, seine eigene Roadmap, die dir egal ist.
 
-3. **Progressive disclosure.** L0 → L1 → L2. You see what you need. The AI reasons at the right depth. Information density is a first-class concept.
+PulseOS macht das überflüssig — nicht weil es diese Tools kopiert, sondern weil der User sich **exakt das baut, was er braucht**. Kein Kompromiss mit fremden Feature-Roadmaps. Kein "fast, aber nicht ganz".
 
-4. **No build step, no ceremony.** Raw web technology. Edit a file, reload the page. An AI can create or modify any part of the system without needing to understand bundlers, transpilers, or dependency graphs.
+### 2. Der Graph ist das Programm
 
-5. **Everything connected.** Data doesn't live in silos. A weight measurement in your "Diet" project is the same data point in your "Fitness" project and your "Health" dashboard. The system knows this.
+Zapier und Make verkaufen "Automation ohne Code". Aber beide zwingen dich in ihre Abstraktionen — ihre Trigger-Konzepte, ihre Rate-Limits, ihr Pricing-Modell pro Zap.
 
-6. **The OS should be fun.** It has Doom. It has a drum machine. It has internet radio. An OS you don't enjoy using is an OS you'll abandon.
+In PulseOS **beschreibst du, was du willst — der App-Graph, den die KI baut, ist ein echtes, lesbares, forkbares Softwareartefakt.** Du kannst es teilen, versionieren, verstehen. Andere können ihren Graphen auf deinen aufbauen. Der Graph selbst ist das Produkt.
+
+### 3. Apps teilen wie Links — ein neues Distributions-Modell
+
+Apple App Store: Code ist schwarz. Du vertraust blind. 30% Steuer. Kein Approval ohne Gnade.
+
+PulseOS hat zwei Ebenen:
+
+**Offiziell** — `github.com/pulseos/apps`: kuratiert, vom Core-Team reviewed. Vanilla- und Node-Apps, alle geprüft. Das ist das Fundament dem jeder vertraut.
+
+**Persönlich** — jeder baut sein eigenes Repo. Anna hat `github.com/anna/pulse-apps` mit 10 Apps drin. Sie schickt dir einen Link — du installierst genau die eine App die du willst:
+
+```bash
+pulse app install github.com/anna/pulse-apps/news-fetcher
+```
+
+Ein Repo ist ein **persönlicher App-Store**. Vanilla-Apps, Node-Apps, ganze Graphen — alles in einem Verzeichnis, installierbar per Link. Kein Gatekeeping, keine Steuer, kein Approval. Vertrauen liegt beim User — aber der Code ist offen, lesbar, forkbar. Wer einer App nicht vertraut, liest einfach `index.html` oder `src/`.
+
+Das Teilen einer App ist so einfach wie das Teilen eines Links.
+
+### 4. Local-First — du besitzt deine Daten wirklich
+
+OpenAI, Notion, alle Cloud-Tools: deine Daten sind ihr Geschäftsmodell oder zumindest ihr Risiko.
+
+PulseOS läuft auf `localhost:3000`. Die KI kann auf deine Daten zugreifen und mit ihnen rechnen — aber sie verlassen deinen Rechner nicht ohne deinen expliziten Befehl. Kein Vendor Lock-in. Kein Datenverlust wenn ein Startup pivotiert oder stirbt. Deine Kontexte, deine Graphen, deine Apps gehören dir — als JSON-Dateien auf deiner Festplatte.
+
+### 5. Langfristig: Der Schwund des App-Stores
+
+Heute braucht man Notion für Notizen. Morgen sagt man PulseOS: "Ich brauche eine Notizen-App mit Tagging und Suche" — und sie existiert in 30 Sekunden, gebaut auf deine Bedürfnisse. Übermorgen teilt die Community ihre Notizen-Apps als Repos — besser als Notion, weil sie von echten Nutzern gebaut wurden, nicht von einem VC-finanzierten Team mit fremden Prioritäten.
+
+**Die These:** App Stores sind eine Reaktion auf die Unmöglichkeit, Software für sich selbst zu bauen. PulseOS macht das möglich. Nicht für alle sofort — aber für die Power-User, die heute zwischen 10 Tools jonglieren und keinem wirklich vertrauen.
+
+### Ehrliche Einschätzung
+
+PulseOS gewinnt nicht gegen Apple oder OpenAI im Massenmarkt — nicht durch Distribution, nicht durch Hardware-Integration. Der Vorteil liegt woanders: bei der kleinen aber lauten, zahlungskräftigen Community der **Maker, Developer, und Power-User**, die heute zu viel für zu wenig zahlen und denen Kontrolle wichtiger ist als Bequemlichkeit.
+
+Diese Menschen zeigen anderen, was möglich ist. So verbreiten sich neue Paradigmen.
 
 ---
 
-## Where It's Going
+## Design-Philosophie
 
-PulseOS is a working prototype exploring a fundamental question: **What does an operating system look like when AI is a first-class citizen, not an add-on?**
+1. **KI-nativ, nicht KI-assistiert.** Die KI baut Graphen und orchestriert Workflows. Sie ist Architekt, nicht Assistent.
 
-Future directions:
-- **Multi-user / multi-device** — contexts shared between people, real-time collaboration
-- **Proactive AI** — the system notices patterns, suggests actions, automates workflows without being asked
-- **Voice-first interaction** — talk to your OS, see the results on your canvas
-- **Plugin ecosystem** — third-party widgets, skills, and app templates
-- **Mobile-native experience** — responsive canvas that works on phones and tablets
-- **Persistent agents** — long-running AI processes that monitor, sync, and act autonomously
+2. **Apps als Bürger erster Klasse.** Jede App ist vollständig, eigenständig und durch ihre API erweiterbar — von Nutzern und von der KI.
 
-The core bet: the boundary between "using an app" and "talking to an AI" will disappear. PulseOS is what that convergence looks like.
+3. **Datenfluss, nicht Datensilos.** Daten fließen durch den Graphen. Eine Nachricht, die beim News-Fetcher entsteht, kann im Tagebuch landen, ohne dass der User etwas tun muss.
+
+4. **Pulse statt Polling.** Das System ist reaktiv. Es wartet auf Signale, handelt dann präzise — und schläft dazwischen.
+
+5. **Progressive Offenbarung.** L0 → L1 → L2. Der User sieht was er braucht. Die KI denkt auf der richtigen Tiefe.
+
+6. **Kein Build-Schritt, keine Zeremonie.** Datei bearbeiten, Seite neu laden. Eine KI kann jede App erschaffen oder verändern ohne Bundler, Transpiler oder Abhängigkeitsgraphen zu verstehen.
+
+7. **Das OS soll Spaß machen.** Es hat Doom. Es hat einen Drum-Computer. Es hat Internetradio. Ein Betriebssystem, das keinen Spaß macht, wird verlassen.
+
+---
+
+## Wohin es geht
+
+PulseOS ist ein arbeitendes Prototyp-Labor für eine fundamentale Frage: **Wie sieht ein Betriebssystem aus, wenn KI ein Erstklasse-Bürger ist, kein Anhängsel?**
+
+Der App-Graph ist die Antwort auf die nächste Frage: **Was passiert, wenn Apps nicht mehr isolierte Inseln sind, sondern Knoten in einem lebendigen, pulsierenden Netzwerk?**
+
+Zukünftige Richtungen:
+- **Visueller Graph-Editor** — Knoten per Drag-and-Drop verbinden, Pulse konfigurieren, Datenfluss live beobachten
+- **Proaktive KI** — Das System erkennt Muster, schlägt neue Graph-Verbindungen vor, automatisiert Workflows ohne expliziten Auftrag
+- **Multi-User-Graphen** — Mehrere Nutzer teilen Graphen, jeder sieht seinen Kontext
+- **Plugin-Ökosystem** — Drittanbieter-Apps als Knoten, veröffentlicht im App-Store
+- **Mobile-Erlebnis** — L0-Ansichten als native Mobile-Kacheln
+- **Voice als Pulse** — Sprachbefehl als Auslöser für Graph-Aktionen
+
+Der zentrale Wette: Die Grenze zwischen "eine App benutzen" und "mit einer KI sprechen" wird verschwinden. PulseOS ist, wie diese Konvergenz aussieht — und der App-Graph ist ihr Herzschlag.
