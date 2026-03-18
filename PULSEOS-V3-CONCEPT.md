@@ -124,12 +124,13 @@ Alle verbundenen Peers
 ### Phase B: WebRTC System-Bus
 > WebRTC von isolierter App zum System-Service
 
-- [ ] `window.PulseOS.send(peerId, type, data)` Bridge-API im Dashboard
-- [ ] `window.PulseOS.onMessage(type, callback)` Listener-System für Apps
-- [ ] Message-Routing im Dashboard Bridge-Host (erweiterte DataChannel Message Types)
-- [ ] Contact-Liste mit Online-Status (wer ist gerade verbunden)
-- [ ] System-Chat Panel (überall verfügbar, nicht nur in WebRTC-App)
-- [ ] Profile-Exchange automatisch bei neuer Peer-Verbindung
+- [x] `window.PulseOS.send(peerId, type, data)` Bridge-API im Dashboard
+- [x] `window.PulseOS.onMessage(type, callback)` Listener-System für Apps
+- [x] Message-Routing im Dashboard Bridge-Host (profile-exchange, chat-message, app-share, pulse-signal)
+- [x] Contact-Liste mit Online-Status (Peer Bar über dem Dock)
+- [x] System-Chat Panel (überall verfügbar, toggleSystemChat())
+- [x] Profile-Exchange automatisch bei neuer Peer-Verbindung (DataChannel onopen)
+- [x] iframe postMessage Bridge (`__pulseOS` action routing)
 
 ### Phase C: New Dashboard UX
 > Revolutionäres Agentic OS Interface
@@ -156,7 +157,7 @@ Alle verbundenen Peers
 | Phase | Status | Letzte Änderung |
 |-------|--------|-----------------|
 | Phase A: Profile & Contacts | ✅ Fertig (WebRTC-Exchange → Phase B) | 2026-03-18 |
-| Phase B: WebRTC System-Bus | 🔲 Geplant | — |
+| Phase B: WebRTC System-Bus | ✅ Fertig | 2026-03-18 |
 | Phase C: New Dashboard UX | 🔲 Geplant | — |
 | Phase D: GitHub Pages | 🔲 Geplant | — |
 
