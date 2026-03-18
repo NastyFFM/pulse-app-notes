@@ -390,7 +390,7 @@
       "color": "#3B82F6",
       "parentId": null,
       "created": "2026-03-17T03:13:14.327Z",
-      "updated": "2026-03-17T04:07:53.294Z",
+      "updated": "2026-03-17T04:37:27.234Z",
       "chat": [
         {
           "id": "msg-sys-1773717194327",
@@ -666,6 +666,151 @@
             }
           ],
           "time": "2026-03-17T04:07:53.294Z"
+        },
+        {
+          "id": "msg-1773720642922",
+          "role": "agent",
+          "text": "Änderungen notiert! Du hast dein Gewicht auf 88 kg zurückgesetzt, das wöchentliche Wiegen als erledigt markiert, 'Essen einkaufen' als neue Aufgabe hinzugefügt und Woche 4 auf 86.8 kg korrigiert. Alles sauber dokumentiert! 👍",
+          "widgetActions": [],
+          "time": "2026-03-17T04:10:42.922Z"
+        },
+        {
+          "id": "msg-1773721097711",
+          "role": "user",
+          "text": "✏️ Erste Schritte: Fuege 3 neue Aufgaben hinzu: Wasser trinken Routine, Schlafrhythmus optimieren, Stress reduzieren",
+          "time": "2026-03-17T04:18:17.711Z"
+        },
+        {
+          "id": "msg-1773721109834",
+          "role": "agent",
+          "text": "Erledigt! Drei neue Aufgaben hinzugefügt: Wasser trinken Routine, Schlafrhythmus optimieren und Stress reduzieren. 💧😴🧘",
+          "widgetActions": [
+            {
+              "icon": "✏️",
+              "label": "Widget aktualisiert"
+            }
+          ],
+          "time": "2026-03-17T04:18:29.834Z"
+        },
+        {
+          "id": "msg-1773721212191",
+          "role": "user",
+          "text": "✏️ Aktuelles Gewicht: Setze den Wert auf 80 kg und die Aenderung auf -10%",
+          "time": "2026-03-17T04:20:12.191Z"
+        },
+        {
+          "id": "msg-1773721224603",
+          "role": "agent",
+          "text": "Erledigt! KPI auf 80 kg gesetzt mit -10% Änderung. 🎯",
+          "widgetActions": [
+            {
+              "icon": "✏️",
+              "label": "Widget aktualisiert"
+            }
+          ],
+          "time": "2026-03-17T04:20:24.603Z"
+        },
+        {
+          "id": "msg-1773721323773",
+          "role": "user",
+          "text": "✏️ Gewichtsverlauf: Fuege 3 neue Zeilen mit Beispieldaten hinzu fuer die naechsten 3 Wochen",
+          "time": "2026-03-17T04:22:03.773Z"
+        },
+        {
+          "id": "msg-1773721334748",
+          "role": "agent",
+          "text": "Erledigt! Drei neue Wochen mit Beispieldaten zum Gewichtsverlauf hinzugefügt.",
+          "widgetActions": [
+            {
+              "icon": "✏️",
+              "label": "Widget aktualisiert"
+            }
+          ],
+          "time": "2026-03-17T04:22:14.748Z"
+        },
+        {
+          "id": "msg-1773721416973",
+          "role": "user",
+          "text": "✏️ Aktuelles Gewicht: Aendere den Wert auf 79 kg",
+          "time": "2026-03-17T04:23:36.973Z"
+        },
+        {
+          "id": "msg-1773721430165",
+          "role": "agent",
+          "text": "Erledigt! Gewicht auf 79 kg aktualisiert – du hast dein Ziel von 80 kg sogar unterschritten! 🎉",
+          "widgetActions": [
+            {
+              "icon": "✏️",
+              "label": "Widget aktualisiert"
+            }
+          ],
+          "time": "2026-03-17T04:23:50.165Z"
+        },
+        {
+          "id": "msg-1773721554327",
+          "role": "user",
+          "text": "✏️ Erste Schritte: Fuege eine neue Aufgabe hinzu: Vitamine bestellen",
+          "time": "2026-03-17T04:25:54.327Z"
+        },
+        {
+          "id": "msg-1773721565541",
+          "role": "agent",
+          "text": "Erledigt! \"Vitamine bestellen\" wurde als neue Aufgabe hinzugefügt. 💊",
+          "widgetActions": [
+            {
+              "icon": "✏️",
+              "label": "Erste Schritte aktualisiert",
+              "widgetId": "w-1773717241433-c9p7",
+              "dataKey": "todo-1773717241433-cn",
+              "action": "update",
+              "detail": "Neue Aufgabe 'Vitamine bestellen' hinzugefügt"
+            }
+          ],
+          "time": "2026-03-17T04:26:05.541Z"
+        },
+        {
+          "id": "msg-1773721955709",
+          "role": "user",
+          "text": "✏️ Gewichtsverlauf: Aendere die Notiz in der ersten Zeile zu Projektstart",
+          "time": "2026-03-17T04:32:35.709Z"
+        },
+        {
+          "id": "msg-1773721968833",
+          "role": "agent",
+          "text": "Erledigt! Die Notiz in der ersten Zeile wurde zu \"Projektstart\" geändert.",
+          "widgetActions": [
+            {
+              "icon": "✏️",
+              "label": "Gewichtsverlauf aktualisiert",
+              "widgetId": "w-1773717241433-gxo9",
+              "dataKey": "table-1773717241433-6v",
+              "action": "update",
+              "detail": "Notiz in Zeile 1 von 'Startgewicht' zu 'Projektstart' geändert"
+            }
+          ],
+          "time": "2026-03-17T04:32:48.833Z"
+        },
+        {
+          "id": "msg-1773722231354",
+          "role": "user",
+          "text": "✏️ Wochenplan: mache hier wieder die kanban ansicht mit demowerten fü die tage der woche",
+          "time": "2026-03-17T04:37:11.354Z"
+        },
+        {
+          "id": "msg-1773722247234",
+          "role": "agent",
+          "text": "Erledigt! Der Wochenplan ist jetzt wieder als Kanban-Board mit den Wochentagen als Spalten und Demo-Mahlzeiten dargestellt. 📋",
+          "widgetActions": [
+            {
+              "icon": "✏️",
+              "label": "Wochenplan aktualisiert",
+              "widgetId": "w-1773717241433-e9zi",
+              "dataKey": "kanban-1773717241433-bj",
+              "action": "update",
+              "detail": "Typ von Tabelle zu Kanban geändert – 7 Spalten für die Wochentage mit je 3 Mahlzeiten"
+            }
+          ],
+          "time": "2026-03-17T04:37:27.234Z"
         }
       ],
       "canvas": {
@@ -744,7 +889,7 @@
           },
           {
             "id": "w-1773717241433-e9zi",
-            "type": "table",
+            "type": "kanban",
             "title": "Wochenplan",
             "size": "lg",
             "dataKey": "kanban-1773717241433-bj",
@@ -825,14 +970,7 @@
                 }
               ]
             },
-            "config": {
-              "columns": [
-                "Tag",
-                "Morgens",
-                "Mittags",
-                "Abends"
-              ]
-            }
+            "config": {}
           },
           {
             "id": "w-1773717352194-9nrf",
@@ -885,10 +1023,10 @@
           "label": "Fortschritt zum Zielgewicht"
         },
         "kpi-1773717241433-9e": {
-          "value": "88 kg",
+          "value": "77 kg",
           "label": "Mein Gewicht",
-          "change": -6,
-          "subtitle": "Start: 88 kg → Ziel: 80 kg | Noch 2 kg to go!"
+          "change": -12.5,
+          "subtitle": "Start: 88 kg → Ziel: 80 kg | Ziel übertroffen! 🎉🎉"
         },
         "todo-1773717241433-cn": [
           {
@@ -920,57 +1058,164 @@
             "text": "Wöchentliches Wiegen (gleicher Tag, gleiche Uhrzeit)",
             "done": true,
             "priority": "low"
+          },
+          {
+            "id": "t-1773720619411",
+            "text": "Essen einkaufen",
+            "done": false
+          },
+          {
+            "id": "t-1773721100001",
+            "text": "Wasser trinken Routine",
+            "done": false,
+            "priority": "medium"
+          },
+          {
+            "id": "t-1773721100002",
+            "text": "Schlafrhythmus optimieren",
+            "done": false,
+            "priority": "medium"
+          },
+          {
+            "id": "t-1773721100003",
+            "text": "Stress reduzieren",
+            "done": false,
+            "priority": "low"
+          },
+          {
+            "id": "t-1773721200001",
+            "text": "Vitamine bestellen",
+            "done": false,
+            "priority": "medium"
           }
         ],
         "table-1773717241433-6v": [
           {
             "Datum": "17.03.2026",
             "Gewicht (kg)": "88",
-            "Notiz": "Startgewicht"
+            "Notiz": "Projektstart"
+          },
+          {
+            "Datum": "24.03.2026",
+            "Gewicht (kg)": "87.2",
+            "Notiz": "Erste Woche – guter Start"
+          },
+          {
+            "Datum": "31.03.2026",
+            "Gewicht (kg)": "86.5",
+            "Notiz": "Ernährungsplan eingehalten"
+          },
+          {
+            "Datum": "07.04.2026",
+            "Gewicht (kg)": "85.9",
+            "Notiz": "Mehr Bewegung integriert"
           }
         ],
         "kanban-1773717241433-bj": [
           {
-            "Tag": "Montag",
-            "Morgens": "Haferflocken mit Beeren & Nüssen",
-            "Mittags": "Hähnchenbrust mit Quinoa & Brokkoli",
-            "Abends": "Lachs mit Süßkartoffel & Spinat"
+            "id": "mon",
+            "name": "Montag",
+            "items": [
+              {
+                "text": "🌅 Haferflocken mit Beeren"
+              },
+              {
+                "text": "🍽️ Hähnchen mit Quinoa"
+              },
+              {
+                "text": "🌙 Lachs mit Süßkartoffel"
+              }
+            ]
           },
           {
-            "Tag": "Dienstag",
-            "Morgens": "Vollkornbrot mit Avocado & Ei",
-            "Mittags": "Linsensuppe mit Vollkornbrot",
-            "Abends": "Putenbrust mit Reis & Paprika"
+            "id": "die",
+            "name": "Dienstag",
+            "items": [
+              {
+                "text": "🌅 Avocado-Brot mit Ei"
+              },
+              {
+                "text": "🍽️ Linsensuppe"
+              },
+              {
+                "text": "🌙 Putenbrust mit Reis"
+              }
+            ]
           },
           {
-            "Tag": "Mittwoch",
-            "Morgens": "Griechischer Joghurt mit Granola & Banane",
-            "Mittags": "Thunfisch-Salat mit Kichererbsen",
-            "Abends": "Rindersteak mit Kartoffeln & grünen Bohnen"
+            "id": "mit",
+            "name": "Mittwoch",
+            "items": [
+              {
+                "text": "🌅 Joghurt mit Granola"
+              },
+              {
+                "text": "🍽️ Thunfisch-Salat"
+              },
+              {
+                "text": "🌙 Steak mit Kartoffeln"
+              }
+            ]
           },
           {
-            "Tag": "Donnerstag",
-            "Morgens": "Smoothie (Spinat, Banane, Proteinpulver)",
-            "Mittags": "Vollkorn-Wrap mit Hähnchen & Gemüse",
-            "Abends": "Garnelen mit Zucchini-Nudeln & Tomatensoße"
+            "id": "don",
+            "name": "Donnerstag",
+            "items": [
+              {
+                "text": "🌅 Smoothie Bowl"
+              },
+              {
+                "text": "🍽️ Wrap mit Hähnchen"
+              },
+              {
+                "text": "🌙 Garnelen-Zoodles"
+              }
+            ]
           },
           {
-            "Tag": "Freitag",
-            "Morgens": "Rührei mit Tomaten & Vollkorntoast",
-            "Mittags": "Buddha Bowl (Reis, Edamame, Avocado, Lachs)",
-            "Abends": "Ofengemüse mit Feta & Couscous"
+            "id": "fre",
+            "name": "Freitag",
+            "items": [
+              {
+                "text": "🌅 Rührei mit Toast"
+              },
+              {
+                "text": "🍽️ Buddha Bowl"
+              },
+              {
+                "text": "🌙 Ofengemüse mit Feta"
+              }
+            ]
           },
           {
-            "Tag": "Samstag",
-            "Morgens": "Protein-Pancakes mit Beeren",
-            "Mittags": "Hähnchengyros-Salat mit Tzatziki",
-            "Abends": "Spaghetti Bolognese (Vollkorn) mit Salat"
+            "id": "sam",
+            "name": "Samstag",
+            "items": [
+              {
+                "text": "🌅 Protein-Pancakes"
+              },
+              {
+                "text": "🍽️ Gyros-Salat"
+              },
+              {
+                "text": "🌙 Spaghetti Bolognese"
+              }
+            ]
           },
           {
-            "Tag": "Sonntag",
-            "Morgens": "Overnight Oats mit Chiasamen & Mango",
-            "Mittags": "Gemüse-Frittata mit Salat",
-            "Abends": "Putengeschnetzeltes mit Naturreis & Pilzen"
+            "id": "son",
+            "name": "Sonntag",
+            "items": [
+              {
+                "text": "🌅 Overnight Oats"
+              },
+              {
+                "text": "🍽️ Gemüse-Frittata"
+              },
+              {
+                "text": "🌙 Putengeschnetzeltes"
+              }
+            ]
           }
         ],
         "notes-1773717241433-wa": {
@@ -991,7 +1236,7 @@
           },
           {
             "Feld": "Woche 2",
-            "Wert": "86.9"
+            "Wert": "86.8"
           },
           {
             "Feld": "Woche 3",
@@ -1088,10 +1333,331 @@
         {
           "time": "2026-03-17T03:51:56.894Z",
           "summary": "📝 Tabelle: \"Wert\" Zeile 1 geaendert: \"88.0\" → \"fwefewf\""
+        },
+        {
+          "time": "2026-03-17T04:10:07.670Z",
+          "summary": "📊 KPI \"Aktuelles Gewicht\": value geaendert: \"82 kg\" → \"88 kg\""
+        },
+        {
+          "time": "2026-03-17T04:10:11.407Z",
+          "summary": "✅ \"Wöchentliches Wiegen (gleicher Tag, gleiche Uhrzeit)\" in \"Erste Schritte\" erledigt"
+        },
+        {
+          "time": "2026-03-17T04:10:19.411Z",
+          "summary": "➕ Neue Aufgabe \"Essen einkaufen\" in \"Erste Schritte\" hinzugefuegt"
+        },
+        {
+          "time": "2026-03-17T04:10:31.300Z",
+          "summary": "📝 Tabelle: \"Wert\" Zeile 4 geaendert: \"86.9\" → \"86.8\""
         }
       ],
       "closedWidgets": []
+    },
+    {
+      "id": "proj-1773722277608",
+      "name": "Neues Projekt",
+      "icon": "🔧",
+      "color": "#8B5CF6",
+      "parentId": null,
+      "created": "2026-03-17T04:37:57.608Z",
+      "updated": "2026-03-17T04:39:02.098Z",
+      "chat": [
+        {
+          "id": "msg-sys-1773722277608",
+          "role": "system",
+          "text": "Neues Projekt erstellt! Beschreibe was du bauen oder planen willst.",
+          "time": "2026-03-17T04:37:57.608Z"
+        },
+        {
+          "id": "msg-1773722294575",
+          "role": "user",
+          "text": "zeige mir einen wochenplan widget",
+          "time": "2026-03-17T04:38:14.575Z"
+        },
+        {
+          "id": "msg-1773722309882",
+          "role": "agent",
+          "text": "Hier ist dein Wochenplan! Ich habe die aktuelle Woche mit typischen Zeitslots vorbereitet. Du kannst die Einträge direkt anpassen.",
+          "widgetActions": [
+            {
+              "icon": "📊",
+              "label": "📅 Wochenplan erstellt",
+              "widgetId": "w-1773722309831-i9um",
+              "dataKey": "table-1773722309831-xm",
+              "action": "create",
+              "detail": "Wochenplan-Tabelle mit Zeitslots von 8-18 Uhr fuer alle 7 Wochentage erstellt"
+            }
+          ],
+          "time": "2026-03-17T04:38:29.882Z"
+        },
+        {
+          "id": "msg-1773722333485",
+          "role": "user",
+          "text": "mache mir im canvas alle widgets die wir bereits erstellt haben",
+          "time": "2026-03-17T04:38:53.485Z"
+        },
+        {
+          "id": "msg-1773722342098",
+          "role": "agent",
+          "text": "Ihr habt bisher nur ein Widget erstellt – den Wochenplan. Der ist bereits auf dem Canvas. Soll ich weitere Widgets hinzufügen? Zum Beispiel eine Todo-Liste, Notizen, einen Fortschrittsbalken oder ein Kanban-Board? Sag mir einfach, was du brauchst!",
+          "widgetActions": [],
+          "time": "2026-03-17T04:39:02.098Z"
+        }
+      ],
+      "canvas": {
+        "widgets": [
+          {
+            "id": "w-1773722309831-i9um",
+            "type": "table",
+            "title": "📅 Wochenplan",
+            "size": "full",
+            "dataKey": "table-1773722309831-xm",
+            "color": "#8B5CF6",
+            "config": {
+              "columns": [
+                "Zeit",
+                "Montag",
+                "Dienstag",
+                "Mittwoch",
+                "Donnerstag",
+                "Freitag",
+                "Samstag",
+                "Sonntag"
+              ]
+            },
+            "data": {
+              "rows": [
+                {
+                  "Zeit": "08:00",
+                  "Montag": "",
+                  "Dienstag": "",
+                  "Mittwoch": "",
+                  "Donnerstag": "",
+                  "Freitag": "",
+                  "Samstag": "",
+                  "Sonntag": ""
+                },
+                {
+                  "Zeit": "09:00",
+                  "Montag": "",
+                  "Dienstag": "",
+                  "Mittwoch": "",
+                  "Donnerstag": "",
+                  "Freitag": "",
+                  "Samstag": "",
+                  "Sonntag": ""
+                },
+                {
+                  "Zeit": "10:00",
+                  "Montag": "",
+                  "Dienstag": "",
+                  "Mittwoch": "",
+                  "Donnerstag": "",
+                  "Freitag": "",
+                  "Samstag": "",
+                  "Sonntag": ""
+                },
+                {
+                  "Zeit": "11:00",
+                  "Montag": "",
+                  "Dienstag": "",
+                  "Mittwoch": "",
+                  "Donnerstag": "",
+                  "Freitag": "",
+                  "Samstag": "",
+                  "Sonntag": ""
+                },
+                {
+                  "Zeit": "12:00",
+                  "Montag": "Mittagspause",
+                  "Dienstag": "Mittagspause",
+                  "Mittwoch": "Mittagspause",
+                  "Donnerstag": "Mittagspause",
+                  "Freitag": "Mittagspause",
+                  "Samstag": "",
+                  "Sonntag": ""
+                },
+                {
+                  "Zeit": "13:00",
+                  "Montag": "",
+                  "Dienstag": "",
+                  "Mittwoch": "",
+                  "Donnerstag": "",
+                  "Freitag": "",
+                  "Samstag": "",
+                  "Sonntag": ""
+                },
+                {
+                  "Zeit": "14:00",
+                  "Montag": "",
+                  "Dienstag": "",
+                  "Mittwoch": "",
+                  "Donnerstag": "",
+                  "Freitag": "",
+                  "Samstag": "",
+                  "Sonntag": ""
+                },
+                {
+                  "Zeit": "15:00",
+                  "Montag": "",
+                  "Dienstag": "",
+                  "Mittwoch": "",
+                  "Donnerstag": "",
+                  "Freitag": "",
+                  "Samstag": "",
+                  "Sonntag": ""
+                },
+                {
+                  "Zeit": "16:00",
+                  "Montag": "",
+                  "Dienstag": "",
+                  "Mittwoch": "",
+                  "Donnerstag": "",
+                  "Freitag": "",
+                  "Samstag": "",
+                  "Sonntag": ""
+                },
+                {
+                  "Zeit": "17:00",
+                  "Montag": "",
+                  "Dienstag": "",
+                  "Mittwoch": "",
+                  "Donnerstag": "",
+                  "Freitag": "",
+                  "Samstag": "",
+                  "Sonntag": ""
+                },
+                {
+                  "Zeit": "18:00",
+                  "Montag": "",
+                  "Dienstag": "",
+                  "Mittwoch": "",
+                  "Donnerstag": "",
+                  "Freitag": "",
+                  "Samstag": "",
+                  "Sonntag": ""
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "data": {
+        "table-1773722309831-xm": [
+          {
+            "Zeit": "08:00",
+            "Montag": "",
+            "Dienstag": "",
+            "Mittwoch": "",
+            "Donnerstag": "",
+            "Freitag": "",
+            "Samstag": "",
+            "Sonntag": ""
+          },
+          {
+            "Zeit": "09:00",
+            "Montag": "",
+            "Dienstag": "",
+            "Mittwoch": "",
+            "Donnerstag": "",
+            "Freitag": "",
+            "Samstag": "",
+            "Sonntag": ""
+          },
+          {
+            "Zeit": "10:00",
+            "Montag": "",
+            "Dienstag": "",
+            "Mittwoch": "",
+            "Donnerstag": "",
+            "Freitag": "",
+            "Samstag": "",
+            "Sonntag": ""
+          },
+          {
+            "Zeit": "11:00",
+            "Montag": "",
+            "Dienstag": "",
+            "Mittwoch": "",
+            "Donnerstag": "",
+            "Freitag": "",
+            "Samstag": "",
+            "Sonntag": ""
+          },
+          {
+            "Zeit": "12:00",
+            "Montag": "Mittagspause",
+            "Dienstag": "Mittagspause",
+            "Mittwoch": "Mittagspause",
+            "Donnerstag": "Mittagspause",
+            "Freitag": "Mittagspause",
+            "Samstag": "",
+            "Sonntag": ""
+          },
+          {
+            "Zeit": "13:00",
+            "Montag": "",
+            "Dienstag": "",
+            "Mittwoch": "",
+            "Donnerstag": "",
+            "Freitag": "",
+            "Samstag": "",
+            "Sonntag": ""
+          },
+          {
+            "Zeit": "14:00",
+            "Montag": "",
+            "Dienstag": "",
+            "Mittwoch": "",
+            "Donnerstag": "",
+            "Freitag": "",
+            "Samstag": "",
+            "Sonntag": ""
+          },
+          {
+            "Zeit": "15:00",
+            "Montag": "",
+            "Dienstag": "",
+            "Mittwoch": "",
+            "Donnerstag": "",
+            "Freitag": "",
+            "Samstag": "",
+            "Sonntag": ""
+          },
+          {
+            "Zeit": "16:00",
+            "Montag": "",
+            "Dienstag": "",
+            "Mittwoch": "",
+            "Donnerstag": "",
+            "Freitag": "",
+            "Samstag": "",
+            "Sonntag": ""
+          },
+          {
+            "Zeit": "17:00",
+            "Montag": "",
+            "Dienstag": "",
+            "Mittwoch": "",
+            "Donnerstag": "",
+            "Freitag": "",
+            "Samstag": "",
+            "Sonntag": ""
+          },
+          {
+            "Zeit": "18:00",
+            "Montag": "",
+            "Dienstag": "",
+            "Mittwoch": "",
+            "Donnerstag": "",
+            "Freitag": "",
+            "Samstag": "",
+            "Sonntag": ""
+          }
+        ]
+      },
+      "children": []
     }
   ],
-  "activeProject": "proj-1773717194327"
+  "activeProject": "proj-1773722277608"
 }

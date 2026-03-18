@@ -5,7 +5,7 @@
   "color": "#8B5CF6",
   "parentId": null,
   "created": "2026-03-17T02:00:00.000Z",
-  "updated": "2026-03-17T03:12:16.211Z",
+  "updated": "2026-03-17T20:31:50.289Z",
   "widgets": [
     {
       "id": "w-1773713289208-r1lm",
@@ -150,6 +150,17 @@
       },
       "scope": "local",
       "zoomLevel": "L1"
+    },
+    {
+      "id": "w-dataref-test-1773779510082",
+      "type": "kpi",
+      "title": "Gewicht (aus Neues Projekt)",
+      "size": "sm",
+      "zoomLevel": "L1",
+      "dataRef": {
+        "contextId": "ctx-1773717194327",
+        "dataKey": "kpi-1773717241433-9e"
+      }
     }
   ],
   "data": {
@@ -387,5 +398,165 @@
   "template": null,
   "closedWidgets": [],
   "skills": [],
-  "connections": []
+  "connections": [],
+  "canvas": {
+    "widgets": [
+      {
+        "id": "w-1773713289208-r1lm",
+        "type": "timeline",
+        "title": "Reiseplan Samstag & Sonntag",
+        "size": "lg",
+        "dataKey": "timeline-1773713289208-u1",
+        "color": "#8B5CF6",
+        "data": {
+          "items": [
+            {
+              "title": "🚆 Köln Hbf → Ludwigshafen",
+              "description": "Zug ca. 12:00 – 14:15 (ICE/IC über Mannheim)",
+              "time": "Sa 12:00",
+              "color": "#2196F3"
+            },
+            {
+              "title": "📍 Aufenthalt Ludwigshafen",
+              "description": "Zeit für Mittagessen oder kurzen Besuch",
+              "time": "Sa 14:15",
+              "color": "#FF9800"
+            },
+            {
+              "title": "🚆 Ludwigshafen → Stuttgart",
+              "description": "Zug ca. 15:30 – 16:45 (IC/RE über Mannheim Hbf)",
+              "time": "Sa 15:30",
+              "color": "#2196F3"
+            },
+            {
+              "title": "🏠 Ankunft Stuttgart",
+              "description": "Bei deiner Schwester ankommen, Abend gemeinsam genießen",
+              "time": "Sa ~17:00",
+              "color": "#4CAF50"
+            },
+            {
+              "title": "☀️ Sonntag in Stuttgart",
+              "description": "Freier Tag mit der Schwester – Brunch, Spaziergang, Stadt erkunden",
+              "time": "So ganztags",
+              "color": "#9C27B0"
+            },
+            {
+              "title": "🚆 Stuttgart → Köln",
+              "description": "Rückfahrt ca. 17:30 – 20:00 (ICE direkt)",
+              "time": "So 17:30",
+              "color": "#2196F3"
+            },
+            {
+              "title": "🏡 Ankunft Köln Hbf",
+              "description": "Zurück zu Hause",
+              "time": "So ~20:00",
+              "color": "#4CAF50"
+            }
+          ]
+        },
+        "scope": "local",
+        "zoomLevel": "L1"
+      },
+      {
+        "id": "w-1773713289208-zcou",
+        "type": "todo",
+        "title": "Reise-Checkliste",
+        "size": "lg",
+        "dataKey": "todo-1773713289208-cz",
+        "color": "#8B5CF6",
+        "data": {
+          "items": [
+            {
+              "id": "t-1",
+              "text": "Zugtickets buchen (DB Navigator / bahn.de)",
+              "done": false,
+              "priority": "high"
+            },
+            {
+              "id": "t-2",
+              "text": "Schwester Ankunftszeit mitteilen",
+              "done": false,
+              "priority": "high"
+            },
+            {
+              "id": "t-3",
+              "text": "Tasche packen (Übernachtung 1 Nacht)",
+              "done": false,
+              "priority": "medium"
+            },
+            {
+              "id": "t-4",
+              "text": "Ladekabel & Kopfhörer einpacken",
+              "done": false,
+              "priority": "low"
+            },
+            {
+              "id": "t-5",
+              "text": "Ludwigshafen-Programm klären (Essen/Besuch?)",
+              "done": false,
+              "priority": "medium"
+            },
+            {
+              "id": "t-6",
+              "text": "Sitzplatzreservierung prüfen",
+              "done": false,
+              "priority": "low"
+            }
+          ]
+        },
+        "scope": "local",
+        "zoomLevel": "L1"
+      },
+      {
+        "id": "w-1773713289208-4z6r",
+        "type": "table",
+        "title": "Zugverbindungen (Vorschläge)",
+        "size": "full",
+        "dataKey": "table-1773713289208-3z",
+        "color": "#8B5CF6",
+        "data": {
+          "rows": [
+            {
+              "Strecke": "Köln → Ludwigshafen",
+              "Abfahrt": "Sa ~12:00",
+              "Ankunft": "Sa ~14:15",
+              "Dauer": "~2h 15min",
+              "Umstieg": "Mannheim Hbf",
+              "Tipp": "ICE + S-Bahn/RE"
+            },
+            {
+              "Strecke": "Ludwigshafen → Stuttgart",
+              "Abfahrt": "Sa ~15:30",
+              "Ankunft": "Sa ~16:45",
+              "Dauer": "~1h 15min",
+              "Umstieg": "Mannheim Hbf",
+              "Tipp": "IC direkt ab Mannheim"
+            },
+            {
+              "Strecke": "Stuttgart → Köln",
+              "Abfahrt": "So ~17:30",
+              "Ankunft": "So ~20:00",
+              "Dauer": "~2h 30min",
+              "Umstieg": "Direkt (ICE)",
+              "Tipp": "Sonntagabend früh buchen!"
+            }
+          ]
+        },
+        "scope": "local",
+        "zoomLevel": "L1"
+      },
+      {
+        "id": "w-dataref-test-1773779510082",
+        "type": "kpi",
+        "title": "Gewicht (aus Neues Projekt)",
+        "size": "sm",
+        "zoomLevel": "L1",
+        "dataRef": {
+          "contextId": "ctx-1773717194327",
+          "dataKey": "kpi-1773717241433-9e"
+        }
+      }
+    ]
+  },
+  "children": []
 }
