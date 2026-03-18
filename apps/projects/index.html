@@ -4580,20 +4580,23 @@ async function addNodeToGraph(appId) {
   document.getElementById('addNodeModal')?.remove();
   const ctxId = getCtxId();
   if (!ctxId) return;
-  await fetch(API_BASE + '/api/graphs/' + ctxId + '/connect', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fromApp: appId, fromOutput: '_add', toApp: appId, toInput: '_add' })
-  });
-  // Just add node, remove the self-edge
-  const g = await fetch(API_BASE + '/api/graphs/' + ctxId).then(r => r.json());
-  g.edges = g.edges.filter(e => !(e.from.appId === appId && e.to.appId === appId && e.from.output === '_add'));
-  await fetch(API_BASE + '/api/graphs/' + ctxId, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(g)
-  });
-  await loadAndRenderGraph();
+  // Initialize graph if empty
+  if (!graphCache || !graphCache.nodes) {
+    graphCache = { projectId: ctxId, nodes: [], edges: [] };
+  }
+  // Skip if already in graph
+  if (graphCache.nodes.some(n => n.appId === appId)) return;
+  // Get nodeType from registry
+  const app = registryCache?.apps?.find(a => a.id === appId);
+  const nodeType = app?.manifest?.nodeType || 'consumer';
+  // Position: grid layout, wrap after 3 columns
+  const cols = 3, gapX = 220, gapY = 160;
+  const idx = graphCache.nodes.length;
+  const x = 60 + (idx % cols) * gapX;
+  const y = 60 + Math.floor(idx / cols) * gapY;
+  graphCache.nodes.push({ appId, nodeType, x, y });
+  await saveCurrentGraph();
+  renderGraphView();
 }
 
 async function runCurrentGraph() {
