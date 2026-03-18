@@ -1,0 +1,39 @@
+{
+  "id": "ctx-app-whiteboard",
+  "name": "Whiteboard",
+  "icon": "📋",
+  "color": "#14B8A6",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:49:22.721Z",
+  "widgets": [
+    {
+      "id": "w-app-whiteboard",
+      "type": "app",
+      "title": "Whiteboard",
+      "size": "md",
+      "dataKey": "app-whiteboard",
+      "color": "#14B8A6",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-whiteboard": {
+      "appId": "whiteboard",
+      "status": "Miro-artiges Whiteboard mit Sticky Notes und Freihand-Zeichnen",
+      "name": "Whiteboard",
+      "icon": "📋",
+      "description": "Miro-artiges Whiteboard mit Sticky Notes und Freihand-Zeichnen"
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true
+}

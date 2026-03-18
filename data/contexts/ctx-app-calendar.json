@@ -1,0 +1,39 @@
+{
+  "id": "ctx-app-calendar",
+  "name": "Kalender",
+  "icon": "📅",
+  "color": "#10B981",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:49:22.721Z",
+  "widgets": [
+    {
+      "id": "w-app-calendar",
+      "type": "app",
+      "title": "Kalender",
+      "size": "md",
+      "dataKey": "app-calendar",
+      "color": "#10B981",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-calendar": {
+      "appId": "calendar",
+      "status": "Termine und Deadlines verwalten",
+      "name": "Kalender",
+      "icon": "📅",
+      "description": "Termine und Deadlines verwalten"
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true
+}

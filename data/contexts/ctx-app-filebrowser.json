@@ -1,0 +1,39 @@
+{
+  "id": "ctx-app-filebrowser",
+  "name": "File Browser",
+  "icon": "📁",
+  "color": "#6366F1",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:49:22.721Z",
+  "widgets": [
+    {
+      "id": "w-app-filebrowser",
+      "type": "app",
+      "title": "File Browser",
+      "size": "md",
+      "dataKey": "app-filebrowser",
+      "color": "#6366F1",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-filebrowser": {
+      "appId": "filebrowser",
+      "status": "Browse project files and folders",
+      "name": "File Browser",
+      "icon": "📁",
+      "description": "Browse project files and folders"
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true
+}

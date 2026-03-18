@@ -659,22 +659,58 @@ Phase 10 (Templates + Patterns)
         │
         ▼
 Phase 11 (Dashboard + System)
+        │
+        ▼
+Phase 12 (App-Context Unification)
 ```
 
 Phase 1-11 ✅ ALLE PHASEN ABGESCHLOSSEN.
-Phase 10 braucht Phase 9 (Schemas validiert → Templates sicher).
-Phase 11 braucht Phase 10 (Templates für Dashboard-Presets).
+Phase 12 ✅ App-Context Unification implementiert.
+
+---
+
+### Phase 12: App-Context Unification ✅
+
+**Vision:** Jede App ist auch ein Context. Apps bekommen L0/L1/L2, AI-Awareness und Interaction-Tracking. Projekte können "bau mir eine App" sagen und ein funktionierendes PulseOS-App produzieren.
+
+**Sub-Phase 12a: "app" Widget-Typ** ✅
+- [x] Neuer Widget-Typ `app` mit L0 (Pill + Badge), L1 (Status-Card), L2 (Full iframe)
+- [x] `GET /api/app-status/:appId` Endpoint
+- [x] AI-Prompt um `app` Widget-Typ erweitert
+- [x] Dashboard `open-app` postMessage Handler
+- [x] 3-State Zoom für App-Widgets: L0 → L1 → L2 → L0
+
+**Sub-Phase 12b: App-Context Bridge Protocol** ✅
+- [x] `window.PulseOS` Bridge-Objekt wird in iframe-Apps injiziert
+- [x] `PulseOS.reportStatus(text)` für Live-Status im Widget
+- [x] `PulseOS.logInteraction(action, detail)` für Interaktions-Log
+- [x] Projects UI empfängt Bridge-Messages via postMessage
+- [x] Interaktionen werden im Context gespeichert (max 50 FIFO)
+- [x] AI sieht letzte 5 Interaktionen im Context-Chat Prompt
+
+**Sub-Phase 12c: "create-app" Action** ✅
+- [x] `create-app` Action im Context-Chat (AI erstellt Apps on-the-fly)
+- [x] HTML-Validierung (max 100KB, basic checks)
+- [x] Automatische Registrierung in apps.json + Dashboard
+- [x] App-Widget wird automatisch im Context erstellt
+- [x] App-Builder Prompt-Guidelines (vanilla JS, dark theme, PulseOS conventions)
+- [x] Schema `data/schemas/app.json`
+
+**Sub-Phase 12d: Migration + Polish** ✅
+- [x] `POST /api/app-contexts/generate` — erstellt Context-Wrapper für bestehende Apps
+- [x] Optional `?group=true` für Kategorie-Gruppierung (Spiele, Medien, Tools, etc.)
+- [x] `contextId` Feld in apps.json für Verlinkung
 
 ---
 
 ## Aktuelle Dateien (Referenz)
 
-**Server:** `server.js` (~3800+ Zeilen)
-**Projects App:** `apps/projects/index.html` (~2800+ Zeilen)
+**Server:** `server.js` (~4100+ Zeilen)
+**Projects App:** `apps/projects/index.html` (~3000+ Zeilen)
 **Context View Widget:** `widgets/context-view.js` (~623 Zeilen)
 **Viking Bridge:** `viking-bridge.py` (~340 Zeilen)
 **Supervisor:** `supervisor.js`
-**Schemas:** `data/schemas/` (8 Dateien: task, note, event, metric, measurement, link, record, progress)
+**Schemas:** `data/schemas/` (9 Dateien: task, note, event, metric, measurement, link, record, progress, app)
 **Contexts:** `data/contexts/` (ctx-*.json Dateien, jeweils mit eigenem Unterverzeichnis)
 **Agents Registry:** `data/agents.json`
 **Root Context:** `data/root-context.json`

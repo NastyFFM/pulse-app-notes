@@ -1,0 +1,7 @@
+{
+  "name": "Internet Radio",
+  "icon": "📻",
+  "color": "#06b6d4",
+  "description": "Internet-Radiosender streamen",
+  "agentManaged": false
+}

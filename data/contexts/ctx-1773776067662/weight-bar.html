@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gewichtsverlauf Balkendiagramm</title>
+  <style>
+    body { margin: 0; padding: 0; background: #0f172a; color: #f1f5f9; font-family: system-ui; height: 100vh; display: flex; flex-direction: column; }
+    canvas { flex: 1; width: 100%; }
+    .controls { padding: 8px; background: #1e293b; border-top: 1px solid #334155; display: flex; gap: 6px; flex-wrap: wrap; }
+    button { padding: 6px 10px; background: #06b6d4; color: #0f172a; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
+    button.active { background: #0891b2; }
+    button:hover { background: #06a3c1; }
+    .stats { padding: 8px; background: #1e293b; border-top: 1px solid #334155; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font-size: 11px; }
+    .stat { background: #0f172a; padding: 6px; border-left: 2px solid #06b6d4; border-radius: 2px; }
+    .label { color: #94a3b8; font-size: 10px; }
+    .value { color: #f1f5f9; font-weight: 600; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <canvas id="chart"></canvas>
+  <div class="controls">
+    <button class="range-btn active" data-days="all">Alle Daten</button>
+    <button class="range-btn" data-days="30">30 Tage</button>
+    <button class="range-btn" data-days="14">14 Tage</button>
+    <button class="range-btn" data-days="7">7 Tage</button>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="label">Start</div><div class="value" id="stat-start">-</div></div>
+    <div class="stat"><div class="label">Aktuell</div><div class="value" id="stat-current">-</div></div>
+    <div class="stat"><div class="label">Ziel</div><div class="value" id="stat-target">-</div></div>
+    <div class="stat"><div class="label">Fortschritt</div><div class="value" id="stat-progress">-</div></div>
+  </div>
+
+  <script>
+    const allData = [
+      {"date":"17.03","value":89},{"date":"18.03","value":88.8},{"date":"19.03","value":88.5},{"date":"20.03","value":88.3},
+      {"date":"21.03","value":88.1},{"date":"22.03","value":87.9},{"date":"23.03","value":87.7},{"date":"24.03","value":87.8},
+      {"date":"25.03","value":87.6},{"date":"26.03","value":87.4},{"date":"27.03","value":87.2},{"date":"28.03","value":87},
+      {"date":"29.03","value":86.8},{"date":"30.03","value":86.9},{"date":"31.03","value":86.7},{"date":"01.04","value":86.5},
+      {"date":"02.04","value":86.3},{"date":"03.04","value":86.1},{"date":"04.04","value":86},{"date":"05.04","value":85.8},
+      {"date":"06.04","value":85.6},{"date":"07.04","value":85.4},{"date":"08.04","value":85.5},{"date":"09.04","value":85.3},
+      {"date":"10.04","value":85.1},{"date":"11.04","value":84.9},{"date":"12.04","value":84.7},{"date":"13.04","value":84.8},
+      {"date":"14.04","value":84.5},{"date":"15.04","value":84.3},{"date":"16.04","value":84.1},{"date":"17.04","value":84},
+      {"date":"18.04","value":83.8},{"date":"19.04","value":83.6},{"date":"20.04","value":83.4},{"date":"21.04","value":83.3},
+      {"date":"22.04","value":83.2}
+    ];
+
+    const canvas = document.getElementById('chart'), ctx = canvas.getContext('2d');
+    let currentRange = 'all';
+
+    function getData() { return currentRange === 'all' ? allData : allData.slice(-parseInt(currentRange)); }
+
+    function draw() {
+      const data = getData();
+      const [pad, w, h] = [40, canvas.width - 80, canvas.height - 130];
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      if (!data.length) return;
+      const [minVal, maxVal] = [Math.min(...data.map(d => d.value)) - 1, Math.max(...data.map(d => d.value)) + 1];
+      const range_val = maxVal - minVal;
+      const [barW, space] = [Math.max(6, (w - 20) / data.length), 1];
+
+      // Grid & Y-labels
+      ctx.strokeStyle = '#334155'; ctx.lineWidth = 1; ctx.fillStyle = '#94a3b8'; ctx.font = '10px system-ui'; ctx.textAlign = 'right';
+      for (let i = 0; i <= 5; i++) {
+        const y = pad + (h / 5) * i;
+        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad + w, y); ctx.stroke();
+        ctx.fillText((maxVal - (range_val / 5) * i).toFixed(1), pad - 8, y + 3);
+      }
+
+      // Draw bars
+      data.forEach((d, i) => {
+        const x = pad + 10 + i * (barW + space);
+        const norm = (d.value - minVal) / range_val;
+        const bh = norm * h;
+        const by = pad + h - bh;
+        ctx.fillStyle = `hsl(${norm * 120}, 70%, 50%)`;
+        ctx.fillRect(x, by, barW, bh);
+      });
+
+      // Draw axes
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, pad + h); ctx.lineTo(pad + w, pad + h); ctx.stroke();
+
+      // Update stats
+      document.getElementById('stat-start').textContent = data[0].value + ' kg';
+      document.getElementById('stat-current').textContent = data[data.length - 1].value + ' kg';
+      document.getElementById('stat-target').textContent = '80 kg';
+      const diff = (data[0].value - data[data.length - 1].value).toFixed(1);
+      document.getElementById('stat-progress').textContent = (diff > 0 ? '−' : '+') + Math.abs(diff) + ' kg';
+    }
+
+    function resize() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight - 80; draw(); }
+    document.querySelectorAll('.range-btn').forEach(b => b.addEventListener('click', (e) => {
+      document.querySelectorAll('.range-btn').forEach(x => x.classList.remove('active'));
+      e.target.classList.add('active'); currentRange = e.target.dataset.days; draw();
+    }));
+    window.addEventListener('resize', resize);
+    resize();
+  </script>
+</body>
+</html>

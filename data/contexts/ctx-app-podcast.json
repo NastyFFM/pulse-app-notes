@@ -1,0 +1,39 @@
+{
+  "id": "ctx-app-podcast",
+  "name": "Podcasts",
+  "icon": "🎙️",
+  "color": "#EA580C",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:49:22.721Z",
+  "widgets": [
+    {
+      "id": "w-app-podcast",
+      "type": "app",
+      "title": "Podcasts",
+      "size": "md",
+      "dataKey": "app-podcast",
+      "color": "#EA580C",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-podcast": {
+      "appId": "podcast",
+      "status": "Podcasts entdecken, Episoden hoeren und Favoriten speichern",
+      "name": "Podcasts",
+      "icon": "🎙️",
+      "description": "Podcasts entdecken, Episoden hoeren und Favoriten speichern"
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true
+}

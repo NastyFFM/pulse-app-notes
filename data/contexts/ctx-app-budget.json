@@ -1,0 +1,39 @@
+{
+  "id": "ctx-app-budget",
+  "name": "Budget-Tracker",
+  "icon": "💰",
+  "color": "#F59E0B",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:49:22.721Z",
+  "widgets": [
+    {
+      "id": "w-app-budget",
+      "type": "app",
+      "title": "Budget-Tracker",
+      "size": "md",
+      "dataKey": "app-budget",
+      "color": "#F59E0B",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-budget": {
+      "appId": "budget",
+      "status": "Einnahmen und Ausgaben verwalten, Kategorien, Monatsübersicht",
+      "name": "Budget-Tracker",
+      "icon": "💰",
+      "description": "Einnahmen und Ausgaben verwalten, Kategorien, Monatsübersicht"
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true
+}

@@ -1,0 +1,37 @@
+{
+  "id": "ctx-1773788495207",
+  "name": "Neues Projekt",
+  "icon": "📦",
+  "color": "#ef4444",
+  "chat": [
+    {
+      "id": "msg-sys-1773788495207",
+      "role": "system",
+      "text": "Neues Projekt erstellt! Beschreibe was du bauen oder planen willst.",
+      "time": "2026-03-17T23:01:35.207Z"
+    },
+    {
+      "id": "msg-1773788512743",
+      "role": "user",
+      "text": "mache mir eine mediaplayer app youtube podcats internetradio",
+      "time": "2026-03-17T23:01:52.743Z"
+    },
+    {
+      "id": "msg-1773788633371",
+      "role": "agent",
+      "text": "Der Agent konnte nicht gestartet werden.",
+      "widgetActions": [],
+      "time": "2026-03-17T23:03:53.371Z"
+    }
+  ],
+  "widgets": [],
+  "data": {},
+  "connections": [],
+  "skills": [],
+  "created": "2026-03-17T23:01:35.209Z",
+  "updated": "2026-03-17T23:03:53.373Z",
+  "canvas": {
+    "widgets": []
+  },
+  "children": []
+}

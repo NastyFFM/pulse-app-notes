@@ -1,0 +1,68 @@
+{
+  "name": "Frischer Test",
+  "icon": "✨",
+  "color": "#3b82f6",
+  "id": "ctx-1773788671430",
+  "created": "2026-03-17T23:04:31.430Z",
+  "updated": "2026-03-17T23:04:41.376Z",
+  "widgets": [
+    {
+      "id": "w-1773788681376-3lln",
+      "type": "todo",
+      "title": "Meine Todo-Liste",
+      "size": "md",
+      "dataKey": "todo-1773788681376-uu",
+      "color": "#3b82f6",
+      "config": {},
+      "data": {
+        "items": [
+          {
+            "id": "t-1",
+            "text": "Erste Aufgabe eintragen",
+            "done": false,
+            "priority": "high"
+          },
+          {
+            "id": "t-2",
+            "text": "Aufgaben priorisieren",
+            "done": false,
+            "priority": "medium"
+          },
+          {
+            "id": "t-3",
+            "text": "Erledigte Aufgaben abhaken",
+            "done": false,
+            "priority": "low"
+          }
+        ]
+      },
+      "scope": "local",
+      "zoomLevel": "L1"
+    }
+  ],
+  "connections": [],
+  "skills": [],
+  "chat": [],
+  "data": {
+    "todo-1773788681376-uu": [
+      {
+        "id": "t-1",
+        "text": "Erste Aufgabe eintragen",
+        "done": false,
+        "priority": "high"
+      },
+      {
+        "id": "t-2",
+        "text": "Aufgaben priorisieren",
+        "done": false,
+        "priority": "medium"
+      },
+      {
+        "id": "t-3",
+        "text": "Erledigte Aufgaben abhaken",
+        "done": false,
+        "priority": "low"
+      }
+    ]
+  }
+}

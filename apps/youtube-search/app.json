@@ -1,0 +1,7 @@
+{
+  "name": "YouTube",
+  "icon": "▶️",
+  "color": "#dc2626",
+  "description": "YouTube-Videos suchen und abspielen",
+  "agentManaged": false
+}

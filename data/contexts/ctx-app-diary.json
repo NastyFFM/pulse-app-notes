@@ -1,0 +1,39 @@
+{
+  "id": "ctx-app-diary",
+  "name": "Tagebuch",
+  "icon": "📖",
+  "color": "#8B5CF6",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:49:22.721Z",
+  "widgets": [
+    {
+      "id": "w-app-diary",
+      "type": "app",
+      "title": "Tagebuch",
+      "size": "md",
+      "dataKey": "app-diary",
+      "color": "#8B5CF6",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-diary": {
+      "appId": "diary",
+      "status": "Tägliche Tagebucheinträge mit Stimmung und Datum",
+      "name": "Tagebuch",
+      "icon": "📖",
+      "description": "Tägliche Tagebucheinträge mit Stimmung und Datum"
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true
+}

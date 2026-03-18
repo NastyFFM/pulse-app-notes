@@ -1,0 +1,22 @@
+{
+  "id": "app",
+  "icon": "📱",
+  "label": "App",
+  "labelPlural": "Apps",
+  "description": "PulseOS App mit eigenem HTML-Interface. Zeigt L0=Badge, L1=Statuscard, L2=Full-App im iframe.",
+  "fields": {
+    "appId": { "type": "string", "required": true, "label": "App-ID", "description": "Kebab-case ID der App (z.B. 'weather', 'tetris')" },
+    "name": { "type": "string", "required": false, "label": "Anzeigename" },
+    "icon": { "type": "string", "required": false, "label": "Icon (Emoji)" },
+    "description": { "type": "string", "required": false, "label": "Beschreibung" },
+    "status": { "type": "string", "required": false, "default": "", "label": "Live-Status", "description": "Wird automatisch von der App via PulseOS.reportStatus() aktualisiert" },
+    "lastInteraction": { "type": "datetime", "required": false, "label": "Letzte Interaktion" },
+    "interactions": { "type": "array", "required": false, "default": [], "label": "Interaktions-Log" }
+  },
+  "renders": ["app"],
+  "defaultRender": "app",
+  "singleObject": true,
+  "constraints": {
+    "uniqueKey": "appId"
+  }
+}

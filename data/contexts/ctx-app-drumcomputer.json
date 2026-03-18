@@ -1,0 +1,39 @@
+{
+  "id": "ctx-app-drumcomputer",
+  "name": "Drum Computer",
+  "icon": "🥁",
+  "color": "#EF4444",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:49:22.721Z",
+  "widgets": [
+    {
+      "id": "w-app-drumcomputer",
+      "type": "app",
+      "title": "Drum Computer",
+      "size": "md",
+      "dataKey": "app-drumcomputer",
+      "color": "#EF4444",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-drumcomputer": {
+      "appId": "drumcomputer",
+      "status": "4-Track Step Sequencer mit Web Audio",
+      "name": "Drum Computer",
+      "icon": "🥁",
+      "description": "4-Track Step Sequencer mit Web Audio"
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true
+}

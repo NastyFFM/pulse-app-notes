@@ -1,0 +1,39 @@
+{
+  "id": "ctx-app-tickets",
+  "name": "Ticket System",
+  "icon": "🎫",
+  "color": "#3B82F6",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:49:22.721Z",
+  "widgets": [
+    {
+      "id": "w-app-tickets",
+      "type": "app",
+      "title": "Ticket System",
+      "size": "md",
+      "dataKey": "app-tickets",
+      "color": "#3B82F6",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-tickets": {
+      "appId": "tickets",
+      "status": "Einfaches Jira-artiges Ticketsystem mit Board und Liste",
+      "name": "Ticket System",
+      "icon": "🎫",
+      "description": "Einfaches Jira-artiges Ticketsystem mit Board und Liste"
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true
+}

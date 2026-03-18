@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0f172a;
+            color: #f1f5f9;
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { margin-bottom: 20px; font-size: 24px; }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input {
+            flex: 1;
+            padding: 10px 15px;
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #f1f5f9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        input:focus { outline: none; border-color: #dc2626; }
+        button {
+            padding: 10px 20px;
+            background: #dc2626;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover { background: #b91c1c; }
+        .status { margin-bottom: 15px; padding: 10px; background: #1e293b; border-radius: 6px; color: #94a3b8; }
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 16px;
+        }
+        .video-card {
+            background: #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .video-card:hover { transform: translateY(-4px); }
+        .video-thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #475569;
+            font-size: 40px;
+        }
+        .video-info { padding: 12px; }
+        .video-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
+        .video-channel { font-size: 12px; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>▶️ YouTube</h1>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Videos suchen...">
+            <button onclick="searchVideos()">Suchen</button>
+        </div>
+        <div class="status" id="status"></div>
+        <div class="results" id="results"></div>
+    </div>
+    <script>
+        const API_KEY = 'AIzaSyA1234567890ABCDEF';
+        async function searchVideos() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) { updateStatus('Bitte Suchbegriff eingeben'); return; }
+            updateStatus('🔍 Suche...');
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            try {
+                const response = await fetch(
+                    `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=12&key=${API_KEY}`
+                );
+                const data = await response.json();
+                if (data.error) { updateStatus(`❌ API-Fehler: ${data.error.message}`); return; }
+                if (data.items && data.items.length > 0) {
+                    updateStatus(`✅ ${data.items.length} Ergebnisse`);
+                    data.items.forEach(item => {
+                        const video = document.createElement('div');
+                        video.className = 'video-card';
+                        const videoId = item.id.videoId;
+                        video.innerHTML = `
+                            <div class="video-thumbnail">▶️</div>
+                            <div class="video-info">
+                                <div class="video-title">${item.snippet.title}</div>
+                                <div class="video-channel">${item.snippet.channelTitle}</div>
+                            </div>
+                        `;
+                        video.onclick = () => window.open(`https://youtu.be/${videoId}`);
+                        resultsDiv.appendChild(video);
+                    });
+                } else {
+                    updateStatus('Keine Ergebnisse gefunden');
+                }
+            } catch (error) {
+                updateStatus(`❌ ${error.message}`);
+            }
+        }
+        function updateStatus(msg) {
+            document.getElementById('status').textContent = msg;
+        }
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchVideos();
+        });
+    </script>
+</body>
+</html>

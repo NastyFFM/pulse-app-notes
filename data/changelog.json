@@ -2,11 +2,6 @@
   "entries": [
     {
       "action": "chat",
-      "detail": "User: \"from now on every app has a new button top right. ...\"",
-      "time": "2026-03-12T00:16:25.789Z"
-    },
-    {
-      "action": "chat",
       "detail": "User: \"falsch du brauchst den server aopi key nicht. du l...\"",
       "time": "2026-03-12T00:19:52.721Z"
     },
@@ -999,6 +994,11 @@
       "action": "install",
       "detail": "File Browser installiert",
       "time": "2026-03-17T03:03:16.459Z"
+    },
+    {
+      "action": "install",
+      "detail": "Rezepte installiert",
+      "time": "2026-03-17T21:28:07.585Z"
     }
   ]
 }

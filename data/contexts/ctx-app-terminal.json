@@ -1,0 +1,39 @@
+{
+  "id": "ctx-app-terminal",
+  "name": "Claude Terminal",
+  "icon": "⌨️",
+  "color": "#58a6ff",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:49:22.721Z",
+  "widgets": [
+    {
+      "id": "w-app-terminal",
+      "type": "app",
+      "title": "Claude Terminal",
+      "size": "md",
+      "dataKey": "app-terminal",
+      "color": "#58a6ff",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-terminal": {
+      "appId": "terminal",
+      "status": "Direkter Echtzeit-Chat mit Claude. Kein Polling, kein Agent — direkte Pipe.",
+      "name": "Claude Terminal",
+      "icon": "⌨️",
+      "description": "Direkter Echtzeit-Chat mit Claude. Kein Polling, kein Agent — direkte Pipe."
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true
+}

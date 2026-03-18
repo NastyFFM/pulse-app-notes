@@ -600,6 +600,19 @@ body {
 .widget-frame.zoom-l0 .l0-actions { display: flex; }
 .widget-frame:not(.zoom-l0) .l0-actions { display: none; }
 
+/* L2 Zoom: full-width expanded view */
+.widget-frame.zoom-l2 { width: 100% !important; }
+.widget-frame.zoom-l2 .widget-cmd { display: none !important; }
+
+/* App Widget L2 iframe container */
+.app-widget-l2 {
+  width: 100%;
+  height: 70vh;
+  min-height: 400px;
+  max-height: 85vh;
+  position: relative;
+}
+
 /* L0 Todo mini-checkboxes */
 .l0-todo-item {
   display: flex;
@@ -1465,6 +1478,46 @@ function connectSSE() {
   es.onerror = () => setTimeout(connectSSE, 3000);
 }
 
+// ── App Bridge: receive status + interactions from app iframes ──
+let _appBridgeSaveTimer = null;
+window.addEventListener('message', (e) => {
+  if (!e.data || !state.activeContext) return;
+
+  // App status update from iframe
+  if (e.data.type === 'app-status' && e.data.appId) {
+    const widget = (state.activeContext.widgets || []).find(w =>
+      w.type === 'app' && (state.activeContext.data?.[w.dataKey]?.appId === e.data.appId || w.data?.appId === e.data.appId)
+    );
+    if (widget && state.activeContext.data?.[widget.dataKey]) {
+      state.activeContext.data[widget.dataKey].status = e.data.status;
+      state.activeContext.data[widget.dataKey].lastInteraction = new Date().toISOString();
+      // Update L0 badge if visible
+      updateL0Badge(widget.id, e.data.status);
+      // Debounced save
+      clearTimeout(_appBridgeSaveTimer);
+      _appBridgeSaveTimer = setTimeout(() => save(), 2000);
+    }
+  }
+
+  // App interaction log from iframe
+  if (e.data.type === 'app-interaction' && e.data.appId) {
+    const widget = (state.activeContext.widgets || []).find(w =>
+      w.type === 'app' && (state.activeContext.data?.[w.dataKey]?.appId === e.data.appId || w.data?.appId === e.data.appId)
+    );
+    if (widget && state.activeContext.data?.[widget.dataKey]) {
+      const data = state.activeContext.data[widget.dataKey];
+      if (!data.interactions) data.interactions = [];
+      data.interactions.push({ action: e.data.action, detail: e.data.detail, time: e.data.time });
+      // Cap at 50 interactions (FIFO)
+      if (data.interactions.length > 50) data.interactions = data.interactions.slice(-50);
+      data.lastInteraction = e.data.time;
+      // Debounced save
+      clearTimeout(_appBridgeSaveTimer);
+      _appBridgeSaveTimer = setTimeout(() => save(), 2000);
+    }
+  }
+});
+
 // ── Project CRUD (now backed by Context API) ──
 
 async function createProject(parentId = null) {
@@ -1564,6 +1617,9 @@ async function loadScopeChain() {
 
 async function selectProject(id) {
   state.activeContextId = id;
+
+  // Cancel any pending debounced save to prevent stale data overwriting fresh load
+  clearTimeout(saveTimeout);
 
   // Fetch the full context from the API
   try {
@@ -1873,7 +1929,7 @@ function createWidgetFrame(widget, proj, inherited = false) {
   const typeLabel = getWidgetLabel(widget.type);
   const displayTitle = widget.title !== typeLabel ? widget.title : typeLabel;
   const badge = zoomLevel === 'L0' ? ` · ${getL0Badge(widget, proj)}` : '';
-  const zoomIcon = zoomLevel === 'L0' ? '🔹' : '🔸';
+  const zoomIcon = zoomLevel === 'L0' ? '🔹' : zoomLevel === 'L2' ? '🔷' : '🔸';
   const inheritedBadge = inherited ? `<span class="inherited-badge">\u2197 ${escapeHtml(widget._inheritedFrom || 'Parent')}</span>` : '';
   const dataRefBadge = widget.dataRef ? `<span class="inherited-badge" style="color:var(--blue);">📌 ${escapeHtml(state.contexts.find(c => c.id === widget.dataRef.contextId)?.name || widget.dataRef.contextId)}</span>` : '';
   const perspectiveHint = (widget.renderAs && widget.renderAs !== widget.type) ? `<span class="perspective-hint">${widget.type} \u2192 ${widget.renderAs}</span>` : '';
@@ -2159,6 +2215,14 @@ function renderWidgetContent(container, widget, proj) {
       `;
       break;
     }
+    case 'app': {
+      renderAppWidget(container, widget, proj);
+      break;
+    }
+    case 'custom': {
+      renderCustomWidget(container, widget, proj);
+      break;
+    }
     case 'text':
       container.innerHTML = `<div class="w-note-content">${escapeHtml(data.text || widget.text || '')}</div>`;
       break;
@@ -2318,6 +2382,113 @@ function renderProgressWidget(container, widget, proj) {
     <div class="w-progress-bar"><div class="w-progress-fill" style="width:${pct}%;background:${color}"></div></div>
     <div class="w-progress-label"><span>${data.label || ''}</span><span>${pct}%</span></div>
   `;
+}
+
+// ── App Widget Renderer ──
+async function renderAppWidget(container, widget, proj) {
+  const data = proj.data[widget.dataKey] || widget.data || {};
+  const appId = data.appId;
+  if (!appId) {
+    container.innerHTML = '<div style="padding:16px;color:var(--text-muted);">Keine App-ID konfiguriert</div>';
+    return;
+  }
+
+  // Fetch app info from apps.json
+  let appInfo = null;
+  try {
+    const res = await fetch(`${API_BASE}/api/apps`);
+    const appsData = await res.json();
+    appInfo = (appsData.apps || []).find(a => a.id === appId);
+  } catch {}
+
+  const icon = appInfo?.icon || data.icon || '📱';
+  const name = appInfo?.name || data.name || appId;
+  const color = appInfo?.color || widget.color || 'var(--accent)';
+  const desc = appInfo?.description || data.description || '';
+  const status = data.status || '';
+  const lastInteraction = data.lastInteraction ? timeAgo(data.lastInteraction) : '';
+
+  // Check zoom level from parent frame
+  const frame = container.closest('.widget-frame');
+  const isL2 = frame && frame.classList.contains('zoom-l2');
+
+  if (isL2) {
+    // L2: Full iframe showing the actual app
+    container.innerHTML = `
+      <div class="app-widget-l2">
+        <iframe src="/app/${encodeURIComponent(appId)}/?widgetContext=${encodeURIComponent(state.activeContextId || '')}"
+          style="width:100%;height:100%;border:none;border-radius:0 0 var(--radius) var(--radius);"
+          allow="camera;microphone;autoplay"></iframe>
+      </div>
+    `;
+  } else {
+    // L1: Status card
+    container.innerHTML = `
+      <div class="app-widget-card" onclick="openAppFromWidget('${escapeHtml(appId)}')" style="cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:12px;padding:16px;">
+          <div style="font-size:32px;width:56px;height:56px;border-radius:14px;background:${color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:15px;">${escapeHtml(name)}</div>
+            ${desc ? `<div style="font-size:12px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(desc)}</div>` : ''}
+            ${status ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">📡 ${escapeHtml(status)}</div>` : ''}
+            ${lastInteraction ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Zuletzt: ${lastInteraction}</div>` : ''}
+          </div>
+        </div>
+        <div style="padding:8px 16px 12px;border-top:1px solid var(--border);display:flex;gap:8px;">
+          <button onclick="event.stopPropagation();openAppL2('${escapeHtml(widget.id)}')" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);font-size:12px;cursor:pointer;font-family:var(--font);">🔍 Hier öffnen (L2)</button>
+          <button onclick="event.stopPropagation();openAppFromWidget('${escapeHtml(appId)}')" style="flex:1;padding:6px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:12px;cursor:pointer;font-family:var(--font);">🚀 Im Dashboard</button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function renderCustomWidget(container, widget, proj) {
+  const data = proj.data[widget.dataKey] || widget.data || {};
+  const widgetFileId = data.widgetFileId;
+  if (!widgetFileId) {
+    container.innerHTML = '<div style="padding:16px;color:var(--text-muted);">Kein Custom Widget konfiguriert</div>';
+    return;
+  }
+
+  const frame = container.closest('.widget-frame');
+  const isL2 = frame && frame.classList.contains('zoom-l2');
+  const isL0 = frame && frame.classList.contains('zoom-l0');
+
+  if (isL0) {
+    // L0: Compact badge
+    const icon = data.icon || '🧩';
+    const name = data.name || widgetFileId;
+    container.innerHTML = `<span style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;display:inline-block;">${icon} ${escapeHtml(name)}</span>`;
+    return;
+  }
+
+  // L1/L2: iframe showing the custom widget HTML
+  const contextId = state.activeContextId || '';
+  const h = isL2 ? '100%' : '280px';
+  container.innerHTML = `
+    <div style="width:100%;height:${h};position:relative;">
+      <iframe src="/api/custom-widget/${encodeURIComponent(contextId)}/${encodeURIComponent(widgetFileId)}"
+        style="width:100%;height:100%;border:none;border-radius:0 0 var(--radius) var(--radius);background:#0f172a;"
+        sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>
+  `;
+}
+
+function openAppFromWidget(appId) {
+  // Send message to dashboard to open app in a window
+  try { window.parent.postMessage({ type: 'open-app', appId }, '*'); } catch {}
+}
+
+function openAppL2(widgetId) {
+  const proj = getProject(state.activeContextId);
+  if (!proj) return;
+  const w = (proj.widgets || []).find(w => w.id === widgetId);
+  if (!w) return;
+  w.zoomLevel = 'L2';
+  w.size = 'full';
+  save();
+  renderCanvas();
 }
 
 // ── Pending Changes & Changelog ──
@@ -2892,8 +3063,10 @@ async function sendMessage() {
   processing = false;
   document.getElementById('typingIndicator').classList.remove('visible');
   document.getElementById('btnSend').disabled = false;
+
+  // Force reload fresh context from server to ensure UI matches server state
+  await selectProject(state.activeContextId);
   renderChat();
-  renderCanvas();
   highlightAiChanges(lastWidgetActions);
   document.getElementById('projectSub').textContent = `${(state.activeContext?.widgets || []).length} Widgets`;
 }
@@ -3146,9 +3319,17 @@ function cycleZoom(widgetId) {
 
   const w = (proj.widgets || []).find(w => w.id === widgetId);
   if (!w) return;
-  // Simple toggle: L1 ↔ L0 (use resize button for size changes)
   const current = w.zoomLevel || 'L1';
-  w.zoomLevel = current === 'L0' ? 'L1' : 'L0';
+  // App widgets: 3-state cycle L0 → L1 → L2 → L0
+  if (w.type === 'app') {
+    w.zoomLevel = current === 'L0' ? 'L1' : current === 'L1' ? 'L2' : 'L0';
+    if (w.zoomLevel === 'L2') w.size = 'full';
+    else if (w._prevSize) { w.size = w._prevSize; delete w._prevSize; }
+    if (current === 'L1') w._prevSize = w.size || 'md';
+  } else {
+    // Simple toggle: L1 ↔ L0 (use resize button for size changes)
+    w.zoomLevel = current === 'L0' ? 'L1' : 'L0';
+  }
   save();
   renderCanvas();
 }
@@ -3252,6 +3433,16 @@ function getL0ActionsHtml(widget, proj, widgetId) {
         return `<span style="font-size:11px;color:var(--text-secondary)">${refCtx.widgetCount || 0}w${ago ? ' · ' + ago : ''}</span>`;
       }
       return '';
+    }
+
+    case 'app': {
+      const appData = proj.data?.[dk] || widget.data || {};
+      const appId = appData.appId || '';
+      const status = appData.status || '';
+      return `
+        <span style="font-size:11px;color:var(--text-secondary)">${status ? escapeHtml(status.slice(0, 30)) : escapeHtml(appId)}</span>
+        <button class="l0-btn l0-open-app" data-appid="${escapeHtml(appId)}" title="Im Dashboard öffnen" style="margin-left:auto;">🚀</button>
+      `;
     }
 
     case 'progress': {
@@ -3384,6 +3575,17 @@ function bindL0Actions(frame, widget, proj, widgetId) {
       });
     });
   }
+
+  // App: open in dashboard
+  if (type === 'app') {
+    const openBtn = frame.querySelector('.l0-open-app');
+    if (openBtn) {
+      openBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openAppFromWidget(openBtn.dataset.appid);
+      });
+    }
+  }
 }
 
 function updateL0Badge(widgetId, badgeText) {
@@ -3436,6 +3638,10 @@ function getL0Badge(widget, proj) {
       const progData = proj.data?.[widget.dataKey] || widget.data || {};
       return `${progData.percent ?? 0}%`;
     }
+    case 'app': {
+      const appData = proj.data?.[widget.dataKey] || widget.data || {};
+      return appData.status || appData.appId || '—';
+    }
     default:
       return '';
   }
@@ -3463,12 +3669,12 @@ function extractListItems(text) {
 }
 
 function getWidgetIcon(type) {
-  const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉', text: '📄', context: '📂' };
+  const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉', text: '📄', context: '📂', app: '📱' };
   return icons[type] || '🧩';
 }
 
 function getWidgetLabel(type) {
-  const labels = { todo: 'Aufgaben', notes: 'Notizen', table: 'Tabelle', timeline: 'Timeline', kpi: 'KPI', kanban: 'Board', links: 'Links', progress: 'Fortschritt', text: 'Text', context: 'Kontext' };
+  const labels = { todo: 'Aufgaben', notes: 'Notizen', table: 'Tabelle', timeline: 'Timeline', kpi: 'KPI', kanban: 'Board', links: 'Links', progress: 'Fortschritt', text: 'Text', context: 'Kontext', app: 'App' };
   return labels[type] || type;
 }
 

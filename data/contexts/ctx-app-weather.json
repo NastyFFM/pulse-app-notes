@@ -1,0 +1,39 @@
+{
+  "id": "ctx-app-weather",
+  "name": "Wetter",
+  "icon": "🌤️",
+  "color": "#0EA5E9",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:49:22.721Z",
+  "widgets": [
+    {
+      "id": "w-app-weather",
+      "type": "app",
+      "title": "Wetter",
+      "size": "md",
+      "dataKey": "app-weather",
+      "color": "#0EA5E9",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-weather": {
+      "appId": "weather",
+      "status": "Aktuelles Wetter für beliebige Städte",
+      "name": "Wetter",
+      "icon": "🌤️",
+      "description": "Aktuelles Wetter für beliebige Städte"
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true
+}

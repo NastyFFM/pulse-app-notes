@@ -1,0 +1,39 @@
+{
+  "id": "ctx-app-context-demo",
+  "name": "Context Demo",
+  "icon": "🔮",
+  "color": "#8B5CF6",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:49:22.721Z",
+  "widgets": [
+    {
+      "id": "w-app-context-demo",
+      "type": "app",
+      "title": "Context Demo",
+      "size": "md",
+      "dataKey": "app-context-demo",
+      "color": "#8B5CF6",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-context-demo": {
+      "appId": "context-demo",
+      "status": "Universal Context View — auto-generated reactive UI from JSON data",
+      "name": "Context Demo",
+      "icon": "🔮",
+      "description": "Universal Context View — auto-generated reactive UI from JSON data"
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true
+}

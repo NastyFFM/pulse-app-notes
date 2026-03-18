@@ -1,0 +1,24 @@
+{
+  "id": "ctx-1773783135197",
+  "name": "YoutubeGenerator",
+  "icon": "🎯",
+  "color": "#3B82F6",
+  "chat": [
+    {
+      "id": "msg-sys-1773783135198",
+      "role": "system",
+      "text": "Neues Projekt erstellt! Beschreibe was du bauen oder planen willst.",
+      "time": "2026-03-17T21:32:15.198Z"
+    }
+  ],
+  "widgets": [],
+  "data": {},
+  "connections": [],
+  "skills": [],
+  "created": "2026-03-17T21:32:15.202Z",
+  "updated": "2026-03-17T21:32:25.541Z",
+  "canvas": {
+    "widgets": []
+  },
+  "children": []
+}

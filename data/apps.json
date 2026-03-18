@@ -10,7 +10,8 @@
       "color": "#8B5CF6",
       "description": "Cross-App Intelligence — Live-Cockpit mit AI-Insights",
       "installed": true,
-      "position": 4
+      "position": 4,
+      "contextId": "ctx-app-pulse"
     },
     {
       "id": "chat",
@@ -19,7 +20,8 @@
       "color": "#8B5CF6",
       "description": "Chat mit Claude Code",
       "installed": true,
-      "position": 5
+      "position": 5,
+      "contextId": "ctx-app-chat"
     },
     {
       "id": "kanban",
@@ -28,7 +30,8 @@
       "color": "#3B82F6",
       "description": "Projektmanagement mit Drag & Drop",
       "installed": true,
-      "position": 6
+      "position": 6,
+      "contextId": "ctx-app-kanban"
     },
     {
       "id": "weather",
@@ -37,7 +40,8 @@
       "color": "#0EA5E9",
       "description": "Aktuelles Wetter für beliebige Städte",
       "installed": true,
-      "position": 3
+      "position": 3,
+      "contextId": "ctx-app-weather"
     },
     {
       "id": "notes",
@@ -46,7 +50,8 @@
       "color": "#F59E0B",
       "description": "Notizen erstellen, bearbeiten und organisieren",
       "installed": true,
-      "position": 7
+      "position": 7,
+      "contextId": "ctx-app-notes"
     },
     {
       "id": "calendar",
@@ -55,7 +60,8 @@
       "color": "#10B981",
       "description": "Termine und Deadlines verwalten",
       "installed": false,
-      "position": 4
+      "position": 4,
+      "contextId": "ctx-app-calendar"
     },
     {
       "id": "budget",
@@ -64,7 +70,8 @@
       "color": "#F59E0B",
       "description": "Einnahmen und Ausgaben verwalten, Kategorien, Monatsübersicht",
       "installed": false,
-      "position": 5
+      "position": 5,
+      "contextId": "ctx-app-budget"
     },
     {
       "id": "tetris",
@@ -82,7 +89,8 @@
       "color": "#EF4444",
       "description": "4-Track Step Sequencer mit Web Audio",
       "installed": false,
-      "position": 7
+      "position": 7,
+      "contextId": "ctx-app-drumcomputer"
     },
     {
       "id": "flappy",
@@ -91,7 +99,8 @@
       "color": "#F59E0B",
       "description": "Flappy Bird – Fliege durch die Rohre!",
       "installed": false,
-      "position": 8
+      "position": 8,
+      "contextId": "ctx-app-flappy"
     },
     {
       "id": "news-channels",
@@ -100,7 +109,8 @@
       "color": "#E11D48",
       "description": "Eigene News-Kanäle nach Themen erstellen und aktuelle Nachrichten verfolgen",
       "installed": false,
-      "position": 9
+      "position": 9,
+      "contextId": "ctx-app-news-channels"
     },
     {
       "id": "filebrowser",
@@ -109,7 +119,8 @@
       "color": "#6366F1",
       "description": "Browse project files and folders",
       "installed": true,
-      "position": 15
+      "position": 15,
+      "contextId": "ctx-app-filebrowser"
     },
     {
       "id": "picviewer",
@@ -118,7 +129,8 @@
       "color": "#EC4899",
       "description": "Browse and view images in a gallery",
       "installed": false,
-      "position": 11
+      "position": 11,
+      "contextId": "ctx-app-picviewer"
     },
     {
       "id": "camera",
@@ -127,7 +139,8 @@
       "color": "#14B8A6",
       "description": "Camera with live preview, photo capture and color filters",
       "installed": false,
-      "position": 12
+      "position": 12,
+      "contextId": "ctx-app-camera"
     },
     {
       "id": "imagegen",
@@ -136,7 +149,8 @@
       "color": "#8B5CF6",
       "description": "Bilder aus Text-Prompts generieren mit KI",
       "installed": false,
-      "position": 13
+      "position": 13,
+      "contextId": "ctx-app-imagegen"
     },
     {
       "id": "tickets",
@@ -145,7 +159,8 @@
       "color": "#3B82F6",
       "description": "Einfaches Jira-artiges Ticketsystem mit Board und Liste",
       "installed": false,
-      "position": 14
+      "position": 14,
+      "contextId": "ctx-app-tickets"
     },
     {
       "id": "mindmap",
@@ -154,7 +169,8 @@
       "color": "#8B5CF6",
       "description": "Interaktive MindMap mit Drag & Drop und Verbindungen",
       "installed": false,
-      "position": 15
+      "position": 15,
+      "contextId": "ctx-app-mindmap"
     },
     {
       "id": "whiteboard",
@@ -163,7 +179,8 @@
       "color": "#14B8A6",
       "description": "Miro-artiges Whiteboard mit Sticky Notes und Freihand-Zeichnen",
       "installed": false,
-      "position": 16
+      "position": 16,
+      "contextId": "ctx-app-whiteboard"
     },
     {
       "id": "travel-planner",
@@ -172,7 +189,8 @@
       "color": "#0EA5E9",
       "description": "Reisen planen mit Tagesplanung, Aktivitäten und Packliste",
       "installed": false,
-      "position": 17
+      "position": 17,
+      "contextId": "ctx-app-travel-planner"
     },
     {
       "id": "radio",
@@ -181,7 +199,8 @@
       "color": "#8B5CF6",
       "description": "Internet-Radio mit Sendersuche, Genres und Favoriten",
       "installed": false,
-      "position": 18
+      "position": 18,
+      "contextId": "ctx-app-radio"
     },
     {
       "id": "youtube",
@@ -190,7 +209,8 @@
       "color": "#EF4444",
       "description": "YouTube Videos suchen, ansehen und Favoriten speichern",
       "installed": true,
-      "position": 1
+      "position": 1,
+      "contextId": "ctx-app-youtube"
     },
     {
       "id": "podcast",
@@ -199,7 +219,8 @@
       "color": "#EA580C",
       "description": "Podcasts entdecken, Episoden hoeren und Favoriten speichern",
       "installed": true,
-      "position": 2
+      "position": 2,
+      "contextId": "ctx-app-podcast"
     },
     {
       "id": "doom",
@@ -208,7 +229,8 @@
       "color": "#DC2626",
       "description": "Doom-artiger Ego-Shooter mit Raycasting-Engine",
       "installed": false,
-      "position": 21
+      "position": 21,
+      "contextId": "ctx-app-doom"
     },
     {
       "id": "social-trends",
@@ -217,7 +239,8 @@
       "color": "#6366F1",
       "description": "Social Media Trendanalyse fuer TikTok, Instagram, YouTube & X",
       "installed": false,
-      "position": 22
+      "position": 22,
+      "contextId": "ctx-app-social-trends"
     },
     {
       "id": "alarm",
@@ -226,7 +249,8 @@
       "color": "#F59E0B",
       "description": "Wecker mit Alarmen, Stoppuhr und Timer",
       "installed": false,
-      "position": 23
+      "position": 23,
+      "contextId": "ctx-app-alarm"
     },
     {
       "id": "eggtimer",
@@ -235,7 +259,8 @@
       "color": "#F97316",
       "description": "Kurzeitwecker mit Voreinstellungen und Alarm",
       "installed": false,
-      "position": 24
+      "position": 24,
+      "contextId": "ctx-app-eggtimer"
     },
     {
       "id": "orchestrator",
@@ -253,7 +278,8 @@
       "color": "#58a6ff",
       "description": "Direkter Echtzeit-Chat mit Claude. Kein Polling, kein Agent — direkte Pipe.",
       "installed": true,
-      "position": 0
+      "position": 0,
+      "contextId": "ctx-app-terminal"
     },
     {
       "id": "recipes",
@@ -261,8 +287,9 @@
       "icon": "🍳",
       "color": "#F97316",
       "description": "Rezepte suchen, speichern und entdecken",
-      "installed": false,
-      "position": 26
+      "installed": true,
+      "position": 16,
+      "contextId": "ctx-app-recipes"
     },
     {
       "id": "pipette",
@@ -271,7 +298,8 @@
       "color": "#8B5CF6",
       "description": "Farben vom Bildschirm samplen",
       "installed": false,
-      "position": 27
+      "position": 27,
+      "contextId": "ctx-app-pipette"
     },
     {
       "id": "diary",
@@ -280,7 +308,8 @@
       "color": "#8B5CF6",
       "description": "Tägliche Tagebucheinträge mit Stimmung und Datum",
       "installed": false,
-      "position": 28
+      "position": 28,
+      "contextId": "ctx-app-diary"
     },
     {
       "id": "viking",
@@ -289,7 +318,8 @@
       "color": "#f59e0b",
       "description": "OpenViking Context Database — Resources, Memories & Skills",
       "installed": true,
-      "position": 9
+      "position": 9,
+      "contextId": "ctx-app-viking"
     },
     {
       "id": "context-demo",
@@ -298,7 +328,8 @@
       "color": "#8B5CF6",
       "description": "Universal Context View — auto-generated reactive UI from JSON data",
       "installed": true,
-      "position": 8
+      "position": 8,
+      "contextId": "ctx-app-context-demo"
     },
     {
       "id": "calendar-agent",
@@ -307,7 +338,8 @@
       "color": "#3B82F6",
       "description": "Verwaltet Termine, Events und Erinnerungen",
       "installed": true,
-      "position": 34
+      "position": 34,
+      "contextId": "ctx-app-calendar-agent"
     },
     {
       "id": "budget-agent",
@@ -316,7 +348,8 @@
       "color": "#22c55e",
       "description": "Trackt Einnahmen, Ausgaben und Budget-Ziele",
       "installed": true,
-      "position": 35
+      "position": 35,
+      "contextId": "ctx-app-budget-agent"
     },
     {
       "id": "notes-agent",
@@ -325,7 +358,8 @@
       "color": "#f59e0b",
       "description": "Verwaltet Notizen, Ideen und Wissenssammlungen",
       "installed": true,
-      "position": 36
+      "position": 36,
+      "contextId": "ctx-app-notes-agent"
     },
     {
       "id": "projects",
@@ -343,7 +377,44 @@
       "color": "#ef4444",
       "description": "Trilateration: 3 Standorte + Distanzen → Schnittpunkt auf der Karte",
       "installed": true,
-      "position": 38
+      "position": 38,
+      "contextId": "ctx-app-triangulation"
+    },
+    {
+      "id": "mediaplayer",
+      "name": "MediaPlayer",
+      "icon": "🎵",
+      "color": "#7c3aed",
+      "description": "Alles-in-einem Mediaplayer: YouTube, Internet-Radio und Podcasts",
+      "installed": true,
+      "position": 39
+    },
+    {
+      "id": "youtube-search",
+      "name": "YouTube",
+      "icon": "▶️",
+      "color": "#dc2626",
+      "description": "YouTube-Videos suchen und abspielen",
+      "installed": true,
+      "position": 40
+    },
+    {
+      "id": "podcast-search",
+      "name": "Podcast",
+      "icon": "🎙️",
+      "color": "#8b5cf6",
+      "description": "Podcasts suchen und hören",
+      "installed": true,
+      "position": 41
+    },
+    {
+      "id": "internetradio",
+      "name": "Internet Radio",
+      "icon": "📻",
+      "color": "#06b6d4",
+      "description": "Internet-Radiosender streamen",
+      "installed": true,
+      "position": 42
     }
   ]
 }

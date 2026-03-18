@@ -1,0 +1,226 @@
+{
+  "id": "ctx-1773788195980",
+  "name": "Mediaplayer",
+  "icon": "💡",
+  "color": "#f59e0b",
+  "parentId": "ctx-1773776067662",
+  "chat": [
+    {
+      "id": "msg-sys-1773788195980",
+      "role": "system",
+      "text": "Neues Projekt erstellt! Beschreibe was du bauen oder planen willst.",
+      "time": "2026-03-17T22:56:35.980Z"
+    },
+    {
+      "id": "msg-1773792692890",
+      "role": "user",
+      "text": "create a todo list for cleaning the appartment",
+      "time": "2026-03-18T00:11:32.890Z"
+    },
+    {
+      "id": "msg-1773792706740",
+      "role": "agent",
+      "text": "Ich habe dir eine Putzen-Checkliste für deine Wohnung erstellt! 🧹 Die Liste ist nach Raum organisiert mit verschiedenen Prioritäten. Du kannst Aufgaben abhaken wenn sie fertig sind.",
+      "widgetActions": [
+        {
+          "icon": "✅",
+          "label": "Wohnungs-Reinigung erstellt",
+          "widgetId": "w-1773792706697-hzov",
+          "dataKey": "todo-1773792706697-o0",
+          "action": "create",
+          "detail": "Todo-Liste für die Wohnungsreinigung erstellt mit 8 Aufgaben, sortiert nach Raum und Priorität"
+        }
+      ],
+      "time": "2026-03-18T00:11:46.740Z"
+    }
+  ],
+  "widgets": [
+    {
+      "id": "w-1773792706697-hzov",
+      "type": "todo",
+      "title": "Wohnungs-Reinigung",
+      "size": "lg",
+      "dataKey": "todo-1773792706697-o0",
+      "color": "#f59e0b",
+      "config": {},
+      "data": {
+        "items": [
+          {
+            "id": "t-1",
+            "text": "Schlafzimmer: Bett machen & Staub wischen",
+            "done": false,
+            "priority": "high"
+          },
+          {
+            "id": "t-2",
+            "text": "Wohnzimmer: Sofa absaugen & Oberflächen reinigen",
+            "done": false,
+            "priority": "high"
+          },
+          {
+            "id": "t-3",
+            "text": "Küche: Arbeitsplatte & Herd putzen",
+            "done": false,
+            "priority": "high"
+          },
+          {
+            "id": "t-4",
+            "text": "Badezimmer: Toilette, Waschbecken & Spiegel reinigen",
+            "done": false,
+            "priority": "high"
+          },
+          {
+            "id": "t-5",
+            "text": "Flur: Fußboden fegen & wischen",
+            "done": false,
+            "priority": "medium"
+          },
+          {
+            "id": "t-6",
+            "text": "Fenster & Spiegel putzen",
+            "done": false,
+            "priority": "medium"
+          },
+          {
+            "id": "t-7",
+            "text": "Müll rausbringen",
+            "done": false,
+            "priority": "low"
+          },
+          {
+            "id": "t-8",
+            "text": "Wäsche waschen & aufhängen",
+            "done": false,
+            "priority": "low"
+          }
+        ]
+      },
+      "scope": "local",
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "todo-1773792706697-o0": [
+      {
+        "id": "t-1",
+        "text": "Schlafzimmer: Bett machen & Staub wischen",
+        "done": false,
+        "priority": "high"
+      },
+      {
+        "id": "t-2",
+        "text": "Wohnzimmer: Sofa absaugen & Oberflächen reinigen",
+        "done": false,
+        "priority": "high"
+      },
+      {
+        "id": "t-3",
+        "text": "Küche: Arbeitsplatte & Herd putzen",
+        "done": false,
+        "priority": "high"
+      },
+      {
+        "id": "t-4",
+        "text": "Badezimmer: Toilette, Waschbecken & Spiegel reinigen",
+        "done": false,
+        "priority": "high"
+      },
+      {
+        "id": "t-5",
+        "text": "Flur: Fußboden fegen & wischen",
+        "done": false,
+        "priority": "medium"
+      },
+      {
+        "id": "t-6",
+        "text": "Fenster & Spiegel putzen",
+        "done": false,
+        "priority": "medium"
+      },
+      {
+        "id": "t-7",
+        "text": "Müll rausbringen",
+        "done": false,
+        "priority": "low"
+      },
+      {
+        "id": "t-8",
+        "text": "Wäsche waschen & aufhängen",
+        "done": false,
+        "priority": "low"
+      }
+    ]
+  },
+  "connections": [],
+  "skills": [],
+  "created": "2026-03-17T22:56:35.982Z",
+  "updated": "2026-03-18T00:11:46.741Z",
+  "canvas": {
+    "widgets": [
+      {
+        "id": "w-1773792706697-hzov",
+        "type": "todo",
+        "title": "Wohnungs-Reinigung",
+        "size": "lg",
+        "dataKey": "todo-1773792706697-o0",
+        "color": "#f59e0b",
+        "config": {},
+        "data": {
+          "items": [
+            {
+              "id": "t-1",
+              "text": "Schlafzimmer: Bett machen & Staub wischen",
+              "done": false,
+              "priority": "high"
+            },
+            {
+              "id": "t-2",
+              "text": "Wohnzimmer: Sofa absaugen & Oberflächen reinigen",
+              "done": false,
+              "priority": "high"
+            },
+            {
+              "id": "t-3",
+              "text": "Küche: Arbeitsplatte & Herd putzen",
+              "done": false,
+              "priority": "high"
+            },
+            {
+              "id": "t-4",
+              "text": "Badezimmer: Toilette, Waschbecken & Spiegel reinigen",
+              "done": false,
+              "priority": "high"
+            },
+            {
+              "id": "t-5",
+              "text": "Flur: Fußboden fegen & wischen",
+              "done": false,
+              "priority": "medium"
+            },
+            {
+              "id": "t-6",
+              "text": "Fenster & Spiegel putzen",
+              "done": false,
+              "priority": "medium"
+            },
+            {
+              "id": "t-7",
+              "text": "Müll rausbringen",
+              "done": false,
+              "priority": "low"
+            },
+            {
+              "id": "t-8",
+              "text": "Wäsche waschen & aufhängen",
+              "done": false,
+              "priority": "low"
+            }
+          ]
+        },
+        "scope": "local",
+        "zoomLevel": "L1"
+      }
+    ]
+  },
+  "children": []
+}

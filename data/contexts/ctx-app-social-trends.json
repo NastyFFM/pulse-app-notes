@@ -1,0 +1,39 @@
+{
+  "id": "ctx-app-social-trends",
+  "name": "Social Trends",
+  "icon": "📊",
+  "color": "#6366F1",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:49:22.721Z",
+  "widgets": [
+    {
+      "id": "w-app-social-trends",
+      "type": "app",
+      "title": "Social Trends",
+      "size": "md",
+      "dataKey": "app-social-trends",
+      "color": "#6366F1",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-social-trends": {
+      "appId": "social-trends",
+      "status": "Social Media Trendanalyse fuer TikTok, Instagram, YouTube & X",
+      "name": "Social Trends",
+      "icon": "📊",
+      "description": "Social Media Trendanalyse fuer TikTok, Instagram, YouTube & X"
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true
+}

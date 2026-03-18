@@ -880,6 +880,20 @@ window.addEventListener('message', e => {
   if (e.data && e.data.type === 'error') {
     addFeed(`App Error: ${e.data.message || 'Unknown'}`, 'error');
   }
+  // Open app from projects context (app widget L0 click or button)
+  if (e.data && e.data.type === 'open-app' && e.data.appId) {
+    const app = state?.apps?.find(a => a.id === e.data.appId);
+    if (app) {
+      openApp(app);
+    } else {
+      // App might be newly created, reload apps list first
+      fetch('/api/apps').then(r => r.json()).then(data => {
+        if (data.apps) state.apps = data.apps;
+        const freshApp = data.apps?.find(a => a.id === e.data.appId);
+        if (freshApp) openApp(freshApp);
+      }).catch(() => {});
+    }
+  }
 });
 
 // --- State Summary ---

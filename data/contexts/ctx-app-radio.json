@@ -1,0 +1,39 @@
+{
+  "id": "ctx-app-radio",
+  "name": "Internet Radio",
+  "icon": "📻",
+  "color": "#8B5CF6",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:49:22.721Z",
+  "widgets": [
+    {
+      "id": "w-app-radio",
+      "type": "app",
+      "title": "Internet Radio",
+      "size": "md",
+      "dataKey": "app-radio",
+      "color": "#8B5CF6",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-radio": {
+      "appId": "radio",
+      "status": "Internet-Radio mit Sendersuche, Genres und Favoriten",
+      "name": "Internet Radio",
+      "icon": "📻",
+      "description": "Internet-Radio mit Sendersuche, Genres und Favoriten"
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true
+}

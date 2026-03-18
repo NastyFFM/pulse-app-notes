@@ -1,0 +1,7 @@
+{
+  "name": "MediaPlayer",
+  "icon": "🎵",
+  "color": "#7c3aed",
+  "description": "Alles-in-einem Mediaplayer: YouTube, Internet-Radio und Podcasts",
+  "agentManaged": false
+}

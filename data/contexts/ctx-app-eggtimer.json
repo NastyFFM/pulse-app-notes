@@ -1,0 +1,55 @@
+{
+  "id": "ctx-app-eggtimer",
+  "name": "Eieruhr",
+  "icon": "🥚",
+  "color": "#F97316",
+  "parentId": null,
+  "created": "2026-03-17T22:49:22.721Z",
+  "updated": "2026-03-17T22:50:51.774Z",
+  "widgets": [
+    {
+      "id": "w-app-eggtimer",
+      "type": "app",
+      "title": "Eieruhr",
+      "size": "full",
+      "dataKey": "app-eggtimer",
+      "color": "#F97316",
+      "config": {},
+      "data": {},
+      "zoomLevel": "L1"
+    }
+  ],
+  "data": {
+    "app-eggtimer": {
+      "appId": "eggtimer",
+      "status": "Kurzeitwecker mit Voreinstellungen und Alarm",
+      "name": "Eieruhr",
+      "icon": "🥚",
+      "description": "Kurzeitwecker mit Voreinstellungen und Alarm"
+    }
+  },
+  "chat": [],
+  "changelog": [],
+  "plan": null,
+  "template": null,
+  "closedWidgets": [],
+  "skills": [],
+  "connections": [],
+  "system": true,
+  "canvas": {
+    "widgets": [
+      {
+        "id": "w-app-eggtimer",
+        "type": "app",
+        "title": "Eieruhr",
+        "size": "full",
+        "dataKey": "app-eggtimer",
+        "color": "#F97316",
+        "config": {},
+        "data": {},
+        "zoomLevel": "L1"
+      }
+    ]
+  },
+  "children": []
+}

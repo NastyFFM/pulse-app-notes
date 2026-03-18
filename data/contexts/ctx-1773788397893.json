@@ -1,0 +1,44 @@
+{
+  "name": "Test Chat",
+  "icon": "🧪",
+  "color": "#22c55e",
+  "id": "ctx-1773788397893",
+  "created": "2026-03-17T22:59:57.893Z",
+  "updated": "2026-03-17T23:19:43.973Z",
+  "widgets": [
+    {
+      "id": "w-1773789583973-7b1d",
+      "type": "todo",
+      "title": "Training",
+      "size": "md",
+      "dataKey": "todo-1773789583973-is",
+      "color": "#22c55e",
+      "config": {},
+      "data": {
+        "items": [
+          {
+            "id": "t-1",
+            "text": "Joggen 30min",
+            "done": false,
+            "priority": "medium"
+          }
+        ]
+      },
+      "scope": "local",
+      "zoomLevel": "L1"
+    }
+  ],
+  "connections": [],
+  "skills": [],
+  "chat": [],
+  "data": {
+    "todo-1773789583973-is": [
+      {
+        "id": "t-1",
+        "text": "Joggen 30min",
+        "done": false,
+        "priority": "medium"
+      }
+    ]
+  }
+}

@@ -42,6 +42,16 @@ function appHtmlRes(res, file, appId) {
       this.readyState = 2;
       this.url = url;
     };
+    // PulseOS Bridge: allows apps to report status and log interactions back to their context
+    window.PulseOS = {
+      _appId: '${appId}',
+      reportStatus: function(status) {
+        try { window.parent.postMessage({ type: 'app-status', appId: '${appId}', status: String(status).slice(0, 200) }, '*'); } catch(e) {}
+      },
+      logInteraction: function(action, detail) {
+        try { window.parent.postMessage({ type: 'app-interaction', appId: '${appId}', action: String(action).slice(0, 50), detail: typeof detail === 'string' ? detail.slice(0, 200) : JSON.stringify(detail).slice(0, 200), time: new Date().toISOString() }, '*'); } catch(e) {}
+      }
+    };
   }
 })();
 </script>`;
@@ -1026,6 +1036,34 @@ const server = http.createServer((req, res) => {
     });
   }
 
+  // App status — returns summary info from app's data directory
+  const appStatusMatch = url.match(/^\/api\/app-status\/([a-z0-9-]+)$/);
+  if (appStatusMatch && req.method === 'GET') {
+    const appId = appStatusMatch[1];
+    const appDir = path.join(ROOT, 'apps', appId);
+    const dataDir = path.join(appDir, 'data');
+    const appsFile = path.join(ROOT, 'data', 'apps.json');
+    const appsData = safeReadJSON(appsFile, { apps: [] });
+    const appEntry = (typeof appsData === 'string' ? JSON.parse(appsData) : appsData).apps?.find(a => a.id === appId);
+    const result = { appId, name: appEntry?.name || appId, icon: appEntry?.icon || '📱', color: appEntry?.color || '#8B5CF6', description: appEntry?.description || '', status: '', hasData: false };
+    try {
+      if (fs.existsSync(dataDir)) {
+        const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
+        result.hasData = files.length > 0;
+        // Try to extract a one-line status from the first data file
+        if (files.length > 0) {
+          const firstData = safeReadJSON(path.join(dataDir, files[0]), {});
+          const parsed = typeof firstData === 'string' ? JSON.parse(firstData) : firstData;
+          if (Array.isArray(parsed)) result.status = `${parsed.length} Einträge`;
+          else if (parsed.items && Array.isArray(parsed.items)) result.status = `${parsed.items.length} Items`;
+          else if (parsed.entries && Array.isArray(parsed.entries)) result.status = `${parsed.entries.length} Einträge`;
+          else result.status = `${files.length} Datendatei${files.length > 1 ? 'en' : ''}`;
+        }
+      }
+    } catch {}
+    return jsonRes(res, result);
+  }
+
   if (url === '/api/changelog') {
     const file = path.join(ROOT, 'data', 'changelog.json');
     if (req.method === 'GET') return jsonRes(res, safeReadJSON(file, { entries: [] }));
@@ -1843,6 +1881,23 @@ const server = http.createServer((req, res) => {
     }
   }
 
+  // ── Custom Widget HTML serving ──
+  // GET /api/custom-widget/:contextId/:widgetFileId — serve custom widget HTML
+  const cwMatch = url.match(/^\/api\/custom-widget\/([a-z0-9_-]+)\/([a-zA-Z0-9_-]+)$/);
+  if (cwMatch && req.method === 'GET') {
+    const cwCtxId = cwMatch[1];
+    const cwFileId = cwMatch[2].replace(/[^a-zA-Z0-9_-]/g, '');
+    const cwDir = path.join(CTX_DIR, cwCtxId);
+    const cwFile = path.join(cwDir, cwFileId + '.html');
+    if (fs.existsSync(cwFile)) {
+      const html = fs.readFileSync(cwFile, 'utf8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(html);
+    }
+    res.writeHead(404);
+    return res.end('<html><body style="background:#0f172a;color:#f87171;font-family:system-ui;padding:20px;">Custom Widget nicht gefunden</body></html>');
+  }
+
   // ── dataRef API: Read/Write individual data keys from a context ──
   // GET /api/context/:id/data/:dataKey — read single data entry
   // PUT /api/context/:id/data/:dataKey — write single data entry (triggers SSE to all refs)
@@ -2521,6 +2576,99 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
   // Ensure templates directory exists
   try { fs.mkdirSync(path.join(ROOT, 'data', 'templates'), { recursive: true }); } catch {}
 
+  // POST /api/app-contexts/generate — create context wrappers for existing apps
+  if (url === '/api/app-contexts/generate' && req.method === 'POST') {
+    const appsFile = path.join(ROOT, 'data', 'apps.json');
+    const appsData = JSON.parse(fs.readFileSync(appsFile, 'utf8'));
+    const contextDir = path.join(ROOT, 'data', 'contexts');
+    const existingContextFiles = fs.readdirSync(contextDir).filter(f => f.startsWith('ctx-') && f.endsWith('.json'));
+
+    // Find which apps already have context wrappers
+    const existingAppIds = new Set();
+    for (const file of existingContextFiles) {
+      try {
+        const ctx = JSON.parse(fs.readFileSync(path.join(contextDir, file), 'utf8'));
+        for (const w of (ctx.widgets || [])) {
+          if (w.type === 'app') {
+            const appId = ctx.data?.[w.dataKey]?.appId || w.data?.appId;
+            if (appId) existingAppIds.add(appId);
+          }
+        }
+      } catch {}
+    }
+
+    let generated = 0, skipped = 0;
+    const now = new Date().toISOString();
+
+    // Category groups for optional grouping
+    const queryStr = req.url.includes('?') ? req.url.split('?')[1] : '';
+    const urlParams = new URLSearchParams(queryStr);
+    const doGroup = urlParams.get('group') === 'true';
+    const categories = {
+      'Spiele': ['tetris', 'flappy', 'doom', 'drumcomputer'],
+      'Medien': ['youtube', 'podcast', 'radio', 'camera', 'picviewer', 'imagegen'],
+      'Produktivität': ['kanban', 'notes', 'budget', 'calendar', 'tickets', 'diary', 'recipes', 'travel-planner', 'calendar-view'],
+      'Tools': ['terminal', 'filebrowser', 'pipette', 'weather', 'whiteboard', 'mindmap', 'alarm', 'eggtimer'],
+      'Social': ['chat', 'social-trends', 'news-channels']
+    };
+
+    // Create group parent contexts if grouping
+    const groupContextIds = {};
+    if (doGroup) {
+      for (const [catName, _] of Object.entries(categories)) {
+        const catId = 'ctx-cat-' + catName.toLowerCase().replace(/[^a-z]/g, '');
+        if (!fs.existsSync(path.join(contextDir, catId + '.json'))) {
+          const catCtx = {
+            id: catId, name: catName, icon: catName === 'Spiele' ? '🎮' : catName === 'Medien' ? '🎬' : catName === 'Produktivität' ? '📋' : catName === 'Tools' ? '🔧' : '🌐',
+            color: '#8B5CF6', parentId: null, created: now, updated: now,
+            widgets: [], data: {}, chat: [], changelog: [], plan: null, template: null, closedWidgets: [], skills: [], connections: [], system: true
+          };
+          fs.writeFileSync(path.join(contextDir, catId + '.json'), JSON.stringify(catCtx, null, 2));
+        }
+        groupContextIds[catName] = 'ctx-cat-' + catName.toLowerCase().replace(/[^a-z]/g, '');
+      }
+    }
+
+    for (const app of appsData.apps) {
+      if (existingAppIds.has(app.id) || app.id === 'projects' || app.id === 'orchestrator') { skipped++; continue; }
+
+      const ctxId = 'ctx-app-' + app.id;
+      if (fs.existsSync(path.join(contextDir, ctxId + '.json'))) { skipped++; continue; }
+
+      // Find parent category
+      let parentId = null;
+      if (doGroup) {
+        for (const [catName, ids] of Object.entries(categories)) {
+          if (ids.includes(app.id)) { parentId = groupContextIds[catName]; break; }
+        }
+      }
+
+      const dataKey = 'app-' + app.id;
+      const newCtx = {
+        id: ctxId, name: app.name || app.id, icon: app.icon || '📱', color: app.color || '#8B5CF6',
+        parentId, created: now, updated: now,
+        widgets: [{
+          id: 'w-app-' + app.id, type: 'app', title: app.name || app.id, size: 'md',
+          dataKey, color: app.color || '#8B5CF6', config: {}, data: {},
+          zoomLevel: 'L1'
+        }],
+        data: { [dataKey]: { appId: app.id, status: app.description || '', name: app.name || app.id, icon: app.icon || '📱', description: app.description || '' } },
+        chat: [], changelog: [], plan: null, template: null, closedWidgets: [], skills: [], connections: [], system: true
+      };
+      fs.writeFileSync(path.join(contextDir, ctxId + '.json'), JSON.stringify(newCtx, null, 2));
+
+      // Add contextId to apps.json entry
+      app.contextId = ctxId;
+      generated++;
+    }
+
+    // Save updated apps.json with contextId fields
+    fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+    broadcast('liveos', { type: 'context-change', contextId: 'all', time: Date.now() });
+
+    return jsonRes(res, { ok: true, generated, skipped, total: appsData.apps.length });
+  }
+
   // GET /api/context-templates — list all context templates
   // POST /api/context-templates — create/save a context template
   if (url === '/api/context-templates') {
@@ -2860,7 +3008,7 @@ WICHTIG: Antworte NUR mit einem JSON-Objekt, kein anderer Text davor oder danach
   "widgets": [
     {
       "action": "create",
-      "type": "todo|notes|table|timeline|kanban|kpi|links|progress",
+      "type": "todo|notes|table|timeline|kanban|kpi|links|progress|app",
       "title": "Widget-Titel",
       "size": "sm|md|lg|full",
       "data": { ... passende Daten fuer den Widget-Typ ... },
@@ -2891,6 +3039,7 @@ Widget-Datenformate:
 - kpi: { "value": "42", "label": "Metrik-Name", "change": 5.2 }
 - links: { "links": [{ "title": "Name", "url": "https://...", "icon": "emoji" }] }
 - progress: { "percent": 75, "label": "Fortschritt-Name" }
+- app: { "appId": "app-id", "status": "Status-Text", "name": "App Name", "icon": "emoji" }
 
 Bestehendes Projekt:
   Name: ${project.name}
@@ -2912,11 +3061,13 @@ Neue Nachricht vom User: ${text}
 Regeln:
 - WICHTIG: Du SIEHST den aktuellen Widget-Inhalt oben! Wenn der User fragt "was habe ich geaendert", schau ins Aenderungs-Log und in die aktuellen Widget-Daten!
 - Beziehe dich IMMER auf die tatsaechlichen Daten in den Widgets wenn der User danach fragt
-- Erstelle Widgets wenn der User etwas braucht (Planung, Listen, Tracking etc.)
+- ERSTELLE neue Widgets NUR wenn der User etwas NEUES braucht das noch nicht existiert
+- KRITISCH: Wenn ein Widget mit aehnlichem Thema BEREITS EXISTIERT, erstelle KEIN neues! Nutze stattdessen "updates" mit dem bestehenden dataKey um es zu aktualisieren!
 - Befuelle Widgets mit sinnvollen Daten basierend auf dem Kontext
 - Wenn der User etwas beschreibt (z.B. eine Reise), erstelle passende Widgets MIT Inhalten
-- Du kannst mehrere Widgets gleichzeitig erstellen
+- Du kannst mehrere Widgets gleichzeitig erstellen wenn ALLE neu sind
 - Aktualisiere bestehende Widgets ueber "updates" wenn der User Aenderungen will. Du kannst dabei ALLES aendern: data, title, size, type, config, color
+- KRITISCH: Wenn der User sagt "aendere X", "mache es Y", "ersetze Z", "nur vegetarisch", "entferne A" oder aehnliches, MUSST du IMMER ein update-Objekt mit den KOMPLETT NEUEN DATEN senden! Sage NIEMALS nur im Text dass etwas geaendert wurde ohne die Daten tatsaechlich im updates-Array zu aendern! Der User sieht die Widget-Daten in der UI, nicht deinen Text!
 - WICHTIG bei Typ-Wechsel: Wenn du den Widget-Typ aenderst (z.B. kanban→table), MUSST du im update-Objekt IMMER "type", "config" UND "data" mitschicken! Beispiel: {"dataKey":"x","type":"table","config":{"columns":["A","B"]},"data":{"rows":[{"A":"1","B":"2"}]}}
 - Bei Widget-Bearbeitungsbefehlen (markiert mit [Widget-Bearbeitung:]): aendere das spezifische Widget ueber updates mit dem angegebenen dataKey
 - Du kennst ALLE Widgets aus ALLEN Projekten (siehe Widget-Bibliothek oben). Wenn der User nach vorhandenen Widgets fragt oder aehnliche Widgets will, nutze diese als Vorlage. Du kannst Varianten erstellen (z.B. kompakter, als Kanban statt Tabelle, etc.)
@@ -3195,7 +3346,15 @@ Regeln:
           const dataStr = JSON.stringify(data).slice(0, 800);
           const configStr = w.config ? ` config: ${JSON.stringify(w.config)}` : '';
           const scopeStr = w.scope ? ` scope: ${w.scope}` : '';
-          return `${w.type}: "${w.title}" (dataKey: ${w.dataKey}, size: ${w.size || 'md'}${configStr}${scopeStr})\n    Aktueller Inhalt: ${dataStr}`;
+          // For app widgets, include recent interactions
+          let interactionHint = '';
+          if (w.type === 'app' && data.interactions && Array.isArray(data.interactions)) {
+            const recent = data.interactions.slice(-5);
+            if (recent.length > 0) {
+              interactionHint = `\n    Letzte Interaktionen: ${recent.map(i => `[${i.time}] ${i.action}: ${i.detail || ''}`).join(', ')}`;
+            }
+          }
+          return `${w.type}: "${w.title}" (dataKey: ${w.dataKey}, size: ${w.size || 'md'}${configStr}${scopeStr})\n    Aktueller Inhalt: ${dataStr}${interactionHint}`;
         }).join('\n  ');
         const recentChat = (context.chat || []).slice(-6).map(m => `${m.role}: ${m.text}`).join('\n');
         const changelog = (context.changelog || []).slice(-15).map(c => `[${c.time}] ${c.summary}`).join('\n');
@@ -3210,19 +3369,17 @@ Regeln:
             .filter(Boolean);
         } catch {}
 
-        const otherContexts = allContexts.filter(c => c.id !== contextId);
+        const otherContexts = allContexts.filter(c => c.id !== contextId && !c.system);
         let widgetLibrary = '';
         if (otherContexts.length > 0) {
           const libraryEntries = [];
-          for (const oc of otherContexts) {
+          for (const oc of otherContexts.slice(0, 8)) { // Limit to 8 contexts to keep prompt manageable
             if (!oc.widgets || oc.widgets.length === 0) continue;
-            const widgets = oc.widgets.map(w => {
-              const data = (oc.data && oc.data[w.dataKey]) || w.data || {};
-              const dataStr = JSON.stringify(data).slice(0, 400);
-              const configStr = w.config ? ` config: ${JSON.stringify(w.config)}` : '';
-              return `    - ${w.type}: "${w.title}" (size: ${w.size || 'md'}${configStr}) → ${dataStr}`;
+            const widgets = oc.widgets.slice(0, 5).map(w => {
+              const configStr = w.config ? ` config: ${JSON.stringify(w.config).slice(0, 80)}` : '';
+              return `    - ${w.type}: "${w.title}" (size: ${w.size || 'md'}${configStr})`;
             }).join('\n');
-            libraryEntries.push(`  Context "${oc.name}" (${oc.id}):\n${widgets}`);
+            libraryEntries.push(`  Context "${oc.name}":\n${widgets}`);
           }
           if (libraryEntries.length > 0) widgetLibrary = libraryEntries.join('\n');
         }
@@ -3238,7 +3395,8 @@ Regeln:
               return `${indent}${c.icon || '📁'} ${c.name} (${c.id})${marker}\n${indent}  Widgets: ${widgets || 'keine'}\n${buildTreeText(contexts, c.id, indent + '  ')}`;
             }).join('');
         }
-        const contextTreeText = buildTreeText(allContexts, null, '  ');
+        const nonSystemContexts = allContexts.filter(c => !c.system);
+        const contextTreeText = buildTreeText(nonSystemContexts, null, '  ');
 
         // Find root context and parent context for homeContext routing
         let rootContextId = contextId;
@@ -3330,7 +3488,7 @@ WICHTIG: Antworte NUR mit einem JSON-Objekt, kein anderer Text davor oder danach
   "widgets": [
     {
       "action": "create",
-      "type": "todo|notes|table|timeline|kanban|kpi|links|progress",
+      "type": "todo|notes|table|timeline|kanban|kpi|links|progress|app",
       "title": "Widget-Titel",
       "size": "sm|md|lg|full",
       "data": { ... passende Daten fuer den Widget-Typ ... },
@@ -3363,6 +3521,24 @@ WICHTIG: Antworte NUR mit einem JSON-Objekt, kein anderer Text davor oder danach
       "dataKey": "schluessel-name",
       "data": { ... },
       "widgetConfig": { "type": "kpi", "title": "Widget-Titel" }
+    },
+    {
+      "type": "create-app",
+      "appId": "kebab-case-name",
+      "name": "App-Anzeigename",
+      "icon": "emoji",
+      "color": "#hex",
+      "description": "Was die App tut",
+      "html": "<!DOCTYPE html>... vollstaendiger HTML-Code der App ..."
+    },
+    {
+      "type": "create-widget",
+      "widgetFileId": "kebab-case-name",
+      "name": "Widget-Anzeigename",
+      "icon": "emoji",
+      "size": "md|lg|full",
+      "description": "Was das Widget zeigt",
+      "html": "<!DOCTYPE html>... vollstaendiger HTML-Code des Custom Widgets ..."
     }
   ]
 }
@@ -3376,7 +3552,30 @@ Widget-Datenformate:
 - kpi: { "value": "42", "label": "Metrik-Name", "change": 5.2 }
 - links: { "links": [{ "title": "Name", "url": "https://...", "icon": "emoji" }] }
 - progress: { "percent": 75, "label": "Fortschritt-Name" }
+- app: { "appId": "app-id", "status": "Live-Status-Text", "name": "App Name", "icon": "emoji" }
 
+${/app|anwendung|programm|spiel|game|tool|baue?\s+(mir|ein|eine)/i.test(text) ? `CREATE-APP Regeln:
+Wenn der User eine App erstellen will, nutze die "create-app" Action. Die App MUSS:
+- Ein selbststaendiges HTML-File sein (vanilla JS, kein Framework, kein npm)
+- Dark-Theme nutzen: bg=#0f172a, text=#f1f5f9, accent=Context-Farbe
+- system-ui Font, responsive, <meta charset="UTF-8"> + viewport meta
+- Fuer Datenpersistenz: fetch('/app/APP_ID/api/DATANAME') GET/PUT
+- PulseOS.reportStatus('status-text') aufrufen fuer Live-Status im Widget
+- Unter 500 Zeilen, saubere Struktur, gut kommentiert
+- appId: nur [a-z0-9-], max 30 Zeichen, kebab-case
+` : ''}
+${/chart|graph|kurve|diagramm|visuali|anzeig.*als|zeig.*als|widget.*erstell|custom.*widget|eigenes.*widget/i.test(text) ? `CREATE-WIDGET Regeln:
+Wenn der User ein visuelles Widget braucht das ueber die Standard-Typen hinausgeht (Chart, Graph, Kurve, Diagramm, Custom-Visualisierung), nutze die "create-widget" Action. Das Widget MUSS:
+- Ein selbststaendiges HTML-File sein (vanilla JS, Canvas/SVG, kein Framework)
+- Dark-Theme: bg=#0f172a, text=#f1f5f9, accent=Context-Farbe
+- system-ui Font, <meta charset="UTF-8"> + viewport meta
+- Responsive: width/height 100% des Containers, kein Scrolling
+- Unter 200 Zeilen, fokussiert auf eine Visualisierung
+- widgetFileId: nur [a-z0-9-], max 40 Zeichen, kebab-case
+- Daten direkt im HTML einbetten (kein API-Call noetig)
+- Beispiel: Gewichtskurve, Budget-Chart, Fortschritts-Ring, Kalender-Heatmap, etc.
+- BEVORZUGE create-widget gegenueber Standard-Widgets wenn der User explizit Charts/Grafiken/Visualisierungen will
+` : ''}
 Context-Baum (Hierarchie):
 ${contextTreeText || '  (nur dieser Context)'}
 
@@ -3428,11 +3627,13 @@ Neue Nachricht vom User: ${text}
 Regeln:
 - WICHTIG: Du SIEHST den aktuellen Widget-Inhalt oben! Wenn der User fragt "was habe ich geaendert", schau ins Aenderungs-Log und in die aktuellen Widget-Daten!
 - Beziehe dich IMMER auf die tatsaechlichen Daten in den Widgets wenn der User danach fragt
-- Erstelle Widgets wenn der User etwas braucht (Planung, Listen, Tracking etc.)
+- ERSTELLE neue Widgets NUR wenn der User etwas NEUES braucht das noch nicht existiert
+- KRITISCH: Wenn ein Widget mit aehnlichem Thema BEREITS EXISTIERT, erstelle KEIN neues! Nutze stattdessen "updates" mit dem bestehenden dataKey um es zu aktualisieren! Beispiel: User hat ein Ernaehrungsplan-Widget und sagt "mache es vegetarisch" → UPDATE das bestehende Widget, erstelle KEIN zweites!
 - Befuelle Widgets mit sinnvollen Daten basierend auf dem Kontext
 - Wenn der User etwas beschreibt (z.B. eine Reise), erstelle passende Widgets MIT Inhalten
-- Du kannst mehrere Widgets gleichzeitig erstellen
+- Du kannst mehrere Widgets gleichzeitig erstellen wenn ALLE neu sind
 - Aktualisiere bestehende Widgets ueber "updates" wenn der User Aenderungen will
+- KRITISCH: Wenn der User sagt "aendere X", "mache es Y", "ersetze Z", "nur vegetarisch", "entferne A" oder aehnliches, MUSST du IMMER ein update-Objekt mit den KOMPLETT NEUEN DATEN senden! Sage NIEMALS nur im Text dass es geaendert wurde ohne die Daten tatsaechlich zu aendern! Der User sieht die Widget-Daten, nicht deinen Text!
 - WICHTIG bei Typ-Wechsel: Wenn du den Widget-Typ aenderst (z.B. kanban→table), MUSST du im update-Objekt IMMER "type", "config" UND "data" mitschicken!
 - Bei Widget-Bearbeitungsbefehlen: aendere das spezifische Widget ueber updates mit dem angegebenen dataKey
 - Du kennst ALLE Widgets aus ALLEN Contexts (siehe Widget-Bibliothek). Nutze diese als Vorlage wenn passend
@@ -3441,8 +3642,9 @@ Regeln:
 - Antworte immer auf Deutsch
 - Antworte NUR mit dem JSON, nichts anderes`;
 
-        // Spawn claude -p
-        const proc = spawn('claude', ['-p', '--output-format', 'json'], {
+        // Spawn claude -p with haiku for speed
+        console.log(`[context-chat] Prompt length: ${prompt.length} chars`);
+        const proc = spawn('claude', ['-p', '--output-format', 'json', '--model', 'haiku'], {
           cwd: ROOT, env: process.env, stdio: ['pipe', 'pipe', 'pipe']
         });
         proc.stdin.write(prompt);
@@ -3453,13 +3655,13 @@ Regeln:
         proc.stdout.on('data', chunk => { stdout += chunk.toString(); });
         proc.stderr.on('data', chunk => { stderr += chunk.toString(); });
 
-        const timeout = setTimeout(() => { proc.kill('SIGTERM'); }, 60000);
+        const timeout = setTimeout(() => { proc.kill('SIGTERM'); }, 120000);
 
         proc.on('close', (code) => {
           clearTimeout(timeout);
 
           if (code !== 0 || !stdout.trim()) {
-            console.error('[context-chat] claude -p failed. code:', code, 'stderr:', stderr.slice(0, 500));
+            console.error('[context-chat] claude -p failed. code:', code, 'stderr:', stderr.slice(0, 500), 'prompt-len:', prompt.length);
             return jsonRes(res, {
               ok: true,
               text: stderr ? `Agent-Fehler: ${stderr.slice(0, 200)}` : 'Der Agent konnte nicht gestartet werden.',
@@ -3631,6 +3833,101 @@ Regeln:
 
                       widgetActions.push({ icon: '🏠', label: `Daten in ${action.homeContext} gespeichert`, action: 'write-data', dataKey: action.dataKey, homeContext: action.homeContext });
                       actionsExecuted++;
+                    }
+                  }
+
+                  // CREATE-APP: AI creates a new PulseOS app
+                  if (action.type === 'create-app' && action.appId && action.html) {
+                    const appId = action.appId.replace(/[^a-z0-9-]/g, '').slice(0, 30);
+                    const appsFile = path.join(ROOT, 'data', 'apps.json');
+                    const appsData = JSON.parse(fs.readFileSync(appsFile, 'utf8'));
+                    const exists = appsData.apps.some(a => a.id === appId) || fs.existsSync(path.join(ROOT, 'apps', appId));
+
+                    if (!exists && action.html.length < 102400) {
+                      // 1. Create app directory + HTML
+                      const appDir = path.join(ROOT, 'apps', appId);
+                      fs.mkdirSync(appDir, { recursive: true });
+                      fs.mkdirSync(path.join(appDir, 'data'), { recursive: true });
+                      fs.writeFileSync(path.join(appDir, 'index.html'), action.html);
+
+                      // 2. Write app.json metadata
+                      fs.writeFileSync(path.join(appDir, 'app.json'), JSON.stringify({
+                        name: action.name || appId,
+                        icon: action.icon || '📱',
+                        color: action.color || freshContext.color,
+                        description: action.description || '',
+                        agentManaged: false
+                      }, null, 2));
+
+                      // 3. Register in apps.json
+                      appsData.apps.push({
+                        id: appId,
+                        name: action.name || appId,
+                        icon: action.icon || '📱',
+                        color: action.color || freshContext.color,
+                        description: action.description || '',
+                        installed: true,
+                        position: appsData.apps.length + 1
+                      });
+                      fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+
+                      // 4. Create app widget in current context
+                      const appWidgetId = 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+                      const appDataKey = 'app-' + Date.now() + '-' + Math.random().toString(36).slice(2, 4);
+                      freshContext.widgets.push({
+                        id: appWidgetId,
+                        type: 'app',
+                        title: action.name || appId,
+                        size: 'md',
+                        dataKey: appDataKey,
+                        color: action.color || freshContext.color,
+                        config: {},
+                        data: { appId, status: 'Neu erstellt', name: action.name || appId, icon: action.icon || '📱', description: action.description || '' },
+                        zoomLevel: 'L1'
+                      });
+                      freshContext.data[appDataKey] = { appId, status: 'Neu erstellt', name: action.name || appId, icon: action.icon || '📱', description: action.description || '' };
+
+                      // 5. Broadcast to dashboard
+                      broadcast('dashboard', { type: 'change', file: 'apps.json', time: Date.now() });
+
+                      widgetActions.push({ icon: '📱', label: `App "${action.name || appId}" erstellt`, action: 'create-app', appId });
+                      actionsExecuted++;
+                    } else {
+                      widgetActions.push({ icon: '⚠️', label: `App "${appId}" existiert bereits oder ist zu gross`, action: 'create-app-error' });
+                    }
+                  }
+
+                  // CREATE-WIDGET: AI creates a custom HTML widget
+                  if (action.type === 'create-widget' && action.widgetFileId && action.html) {
+                    const wfId = action.widgetFileId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+                    if (action.html.length < 51200) {
+                      // 1. Save HTML file in context directory
+                      const ctxDir = path.join(CTX_DIR, contextId);
+                      if (!fs.existsSync(ctxDir)) fs.mkdirSync(ctxDir, { recursive: true });
+                      fs.writeFileSync(path.join(ctxDir, wfId + '.html'), action.html);
+
+                      // 2. Create custom widget in context
+                      const cwId = 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+                      const cwDataKey = 'custom-' + Date.now() + '-' + Math.random().toString(36).slice(2, 4);
+                      const cwData = {
+                        widgetFileId: wfId,
+                        name: action.name || wfId,
+                        icon: action.icon || '🧩',
+                        description: action.description || ''
+                      };
+                      freshContext.widgets.push({
+                        id: cwId, type: 'custom', title: action.name || wfId,
+                        size: action.size || 'lg', dataKey: cwDataKey,
+                        color: action.color || freshContext.color,
+                        config: {}, data: cwData, scope: 'local', zoomLevel: 'L1'
+                      });
+                      if (!freshContext.data) freshContext.data = {};
+                      freshContext.data[cwDataKey] = cwData;
+
+                      widgetActions.push({ icon: '🧩', label: `Custom Widget "${action.name || wfId}" erstellt`, action: 'create-widget', widgetFileId: wfId });
+                      actionsExecuted++;
+                    } else {
+                      widgetActions.push({ icon: '⚠️', label: `Widget "${wfId}" zu gross (max 50KB)`, action: 'create-widget-error' });
                     }
                   }
                 } catch (actionErr) {
