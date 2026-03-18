@@ -1820,7 +1820,7 @@ KI Actions (sequenziell):
 13c Process Manager            ← Damit Node-Apps starten/stoppen  ✅ FERTIG
         │
         ▼
-13d Graph Router               ← Datenfluss zwischen Apps      🔲
+13d Graph Router               ← Datenfluss zwischen Apps      ✅ FERTIG
         │
         ├──► 13e Pulse Engine  ← Gleichzeitig mit Graph möglich 🔲
         │
@@ -1838,7 +1838,7 @@ KI Actions (sequenziell):
 
 ## Implementierungs-Status
 
-> **Aktueller Stand:** Phase 13a-c ✅ → Phase 13d 🔧
+> **Aktueller Stand:** Phase 13a-d ✅ → Phase 13e 🔧
 > **Letzte Aktualisierung:** 2026-03-18
 
 ### Phase 13a — manifest.json + Migration ✅
@@ -1874,19 +1874,21 @@ KI Actions (sequenziell):
 - [x] `loadManifest(appId)` — liest aus apps/ oder ~/pulse-workspace/
 - [x] `proxyToNodeApp()` — HTTP-Weiterleitung an laufende Node-App
 
-### Phase 13d — Graph Router
-- [ ] `data/graphs/` Verzeichnis
-- [ ] Graph-Datei Format: nodes + edges + x/y-Positionen
-- [ ] `loadGraph(projectId)` + `saveGraph()`
-- [ ] `routeOutput(projectId, fromAppId, outputName, data)`
-- [ ] `sendInputToApp(appId, inputName, data)` — unified vanilla + node
-- [ ] PulseOS Bridge erweitern: `PulseOS.emit()`, `PulseOS.onInput()`, `PulseOS.onPulse()`
-- [ ] Graph-API: `GET /api/graphs/:projectId`
-- [ ] Graph-API: `POST /api/graphs/:projectId`
-- [ ] Graph-API: `POST /api/graphs/:projectId/connect`
-- [ ] Graph-API: `DELETE /api/graphs/:projectId/connect`
-- [ ] Graph-API: `POST /api/graphs/:projectId/run`
-- [ ] Graph-Routing-Fehler → SSE
+### Phase 13d — Graph Router ✅
+- [x] `data/graphs/` Verzeichnis
+- [x] Graph-Datei Format: nodes + edges + x/y-Positionen + updatedAt
+- [x] `loadGraph(projectId)` + `saveGraph()`
+- [x] `routeOutput(projectId, fromAppId, outputName, data)`
+- [x] `sendInputToApp(appId, inputName, data)` — unified vanilla + node
+- [x] PulseOS Bridge erweitern: `PulseOS.emit()`, `PulseOS.onInput()`, `PulseOS.onPulse()`
+- [x] Graph-API: `GET /api/graphs/:projectId`
+- [x] Graph-API: `POST /api/graphs/:projectId`
+- [x] Graph-API: `POST /api/graphs/:projectId/connect` (auto-adds nodes)
+- [x] Graph-API: `DELETE /api/graphs/:projectId/connect`
+- [x] Graph-API: `POST /api/graphs/:projectId/run` (triggers all producers)
+- [x] Graph-API: `POST /api/graphs/:projectId/output` (app reports output for routing)
+- [x] Graph-Routing-Fehler → SSE (`graph-routing-error` event)
+- [x] `findGraphsForApp(appId)` — finds all graphs containing an app
 
 ### Phase 13e — Pulse Engine
 - [ ] `parseClockSchedule()` — clock:30m, clock:1h, clock:daily@08:00

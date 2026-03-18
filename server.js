@@ -50,6 +50,19 @@ function appHtmlRes(res, file, appId) {
       },
       logInteraction: function(action, detail) {
         try { window.parent.postMessage({ type: 'app-interaction', appId: '${appId}', action: String(action).slice(0, 50), detail: typeof detail === 'string' ? detail.slice(0, 200) : JSON.stringify(detail).slice(0, 200), time: new Date().toISOString() }, '*'); } catch(e) {}
+      },
+      emit: function(outputName, data) {
+        try { window.parent.postMessage({ type: 'graph-output', appId: '${appId}', outputName: outputName, data: data }, '*'); } catch(e) {}
+      },
+      onInput: function(inputName, callback) {
+        window.addEventListener('message', function(e) {
+          if (e.data && e.data.type === 'app-input' && e.data.inputName === inputName) callback(e.data.data);
+        });
+      },
+      onPulse: function(callback) {
+        window.addEventListener('message', function(e) {
+          if (e.data && e.data.type === 'pulse') callback(e.data);
+        });
       }
     };
   }
@@ -748,6 +761,66 @@ function setVanillaState(appId, updates) {
   broadcast(appId, { type: 'state-update', state: current, time: Date.now() });
 }
 
+// --- Graph Router (Phase 13d) ---
+const GRAPHS_DIR = path.join(ROOT, 'data', 'graphs');
+if (!fs.existsSync(GRAPHS_DIR)) fs.mkdirSync(GRAPHS_DIR, { recursive: true });
+
+function loadGraph(projectId) {
+  const gPath = path.join(GRAPHS_DIR, `graph-${projectId}.json`);
+  if (!fs.existsSync(gPath)) return null;
+  try { return JSON.parse(fs.readFileSync(gPath, 'utf8')); } catch { return null; }
+}
+
+function saveGraph(projectId, graph) {
+  graph.updatedAt = new Date().toISOString();
+  fs.writeFileSync(path.join(GRAPHS_DIR, `graph-${projectId}.json`), JSON.stringify(graph, null, 2));
+}
+
+async function routeOutput(projectId, fromAppId, outputName, data) {
+  const graph = loadGraph(projectId);
+  if (!graph) return;
+
+  const targets = graph.edges
+    .filter(e => e.from.appId === fromAppId && e.from.output === outputName)
+    .map(e => ({ appId: e.to.appId, input: e.to.input }));
+
+  for (const target of targets) {
+    try {
+      await sendInputToApp(target.appId, target.input, data);
+      console.log(`[graph] ${fromAppId}.${outputName} → ${target.appId}.${target.input}`);
+      broadcast(projectId, { type: 'graph-data-flow', fromAppId, outputName, toAppId: target.appId, toInput: target.input, time: Date.now() });
+    } catch (err) {
+      console.error(`[graph] routing error: ${fromAppId} → ${target.appId}: ${err.message}`);
+      broadcast(projectId, { type: 'graph-routing-error', fromAppId, toAppId: target.appId, error: err.message, time: Date.now() });
+    }
+  }
+}
+
+async function sendInputToApp(appId, inputName, data) {
+  const manifest = loadManifest(appId);
+  const action = { type: 'graph-input', inputName, data };
+
+  if (manifest && manifest.type === 'node' && runningProcesses.has(appId)) {
+    await proxyToNodeApp(appId, 'POST', '/api/action', action);
+  } else {
+    broadcast(appId, { type: 'app-input', appId, inputName, data });
+  }
+}
+
+function findGraphsForApp(appId) {
+  const results = [];
+  try {
+    const files = fs.readdirSync(GRAPHS_DIR).filter(f => f.startsWith('graph-') && f.endsWith('.json'));
+    for (const file of files) {
+      try {
+        const graph = JSON.parse(fs.readFileSync(path.join(GRAPHS_DIR, file), 'utf8'));
+        if (graph.nodes && graph.nodes.some(n => n.appId === appId)) results.push(graph);
+      } catch {}
+    }
+  } catch {}
+  return results;
+}
+
 // --- SSE ---
 const sseClients = new Map();
 const debounceTimers = new Map();
@@ -1341,6 +1414,109 @@ const server = http.createServer(async (req, res) => {
         return jsonRes(res, { ok: true });
       });
     }
+  }
+
+  // --- Graph API (Phase 13d) ---
+  const graphMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)$/);
+  const graphConnectMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)\/connect$/);
+  const graphRunMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)\/run$/);
+
+  // GET /api/graphs/:projectId
+  if (graphMatch && !graphConnectMatch && !graphRunMatch && req.method === 'GET') {
+    const projectId = graphMatch[1];
+    const graph = loadGraph(projectId);
+    if (!graph) return jsonRes(res, { projectId, nodes: [], edges: [] });
+    return jsonRes(res, graph);
+  }
+
+  // POST /api/graphs/:projectId — save full graph
+  if (graphMatch && !graphConnectMatch && !graphRunMatch && req.method === 'POST') {
+    const projectId = graphMatch[1];
+    return readBody(req, (b) => {
+      const graph = JSON.parse(b);
+      graph.projectId = projectId;
+      saveGraph(projectId, graph);
+      broadcast(projectId, { type: 'graph-updated', projectId, time: Date.now() });
+      return jsonRes(res, { ok: true, projectId });
+    });
+  }
+
+  // POST /api/graphs/:projectId/connect — add edge
+  if (graphConnectMatch && req.method === 'POST') {
+    const projectId = graphConnectMatch[1];
+    return readBody(req, (b) => {
+      const { fromApp, fromOutput, toApp, toInput } = JSON.parse(b);
+      if (!fromApp || !fromOutput || !toApp || !toInput) return jsonRes(res, { error: 'Missing fields' }, 400);
+      const graph = loadGraph(projectId) || { projectId, nodes: [], edges: [] };
+      // Auto-add nodes if not present
+      if (!graph.nodes.find(n => n.appId === fromApp)) {
+        const m = loadManifest(fromApp);
+        const lastX = graph.nodes.reduce((max, n) => Math.max(max, n.x || 0), 0);
+        graph.nodes.push({ appId: fromApp, nodeType: m?.nodeType || 'producer', x: lastX + 260, y: 120 });
+      }
+      if (!graph.nodes.find(n => n.appId === toApp)) {
+        const m = loadManifest(toApp);
+        const lastX = graph.nodes.reduce((max, n) => Math.max(max, n.x || 0), 0);
+        graph.nodes.push({ appId: toApp, nodeType: m?.nodeType || 'consumer', x: lastX + 260, y: 120 });
+      }
+      // Check for duplicate edge
+      const exists = graph.edges.some(e => e.from.appId === fromApp && e.from.output === fromOutput && e.to.appId === toApp && e.to.input === toInput);
+      if (!exists) {
+        graph.edges.push({ from: { appId: fromApp, output: fromOutput }, to: { appId: toApp, input: toInput } });
+      }
+      saveGraph(projectId, graph);
+      broadcast(projectId, { type: 'graph-updated', projectId, time: Date.now() });
+      return jsonRes(res, { ok: true, edgeCount: graph.edges.length });
+    });
+  }
+
+  // DELETE /api/graphs/:projectId/connect — remove edge
+  if (graphConnectMatch && req.method === 'DELETE') {
+    const projectId = graphConnectMatch[1];
+    return readBody(req, (b) => {
+      const { fromApp, fromOutput, toApp, toInput } = JSON.parse(b);
+      const graph = loadGraph(projectId);
+      if (!graph) return jsonRes(res, { error: 'Graph not found' }, 404);
+      const before = graph.edges.length;
+      graph.edges = graph.edges.filter(e => {
+        if (fromOutput && toInput) {
+          return !(e.from.appId === fromApp && e.from.output === fromOutput && e.to.appId === toApp && e.to.input === toInput);
+        }
+        return !(e.from.appId === fromApp && e.to.appId === toApp);
+      });
+      saveGraph(projectId, graph);
+      broadcast(projectId, { type: 'graph-updated', projectId, time: Date.now() });
+      return jsonRes(res, { ok: true, removed: before - graph.edges.length });
+    });
+  }
+
+  // POST /api/graphs/:projectId/run — trigger all producers
+  if (graphRunMatch && req.method === 'POST') {
+    const projectId = graphRunMatch[1];
+    const graph = loadGraph(projectId);
+    if (!graph) return jsonRes(res, { error: 'Graph not found' }, 404);
+    const producers = graph.nodes.filter(n => n.nodeType === 'producer');
+    const results = [];
+    for (const p of producers) {
+      try {
+        await sendInputToApp(p.appId, '__pulse', { type: 'manual', projectId, timestamp: Date.now() });
+        results.push({ appId: p.appId, status: 'pulsed' });
+      } catch (err) {
+        results.push({ appId: p.appId, status: 'error', error: err.message });
+      }
+    }
+    return jsonRes(res, { ok: true, projectId, triggered: results });
+  }
+
+  // POST /api/graphs/:projectId/output — app reports output for routing
+  const graphOutputMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)\/output$/);
+  if (graphOutputMatch && req.method === 'POST') {
+    const projectId = graphOutputMatch[1];
+    return readBody(req, async (b) => {
+      const { appId, outputName, data } = JSON.parse(b);
+      await routeOutput(projectId, appId, outputName, data);
+      return jsonRes(res, { ok: true, routed: true });
+    });
   }
 
   // App status — returns summary info from app's data directory
