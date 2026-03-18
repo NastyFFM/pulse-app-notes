@@ -4139,6 +4139,28 @@ WICHTIG: Antworte NUR mit einem JSON-Objekt, kein anderer Text davor oder danach
       "size": "md|lg|full",
       "description": "Was das Widget zeigt",
       "html": "<!DOCTYPE html>... vollstaendiger HTML-Code des Custom Widgets ..."
+    },
+    {
+      "type": "graph-add-node",
+      "appId": "app-id-aus-registry",
+      "nodeType": "producer|transformer|consumer"
+    },
+    {
+      "type": "graph-connect",
+      "fromApp": "producer-app-id",
+      "fromOutput": "output-name",
+      "toApp": "consumer-app-id",
+      "toInput": "input-name"
+    },
+    {
+      "type": "graph-disconnect",
+      "fromApp": "app-id",
+      "fromOutput": "output-name",
+      "toApp": "app-id",
+      "toInput": "input-name"
+    },
+    {
+      "type": "graph-run"
     }
   ]
 }
@@ -4201,6 +4223,38 @@ Regeln fuer homeContext-Routing (nutze "actions" mit type "write-data"):
 - Wenn Daten nur lokal relevant sind:
   → Erstelle im aktuellen Context (normales "create" Widget, kein write-data noetig)
 - WICHTIG: Bei "write-data" wird automatisch ein Referenz-Widget im aktuellen Context erstellt das auf die Quelle zeigt. Du musst KEIN separates Widget erstellen!
+
+App-Graph fuer diesen Context:
+${(() => {
+  const graph = loadGraph(contextId);
+  if (!graph || !graph.nodes || graph.nodes.length === 0) return '  Kein Graph vorhanden. Du kannst einen erstellen mit graph-add-node und graph-connect Actions.';
+  const nodes = graph.nodes.map(n => {
+    const m = loadManifest(n.appId);
+    return '  - ' + (m?.icon || '📦') + ' ' + (m?.name || n.appId) + ' (' + n.nodeType + ') outputs: ' + (m?.outputs || []).map(o => o.name).join(', ') + ' inputs: ' + (m?.inputs || []).map(i => i.name).join(', ');
+  }).join('\n');
+  const edges = graph.edges.map(e => '  - ' + e.from.appId + '.' + e.from.output + ' → ' + e.to.appId + '.' + e.to.input).join('\n');
+  return '  Nodes:\n' + nodes + '\n  Edges:\n' + (edges || '  keine');
+})()}
+
+Verfuegbare Apps fuer den Graph (aus App-Registry):
+${(() => {
+  try {
+    const regPath = path.join(ROOT, 'data', 'app-registry.json');
+    const reg = JSON.parse(fs.readFileSync(regPath, 'utf8'));
+    return (reg.apps || []).slice(0, 15).map(a => {
+      const m = a.manifest || {};
+      return '  - ' + (m.icon || '📦') + ' ' + a.id + ' (' + (m.nodeType || 'app') + ') out: ' + (m.outputs || []).map(o => o.name).join(',') + ' in: ' + (m.inputs || []).map(i => i.name).join(',');
+    }).join('\n');
+  } catch { return '  (Registry nicht lesbar)'; }
+})()}
+
+GRAPH-REGELN:
+- Wenn der User "verbinde X mit Y" oder "leite Daten von A nach B" sagt → graph-connect Action
+- Wenn der User "fuege X zum Graph hinzu" sagt → graph-add-node Action
+- Wenn der User "starte den Graph" oder "fuehre den Graph aus" sagt → graph-run Action
+- Wenn der User "trenne X von Y" sagt → graph-disconnect Action
+- Du kannst mehrere Graph-Actions in einem Response kombinieren (z.B. add + connect)
+- WICHTIG: Nodes muessen erst hinzugefuegt werden BEVOR sie verbunden werden koennen!
 
 Bestehender Context:
   Name: ${context.name}
@@ -4494,6 +4548,76 @@ Regeln:
                       actionsExecuted++;
                     } else {
                       widgetActions.push({ icon: '⚠️', label: `App "${appId}" existiert bereits oder ist zu gross`, action: 'create-app-error' });
+                    }
+                  }
+
+                  // GRAPH-ADD-NODE: Add app to this context's graph
+                  if (action.type === 'graph-add-node' && action.appId) {
+                    let graph = loadGraph(contextId) || { projectId: contextId, nodes: [], edges: [] };
+                    if (!graph.nodes.some(n => n.appId === action.appId)) {
+                      const cols = 3, gapX = 220, gapY = 160;
+                      const idx = graph.nodes.length;
+                      graph.nodes.push({
+                        appId: action.appId,
+                        nodeType: action.nodeType || 'consumer',
+                        x: 60 + (idx % cols) * gapX,
+                        y: 60 + Math.floor(idx / cols) * gapY
+                      });
+                      saveGraph(contextId, graph);
+                      broadcast(contextId, { type: 'graph-updated', time: Date.now() });
+                      widgetActions.push({ icon: '🔗', label: `${action.appId} zum Graph hinzugefuegt`, action: 'graph-add-node' });
+                      actionsExecuted++;
+                    }
+                  }
+
+                  // GRAPH-CONNECT: Connect two apps in the graph
+                  if (action.type === 'graph-connect' && action.fromApp && action.toApp) {
+                    let graph = loadGraph(contextId) || { projectId: contextId, nodes: [], edges: [] };
+                    const edge = {
+                      from: { appId: action.fromApp, output: action.fromOutput || 'output' },
+                      to: { appId: action.toApp, input: action.toInput || 'data' }
+                    };
+                    const exists = graph.edges.some(e =>
+                      e.from.appId === edge.from.appId && e.from.output === edge.from.output &&
+                      e.to.appId === edge.to.appId && e.to.input === edge.to.input
+                    );
+                    if (!exists) {
+                      graph.edges.push(edge);
+                      saveGraph(contextId, graph);
+                      broadcast(contextId, { type: 'graph-updated', time: Date.now() });
+                      widgetActions.push({ icon: '🔗', label: `${action.fromApp} → ${action.toApp} verbunden`, action: 'graph-connect' });
+                      actionsExecuted++;
+                    }
+                  }
+
+                  // GRAPH-DISCONNECT: Remove edge between apps
+                  if (action.type === 'graph-disconnect' && action.fromApp && action.toApp) {
+                    let graph = loadGraph(contextId);
+                    if (graph) {
+                      graph.edges = graph.edges.filter(e =>
+                        !(e.from.appId === action.fromApp && e.to.appId === action.toApp &&
+                          (!action.fromOutput || e.from.output === action.fromOutput) &&
+                          (!action.toInput || e.to.input === action.toInput))
+                      );
+                      saveGraph(contextId, graph);
+                      broadcast(contextId, { type: 'graph-updated', time: Date.now() });
+                      widgetActions.push({ icon: '✂️', label: `${action.fromApp} ↛ ${action.toApp} getrennt`, action: 'graph-disconnect' });
+                      actionsExecuted++;
+                    }
+                  }
+
+                  // GRAPH-RUN: Trigger all producers in this context's graph
+                  if (action.type === 'graph-run') {
+                    const graph = loadGraph(contextId);
+                    if (graph && graph.nodes) {
+                      const producers = graph.nodes.filter(n => n.nodeType === 'producer');
+                      for (const p of producers) {
+                        sendInputToApp(p.appId, '__pulse', { type: 'manual', projectId: contextId, timestamp: Date.now() })
+                          .catch(err => console.error('[graph-run] pulse error:', p.appId, err.message));
+                      }
+                      broadcast(contextId, { type: 'graph-run', time: Date.now() });
+                      widgetActions.push({ icon: '▶️', label: `Graph gestartet (${producers.length} Producer)`, action: 'graph-run' });
+                      actionsExecuted++;
                     }
                   }
 
