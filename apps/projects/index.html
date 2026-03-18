@@ -1254,6 +1254,18 @@ body {
   .sidebar-header h2 span { display: none; }
   .project-item span:not(.icon) { display: none; }
   .chat-panel { width: 300px; }
+  .graph-node { width: 140px; padding: 10px; }
+  .graph-node .node-name { font-size: 12px; }
+  .graph-node .node-delete { display: flex; width: 24px; height: 24px; font-size: 12px; }
+  .graph-toolbar { flex-wrap: wrap; }
+  .graph-toolbar button { padding: 6px 10px; font-size: 11px; }
+}
+@media (max-width: 600px) {
+  .sidebar { display: none; }
+  .chat-panel { width: 100%; position: fixed; inset: 0; z-index: 100; display: none; }
+  .graph-node { width: 120px; padding: 8px; }
+  .graph-node .port { font-size: 8px; padding: 1px 4px; }
+  .graph-edge-label { display: none; }
 }
 </style>
 </head>
@@ -4281,9 +4293,10 @@ function renderGraphView() {
   // Render edges as curved paths
   renderGraphEdges();
 
-  // Bind node drag
+  // Bind node drag (mouse + touch)
   nodesEl.querySelectorAll('.graph-node').forEach(el => {
     el.addEventListener('mousedown', startNodeDrag);
+    el.addEventListener('touchstart', startNodeDragTouch, { passive: false });
   });
 
   // Bind port drag for connections
@@ -4535,6 +4548,41 @@ function startNodeDrag(e) {
   }
   document.addEventListener('mousemove', onMove);
   document.addEventListener('mouseup', onUp);
+}
+
+function startNodeDragTouch(e) {
+  if (e.target.classList.contains('port') || e.target.classList.contains('node-delete')) return;
+  e.preventDefault();
+  const touch = e.touches[0];
+  const node = e.currentTarget;
+  node.classList.add('dragging');
+  const startX = touch.clientX - parseInt(node.style.left);
+  const startY = touch.clientY - parseInt(node.style.top);
+  const appId = node.dataset.appId;
+
+  function onMove(ev) {
+    ev.preventDefault();
+    const t = ev.touches[0];
+    node.style.left = (t.clientX - startX) + 'px';
+    node.style.top = (t.clientY - startY) + 'px';
+    renderGraphEdges();
+  }
+  function onEnd() {
+    node.classList.remove('dragging');
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+    if (graphCache) {
+      const n = graphCache.nodes.find(n => n.appId === appId);
+      if (n) {
+        n.x = parseInt(node.style.left);
+        n.y = parseInt(node.style.top);
+        clearTimeout(graphSaveTimer);
+        graphSaveTimer = setTimeout(() => saveCurrentGraph(), 500);
+      }
+    }
+  }
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('touchend', onEnd);
 }
 
 async function saveCurrentGraph() {
