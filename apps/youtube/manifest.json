@@ -1,0 +1,16 @@
+{
+  "id": "youtube",
+  "name": "YouTube",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "YouTube Videos suchen, ansehen und Favoriten speichern",
+  "icon": "📺",
+  "color": "#EF4444",
+  "category": "media",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

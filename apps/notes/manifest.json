@@ -1,0 +1,16 @@
+{
+  "id": "notes",
+  "name": "Notizen",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Notizen erstellen, bearbeiten und organisieren",
+  "icon": "📝",
+  "color": "#F59E0B",
+  "category": "productivity",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

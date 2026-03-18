@@ -1,0 +1,16 @@
+{
+  "id": "camera",
+  "name": "Camera",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Camera with live preview, photo capture and color filters",
+  "icon": "📷",
+  "color": "#14B8A6",
+  "category": "media",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

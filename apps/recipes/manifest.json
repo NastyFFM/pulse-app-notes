@@ -1,0 +1,16 @@
+{
+  "id": "recipes",
+  "name": "Rezepte",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Rezepte suchen, speichern und entdecken",
+  "icon": "🍳",
+  "color": "#F97316",
+  "category": "data",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

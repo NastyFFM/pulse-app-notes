@@ -1,0 +1,16 @@
+{
+  "id": "doom",
+  "name": "Doom",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Doom-artiger Ego-Shooter mit Raycasting-Engine",
+  "icon": "🔫",
+  "color": "#DC2626",
+  "category": "games",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

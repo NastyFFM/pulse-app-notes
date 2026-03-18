@@ -1,0 +1,16 @@
+{
+  "id": "radio",
+  "name": "Internet Radio",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Internet-Radio mit Sendersuche, Genres und Favoriten",
+  "icon": "📻",
+  "color": "#8B5CF6",
+  "category": "media",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

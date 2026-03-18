@@ -1,0 +1,16 @@
+{
+  "id": "pulse",
+  "name": "Pulse",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Cross-App Intelligence — Live-Cockpit mit AI-Insights",
+  "icon": "🧠",
+  "color": "#8B5CF6",
+  "category": "productivity",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

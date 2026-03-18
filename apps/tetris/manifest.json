@@ -1,0 +1,16 @@
+{
+  "id": "tetris",
+  "name": "Tetris",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Klassisches Tetris mit Highscores",
+  "icon": "🧩",
+  "color": "#6366F1",
+  "category": "games",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

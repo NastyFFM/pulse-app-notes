@@ -1,0 +1,16 @@
+{
+  "id": "mindmap",
+  "name": "MindMap",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Interaktive MindMap mit Drag & Drop und Verbindungen",
+  "icon": "🧠",
+  "color": "#8B5CF6",
+  "category": "productivity",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "eggtimer",
+  "name": "Eieruhr",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Kurzeitwecker mit Voreinstellungen und Alarm",
+  "icon": "🥚",
+  "color": "#F97316",
+  "category": "tools",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

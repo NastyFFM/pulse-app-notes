@@ -1,0 +1,16 @@
+{
+  "id": "pipette",
+  "name": "Pipette",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Farben vom Bildschirm samplen",
+  "icon": "🎨",
+  "color": "#8B5CF6",
+  "category": "tools",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}
