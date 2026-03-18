@@ -4194,10 +4194,11 @@ function switchContentTab(tab) {
 }
 
 async function loadAndRenderGraph() {
-  if (!state.activeContextId) return;
+  const ctxId = state.activeContextId || new URLSearchParams(window.location.search).get('contextId');
+  if (!ctxId) return;
   try {
     const [graphRes, regRes] = await Promise.all([
-      fetch(API_BASE + '/api/graphs/' + state.activeContextId).then(r => r.json()),
+      fetch(API_BASE + '/api/graphs/' + ctxId).then(r => r.json()),
       fetch(API_BASE + '/api/app-registry').then(r => r.json())
     ]);
     graphCache = graphRes;
@@ -4301,8 +4302,9 @@ function startNodeDrag(e) {
 }
 
 async function saveCurrentGraph() {
-  if (!graphCache || !state.activeContextId) return;
-  await fetch(API_BASE + '/api/graphs/' + state.activeContextId, {
+  const ctxId = getCtxId();
+  if (!graphCache || !ctxId) return;
+  await fetch(API_BASE + '/api/graphs/' + ctxId, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(graphCache)
@@ -4310,7 +4312,7 @@ async function saveCurrentGraph() {
 }
 
 async function showAddNodeDialog() {
-  if (!state.activeContextId) return;
+  if (!getCtxId()) return;
   if (!registryCache) registryCache = await fetch(API_BASE + '/api/app-registry').then(r => r.json());
   const existing = graphCache?.nodes?.map(n => n.appId) || [];
   const available = (registryCache.apps || []).filter(a => !existing.includes(a.id));
@@ -4334,18 +4336,23 @@ async function showAddNodeDialog() {
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
+function getCtxId() {
+  return state.activeContextId || new URLSearchParams(window.location.search).get('contextId');
+}
+
 async function addNodeToGraph(appId) {
   document.getElementById('addNodeModal')?.remove();
-  if (!state.activeContextId) return;
-  await fetch(API_BASE + '/api/graphs/' + state.activeContextId + '/connect', {
+  const ctxId = getCtxId();
+  if (!ctxId) return;
+  await fetch(API_BASE + '/api/graphs/' + ctxId + '/connect', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ fromApp: appId, fromOutput: '_add', toApp: appId, toInput: '_add' })
   });
   // Just add node, remove the self-edge
-  const g = await fetch(API_BASE + '/api/graphs/' + state.activeContextId).then(r => r.json());
+  const g = await fetch(API_BASE + '/api/graphs/' + ctxId).then(r => r.json());
   g.edges = g.edges.filter(e => !(e.from.appId === appId && e.to.appId === appId && e.from.output === '_add'));
-  await fetch(API_BASE + '/api/graphs/' + state.activeContextId, {
+  await fetch(API_BASE + '/api/graphs/' + ctxId, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(g)
@@ -4354,8 +4361,9 @@ async function addNodeToGraph(appId) {
 }
 
 async function runCurrentGraph() {
-  if (!state.activeContextId) return;
-  const result = await fetch(API_BASE + '/api/graphs/' + state.activeContextId + '/run', { method: 'POST' }).then(r => r.json());
+  const ctxId = getCtxId();
+  if (!ctxId) return;
+  const result = await fetch(API_BASE + '/api/graphs/' + ctxId + '/run', { method: 'POST' }).then(r => r.json());
   if (result.triggered) {
     result.triggered.forEach(t => {
       const dot = document.querySelector('.graph-node[data-app-id="' + t.appId + '"] .node-status-dot');
