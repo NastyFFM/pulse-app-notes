@@ -821,6 +821,82 @@ function findGraphsForApp(appId) {
   return results;
 }
 
+// --- Pulse Engine (Phase 13e) ---
+const pulseIntervals = new Map(); // subscriptionKey → intervalId/timeoutId
+
+function parseClockSchedule(sub) {
+  if (sub.includes('daily@')) {
+    const timePart = sub.split('@')[1];
+    const [h, m] = timePart.split(':').map(Number);
+    const now = new Date();
+    const next = new Date();
+    next.setHours(h, m, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    return { type: 'daily', msUntilFirst: next - now, interval: 86400000 };
+  }
+  const match = sub.match(/clock:(\d+)(s|m|h)/);
+  if (!match) return { type: 'interval', interval: 3600000 };
+  const [, n, unit] = match;
+  const multiplier = { s: 1000, m: 60000, h: 3600000 };
+  return { type: 'interval', interval: parseInt(n) * multiplier[unit] };
+}
+
+function registerPulseSubscription(appId, subscription) {
+  if (!subscription.startsWith('clock:')) return;
+  const key = `${appId}:${subscription}`;
+  if (pulseIntervals.has(key)) {
+    clearInterval(pulseIntervals.get(key));
+    clearTimeout(pulseIntervals.get(key));
+  }
+
+  const schedule = parseClockSchedule(subscription);
+  const fire = () => fireAppPulse(appId, { type: subscription, timestamp: Date.now() }).catch(e => console.error(`[pulse] Error firing ${appId}:`, e.message));
+
+  if (schedule.type === 'daily') {
+    const t = setTimeout(() => {
+      fire();
+      pulseIntervals.set(key, setInterval(fire, schedule.interval));
+    }, schedule.msUntilFirst);
+    pulseIntervals.set(key, t);
+    console.log(`[pulse] ${appId}: daily@${new Date(Date.now() + schedule.msUntilFirst).toLocaleTimeString()}`);
+  } else {
+    pulseIntervals.set(key, setInterval(fire, schedule.interval));
+    console.log(`[pulse] ${appId}: every ${schedule.interval / 1000}s`);
+  }
+}
+
+async function fireAppPulse(appId, pulseData) {
+  console.log(`[pulse] → ${appId}: ${pulseData.type}`);
+  const manifest = loadManifest(appId);
+  if (!manifest) return;
+
+  if (manifest.type === 'node' && runningProcesses.has(appId)) {
+    await proxyToNodeApp(appId, 'POST', '/api/action', { type: 'pulse', data: pulseData });
+  } else {
+    broadcast(appId, { type: 'pulse', appId, data: pulseData });
+  }
+}
+
+function startPulseEngine() {
+  let count = 0;
+  const regFile = path.join(ROOT, 'data', 'app-registry.json');
+  if (!fs.existsSync(regFile)) return;
+  try {
+    const reg = JSON.parse(fs.readFileSync(regFile, 'utf8'));
+    for (const entry of reg.apps) {
+      const manifest = loadManifest(entry.id);
+      if (!manifest || !manifest.pulseSubscriptions) continue;
+      for (const sub of manifest.pulseSubscriptions) {
+        if (sub.startsWith('clock:')) {
+          registerPulseSubscription(entry.id, sub);
+          count++;
+        }
+      }
+    }
+  } catch {}
+  if (count > 0) console.log(`[pulse] Engine started with ${count} subscriptions`);
+}
+
 // --- SSE ---
 const sseClients = new Map();
 const debounceTimers = new Map();
@@ -1517,6 +1593,36 @@ const server = http.createServer(async (req, res) => {
       await routeOutput(projectId, appId, outputName, data);
       return jsonRes(res, { ok: true, routed: true });
     });
+  }
+
+  // --- Pulse API (Phase 13e) ---
+  const pulseFireMatch = url.match(/^\/api\/pulse\/fire\/([a-z0-9_-]+)$/);
+  if (pulseFireMatch && req.method === 'POST') {
+    const appId = pulseFireMatch[1];
+    try {
+      await fireAppPulse(appId, { type: 'manual', timestamp: Date.now() });
+      return jsonRes(res, { ok: true, appId, pulsed: true });
+    } catch (err) {
+      return jsonRes(res, { error: err.message }, 500);
+    }
+  }
+
+  const pulseWebhookMatch = url.match(/^\/api\/pulse\/webhook\/([a-zA-Z0-9_-]+)$/);
+  if (pulseWebhookMatch && req.method === 'POST') {
+    const token = pulseWebhookMatch[1];
+    // Find apps subscribed to this webhook token
+    const regFile = path.join(ROOT, 'data', 'app-registry.json');
+    if (!fs.existsSync(regFile)) return jsonRes(res, { error: 'No registry' }, 404);
+    const reg = JSON.parse(fs.readFileSync(regFile, 'utf8'));
+    const fired = [];
+    for (const entry of reg.apps) {
+      const manifest = loadManifest(entry.id);
+      if (manifest && manifest.pulseSubscriptions && manifest.pulseSubscriptions.includes(`webhook:${token}`)) {
+        await fireAppPulse(entry.id, { type: `webhook:${token}`, timestamp: Date.now() }).catch(() => {});
+        fired.push(entry.id);
+      }
+    }
+    return jsonRes(res, { ok: true, token, fired });
   }
 
   // App status — returns summary info from app's data directory
@@ -5218,6 +5324,8 @@ process.on('SIGINT', () => { Object.values(supervisorManaged).forEach(m => m.pro
 server.listen(PORT, () => {
   console.log(`Claude Desktop → http://localhost:${PORT}`);
   console.log(`[supervisor] Agent auto-restart active (check: ${SUPERVISOR_CHECK_MS/1000}s, threshold: ${SUPERVISOR_DEAD_THRESHOLD_MS/1000}s)`);
+  // Start pulse engine
+  startPulseEngine();
   // Initial supervisor check
   supervisorCheck();
   writeSupervisorStatus();

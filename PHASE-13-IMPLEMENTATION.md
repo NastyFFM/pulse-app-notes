@@ -1822,7 +1822,7 @@ KI Actions (sequenziell):
         ▼
 13d Graph Router               ← Datenfluss zwischen Apps      ✅ FERTIG
         │
-        ├──► 13e Pulse Engine  ← Gleichzeitig mit Graph möglich 🔲
+        ├──► 13e Pulse Engine  ← Gleichzeitig mit Graph möglich ✅ FERTIG
         │
         ▼
 13f CLI                        ← Alles oben benutzbar machen   🔲
@@ -1838,7 +1838,7 @@ KI Actions (sequenziell):
 
 ## Implementierungs-Status
 
-> **Aktueller Stand:** Phase 13a-d ✅ → Phase 13e 🔧
+> **Aktueller Stand:** Phase 13a-e ✅ → Phase 13f 🔧
 > **Letzte Aktualisierung:** 2026-03-18
 
 ### Phase 13a — manifest.json + Migration ✅
@@ -1890,13 +1890,13 @@ KI Actions (sequenziell):
 - [x] Graph-Routing-Fehler → SSE (`graph-routing-error` event)
 - [x] `findGraphsForApp(appId)` — finds all graphs containing an app
 
-### Phase 13e — Pulse Engine
-- [ ] `parseClockSchedule()` — clock:30m, clock:1h, clock:daily@08:00
-- [ ] `registerPulseSubscription(appId, subscription)`
-- [ ] `fireAppPulse(appId, pulseData)` — unified vanilla + node
-- [ ] `startPulseEngine()` beim Server-Start
-- [ ] `POST /api/pulse/fire/:appId` — manueller Trigger
-- [ ] `POST /api/pulse/webhook/:token` — externer Webhook
+### Phase 13e — Pulse Engine ✅
+- [x] `parseClockSchedule()` — clock:30m, clock:1h, clock:daily@08:00
+- [x] `registerPulseSubscription(appId, subscription)`
+- [x] `fireAppPulse(appId, pulseData)` — unified vanilla + node
+- [x] `startPulseEngine()` beim Server-Start (scannt Registry für clock: subscriptions)
+- [x] `POST /api/pulse/fire/:appId` — manueller Trigger
+- [x] `POST /api/pulse/webhook/:token` — externer Webhook (scannt Registry für matching apps)
 
 ### Phase 13f — CLI (`bin/pulse.js`)
 - [ ] `pulse app list` / `pulse app list --running`
