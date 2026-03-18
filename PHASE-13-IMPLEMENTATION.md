@@ -1831,14 +1831,14 @@ KI Actions (sequenziell):
 13g Graph-UI                   ← Visueller Editor              ✅ FERTIG
         │
         ▼
-13h MCP-Server (optional)      ← Entscheidung ob nötig         🔲❓
+13h MCP-Server (optional)      ← ÜBERSPRUNGEN (CLI+API reicht) ⏭️
 ```
 
 ---
 
 ## Implementierungs-Status
 
-> **Aktueller Stand:** Phase 13a-g ✅ → Phase 13h ❓ (MCP optional)
+> **Aktueller Stand:** Phase 13 KOMPLETT ✅ (13h MCP übersprungen)
 > **Letzte Aktualisierung:** 2026-03-18
 
 ### Phase 13a — manifest.json + Migration ✅
@@ -1923,7 +1923,6 @@ KI Actions (sequenziell):
 - [ ] Drag-to-connect between ports (deferred — use CLI/API for now)
 - [ ] KI-Graph-Actions im Context-Chat (deferred)
 
-### Phase 13h — MCP-Server (optional, Entscheidung später)
-- [ ] ❓ Entscheiden ob MCP-Server nötig ist (CLI + API reichen evtl.)
-- [ ] Falls ja: `mcp/pulse-mcp-server.js` mit Tools
-- [ ] Falls ja: `.mcp.json` Konfiguration
+### Phase 13h — MCP-Server — ÜBERSPRUNGEN
+- [x] Entscheidung: CLI + direkte API reichen. MCP-Server wird nicht gebaut.
+- Grund: PulseOS IST der Server. Claude Code kann curl/API direkt nutzen. Extra Layer bringt keinen Mehrwert.
