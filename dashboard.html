@@ -121,13 +121,87 @@ body{font-family:system-ui,sans-serif;background:#0F172A;min-height:100vh;color:
 
 @keyframes syncPulse{0%{box-shadow:0 0 0 0 rgba(139,92,246,.4)}100%{box-shadow:0 0 0 12px rgba(139,92,246,0)}}
 .sse-pulse{animation:syncPulse .6s ease-out}
+
+/* Profile Edit Modal */
+.profile-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:fadeIn .2s}
+.profile-modal{background:#1E293B;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px;width:420px;max-width:92vw;max-height:90vh;overflow-y:auto}
+.profile-modal h2{font-size:18px;font-weight:700;margin-bottom:4px}
+.profile-modal .subtitle{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:20px}
+.profile-modal label{font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;margin-top:12px}
+.profile-modal input,.profile-modal textarea{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;font-family:inherit;transition:border-color .2s}
+.profile-modal input:focus,.profile-modal textarea:focus{border-color:rgba(139,92,246,0.5)}
+.profile-modal textarea{resize:vertical;min-height:60px}
+.profile-modal .avatar-row{display:flex;align-items:center;gap:12px;margin-top:12px}
+.profile-modal .avatar-big{font-size:48px;width:64px;height:64px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);border-radius:16px}
+.profile-modal .btn-row{display:flex;gap:8px;margin-top:24px}
+.profile-modal .btn-primary{flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#8B5CF6,#6366F1);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.profile-modal .btn-primary:hover{opacity:.9}
+.profile-modal .btn-secondary{padding:12px 20px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.6);font-size:14px;cursor:pointer;font-family:inherit}
+.profile-modal .btn-secondary:hover{background:rgba(255,255,255,0.05)}
+.profile-modal .room-id{font-size:11px;color:rgba(255,255,255,0.3);margin-top:16px;text-align:center;word-break:break-all}
+.profile-modal .room-id code{background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:4px;cursor:pointer}
+.profile-modal .room-id code:hover{background:rgba(255,255,255,0.1)}
+
+/* Topbar profile clickable */
+.topbar-title{cursor:pointer;transition:color .2s}
+.topbar-title:hover{color:rgba(255,255,255,1)}
+
+/* System Chat Tabs */
+.sys-chat-tabs{display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.06)}
+.sys-chat-tab{flex:1;padding:10px 0;text-align:center;font-size:12px;font-weight:600;color:rgba(255,255,255,0.4);cursor:pointer;border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
+.sys-chat-tab:hover{color:rgba(255,255,255,0.6)}
+.sys-chat-tab.active{color:rgba(255,255,255,0.9);border-bottom-color:#8B5CF6}
+
+/* Contacts list */
+.contacts-list{padding:8px 12px;overflow-y:auto;flex:1}
+.contact-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .15s;margin-bottom:4px}
+.contact-item:hover{background:rgba(255,255,255,0.06)}
+.contact-avatar{font-size:24px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);border-radius:10px;flex-shrink:0}
+.contact-info{flex:1;min-width:0}
+.contact-name{font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contact-handle{font-size:11px;color:rgba(255,255,255,0.35)}
+.contact-status{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.contact-status.online{background:#22C55E}
+.contact-status.offline{background:rgba(255,255,255,0.15)}
+.contact-ghlink{font-size:11px;color:#8B5CF6;text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contact-ghlink:hover{text-decoration:underline}
+.contacts-empty{text-align:center;color:rgba(255,255,255,0.25);font-size:12px;padding:32px 16px}
+
+/* ---- Responsive ---- */
+@media (max-width:768px) {
+  .topbar{padding:8px 12px}
+  .topbar-title{font-size:.85rem}
+  .dock-bar{gap:4px;padding:6px 8px;border-radius:16px}
+  .dock-icon{width:38px;height:38px;font-size:18px;border-radius:10px}
+  .dock-sep{height:24px;margin:0 2px}
+  .dock{padding:8px 0 12px}
+  #dock-contexts{display:none !important}
+  #dock-sep-ctx{display:none !important}
+  #dock-sep-end{display:none !important}
+  .launcher-grid{gap:12px;padding:10px 16px 80px}
+  .launcher-app{width:72px}
+  .launcher-app .icon{width:50px;height:50px;font-size:22px;border-radius:12px}
+  .launcher-app .name{font-size:.62rem}
+  .app-window{border-radius:0 !important;min-width:100vw !important;min-height:auto !important}
+  .win-titlebar{border-radius:0 !important}
+  .app-window iframe{border-radius:0 !important}
+  .command-center{width:100vw;right:-100vw}
+  #systemChat{width:calc(100vw - 16px) !important;right:8px !important;bottom:70px !important;max-height:60vh !important}
+  .profile-modal{padding:24px;width:100%;border-radius:16px}
+  .store-overlay .store-header,.store-overlay .store-list{max-width:100%;padding-left:16px;padding-right:16px}
+}
+@media (max-width:480px) {
+  .topbar-right #tunnelBtn,.topbar-right #fsBtn{display:none}
+  .dock-bar{gap:2px;padding:4px 6px}
+  .dock-icon{width:34px;height:34px;font-size:16px}
+}
 </style>
 </head>
 <body>
 
 <!-- Top bar -->
 <div class="topbar">
-  <span class="topbar-title" id="title">Claude Desktop</span>
+  <span class="topbar-title" id="title" onclick="showProfileEdit()">Claude Desktop</span>
   <div class="topbar-right">
     <button id="tunnelBtn" onclick="toggleTunnel()" style="background:none;border:1px solid #3b3e52;color:#7a7e96;padding:2px 10px;border-radius:4px;font:12px/1.4 -apple-system,sans-serif;cursor:pointer;display:flex;align-items:center;gap:4px" title="Port Forwarding">🌐 <span id="tunnelLabel">Share</span></button>
     <button id="fsBtn" onclick="toggleFullscreen()" style="background:none;border:1px solid #3b3e52;color:#7a7e96;padding:2px 8px;border-radius:4px;font:12px/1.4 -apple-system,sans-serif;cursor:pointer" title="Fullscreen">⛶</button>
@@ -139,18 +213,29 @@ body{font-family:system-ui,sans-serif;background:#0F172A;min-height:100vh;color:
 <div id="peerBar" style="position:fixed;bottom:64px;left:0;right:0;display:flex;justify-content:center;gap:8px;padding:6px 0;z-index:140;pointer-events:none;opacity:0;transition:opacity 0.3s;">
 </div>
 
-<!-- System Chat Panel -->
-<div id="systemChat" style="position:fixed;bottom:80px;right:16px;width:320px;max-height:400px;background:rgba(15,23,42,0.95);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);border-radius:16px;z-index:200;display:none;flex-direction:column;overflow:hidden;">
-  <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;">
-    <span style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.8);">💬 System Chat</span>
+<!-- System Chat Panel (Chat + Contacts tabs) -->
+<div id="systemChat" style="position:fixed;bottom:80px;right:16px;width:340px;max-height:460px;background:rgba(15,23,42,0.95);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);border-radius:16px;z-index:200;display:none;flex-direction:column;overflow:hidden;">
+  <div style="padding:10px 16px 0;display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.9);">PulseOS</span>
     <button onclick="toggleSystemChat()" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:16px;">✕</button>
   </div>
-  <div id="systemChatMessages" style="flex:1;overflow-y:auto;padding:8px 12px;max-height:280px;display:flex;flex-direction:column;gap:6px;">
-    <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;padding:20px 0;">Noch keine Nachrichten</div>
+  <div class="sys-chat-tabs">
+    <div class="sys-chat-tab active" onclick="switchSysChatTab('chat')" id="tabChat">💬 Chat</div>
+    <div class="sys-chat-tab" onclick="switchSysChatTab('contacts')" id="tabContacts">👥 Kontakte <span id="contactCount" style="font-size:10px;opacity:0.5;"></span></div>
   </div>
-  <div style="padding:8px 12px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:8px;">
-    <input id="systemChatInput" type="text" placeholder="Nachricht..." style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:13px;outline:none;" onkeydown="if(event.key==='Enter')sendSystemChat()">
-    <button onclick="sendSystemChat()" style="padding:8px 12px;border-radius:8px;border:none;background:#8B5CF6;color:#fff;cursor:pointer;font-size:13px;">▶</button>
+  <div id="sysChatView" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+    <div id="systemChatMessages" style="flex:1;overflow-y:auto;padding:8px 12px;max-height:300px;display:flex;flex-direction:column;gap:6px;">
+      <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;padding:20px 0;">Noch keine Nachrichten</div>
+    </div>
+    <div style="padding:8px 12px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:8px;">
+      <input id="systemChatInput" type="text" placeholder="Nachricht..." style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:13px;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')sendSystemChat()">
+      <button onclick="sendSystemChat()" style="padding:8px 12px;border-radius:8px;border:none;background:#8B5CF6;color:#fff;cursor:pointer;font-size:13px;">▶</button>
+    </div>
+  </div>
+  <div id="sysContactsView" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+    <div class="contacts-list" id="contactsList">
+      <div class="contacts-empty">Noch keine Kontakte.<br>Verbinde dich über WebRTC!</div>
+    </div>
   </div>
 </div>
 
@@ -1060,6 +1145,121 @@ function sendSystemChat() {
   if (!text) return;
   input.value = '';
   if (window.PulseOS?.sendChat) window.PulseOS.sendChat(text);
+}
+
+// --- Profile Edit Modal ---
+function showProfileEdit() {
+  if (document.getElementById('profileModal')) return;
+  const p = userProfile || { name: '', handle: '', avatar: '🧑‍💻', bio: '', githubPages: '', roomId: '' };
+  const overlay = document.createElement('div');
+  overlay.id = 'profileModal';
+  overlay.className = 'profile-modal-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="profile-modal">
+      <div class="avatar-row">
+        <div class="avatar-big" id="pe-avatar-preview">${p.avatar || '🧑‍💻'}</div>
+        <div>
+          <h2>Dein Profil</h2>
+          <div class="subtitle">Sichtbar für verbundene Peers</div>
+        </div>
+      </div>
+      <label>Name *</label>
+      <input id="pe-name" type="text" value="${esc(p.name)}" placeholder="Dein Name">
+      <label>Handle</label>
+      <input id="pe-handle" type="text" value="${esc(p.handle)}" placeholder="@dein-handle">
+      <label>Bio</label>
+      <textarea id="pe-bio" placeholder="Was machst du?">${esc(p.bio)}</textarea>
+      <label>GitHub Pages URL</label>
+      <input id="pe-ghpages" type="url" value="${esc(p.githubPages)}" placeholder="https://username.github.io">
+      <label>Avatar Emoji</label>
+      <input id="pe-avatar" type="text" value="${p.avatar || '🧑‍💻'}" maxlength="4" style="width:80px;text-align:center;font-size:24px;" oninput="document.getElementById('pe-avatar-preview').textContent=this.value||'🧑‍💻'">
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="document.getElementById('profileModal').remove()">Abbrechen</button>
+        <button class="btn-primary" onclick="saveProfileEdit()">Speichern</button>
+      </div>
+      ${p.roomId ? '<div class="room-id">Room: <code onclick="navigator.clipboard.writeText(\'' + esc(p.roomId) + '\');this.textContent=\'Kopiert!\';setTimeout(()=>this.textContent=\'' + esc(p.roomId) + '\',1500)" title="Klick zum Kopieren">' + esc(p.roomId) + '</code></div>' : ''}
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('pe-name').focus();
+}
+
+function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+async function saveProfileEdit() {
+  const name = document.getElementById('pe-name').value.trim();
+  if (!name) { document.getElementById('pe-name').style.borderColor = '#EF4444'; return; }
+  const profile = {
+    name,
+    handle: document.getElementById('pe-handle').value.trim() || name.toLowerCase().replace(/\s+/g, '-'),
+    avatar: document.getElementById('pe-avatar').value || '🧑‍💻',
+    bio: document.getElementById('pe-bio').value.trim(),
+    githubPages: document.getElementById('pe-ghpages').value.trim()
+  };
+  try {
+    await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) });
+    const res = await fetch('/api/profile');
+    userProfile = await res.json();
+    updateProfileDisplay();
+    document.getElementById('profileModal')?.remove();
+  } catch (e) { console.error('[profile] save error:', e); }
+}
+
+// --- System Chat Tab Switching ---
+function switchSysChatTab(tab) {
+  const chatView = document.getElementById('sysChatView');
+  const contactsView = document.getElementById('sysContactsView');
+  const tabChat = document.getElementById('tabChat');
+  const tabContacts = document.getElementById('tabContacts');
+  if (tab === 'chat') {
+    chatView.style.display = 'flex';
+    contactsView.style.display = 'none';
+    tabChat.classList.add('active');
+    tabContacts.classList.remove('active');
+  } else {
+    chatView.style.display = 'none';
+    contactsView.style.display = 'flex';
+    tabChat.classList.remove('active');
+    tabContacts.classList.add('active');
+    loadContacts();
+  }
+}
+
+// --- Contacts List ---
+let contactsCache = [];
+async function loadContacts() {
+  try {
+    const r = await fetch('/api/contacts');
+    const data = await r.json();
+    contactsCache = data.contacts || [];
+    renderContacts();
+  } catch (e) { console.error('[contacts]', e); }
+}
+
+function renderContacts() {
+  const list = document.getElementById('contactsList');
+  const countEl = document.getElementById('contactCount');
+  if (!list) return;
+  if (countEl) countEl.textContent = contactsCache.length > 0 ? `(${contactsCache.length})` : '';
+  if (contactsCache.length === 0) {
+    list.innerHTML = '<div class="contacts-empty">Noch keine Kontakte.<br>Verbinde dich über WebRTC!</div>';
+    return;
+  }
+  const peers = window.PulseOS?.getPeers?.() || {};
+  const onlineHandles = new Set(Object.values(peers).filter(p => p.online).map(p => p.handle || p.name));
+  list.innerHTML = contactsCache.map(c => {
+    const isOnline = onlineHandles.has(c.handle) || onlineHandles.has(c.name);
+    const lastSeen = c.lastSeen ? getRelativeTime(new Date(c.lastSeen)) : '';
+    return `<div class="contact-item" title="${esc(c.bio || '')}">
+      <div class="contact-avatar">${c.avatar || '👤'}</div>
+      <div class="contact-info">
+        <div class="contact-name">${esc(c.name || c.handle || '?')}</div>
+        <div class="contact-handle">@${esc(c.handle || '?')}${lastSeen ? ' · ' + lastSeen : ''}</div>
+        ${c.githubPages ? '<a class="contact-ghlink" href="' + esc(c.githubPages) + '" target="_blank" onclick="event.stopPropagation()">🌐 ' + esc(c.githubPages.replace('https://', '')) + '</a>' : ''}
+      </div>
+      <div class="contact-status ${isOnline ? 'online' : 'offline'}"></div>
+    </div>`;
+  }).join('');
 }
 
 </script>
