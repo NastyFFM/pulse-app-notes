@@ -415,6 +415,22 @@
       "description": "Internet-Radiosender streamen",
       "installed": true,
       "position": 42
+    },
+    {
+      "id": "quote-generator",
+      "name": "Zitat-Generator",
+      "icon": "💬",
+      "color": "#e85d24",
+      "installed": true,
+      "category": "demo"
+    },
+    {
+      "id": "quote-display",
+      "name": "Zitat-Anzeige",
+      "icon": "📜",
+      "color": "#8B5CF6",
+      "installed": true,
+      "category": "demo"
     }
   ]
 }
