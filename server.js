@@ -1493,6 +1493,17 @@ const server = http.createServer(async (req, res) => {
   }
 
   // --- Graph API (Phase 13d) ---
+  // GET /api/graphs — list all graphs
+  if (url === '/api/graphs' && req.method === 'GET') {
+    try {
+      const files = fs.readdirSync(GRAPHS_DIR).filter(f => f.startsWith('graph-') && f.endsWith('.json'));
+      const graphs = files.map(f => {
+        try { return JSON.parse(fs.readFileSync(path.join(GRAPHS_DIR, f), 'utf8')); } catch { return null; }
+      }).filter(Boolean);
+      return jsonRes(res, { graphs });
+    } catch { return jsonRes(res, { graphs: [] }); }
+  }
+
   const graphMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)$/);
   const graphConnectMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)\/connect$/);
   const graphRunMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)\/run$/);

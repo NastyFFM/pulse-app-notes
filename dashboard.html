@@ -1088,6 +1088,20 @@ window.addEventListener('message', e => {
   if (e.data && e.data.type === 'error') {
     addFeed(`App Error: ${e.data.message || 'Unknown'}`, 'error');
   }
+  // Graph output: app emits data → route through graph
+  if (e.data && e.data.type === 'graph-output' && e.data.appId && e.data.outputName) {
+    // Find which graph(s) contain this app and route the output
+    fetch('/api/graphs').then(r => r.json()).then(gData => {
+      const graphs = (gData.graphs || []).filter(g => g.nodes && g.nodes.some(n => n.appId === e.data.appId));
+      for (const g of graphs) {
+        fetch(`/api/graphs/${g.projectId}/output`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ appId: e.data.appId, outputName: e.data.outputName, data: e.data.data })
+        }).catch(err => console.error('[graph-output] routing error:', err));
+      }
+    }).catch(() => {});
+  }
   // Open app from projects context (app widget L0 click or button)
   if (e.data && e.data.type === 'open-app' && e.data.appId) {
     const app = state?.apps?.find(a => a.id === e.data.appId);
