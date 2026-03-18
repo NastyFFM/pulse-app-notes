@@ -167,6 +167,49 @@ body{font-family:system-ui,sans-serif;background:#0F172A;min-height:100vh;color:
 .contact-ghlink:hover{text-decoration:underline}
 .contacts-empty{text-align:center;color:rgba(255,255,255,0.25);font-size:12px;padding:32px 16px}
 
+/* ---- Home Screen ---- */
+.home-screen{flex:1;overflow-y:auto;padding:24px 32px 80px;max-width:900px;margin:0 auto;width:100%}
+.home-greeting{margin-bottom:28px}
+.home-greeting h1{font-size:28px;font-weight:700;color:rgba(255,255,255,0.95);margin-bottom:4px}
+.home-greeting p{font-size:14px;color:rgba(255,255,255,0.4)}
+
+.home-section{margin-bottom:24px}
+.home-section-title{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.3);font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+
+.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.quick-action{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px 14px;cursor:pointer;transition:all .2s;text-align:center}
+.quick-action:hover{background:rgba(255,255,255,0.08);border-color:rgba(139,92,246,0.3);transform:translateY(-2px)}
+.quick-action:active{transform:scale(0.97)}
+.quick-action .qa-icon{font-size:24px;margin-bottom:6px}
+.quick-action .qa-label{font-size:11px;font-weight:600;color:rgba(255,255,255,0.7)}
+.quick-action .qa-sub{font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px}
+
+.recent-contexts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.ctx-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;cursor:pointer;transition:all .2s;overflow:hidden}
+.ctx-card:hover{background:rgba(255,255,255,0.08);border-color:rgba(139,92,246,0.3);transform:translateY(-2px)}
+.ctx-card .ctx-card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ctx-card .ctx-icon{font-size:20px;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ctx-card .ctx-name{font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctx-card .ctx-meta{font-size:10px;color:rgba(255,255,255,0.3)}
+.ctx-card .ctx-widgets{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.ctx-card .ctx-widget-pill{font-size:9px;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5)}
+
+.active-graphs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.graph-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px}
+.graph-card .graph-nodes{display:flex;gap:4px;align-items:center}
+.graph-card .graph-node{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3)}
+.graph-card .graph-arrow{color:rgba(255,255,255,0.2);font-size:10px}
+.graph-card .graph-info{flex:1;min-width:0}
+.graph-card .graph-name{font-size:12px;font-weight:600;color:rgba(255,255,255,0.75)}
+.graph-card .graph-status{font-size:10px;color:rgba(255,255,255,0.3)}
+
+.pulse-feed{display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto}
+.pulse-entry{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;font-size:11px;color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.02)}
+.pulse-entry .pe-icon{font-size:14px;flex-shrink:0}
+.pulse-entry .pe-time{font-size:9px;color:rgba(255,255,255,0.2);margin-left:auto;flex-shrink:0}
+.pulse-entry.pe-error{border-left:2px solid #EF4444}
+.pulse-entry.pe-success{border-left:2px solid #22C55E}
+
 /* ---- Responsive ---- */
 @media (max-width:768px) {
   .topbar{padding:8px 12px}
@@ -175,6 +218,11 @@ body{font-family:system-ui,sans-serif;background:#0F172A;min-height:100vh;color:
   .dock-icon{width:38px;height:38px;font-size:18px;border-radius:10px}
   .dock-sep{height:24px;margin:0 2px}
   .dock{padding:8px 0 12px}
+  .home-screen{padding:16px 16px 80px}
+  .home-greeting h1{font-size:22px}
+  .quick-actions{grid-template-columns:repeat(2,1fr)}
+  .recent-contexts{grid-template-columns:1fr}
+  .active-graphs{grid-template-columns:1fr}
   #dock-contexts{display:none !important}
   #dock-sep-ctx{display:none !important}
   #dock-sep-end{display:none !important}
@@ -206,6 +254,59 @@ body{font-family:system-ui,sans-serif;background:#0F172A;min-height:100vh;color:
     <button id="tunnelBtn" onclick="toggleTunnel()" style="background:none;border:1px solid #3b3e52;color:#7a7e96;padding:2px 10px;border-radius:4px;font:12px/1.4 -apple-system,sans-serif;cursor:pointer;display:flex;align-items:center;gap:4px" title="Port Forwarding">🌐 <span id="tunnelLabel">Share</span></button>
     <button id="fsBtn" onclick="toggleFullscreen()" style="background:none;border:1px solid #3b3e52;color:#7a7e96;padding:2px 8px;border-radius:4px;font:12px/1.4 -apple-system,sans-serif;cursor:pointer" title="Fullscreen">⛶</button>
     <span id="clock"></span><span class="sync-dot" id="syncDot"></span>
+  </div>
+</div>
+
+<!-- Home Screen -->
+<div class="home-screen" id="homeScreen">
+  <div class="home-greeting" id="homeGreeting">
+    <h1 id="greetingText">Guten Abend, Chris</h1>
+    <p id="greetingSub">Was möchtest du heute machen?</p>
+  </div>
+
+  <div class="home-section">
+    <div class="home-section-title">Schnellzugriff</div>
+    <div class="quick-actions" id="quickActions">
+      <div class="quick-action" onclick="toggleLauncher()">
+        <div class="qa-icon">🚀</div>
+        <div class="qa-label">Apps</div>
+        <div class="qa-sub">Alle Apps öffnen</div>
+      </div>
+      <div class="quick-action" onclick="toggleContextLauncher()">
+        <div class="qa-icon">🧩</div>
+        <div class="qa-label">Projekte</div>
+        <div class="qa-sub">Contexts & Graphen</div>
+      </div>
+      <div class="quick-action" onclick="toggleSystemChat()">
+        <div class="qa-icon">💬</div>
+        <div class="qa-label">Chat</div>
+        <div class="qa-sub">WebRTC Peers</div>
+      </div>
+      <div class="quick-action" onclick="toggleCC()">
+        <div class="qa-icon">📡</div>
+        <div class="qa-label">System</div>
+        <div class="qa-sub">Command Center</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-section">
+    <div class="home-section-title">Letzte Projekte</div>
+    <div class="recent-contexts" id="recentContexts">
+      <div style="color:rgba(255,255,255,0.2);font-size:12px;padding:8px;">Lade...</div>
+    </div>
+  </div>
+
+  <div class="home-section" id="graphSection" style="display:none;">
+    <div class="home-section-title">Aktive Graphen</div>
+    <div class="active-graphs" id="activeGraphs"></div>
+  </div>
+
+  <div class="home-section">
+    <div class="home-section-title">System Pulse</div>
+    <div class="pulse-feed" id="pulseFeed">
+      <div class="pulse-entry pe-success"><span class="pe-icon">✅</span> Server gestartet <span class="pe-time">gerade eben</span></div>
+    </div>
   </div>
 </div>
 
@@ -945,6 +1046,9 @@ function addFeed(text, type) {
   feed.unshift({ text, type, time: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) });
   if (feed.length > 50) feed.length = 50;
   renderFeed();
+  // Also add to home screen pulse feed
+  const icon = type === 'error' ? '❌' : type === 'mutation' ? '⚡' : type === 'sse' ? '📡' : 'ℹ️';
+  if (typeof addPulseEntry === 'function') addPulseEntry(icon, text, type === 'error' ? 'error' : 'success');
 }
 
 function renderFeed() {
@@ -1083,6 +1187,82 @@ function updateProfileDisplay() {
   if (titleEl && userProfile.name) {
     titleEl.textContent = userProfile.avatar + ' ' + userProfile.name;
   }
+  updateGreeting();
+}
+
+// --- Home Screen ---
+function updateGreeting() {
+  const h = new Date().getHours();
+  const name = userProfile?.name || '';
+  let greeting = 'Guten Tag';
+  let sub = 'Was möchtest du heute machen?';
+  if (h < 6) { greeting = 'Gute Nacht'; sub = 'Noch wach? PulseOS ist bereit.'; }
+  else if (h < 12) { greeting = 'Guten Morgen'; sub = 'Starte deinen Tag mit PulseOS.'; }
+  else if (h < 18) { greeting = 'Guten Tag'; sub = 'Was möchtest du heute machen?'; }
+  else { greeting = 'Guten Abend'; sub = 'Noch etwas erledigen?'; }
+  const el = document.getElementById('greetingText');
+  if (el) el.textContent = greeting + (name ? ', ' + name : '');
+  const subEl = document.getElementById('greetingSub');
+  if (subEl) subEl.textContent = sub;
+}
+
+function renderRecentContexts() {
+  const el = document.getElementById('recentContexts');
+  if (!el || !contextList || contextList.length === 0) {
+    if (el) el.innerHTML = '<div style="color:rgba(255,255,255,0.2);font-size:12px;padding:8px;">Keine Projekte vorhanden. Erstelle eins über den Contexts-Launcher!</div>';
+    return;
+  }
+  const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉', context: '📂', app: '📱' };
+  const recent = contextList.slice(0, 6);
+  el.innerHTML = recent.map(ctx => {
+    const widgetCount = ctx.widgetCount || (ctx.widgets ? ctx.widgets.length : 0);
+    const widgetPills = (ctx.widgets || []).slice(0, 4).map(w => '<span class="ctx-widget-pill">' + (icons[w.type] || '🧩') + ' ' + (w.type || '?') + '</span>').join('');
+    const age = ctx.updated ? getRelativeTime(new Date(ctx.updated)) : '';
+    return '<div class="ctx-card" onclick="openContext(' + JSON.stringify(ctx).replace(/"/g, '&quot;') + ')">' +
+      '<div class="ctx-card-head">' +
+        '<div class="ctx-icon" style="background:' + (ctx.color || '#8B5CF6') + '">' + (ctx.icon || '📁') + '</div>' +
+        '<div><div class="ctx-name">' + (ctx.name || ctx.id) + '</div>' +
+        '<div class="ctx-meta">' + (widgetCount ? widgetCount + ' Widgets' : '') + (age ? ' · ' + age : '') + '</div></div>' +
+      '</div>' +
+      (widgetPills ? '<div class="ctx-widgets">' + widgetPills + '</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+async function renderActiveGraphs() {
+  const section = document.getElementById('graphSection');
+  const el = document.getElementById('activeGraphs');
+  if (!section || !el) return;
+  try {
+    const r = await fetch('/api/graphs');
+    if (!r.ok) { section.style.display = 'none'; return; }
+    const data = await r.json();
+    const graphs = data.graphs || [];
+    if (graphs.length === 0) { section.style.display = 'none'; return; }
+    section.style.display = '';
+    el.innerHTML = graphs.slice(0, 4).map(g => {
+      const nodes = (g.nodes || []).slice(0, 4);
+      const nodesHtml = nodes.map((n, i) =>
+        (i > 0 ? '<span class="graph-arrow">→</span>' : '') +
+        '<div class="graph-node" title="' + (n.name || n.appId || '?') + '">' + (n.icon || '⚡') + '</div>'
+      ).join('');
+      return '<div class="graph-card">' +
+        '<div class="graph-nodes">' + nodesHtml + '</div>' +
+        '<div class="graph-info"><div class="graph-name">' + (g.name || g.id) + '</div>' +
+        '<div class="graph-status">' + nodes.length + ' Nodes · ' + (g.edges || []).length + ' Edges</div></div></div>';
+    }).join('');
+  } catch (e) { section.style.display = 'none'; }
+}
+
+function addPulseEntry(icon, text, type) {
+  const feed = document.getElementById('pulseFeed');
+  if (!feed) return;
+  const entry = document.createElement('div');
+  entry.className = 'pulse-entry' + (type === 'error' ? ' pe-error' : type === 'success' ? ' pe-success' : '');
+  entry.innerHTML = '<span class="pe-icon">' + icon + '</span> ' + text + ' <span class="pe-time">gerade eben</span>';
+  feed.prepend(entry);
+  // Keep max 20 entries
+  while (feed.children.length > 20) feed.removeChild(feed.lastChild);
 }
 
 // --- Init ---
@@ -1707,10 +1887,13 @@ function getRelativeTime(date) {
   return days + ' Tage';
 }
 
-// Load contexts on startup
-loadContexts();
+// Load contexts on startup + render home screen
+loadContexts().then(() => { renderRecentContexts(); renderActiveGraphs(); });
 // Refresh contexts every 30s
-setInterval(loadContexts, 30000);
+setInterval(() => loadContexts().then(() => renderRecentContexts()), 30000);
+// Update greeting on load and periodically
+setTimeout(updateGreeting, 500);
+setInterval(updateGreeting, 60000);
 
 // Close context launcher on Escape
 document.addEventListener('keydown', e => {
