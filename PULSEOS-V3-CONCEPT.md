@@ -113,12 +113,13 @@ Alle verbundenen Peers
 ### Phase A: Profile & Contacts ✅/🔧
 > Grundlage für alles Soziale
 
-- [ ] `data/profile.json` Schema + Defaults
-- [ ] `GET /api/profile` + `PUT /api/profile` Endpoints in `server.js`
-- [ ] Onboarding-Screen beim ersten Start (Name, Avatar, GitHub Pages URL, Bio)
-- [ ] `data/contacts.json` + `GET /api/contacts` + `POST /api/contacts`
+- [x] `data/profile.json` Schema + Defaults
+- [x] `GET /api/profile` + `PUT /api/profile` Endpoints in `server.js`
+- [x] `GET /api/profile/onboarding` — prüft ob Name gesetzt ist
+- [x] Onboarding-Screen beim ersten Start (Name, Handle, Avatar, Bio, GitHub Pages URL)
+- [x] `data/contacts.json` + `GET /api/contacts` + `POST /api/contacts` (upsert by handle/roomId)
 - [ ] WebRTC Profile-Exchange: bei Connect → Profile senden → Contact speichern
-- [ ] Dashboard zeigt aktuellen Profil-Avatar + Name
+- [x] Dashboard zeigt aktuellen Profil-Avatar + Name (Topbar)
 
 ### Phase B: WebRTC System-Bus
 > WebRTC von isolierter App zum System-Service
@@ -154,7 +155,7 @@ Alle verbundenen Peers
 
 | Phase | Status | Letzte Änderung |
 |-------|--------|-----------------|
-| Phase A: Profile & Contacts | 🔧 In Arbeit | 2026-03-18 |
+| Phase A: Profile & Contacts | ✅ Fertig (WebRTC-Exchange → Phase B) | 2026-03-18 |
 | Phase B: WebRTC System-Bus | 🔲 Geplant | — |
 | Phase C: New Dashboard UX | 🔲 Geplant | — |
 | Phase D: GitHub Pages | 🔲 Geplant | — |

@@ -4993,6 +4993,83 @@ Regeln:
   // WebSocket test page
   if (url === '/ws-test') return htmlRes(res, path.join(ROOT, 'ws-test.html'));
 
+  // --- Profile & Contacts ---
+  if (url === '/api/profile') {
+    const profilePath = path.join(__dirname, 'data', 'profile.json');
+    if (req.method === 'GET') {
+      try {
+        const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+        return jsonRes(res, profile);
+      } catch (e) {
+        return jsonRes(res, { name: '', handle: '', avatar: '🧑‍💻', bio: '', githubPages: '', links: [], roomId: '', createdAt: null, updatedAt: null });
+      }
+    }
+    if (req.method === 'PUT') {
+      return readBody(req, b => {
+        try {
+          const update = JSON.parse(b);
+          let profile = {};
+          try { profile = JSON.parse(fs.readFileSync(profilePath, 'utf8')); } catch (e) {}
+          const merged = { ...profile, ...update, updatedAt: new Date().toISOString() };
+          if (!merged.createdAt) merged.createdAt = merged.updatedAt;
+          if (!merged.roomId) merged.roomId = 'pulse-' + crypto.randomBytes(4).toString('hex');
+          fs.writeFileSync(profilePath, JSON.stringify(merged, null, 2));
+          broadcast('dashboard', { type: 'profile-updated', profile: merged, time: Date.now() });
+          return jsonRes(res, { ok: true, profile: merged });
+        } catch (e) {
+          return jsonRes(res, { error: e.message }, 400);
+        }
+      });
+      return;
+    }
+  }
+
+  if (url === '/api/contacts') {
+    const contactsPath = path.join(__dirname, 'data', 'contacts.json');
+    if (req.method === 'GET') {
+      try {
+        const data = JSON.parse(fs.readFileSync(contactsPath, 'utf8'));
+        return jsonRes(res, data);
+      } catch (e) {
+        return jsonRes(res, { version: 1, contacts: [], updatedAt: null });
+      }
+    }
+    if (req.method === 'POST') {
+      return readBody(req, b => {
+        try {
+          const contact = JSON.parse(b);
+          let data = { version: 1, contacts: [], updatedAt: null };
+          try { data = JSON.parse(fs.readFileSync(contactsPath, 'utf8')); } catch (e) {}
+          const idx = data.contacts.findIndex(c => c.handle === contact.handle || c.roomId === contact.roomId);
+          if (idx >= 0) {
+            data.contacts[idx] = { ...data.contacts[idx], ...contact, lastSeen: new Date().toISOString() };
+          } else {
+            data.contacts.push({ ...contact, firstSeen: new Date().toISOString(), lastSeen: new Date().toISOString() });
+          }
+          data.updatedAt = new Date().toISOString();
+          fs.writeFileSync(contactsPath, JSON.stringify(data, null, 2));
+          broadcast('dashboard', { type: 'contacts-updated', time: Date.now() });
+          return jsonRes(res, { ok: true, contact: data.contacts[idx >= 0 ? idx : data.contacts.length - 1] });
+        } catch (e) {
+          return jsonRes(res, { error: e.message }, 400);
+        }
+      });
+      return;
+    }
+  }
+
+  if (url === '/api/profile/onboarding') {
+    if (req.method === 'GET') {
+      const profilePath = path.join(__dirname, 'data', 'profile.json');
+      try {
+        const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+        return jsonRes(res, { needed: !profile.name });
+      } catch (e) {
+        return jsonRes(res, { needed: true });
+      }
+    }
+  }
+
   // --- Port Forwarding / Tunnel ---
   // --- Bridge Room Management ---
   if (url === '/api/bridge-room') {

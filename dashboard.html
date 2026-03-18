@@ -913,6 +913,74 @@ function updateClock() {
   document.getElementById('clock').textContent = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 }
 
+// --- Profile & Onboarding ---
+let userProfile = null;
+
+async function checkOnboarding() {
+  try {
+    const res = await fetch('/api/profile/onboarding');
+    const { needed } = await res.json();
+    if (needed) showOnboarding();
+    else {
+      const pRes = await fetch('/api/profile');
+      userProfile = await pRes.json();
+      updateProfileDisplay();
+    }
+  } catch (e) { console.error('[profile]', e); }
+}
+
+function showOnboarding() {
+  const overlay = document.createElement('div');
+  overlay.id = 'onboardingOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);';
+  overlay.innerHTML = `
+    <div style="background:#1E293B;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center;">
+      <div style="font-size:48px;margin-bottom:16px;">🧑‍💻</div>
+      <h2 style="font-size:22px;margin-bottom:8px;color:#fff;">Willkommen bei PulseOS</h2>
+      <p style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:28px;">Richte dein Profil ein — andere sehen das wenn sie sich mit dir verbinden.</p>
+      <div style="display:flex;flex-direction:column;gap:12px;text-align:left;">
+        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">Name *</label>
+        <input id="ob-name" type="text" placeholder="Dein Name" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;">
+        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">Handle</label>
+        <input id="ob-handle" type="text" placeholder="@dein-handle" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;">
+        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">Bio</label>
+        <input id="ob-bio" type="text" placeholder="Was machst du?" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;">
+        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">GitHub Pages URL</label>
+        <input id="ob-ghpages" type="url" placeholder="https://username.github.io" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;">
+        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">Avatar Emoji</label>
+        <input id="ob-avatar" type="text" value="🧑‍💻" maxlength="4" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:24px;outline:none;text-align:center;width:80px;">
+      </div>
+      <button onclick="submitOnboarding()" style="margin-top:24px;padding:12px 32px;border-radius:12px;border:none;background:linear-gradient(135deg,#8B5CF6,#6366F1);color:#fff;font-size:14px;font-weight:600;cursor:pointer;width:100%;transition:opacity 0.15s;">Los geht's</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('ob-name').focus();
+}
+
+async function submitOnboarding() {
+  const name = document.getElementById('ob-name').value.trim();
+  if (!name) { document.getElementById('ob-name').style.borderColor = '#EF4444'; return; }
+  const profile = {
+    name,
+    handle: document.getElementById('ob-handle').value.trim() || name.toLowerCase().replace(/\s+/g, '-'),
+    avatar: document.getElementById('ob-avatar').value || '🧑‍💻',
+    bio: document.getElementById('ob-bio').value.trim(),
+    githubPages: document.getElementById('ob-ghpages').value.trim()
+  };
+  await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) });
+  const res = await fetch('/api/profile');
+  userProfile = await res.json();
+  updateProfileDisplay();
+  document.getElementById('onboardingOverlay')?.remove();
+}
+
+function updateProfileDisplay() {
+  if (!userProfile) return;
+  const titleEl = document.querySelector('.topbar-title');
+  if (titleEl && userProfile.name) {
+    titleEl.textContent = userProfile.avatar + ' ' + userProfile.name;
+  }
+}
+
 // --- Init ---
 updateClock();
 setInterval(updateClock, 30000);
@@ -920,6 +988,7 @@ load();
 connectSSE();
 setInterval(load, 30000);
 setInterval(generateStateSummary, 60000);
+checkOnboarding();
 </script>
 
 <!-- WebRTC Bridge Host (for tunnel reconnect) -->
