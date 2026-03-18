@@ -1825,7 +1825,7 @@ KI Actions (sequenziell):
         ├──► 13e Pulse Engine  ← Gleichzeitig mit Graph möglich ✅ FERTIG
         │
         ▼
-13f CLI                        ← Alles oben benutzbar machen   🔲
+13f CLI                        ← Alles oben benutzbar machen   ✅ FERTIG
         │
         ▼
 13g Graph-UI                   ← Visueller Editor              🔲
@@ -1838,7 +1838,7 @@ KI Actions (sequenziell):
 
 ## Implementierungs-Status
 
-> **Aktueller Stand:** Phase 13a-e ✅ → Phase 13f 🔧
+> **Aktueller Stand:** Phase 13a-f ✅ → Phase 13g 🔧
 > **Letzte Aktualisierung:** 2026-03-18
 
 ### Phase 13a — manifest.json + Migration ✅
@@ -1898,16 +1898,18 @@ KI Actions (sequenziell):
 - [x] `POST /api/pulse/fire/:appId` — manueller Trigger
 - [x] `POST /api/pulse/webhook/:token` — externer Webhook (scannt Registry für matching apps)
 
-### Phase 13f — CLI (`bin/pulse.js`)
-- [ ] `pulse app list` / `pulse app list --running`
-- [ ] `pulse app start <id>` / `pulse app stop <id>`
-- [ ] `pulse app create <id> --type vanilla|node`
-- [ ] `pulse app install <source>` (GitHub + lokal)
-- [ ] `pulse app call <id> state|action`
-- [ ] `pulse graph show <projectId>`
-- [ ] `pulse graph connect` / `pulse graph disconnect`
-- [ ] `pulse graph run <projectId>`
-- [ ] `pulse fire <appId>`
+### Phase 13f — CLI (`bin/pulse.js`) ✅
+- [x] `pulse app list` / `pulse app list --running|--node|--vanilla`
+- [x] `pulse app start <id>` / `pulse app stop <id>` / `pulse app restart <id>`
+- [x] `pulse app status <id>` (zeigt type, status, manifest, state)
+- [x] `pulse app create <id> --type vanilla|node` (kopiert Template, ersetzt Platzhalter, registriert)
+- [x] `pulse app call <id> state|action [json]`
+- [x] `pulse graph show <projectId>` (Nodes + Edges ASCII)
+- [x] `pulse graph connect` / `pulse graph disconnect` mit `--project`
+- [x] `pulse graph run <projectId>` (alle Producer pulsieren)
+- [x] `pulse fire <appId|project:projectId>`
+- [x] `pulse help`
+- [ ] `pulse app install <source>` (deferred — braucht git clone Logik)
 
 ### Phase 13g — Graph-UI
 - [ ] Graph-Tab in apps/projects/index.html
