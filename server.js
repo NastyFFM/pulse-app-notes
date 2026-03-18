@@ -50,6 +50,19 @@ function appHtmlRes(res, file, appId) {
       },
       logInteraction: function(action, detail) {
         try { window.parent.postMessage({ type: 'app-interaction', appId: '${appId}', action: String(action).slice(0, 50), detail: typeof detail === 'string' ? detail.slice(0, 200) : JSON.stringify(detail).slice(0, 200), time: new Date().toISOString() }, '*'); } catch(e) {}
+      },
+      emit: function(outputName, data) {
+        try { window.parent.postMessage({ type: 'graph-output', appId: '${appId}', outputName: outputName, data: data }, '*'); } catch(e) {}
+      },
+      onInput: function(inputName, callback) {
+        window.addEventListener('message', function(e) {
+          if (e.data && e.data.type === 'app-input' && e.data.inputName === inputName) callback(e.data.data);
+        });
+      },
+      onPulse: function(callback) {
+        window.addEventListener('message', function(e) {
+          if (e.data && e.data.type === 'pulse') callback(e.data);
+        });
       }
     };
   }
@@ -588,6 +601,302 @@ function vikingSyncContextDebounced(contextId) {
   }, 2000);
 }
 
+// --- Process Manager (Phase 13b/c) ---
+const runningProcesses = new Map(); // appId → { process, port, pid, startedAt }
+const vanillaStates = new Map();    // appId → { data, lastUpdated }
+
+function loadManifest(appId) {
+  // Try local apps/ first, then ~/pulse-workspace/
+  const localPath = path.join(ROOT, 'apps', appId, 'manifest.json');
+  if (fs.existsSync(localPath)) {
+    return JSON.parse(fs.readFileSync(localPath, 'utf8'));
+  }
+  const wsPath = path.join(require('os').homedir(), 'pulse-workspace', appId, 'manifest.json');
+  if (fs.existsSync(wsPath)) {
+    return JSON.parse(fs.readFileSync(wsPath, 'utf8'));
+  }
+  return null;
+}
+
+function updateRegistryStatus(appId, status, pid) {
+  const regFile = path.join(ROOT, 'data', 'app-registry.json');
+  try {
+    const reg = JSON.parse(fs.readFileSync(regFile, 'utf8'));
+    const entry = reg.apps.find(a => a.id === appId);
+    if (entry) {
+      entry.status = status;
+      entry.pid = pid || null;
+      reg.updatedAt = new Date().toISOString();
+      fs.writeFileSync(regFile, JSON.stringify(reg, null, 2));
+    }
+  } catch {}
+}
+
+function waitForPort(port, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const check = () => {
+      const req = http.request({ hostname: '127.0.0.1', port, path: '/api/state', method: 'GET', timeout: 1000 }, (res) => {
+        resolve(true);
+      });
+      req.on('error', () => {
+        if (Date.now() - start > timeoutMs) return reject(new Error(`Port ${port} not ready after ${timeoutMs}ms`));
+        setTimeout(check, 500);
+      });
+      req.end();
+    };
+    check();
+  });
+}
+
+function startNodeApp(appId) {
+  return new Promise(async (resolve, reject) => {
+    if (runningProcesses.has(appId)) return resolve(runningProcesses.get(appId));
+
+    const manifest = loadManifest(appId);
+    if (!manifest || manifest.type !== 'node') return reject(new Error(`${appId} is not a node app`));
+
+    const appDir = manifest.workspacePath
+      ? manifest.workspacePath.replace(/^~/, require('os').homedir())
+      : path.join(ROOT, 'apps', appId);
+
+    if (!fs.existsSync(appDir)) return reject(new Error(`App directory not found: ${appDir}`));
+
+    const startCmd = manifest.start || 'node src/server.js';
+    const parts = startCmd.split(' ');
+    const port = manifest.port || 3050;
+
+    const env = { ...process.env, PORT: String(port), APP_ID: appId, PULSE_URL: `http://localhost:${PORT}`, ...(manifest.env || {}) };
+
+    console.log(`[PM] Starting ${appId} on port ${port}: ${startCmd}`);
+    updateRegistryStatus(appId, 'starting', null);
+
+    const child = spawn(parts[0], parts.slice(1), { cwd: appDir, env, stdio: ['ignore', 'pipe', 'pipe'] });
+
+    child.stdout.on('data', d => console.log(`[${appId}] ${d.toString().trim()}`));
+    child.stderr.on('data', d => console.error(`[${appId}] ${d.toString().trim()}`));
+
+    child.on('exit', (code) => {
+      console.log(`[PM] ${appId} exited with code ${code}`);
+      runningProcesses.delete(appId);
+      updateRegistryStatus(appId, 'stopped', null);
+    });
+
+    const info = { process: child, port, pid: child.pid, startedAt: Date.now() };
+    runningProcesses.set(appId, info);
+
+    try {
+      await waitForPort(port);
+      updateRegistryStatus(appId, 'running', child.pid);
+      console.log(`[PM] ${appId} ready on port ${port} (pid ${child.pid})`);
+      resolve(info);
+    } catch (err) {
+      child.kill('SIGTERM');
+      runningProcesses.delete(appId);
+      updateRegistryStatus(appId, 'stopped', null);
+      reject(err);
+    }
+  });
+}
+
+function stopNodeApp(appId) {
+  const info = runningProcesses.get(appId);
+  if (!info) return false;
+  console.log(`[PM] Stopping ${appId} (pid ${info.pid})`);
+  info.process.kill('SIGTERM');
+  runningProcesses.delete(appId);
+  updateRegistryStatus(appId, 'stopped', null);
+  return true;
+}
+
+function proxyToNodeApp(appId, method, proxyPath, body) {
+  return new Promise((resolve, reject) => {
+    const info = runningProcesses.get(appId);
+    if (!info) return reject(new Error(`${appId} not running`));
+
+    const options = {
+      hostname: '127.0.0.1',
+      port: info.port,
+      path: proxyPath,
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 10000
+    };
+
+    const req = http.request(options, (proxyRes) => {
+      let data = '';
+      proxyRes.on('data', c => data += c);
+      proxyRes.on('end', () => {
+        try { resolve(JSON.parse(data)); } catch { resolve(data); }
+      });
+    });
+    req.on('error', reject);
+    if (body) req.write(typeof body === 'string' ? body : JSON.stringify(body));
+    req.end();
+  });
+}
+
+// Vanilla app state (in-memory + file persistence)
+function getVanillaState(appId) {
+  if (vanillaStates.has(appId)) return vanillaStates.get(appId);
+  const stateFile = path.join(ROOT, 'apps', appId, 'state.json');
+  try {
+    const data = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+    vanillaStates.set(appId, data);
+    return data;
+  } catch {
+    const empty = { id: appId, status: 'active', data: {}, lastOutput: null };
+    vanillaStates.set(appId, empty);
+    return empty;
+  }
+}
+
+function setVanillaState(appId, updates) {
+  const current = getVanillaState(appId);
+  Object.assign(current.data, updates);
+  current.lastUpdated = Date.now();
+  vanillaStates.set(appId, current);
+  const stateFile = path.join(ROOT, 'apps', appId, 'state.json');
+  try { fs.writeFileSync(stateFile, JSON.stringify(current, null, 2)); } catch {}
+  broadcast(appId, { type: 'state-update', state: current, time: Date.now() });
+}
+
+// --- Graph Router (Phase 13d) ---
+const GRAPHS_DIR = path.join(ROOT, 'data', 'graphs');
+if (!fs.existsSync(GRAPHS_DIR)) fs.mkdirSync(GRAPHS_DIR, { recursive: true });
+
+function loadGraph(projectId) {
+  const gPath = path.join(GRAPHS_DIR, `graph-${projectId}.json`);
+  if (!fs.existsSync(gPath)) return null;
+  try { return JSON.parse(fs.readFileSync(gPath, 'utf8')); } catch { return null; }
+}
+
+function saveGraph(projectId, graph) {
+  graph.updatedAt = new Date().toISOString();
+  fs.writeFileSync(path.join(GRAPHS_DIR, `graph-${projectId}.json`), JSON.stringify(graph, null, 2));
+}
+
+async function routeOutput(projectId, fromAppId, outputName, data) {
+  const graph = loadGraph(projectId);
+  if (!graph) return;
+
+  const targets = graph.edges
+    .filter(e => e.from.appId === fromAppId && e.from.output === outputName)
+    .map(e => ({ appId: e.to.appId, input: e.to.input }));
+
+  for (const target of targets) {
+    try {
+      await sendInputToApp(target.appId, target.input, data);
+      console.log(`[graph] ${fromAppId}.${outputName} → ${target.appId}.${target.input}`);
+      broadcast(projectId, { type: 'graph-data-flow', fromAppId, outputName, toAppId: target.appId, toInput: target.input, time: Date.now() });
+    } catch (err) {
+      console.error(`[graph] routing error: ${fromAppId} → ${target.appId}: ${err.message}`);
+      broadcast(projectId, { type: 'graph-routing-error', fromAppId, toAppId: target.appId, error: err.message, time: Date.now() });
+    }
+  }
+}
+
+async function sendInputToApp(appId, inputName, data) {
+  const manifest = loadManifest(appId);
+  const action = { type: 'graph-input', inputName, data };
+
+  if (manifest && manifest.type === 'node' && runningProcesses.has(appId)) {
+    await proxyToNodeApp(appId, 'POST', '/api/action', action);
+  } else {
+    broadcast(appId, { type: 'app-input', appId, inputName, data });
+  }
+}
+
+function findGraphsForApp(appId) {
+  const results = [];
+  try {
+    const files = fs.readdirSync(GRAPHS_DIR).filter(f => f.startsWith('graph-') && f.endsWith('.json'));
+    for (const file of files) {
+      try {
+        const graph = JSON.parse(fs.readFileSync(path.join(GRAPHS_DIR, file), 'utf8'));
+        if (graph.nodes && graph.nodes.some(n => n.appId === appId)) results.push(graph);
+      } catch {}
+    }
+  } catch {}
+  return results;
+}
+
+// --- Pulse Engine (Phase 13e) ---
+const pulseIntervals = new Map(); // subscriptionKey → intervalId/timeoutId
+
+function parseClockSchedule(sub) {
+  if (sub.includes('daily@')) {
+    const timePart = sub.split('@')[1];
+    const [h, m] = timePart.split(':').map(Number);
+    const now = new Date();
+    const next = new Date();
+    next.setHours(h, m, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    return { type: 'daily', msUntilFirst: next - now, interval: 86400000 };
+  }
+  const match = sub.match(/clock:(\d+)(s|m|h)/);
+  if (!match) return { type: 'interval', interval: 3600000 };
+  const [, n, unit] = match;
+  const multiplier = { s: 1000, m: 60000, h: 3600000 };
+  return { type: 'interval', interval: parseInt(n) * multiplier[unit] };
+}
+
+function registerPulseSubscription(appId, subscription) {
+  if (!subscription.startsWith('clock:')) return;
+  const key = `${appId}:${subscription}`;
+  if (pulseIntervals.has(key)) {
+    clearInterval(pulseIntervals.get(key));
+    clearTimeout(pulseIntervals.get(key));
+  }
+
+  const schedule = parseClockSchedule(subscription);
+  const fire = () => fireAppPulse(appId, { type: subscription, timestamp: Date.now() }).catch(e => console.error(`[pulse] Error firing ${appId}:`, e.message));
+
+  if (schedule.type === 'daily') {
+    const t = setTimeout(() => {
+      fire();
+      pulseIntervals.set(key, setInterval(fire, schedule.interval));
+    }, schedule.msUntilFirst);
+    pulseIntervals.set(key, t);
+    console.log(`[pulse] ${appId}: daily@${new Date(Date.now() + schedule.msUntilFirst).toLocaleTimeString()}`);
+  } else {
+    pulseIntervals.set(key, setInterval(fire, schedule.interval));
+    console.log(`[pulse] ${appId}: every ${schedule.interval / 1000}s`);
+  }
+}
+
+async function fireAppPulse(appId, pulseData) {
+  console.log(`[pulse] → ${appId}: ${pulseData.type}`);
+  const manifest = loadManifest(appId);
+  if (!manifest) return;
+
+  if (manifest.type === 'node' && runningProcesses.has(appId)) {
+    await proxyToNodeApp(appId, 'POST', '/api/action', { type: 'pulse', data: pulseData });
+  } else {
+    broadcast(appId, { type: 'pulse', appId, data: pulseData });
+  }
+}
+
+function startPulseEngine() {
+  let count = 0;
+  const regFile = path.join(ROOT, 'data', 'app-registry.json');
+  if (!fs.existsSync(regFile)) return;
+  try {
+    const reg = JSON.parse(fs.readFileSync(regFile, 'utf8'));
+    for (const entry of reg.apps) {
+      const manifest = loadManifest(entry.id);
+      if (!manifest || !manifest.pulseSubscriptions) continue;
+      for (const sub of manifest.pulseSubscriptions) {
+        if (sub.startsWith('clock:')) {
+          registerPulseSubscription(entry.id, sub);
+          count++;
+        }
+      }
+    }
+  } catch {}
+  if (count > 0) console.log(`[pulse] Engine started with ${count} subscriptions`);
+}
+
 // --- SSE ---
 const sseClients = new Map();
 const debounceTimers = new Map();
@@ -972,7 +1281,7 @@ setTimeout(() => {
 // =============================================================================
 
 // --- Server ---
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -1104,6 +1413,227 @@ const server = http.createServer((req, res) => {
     fs.writeFileSync(regFile, JSON.stringify(reg, null, 2));
     broadcast('dashboard', { type: 'change', file: 'app-registry.json', time: Date.now() });
     return jsonRes(res, { ok: true, removed: appId });
+  }
+
+  // --- App Process & State Endpoints (Phase 13b/c) ---
+  const appActionMatch = url.match(/^\/api\/apps\/([a-z0-9_-]+)\/(start|stop|state|action|status)$/);
+  if (appActionMatch) {
+    const appId = appActionMatch[1];
+    const endpoint = appActionMatch[2];
+
+    // POST /api/apps/:id/start
+    if (endpoint === 'start' && req.method === 'POST') {
+      try {
+        const info = await startNodeApp(appId);
+        return jsonRes(res, { ok: true, appId, pid: info.pid, port: info.port });
+      } catch (err) {
+        return jsonRes(res, { error: err.message }, 500);
+      }
+    }
+
+    // POST /api/apps/:id/stop
+    if (endpoint === 'stop' && req.method === 'POST') {
+      const stopped = stopNodeApp(appId);
+      return jsonRes(res, { ok: stopped, appId });
+    }
+
+    // GET /api/apps/:id/state
+    if (endpoint === 'state' && req.method === 'GET') {
+      const manifest = loadManifest(appId);
+      if (manifest && manifest.type === 'node' && runningProcesses.has(appId)) {
+        try {
+          const state = await proxyToNodeApp(appId, 'GET', '/api/state', null);
+          return jsonRes(res, state);
+        } catch (err) {
+          return jsonRes(res, { error: err.message }, 502);
+        }
+      }
+      // Vanilla or not running → return local state
+      return jsonRes(res, getVanillaState(appId));
+    }
+
+    // POST /api/apps/:id/action
+    if (endpoint === 'action' && req.method === 'POST') {
+      return readBody(req, async (b) => {
+        const body = JSON.parse(b);
+        const manifest = loadManifest(appId);
+        if (manifest && manifest.type === 'node' && runningProcesses.has(appId)) {
+          try {
+            const result = await proxyToNodeApp(appId, 'POST', '/api/action', body);
+            return jsonRes(res, result);
+          } catch (err) {
+            return jsonRes(res, { error: err.message }, 502);
+          }
+        }
+        // Vanilla: handle locally
+        if (body.type === 'set-state') {
+          setVanillaState(appId, body.data || {});
+          return jsonRes(res, { ok: true });
+        }
+        if (body.type === 'graph-input') {
+          broadcast(appId, { type: 'app-input', inputName: body.inputName, data: body.data });
+          return jsonRes(res, { ok: true });
+        }
+        if (body.type === 'pulse') {
+          broadcast(appId, { type: 'pulse', data: body.data || {} });
+          return jsonRes(res, { ok: true });
+        }
+        return jsonRes(res, { ok: true, unhandled: body.type });
+      });
+    }
+
+    // POST /api/apps/:id/status
+    if (endpoint === 'status' && req.method === 'POST') {
+      return readBody(req, (b) => {
+        const { text } = JSON.parse(b);
+        broadcast(appId, { type: 'status-update', status: text, time: Date.now() });
+        return jsonRes(res, { ok: true });
+      });
+    }
+  }
+
+  // --- Graph API (Phase 13d) ---
+  // GET /api/graphs — list all graphs
+  if (url === '/api/graphs' && req.method === 'GET') {
+    try {
+      const files = fs.readdirSync(GRAPHS_DIR).filter(f => f.startsWith('graph-') && f.endsWith('.json'));
+      const graphs = files.map(f => {
+        try { return JSON.parse(fs.readFileSync(path.join(GRAPHS_DIR, f), 'utf8')); } catch { return null; }
+      }).filter(Boolean);
+      return jsonRes(res, { graphs });
+    } catch { return jsonRes(res, { graphs: [] }); }
+  }
+
+  const graphMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)$/);
+  const graphConnectMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)\/connect$/);
+  const graphRunMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)\/run$/);
+
+  // GET /api/graphs/:projectId
+  if (graphMatch && !graphConnectMatch && !graphRunMatch && req.method === 'GET') {
+    const projectId = graphMatch[1];
+    const graph = loadGraph(projectId);
+    if (!graph) return jsonRes(res, { projectId, nodes: [], edges: [] });
+    return jsonRes(res, graph);
+  }
+
+  // POST /api/graphs/:projectId — save full graph
+  if (graphMatch && !graphConnectMatch && !graphRunMatch && req.method === 'POST') {
+    const projectId = graphMatch[1];
+    return readBody(req, (b) => {
+      const graph = JSON.parse(b);
+      graph.projectId = projectId;
+      saveGraph(projectId, graph);
+      broadcast(projectId, { type: 'graph-updated', projectId, time: Date.now() });
+      return jsonRes(res, { ok: true, projectId });
+    });
+  }
+
+  // POST /api/graphs/:projectId/connect — add edge
+  if (graphConnectMatch && req.method === 'POST') {
+    const projectId = graphConnectMatch[1];
+    return readBody(req, (b) => {
+      const { fromApp, fromOutput, toApp, toInput } = JSON.parse(b);
+      if (!fromApp || !fromOutput || !toApp || !toInput) return jsonRes(res, { error: 'Missing fields' }, 400);
+      const graph = loadGraph(projectId) || { projectId, nodes: [], edges: [] };
+      // Auto-add nodes if not present
+      if (!graph.nodes.find(n => n.appId === fromApp)) {
+        const m = loadManifest(fromApp);
+        const lastX = graph.nodes.reduce((max, n) => Math.max(max, n.x || 0), 0);
+        graph.nodes.push({ appId: fromApp, nodeType: m?.nodeType || 'producer', x: lastX + 260, y: 120 });
+      }
+      if (!graph.nodes.find(n => n.appId === toApp)) {
+        const m = loadManifest(toApp);
+        const lastX = graph.nodes.reduce((max, n) => Math.max(max, n.x || 0), 0);
+        graph.nodes.push({ appId: toApp, nodeType: m?.nodeType || 'consumer', x: lastX + 260, y: 120 });
+      }
+      // Check for duplicate edge
+      const exists = graph.edges.some(e => e.from.appId === fromApp && e.from.output === fromOutput && e.to.appId === toApp && e.to.input === toInput);
+      if (!exists) {
+        graph.edges.push({ from: { appId: fromApp, output: fromOutput }, to: { appId: toApp, input: toInput } });
+      }
+      saveGraph(projectId, graph);
+      broadcast(projectId, { type: 'graph-updated', projectId, time: Date.now() });
+      return jsonRes(res, { ok: true, edgeCount: graph.edges.length });
+    });
+  }
+
+  // DELETE /api/graphs/:projectId/connect — remove edge
+  if (graphConnectMatch && req.method === 'DELETE') {
+    const projectId = graphConnectMatch[1];
+    return readBody(req, (b) => {
+      const { fromApp, fromOutput, toApp, toInput } = JSON.parse(b);
+      const graph = loadGraph(projectId);
+      if (!graph) return jsonRes(res, { error: 'Graph not found' }, 404);
+      const before = graph.edges.length;
+      graph.edges = graph.edges.filter(e => {
+        if (fromOutput && toInput) {
+          return !(e.from.appId === fromApp && e.from.output === fromOutput && e.to.appId === toApp && e.to.input === toInput);
+        }
+        return !(e.from.appId === fromApp && e.to.appId === toApp);
+      });
+      saveGraph(projectId, graph);
+      broadcast(projectId, { type: 'graph-updated', projectId, time: Date.now() });
+      return jsonRes(res, { ok: true, removed: before - graph.edges.length });
+    });
+  }
+
+  // POST /api/graphs/:projectId/run — trigger all producers
+  if (graphRunMatch && req.method === 'POST') {
+    const projectId = graphRunMatch[1];
+    const graph = loadGraph(projectId);
+    if (!graph) return jsonRes(res, { error: 'Graph not found' }, 404);
+    const producers = graph.nodes.filter(n => n.nodeType === 'producer');
+    const results = [];
+    for (const p of producers) {
+      try {
+        await sendInputToApp(p.appId, '__pulse', { type: 'manual', projectId, timestamp: Date.now() });
+        results.push({ appId: p.appId, status: 'pulsed' });
+      } catch (err) {
+        results.push({ appId: p.appId, status: 'error', error: err.message });
+      }
+    }
+    return jsonRes(res, { ok: true, projectId, triggered: results });
+  }
+
+  // POST /api/graphs/:projectId/output — app reports output for routing
+  const graphOutputMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)\/output$/);
+  if (graphOutputMatch && req.method === 'POST') {
+    const projectId = graphOutputMatch[1];
+    return readBody(req, async (b) => {
+      const { appId, outputName, data } = JSON.parse(b);
+      await routeOutput(projectId, appId, outputName, data);
+      return jsonRes(res, { ok: true, routed: true });
+    });
+  }
+
+  // --- Pulse API (Phase 13e) ---
+  const pulseFireMatch = url.match(/^\/api\/pulse\/fire\/([a-z0-9_-]+)$/);
+  if (pulseFireMatch && req.method === 'POST') {
+    const appId = pulseFireMatch[1];
+    try {
+      await fireAppPulse(appId, { type: 'manual', timestamp: Date.now() });
+      return jsonRes(res, { ok: true, appId, pulsed: true });
+    } catch (err) {
+      return jsonRes(res, { error: err.message }, 500);
+    }
+  }
+
+  const pulseWebhookMatch = url.match(/^\/api\/pulse\/webhook\/([a-zA-Z0-9_-]+)$/);
+  if (pulseWebhookMatch && req.method === 'POST') {
+    const token = pulseWebhookMatch[1];
+    // Find apps subscribed to this webhook token
+    const regFile = path.join(ROOT, 'data', 'app-registry.json');
+    if (!fs.existsSync(regFile)) return jsonRes(res, { error: 'No registry' }, 404);
+    const reg = JSON.parse(fs.readFileSync(regFile, 'utf8'));
+    const fired = [];
+    for (const entry of reg.apps) {
+      const manifest = loadManifest(entry.id);
+      if (manifest && manifest.pulseSubscriptions && manifest.pulseSubscriptions.includes(`webhook:${token}`)) {
+        await fireAppPulse(entry.id, { type: `webhook:${token}`, timestamp: Date.now() }).catch(() => {});
+        fired.push(entry.id);
+      }
+    }
+    return jsonRes(res, { ok: true, token, fired });
   }
 
   // App status — returns summary info from app's data directory
@@ -3609,6 +4139,28 @@ WICHTIG: Antworte NUR mit einem JSON-Objekt, kein anderer Text davor oder danach
       "size": "md|lg|full",
       "description": "Was das Widget zeigt",
       "html": "<!DOCTYPE html>... vollstaendiger HTML-Code des Custom Widgets ..."
+    },
+    {
+      "type": "graph-add-node",
+      "appId": "app-id-aus-registry",
+      "nodeType": "producer|transformer|consumer"
+    },
+    {
+      "type": "graph-connect",
+      "fromApp": "producer-app-id",
+      "fromOutput": "output-name",
+      "toApp": "consumer-app-id",
+      "toInput": "input-name"
+    },
+    {
+      "type": "graph-disconnect",
+      "fromApp": "app-id",
+      "fromOutput": "output-name",
+      "toApp": "app-id",
+      "toInput": "input-name"
+    },
+    {
+      "type": "graph-run"
     }
   ]
 }
@@ -3671,6 +4223,38 @@ Regeln fuer homeContext-Routing (nutze "actions" mit type "write-data"):
 - Wenn Daten nur lokal relevant sind:
   → Erstelle im aktuellen Context (normales "create" Widget, kein write-data noetig)
 - WICHTIG: Bei "write-data" wird automatisch ein Referenz-Widget im aktuellen Context erstellt das auf die Quelle zeigt. Du musst KEIN separates Widget erstellen!
+
+App-Graph fuer diesen Context:
+${(() => {
+  const graph = loadGraph(contextId);
+  if (!graph || !graph.nodes || graph.nodes.length === 0) return '  Kein Graph vorhanden. Du kannst einen erstellen mit graph-add-node und graph-connect Actions.';
+  const nodes = graph.nodes.map(n => {
+    const m = loadManifest(n.appId);
+    return '  - ' + (m?.icon || '📦') + ' ' + (m?.name || n.appId) + ' (' + n.nodeType + ') outputs: ' + (m?.outputs || []).map(o => o.name).join(', ') + ' inputs: ' + (m?.inputs || []).map(i => i.name).join(', ');
+  }).join('\n');
+  const edges = graph.edges.map(e => '  - ' + e.from.appId + '.' + e.from.output + ' → ' + e.to.appId + '.' + e.to.input).join('\n');
+  return '  Nodes:\n' + nodes + '\n  Edges:\n' + (edges || '  keine');
+})()}
+
+Verfuegbare Apps fuer den Graph (aus App-Registry):
+${(() => {
+  try {
+    const regPath = path.join(ROOT, 'data', 'app-registry.json');
+    const reg = JSON.parse(fs.readFileSync(regPath, 'utf8'));
+    return (reg.apps || []).slice(0, 15).map(a => {
+      const m = a.manifest || {};
+      return '  - ' + (m.icon || '📦') + ' ' + a.id + ' (' + (m.nodeType || 'app') + ') out: ' + (m.outputs || []).map(o => o.name).join(',') + ' in: ' + (m.inputs || []).map(i => i.name).join(',');
+    }).join('\n');
+  } catch { return '  (Registry nicht lesbar)'; }
+})()}
+
+GRAPH-REGELN:
+- Wenn der User "verbinde X mit Y" oder "leite Daten von A nach B" sagt → graph-connect Action
+- Wenn der User "fuege X zum Graph hinzu" sagt → graph-add-node Action
+- Wenn der User "starte den Graph" oder "fuehre den Graph aus" sagt → graph-run Action
+- Wenn der User "trenne X von Y" sagt → graph-disconnect Action
+- Du kannst mehrere Graph-Actions in einem Response kombinieren (z.B. add + connect)
+- WICHTIG: Nodes muessen erst hinzugefuegt werden BEVOR sie verbunden werden koennen!
 
 Bestehender Context:
   Name: ${context.name}
@@ -3964,6 +4548,76 @@ Regeln:
                       actionsExecuted++;
                     } else {
                       widgetActions.push({ icon: '⚠️', label: `App "${appId}" existiert bereits oder ist zu gross`, action: 'create-app-error' });
+                    }
+                  }
+
+                  // GRAPH-ADD-NODE: Add app to this context's graph
+                  if (action.type === 'graph-add-node' && action.appId) {
+                    let graph = loadGraph(contextId) || { projectId: contextId, nodes: [], edges: [] };
+                    if (!graph.nodes.some(n => n.appId === action.appId)) {
+                      const cols = 3, gapX = 220, gapY = 160;
+                      const idx = graph.nodes.length;
+                      graph.nodes.push({
+                        appId: action.appId,
+                        nodeType: action.nodeType || 'consumer',
+                        x: 60 + (idx % cols) * gapX,
+                        y: 60 + Math.floor(idx / cols) * gapY
+                      });
+                      saveGraph(contextId, graph);
+                      broadcast(contextId, { type: 'graph-updated', time: Date.now() });
+                      widgetActions.push({ icon: '🔗', label: `${action.appId} zum Graph hinzugefuegt`, action: 'graph-add-node' });
+                      actionsExecuted++;
+                    }
+                  }
+
+                  // GRAPH-CONNECT: Connect two apps in the graph
+                  if (action.type === 'graph-connect' && action.fromApp && action.toApp) {
+                    let graph = loadGraph(contextId) || { projectId: contextId, nodes: [], edges: [] };
+                    const edge = {
+                      from: { appId: action.fromApp, output: action.fromOutput || 'output' },
+                      to: { appId: action.toApp, input: action.toInput || 'data' }
+                    };
+                    const exists = graph.edges.some(e =>
+                      e.from.appId === edge.from.appId && e.from.output === edge.from.output &&
+                      e.to.appId === edge.to.appId && e.to.input === edge.to.input
+                    );
+                    if (!exists) {
+                      graph.edges.push(edge);
+                      saveGraph(contextId, graph);
+                      broadcast(contextId, { type: 'graph-updated', time: Date.now() });
+                      widgetActions.push({ icon: '🔗', label: `${action.fromApp} → ${action.toApp} verbunden`, action: 'graph-connect' });
+                      actionsExecuted++;
+                    }
+                  }
+
+                  // GRAPH-DISCONNECT: Remove edge between apps
+                  if (action.type === 'graph-disconnect' && action.fromApp && action.toApp) {
+                    let graph = loadGraph(contextId);
+                    if (graph) {
+                      graph.edges = graph.edges.filter(e =>
+                        !(e.from.appId === action.fromApp && e.to.appId === action.toApp &&
+                          (!action.fromOutput || e.from.output === action.fromOutput) &&
+                          (!action.toInput || e.to.input === action.toInput))
+                      );
+                      saveGraph(contextId, graph);
+                      broadcast(contextId, { type: 'graph-updated', time: Date.now() });
+                      widgetActions.push({ icon: '✂️', label: `${action.fromApp} ↛ ${action.toApp} getrennt`, action: 'graph-disconnect' });
+                      actionsExecuted++;
+                    }
+                  }
+
+                  // GRAPH-RUN: Trigger all producers in this context's graph
+                  if (action.type === 'graph-run') {
+                    const graph = loadGraph(contextId);
+                    if (graph && graph.nodes) {
+                      const producers = graph.nodes.filter(n => n.nodeType === 'producer');
+                      for (const p of producers) {
+                        sendInputToApp(p.appId, '__pulse', { type: 'manual', projectId: contextId, timestamp: Date.now() })
+                          .catch(err => console.error('[graph-run] pulse error:', p.appId, err.message));
+                      }
+                      broadcast(contextId, { type: 'graph-run', time: Date.now() });
+                      widgetActions.push({ icon: '▶️', label: `Graph gestartet (${producers.length} Producer)`, action: 'graph-run' });
+                      actionsExecuted++;
                     }
                   }
 
@@ -4474,6 +5128,83 @@ Regeln:
   // WebSocket test page
   if (url === '/ws-test') return htmlRes(res, path.join(ROOT, 'ws-test.html'));
 
+  // --- Profile & Contacts ---
+  if (url === '/api/profile') {
+    const profilePath = path.join(__dirname, 'data', 'profile.json');
+    if (req.method === 'GET') {
+      try {
+        const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+        return jsonRes(res, profile);
+      } catch (e) {
+        return jsonRes(res, { name: '', handle: '', avatar: '🧑‍💻', bio: '', githubPages: '', links: [], roomId: '', createdAt: null, updatedAt: null });
+      }
+    }
+    if (req.method === 'PUT') {
+      return readBody(req, b => {
+        try {
+          const update = JSON.parse(b);
+          let profile = {};
+          try { profile = JSON.parse(fs.readFileSync(profilePath, 'utf8')); } catch (e) {}
+          const merged = { ...profile, ...update, updatedAt: new Date().toISOString() };
+          if (!merged.createdAt) merged.createdAt = merged.updatedAt;
+          if (!merged.roomId) merged.roomId = 'pulse-' + crypto.randomBytes(4).toString('hex');
+          fs.writeFileSync(profilePath, JSON.stringify(merged, null, 2));
+          broadcast('dashboard', { type: 'profile-updated', profile: merged, time: Date.now() });
+          return jsonRes(res, { ok: true, profile: merged });
+        } catch (e) {
+          return jsonRes(res, { error: e.message }, 400);
+        }
+      });
+      return;
+    }
+  }
+
+  if (url === '/api/contacts') {
+    const contactsPath = path.join(__dirname, 'data', 'contacts.json');
+    if (req.method === 'GET') {
+      try {
+        const data = JSON.parse(fs.readFileSync(contactsPath, 'utf8'));
+        return jsonRes(res, data);
+      } catch (e) {
+        return jsonRes(res, { version: 1, contacts: [], updatedAt: null });
+      }
+    }
+    if (req.method === 'POST') {
+      return readBody(req, b => {
+        try {
+          const contact = JSON.parse(b);
+          let data = { version: 1, contacts: [], updatedAt: null };
+          try { data = JSON.parse(fs.readFileSync(contactsPath, 'utf8')); } catch (e) {}
+          const idx = data.contacts.findIndex(c => c.handle === contact.handle || c.roomId === contact.roomId);
+          if (idx >= 0) {
+            data.contacts[idx] = { ...data.contacts[idx], ...contact, lastSeen: new Date().toISOString() };
+          } else {
+            data.contacts.push({ ...contact, firstSeen: new Date().toISOString(), lastSeen: new Date().toISOString() });
+          }
+          data.updatedAt = new Date().toISOString();
+          fs.writeFileSync(contactsPath, JSON.stringify(data, null, 2));
+          broadcast('dashboard', { type: 'contacts-updated', time: Date.now() });
+          return jsonRes(res, { ok: true, contact: data.contacts[idx >= 0 ? idx : data.contacts.length - 1] });
+        } catch (e) {
+          return jsonRes(res, { error: e.message }, 400);
+        }
+      });
+      return;
+    }
+  }
+
+  if (url === '/api/profile/onboarding') {
+    if (req.method === 'GET') {
+      const profilePath = path.join(__dirname, 'data', 'profile.json');
+      try {
+        const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+        return jsonRes(res, { needed: !profile.name });
+      } catch (e) {
+        return jsonRes(res, { needed: true });
+      }
+    }
+  }
+
   // --- Port Forwarding / Tunnel ---
   // --- Bridge Room Management ---
   if (url === '/api/bridge-room') {
@@ -4805,6 +5536,8 @@ process.on('SIGINT', () => { Object.values(supervisorManaged).forEach(m => m.pro
 server.listen(PORT, () => {
   console.log(`Claude Desktop → http://localhost:${PORT}`);
   console.log(`[supervisor] Agent auto-restart active (check: ${SUPERVISOR_CHECK_MS/1000}s, threshold: ${SUPERVISOR_DEAD_THRESHOLD_MS/1000}s)`);
+  // Start pulse engine
+  startPulseEngine();
   // Initial supervisor check
   supervisorCheck();
   writeSupervisorStatus();

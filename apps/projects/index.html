@@ -1175,12 +1175,97 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
 
+/* ── Graph Tab ── */
+.main-content { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.content-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--bg-primary); flex-shrink: 0; }
+.content-tab { padding: 8px 18px; font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; border: none; background: none; font-family: var(--font); border-bottom: 2px solid transparent; transition: all 0.15s; }
+.content-tab:hover { color: var(--text-secondary); }
+.content-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.graph-area { flex: 1; position: relative; overflow: hidden; display: none; background: var(--bg-base); }
+.graph-area.active { display: block; }
+.canvas-area.active { display: block; }
+
+.graph-toolbar { position: absolute; top: 12px; left: 12px; display: flex; gap: 8px; z-index: 10; }
+.graph-toolbar button { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-secondary); font-size: 12px; cursor: pointer; font-family: var(--font); transition: all 0.15s; }
+.graph-toolbar button:hover { border-color: var(--accent); color: var(--accent); }
+
+.graph-svg { width: 100%; height: 100%; }
+.graph-svg line { stroke: var(--border-light); stroke-width: 2; }
+.graph-svg line.active { stroke: var(--accent); stroke-width: 3; animation: edgeFlash 0.6s ease; }
+@keyframes edgeFlash { 0%,100% { stroke: var(--border-light); } 50% { stroke: var(--accent); stroke-width: 4; } }
+.graph-svg marker path { fill: var(--border-light); }
+
+.graph-node { position: absolute; width: 180px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 12px; padding: 12px; cursor: grab; user-select: none; transition: border-color 0.15s, box-shadow 0.15s; z-index: 5; }
+.graph-node:hover { border-color: var(--accent); box-shadow: 0 0 16px rgba(139,92,246,0.15); }
+.graph-node.dragging { cursor: grabbing; z-index: 20; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+.graph-node .node-icon { font-size: 20px; margin-bottom: 4px; }
+.graph-node .node-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.graph-node .node-type { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+.graph-node .node-ports { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.graph-node .port { font-size: 9px; padding: 2px 6px; border-radius: 4px; cursor: crosshair; }
+.graph-node .port.output { background: rgba(139,92,246,0.15); color: var(--accent); border: 1px solid rgba(139,92,246,0.3); }
+.graph-node .port.input { background: rgba(59,130,246,0.15); color: var(--blue); border: 1px solid rgba(59,130,246,0.3); }
+.graph-node .node-status-dot { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+.graph-node .node-status-dot.running { background: var(--green); }
+.graph-node.producer { border-left: 3px solid var(--green); }
+.graph-node.transformer { border-left: 3px solid var(--amber); }
+.graph-node.consumer { border-left: 3px solid var(--blue); }
+
+.graph-empty { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: var(--text-muted); }
+.graph-empty .icon { font-size: 40px; margin-bottom: 8px; }
+.graph-empty .title { font-size: 14px; color: var(--text-secondary); }
+.graph-empty .sub { font-size: 11px; margin-top: 4px; }
+
+/* Port drag & connect */
+.port.drag-source { background: var(--accent) !important; color: #fff !important; transform: scale(1.2); }
+.port.drop-target { background: var(--green) !important; color: #fff !important; transform: scale(1.3); box-shadow: 0 0 8px var(--green); }
+.graph-svg .drag-line { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 3; opacity: 0.8; }
+.graph-svg path.edge { fill: none; stroke: var(--border-light); stroke-width: 2; cursor: pointer; }
+.graph-svg path.edge:hover { stroke: var(--accent); stroke-width: 3; }
+.graph-svg path.edge.active { stroke: var(--accent); stroke-width: 3; animation: edgeFlash 0.6s ease; }
+.graph-svg .edge-hitbox { fill: none; stroke: transparent; stroke-width: 14; cursor: pointer; }
+
+/* Edge labels */
+.graph-edge-label { position: absolute; font-size: 9px; color: var(--text-muted); background: var(--bg-base); padding: 1px 5px; border-radius: 4px; pointer-events: none; white-space: nowrap; z-index: 4; }
+
+/* Context menu */
+.graph-context-menu { position: fixed; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 4px; z-index: 100; min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.graph-context-menu .menu-item { padding: 8px 12px; font-size: 12px; color: var(--text-secondary); cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 8px; }
+.graph-context-menu .menu-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.graph-context-menu .menu-item.danger { color: var(--red); }
+.graph-context-menu .menu-item.danger:hover { background: rgba(239,68,68,0.1); }
+
+/* Node delete button on hover */
+.graph-node .node-delete { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--red); color: #fff; font-size: 10px; display: none; align-items: center; justify-content: center; cursor: pointer; border: 2px solid var(--bg-base); line-height: 1; z-index: 10; }
+.graph-node:hover .node-delete { display: flex; }
+
+/* Data flow popup */
+.graph-data-popup { position: absolute; background: var(--bg-primary); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 14px; max-width: 280px; font-size: 11px; color: var(--text-secondary); z-index: 50; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+.graph-data-popup pre { margin: 4px 0 0; font-size: 10px; color: var(--text-muted); max-height: 120px; overflow: auto; white-space: pre-wrap; }
+
+/* Running node pulse */
+@keyframes nodePulse { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); } 50% { box-shadow: 0 0 12px 4px rgba(34,197,94,0.2); } }
+.graph-node .node-status-dot.running { background: var(--green); animation: nodePulse 1.5s ease infinite; }
+
 /* Responsive */
 @media (max-width: 900px) {
   .sidebar { width: 60px; }
   .sidebar-header h2 span { display: none; }
   .project-item span:not(.icon) { display: none; }
   .chat-panel { width: 300px; }
+  .graph-node { width: 140px; padding: 10px; }
+  .graph-node .node-name { font-size: 12px; }
+  .graph-node .node-delete { display: flex; width: 24px; height: 24px; font-size: 12px; }
+  .graph-toolbar { flex-wrap: wrap; }
+  .graph-toolbar button { padding: 6px 10px; font-size: 11px; }
+}
+@media (max-width: 600px) {
+  .sidebar { display: none; }
+  .chat-panel { width: 100%; position: fixed; inset: 0; z-index: 100; display: none; }
+  .graph-node { width: 120px; padding: 8px; }
+  .graph-node .port { font-size: 8px; padding: 1px 4px; }
+  .graph-edge-label { display: none; }
 }
 </style>
 </head>
@@ -1232,8 +1317,36 @@ body {
   </div>
 </div>
 
+<!-- Main Content (Canvas + Graph tabs) -->
+<div class="main-content">
+<div class="content-tabs" id="contentTabs">
+  <button class="content-tab active" data-tab="canvas" onclick="switchContentTab('canvas')">Canvas</button>
+  <button class="content-tab" data-tab="graph" onclick="switchContentTab('graph')">Graph</button>
+</div>
+
+<!-- Graph Editor -->
+<div class="graph-area" id="graphArea">
+  <div class="graph-toolbar">
+    <button onclick="showAddNodeDialog()">+ App</button>
+    <button onclick="runCurrentGraph()">&#9654; Run</button>
+  </div>
+  <svg class="graph-svg" id="graphSvg">
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <path d="M0,0 L10,3.5 L0,7" fill="var(--border-light)"/>
+      </marker>
+    </defs>
+  </svg>
+  <div id="graphNodes"></div>
+  <div class="graph-empty" id="graphEmpty">
+    <div class="icon">🔗</div>
+    <div class="title">App-Graph</div>
+    <div class="sub">Verbinde Apps zu einem Datenfluss-Graphen</div>
+  </div>
+</div>
+
 <!-- Widget Canvas -->
-<div class="canvas-area" id="canvasArea">
+<div class="canvas-area active" id="canvasArea">
   <div class="canvas-empty" id="canvasEmpty">
     <div class="icon">🧩</div>
     <div class="title">Dein Projekt-Canvas</div>
@@ -1257,6 +1370,7 @@ body {
     <div id="closedList" style="overflow-y:auto;flex:1;max-height:240px;"></div>
   </div>
 </div>
+</div><!-- /main-content -->
 
 <!-- Template Picker Modal -->
 <div id="templateModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:none;align-items:center;justify-content:center;">
@@ -1464,6 +1578,17 @@ function connectSSE() {
         );
         if (affectedWidgets.length > 0) {
           renderCanvas(); // Re-render to fetch fresh data
+        }
+      }
+      // Graph updates
+      if (d.type === 'graph-updated' && d.projectId === state.activeContextId && currentGraphTab === 'graph') {
+        loadAndRenderGraph();
+      }
+      if (d.type === 'graph-data-flow' && currentGraphTab === 'graph') {
+        flashGraphEdge(d.fromAppId, d.toAppId);
+        if (d.data) {
+          const key = d.fromAppId + '.' + (d.outputName || '') + '->' + d.toAppId + '.' + (d.toInput || '');
+          graphDataFlowCache[key] = d.data;
         }
       }
       if (d.type === 'context-deleted' && d.contextId === state.activeContextId) {
@@ -4089,6 +4214,461 @@ async function refreshPlan() {
     await selectProject(targetCtx);
   }
 })();
+
+// ══════════════════════════════════════════════
+//  Graph Tab (Phase 13g)
+// ══════════════════════════════════════════════
+
+let currentGraphTab = 'canvas';
+let graphCache = null;
+let registryCache = null;
+let graphDragState = null;
+let graphSaveTimer = null;
+
+function switchContentTab(tab) {
+  currentGraphTab = tab;
+  document.querySelectorAll('.content-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  const canvas = document.getElementById('canvasArea');
+  const graph = document.getElementById('graphArea');
+  if (tab === 'canvas') {
+    canvas.classList.add('active'); canvas.style.display = '';
+    graph.classList.remove('active'); graph.style.display = 'none';
+  } else {
+    canvas.classList.remove('active'); canvas.style.display = 'none';
+    graph.classList.add('active'); graph.style.display = 'block';
+    loadAndRenderGraph();
+  }
+}
+
+async function loadAndRenderGraph() {
+  const ctxId = state.activeContextId || new URLSearchParams(window.location.search).get('contextId');
+  if (!ctxId) return;
+  try {
+    const [graphRes, regRes] = await Promise.all([
+      fetch(API_BASE + '/api/graphs/' + ctxId).then(r => r.json()),
+      fetch(API_BASE + '/api/app-registry').then(r => r.json())
+    ]);
+    graphCache = graphRes;
+    registryCache = regRes;
+    renderGraphView();
+  } catch (e) {
+    console.error('[graph] Load error:', e);
+  }
+}
+
+function renderGraphView() {
+  const g = graphCache;
+  const reg = registryCache;
+  const nodesEl = document.getElementById('graphNodes');
+  const svgEl = document.getElementById('graphSvg');
+  const emptyEl = document.getElementById('graphEmpty');
+
+  if (!g || !g.nodes || g.nodes.length === 0) {
+    nodesEl.innerHTML = '';
+    svgEl.innerHTML = svgEl.querySelector('defs').outerHTML;
+    emptyEl.style.display = '';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  // Render nodes
+  nodesEl.innerHTML = g.nodes.map(n => {
+    const app = (reg.apps || []).find(a => a.id === n.appId);
+    const manifest = app?.manifest || {};
+    const icon = manifest.icon || '📦';
+    const name = manifest.name || n.appId;
+    const outputs = (manifest.outputs || []).map(o => '<span class="port output" data-app="' + n.appId + '" data-port="' + o.name + '" data-dir="output">' + escapeHtml(o.name) + '</span>').join('');
+    const inputs = (manifest.inputs || []).map(i => '<span class="port input" data-app="' + n.appId + '" data-port="' + i.name + '" data-dir="input">' + escapeHtml(i.name) + '</span>').join('');
+    const status = (app?.status === 'running') ? 'running' : '';
+    return '<div class="graph-node ' + (n.nodeType || '') + '" data-app-id="' + n.appId + '" style="left:' + (n.x || 80) + 'px;top:' + (n.y || 80) + 'px;">' +
+      '<div class="node-delete" title="Entfernen">✕</div>' +
+      '<div class="node-status-dot ' + status + '"></div>' +
+      '<div class="node-icon">' + icon + '</div>' +
+      '<div class="node-name">' + escapeHtml(name) + '</div>' +
+      '<div class="node-type">' + (n.nodeType || 'app') + '</div>' +
+      (outputs || inputs ? '<div class="node-ports">' + outputs + inputs + '</div>' : '') +
+      '</div>';
+  }).join('');
+
+  // Render edges as curved paths
+  renderGraphEdges();
+
+  // Bind node drag (mouse + touch)
+  nodesEl.querySelectorAll('.graph-node').forEach(el => {
+    el.addEventListener('mousedown', startNodeDrag);
+    el.addEventListener('touchstart', startNodeDragTouch, { passive: false });
+  });
+
+  // Bind port drag for connections
+  nodesEl.querySelectorAll('.port').forEach(portEl => {
+    portEl.addEventListener('mousedown', startPortDrag);
+  });
+
+  // Bind node delete buttons
+  nodesEl.querySelectorAll('.node-delete').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      deleteGraphNode(this.closest('.graph-node').dataset.appId);
+    });
+  });
+}
+
+function renderGraphEdges() {
+  const g = graphCache;
+  const svgEl = document.getElementById('graphSvg');
+  if (!g || !g.edges) return;
+  const defsHtml = svgEl.querySelector('defs')?.outerHTML || '';
+  // Remove old edge labels
+  document.querySelectorAll('.graph-edge-label').forEach(l => l.remove());
+  const graphArea = document.getElementById('graphArea');
+
+  const paths = g.edges.map((e, i) => {
+    const fromEl = document.querySelector('.graph-node[data-app-id="' + e.from.appId + '"]');
+    const toEl = document.querySelector('.graph-node[data-app-id="' + e.to.appId + '"]');
+    if (!fromEl || !toEl) return '';
+    const fx = parseInt(fromEl.style.left) + 180;
+    const fy = parseInt(fromEl.style.top) + 40;
+    const tx = parseInt(toEl.style.left);
+    const ty = parseInt(toEl.style.top) + 40;
+    const dx = Math.abs(tx - fx) * 0.5;
+    const d = 'M' + fx + ',' + fy + ' C' + (fx + dx) + ',' + fy + ' ' + (tx - dx) + ',' + ty + ' ' + tx + ',' + ty;
+    const edgeId = 'edge-' + i;
+    // Edge label
+    const mx = (fx + tx) / 2, my = (fy + ty) / 2;
+    const label = document.createElement('div');
+    label.className = 'graph-edge-label';
+    label.style.left = mx + 'px';
+    label.style.top = (my - 10) + 'px';
+    label.textContent = (e.from.output || '') + ' → ' + (e.to.input || '');
+    graphArea?.appendChild(label);
+    // Invisible hitbox for clicking + visible path
+    return '<path class="edge-hitbox" d="' + d + '" data-edge-idx="' + i + '" data-from="' + e.from.appId + '" data-to="' + e.to.appId + '"/>' +
+           '<path class="edge" d="' + d + '" marker-end="url(#arrowhead)" data-from="' + e.from.appId + '" data-to="' + e.to.appId + '" data-edge-idx="' + i + '"/>';
+  }).join('');
+  svgEl.innerHTML = defsHtml + paths;
+
+  // Bind edge right-click
+  svgEl.querySelectorAll('.edge-hitbox, .edge').forEach(el => {
+    el.addEventListener('contextmenu', function(ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const idx = parseInt(this.dataset.edgeIdx);
+      const edge = graphCache.edges[idx];
+      if (!edge) return;
+      showGraphContextMenu(ev.clientX, ev.clientY, [
+        { label: '🗑 Verbindung löschen', danger: true, action: () => deleteGraphEdge(edge.from.appId, edge.from.output, edge.to.appId, edge.to.input) },
+        { label: '📋 ' + edge.from.output + ' → ' + edge.to.input, action: () => {} }
+      ]);
+    });
+  });
+}
+
+// --- Port-to-Port Drag & Connect ---
+let portDragState = null;
+
+function startPortDrag(e) {
+  e.stopPropagation();
+  e.preventDefault();
+  const port = e.target;
+  const dir = port.dataset.dir;
+  // Only start drag from output ports
+  if (dir !== 'output') return;
+
+  const svgEl = document.getElementById('graphSvg');
+  const graphArea = document.getElementById('graphArea');
+  const rect = graphArea.getBoundingClientRect();
+
+  port.classList.add('drag-source');
+  portDragState = {
+    fromApp: port.dataset.app,
+    fromPort: port.dataset.port,
+    startX: e.clientX - rect.left,
+    startY: e.clientY - rect.top
+  };
+
+  // Create temp drag line
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.classList.add('drag-line');
+  line.setAttribute('x1', portDragState.startX);
+  line.setAttribute('y1', portDragState.startY);
+  line.setAttribute('x2', portDragState.startX);
+  line.setAttribute('y2', portDragState.startY);
+  svgEl.appendChild(line);
+  portDragState.line = line;
+
+  function onMove(ev) {
+    const mx = ev.clientX - rect.left;
+    const my = ev.clientY - rect.top;
+    line.setAttribute('x2', mx);
+    line.setAttribute('y2', my);
+
+    // Highlight input ports under cursor
+    document.querySelectorAll('.port.drop-target').forEach(p => p.classList.remove('drop-target'));
+    const target = document.elementFromPoint(ev.clientX, ev.clientY);
+    if (target && target.classList.contains('port') && target.dataset.dir === 'input' && target.dataset.app !== portDragState.fromApp) {
+      target.classList.add('drop-target');
+    }
+  }
+
+  function onUp(ev) {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    line.remove();
+    port.classList.remove('drag-source');
+    document.querySelectorAll('.port.drop-target').forEach(p => p.classList.remove('drop-target'));
+
+    // Check if dropped on an input port
+    const target = document.elementFromPoint(ev.clientX, ev.clientY);
+    if (target && target.classList.contains('port') && target.dataset.dir === 'input') {
+      const toApp = target.dataset.app;
+      const toPort = target.dataset.port;
+      if (toApp !== portDragState.fromApp) {
+        createGraphEdge(portDragState.fromApp, portDragState.fromPort, toApp, toPort);
+      }
+    }
+    portDragState = null;
+  }
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+async function createGraphEdge(fromApp, fromOutput, toApp, toInput) {
+  const ctxId = getCtxId();
+  if (!ctxId) return;
+  // Check for duplicate
+  if (graphCache && graphCache.edges.some(e => e.from.appId === fromApp && e.from.output === fromOutput && e.to.appId === toApp && e.to.input === toInput)) return;
+  await fetch(API_BASE + '/api/graphs/' + ctxId + '/connect', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromApp, fromOutput, toApp, toInput })
+  });
+  await loadAndRenderGraph();
+}
+
+// --- Context Menu ---
+function showGraphContextMenu(x, y, items) {
+  document.querySelectorAll('.graph-context-menu').forEach(m => m.remove());
+  const menu = document.createElement('div');
+  menu.className = 'graph-context-menu';
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  menu.innerHTML = items.map((item, i) =>
+    '<div class="menu-item' + (item.danger ? ' danger' : '') + '" data-idx="' + i + '">' + escapeHtml(item.label) + '</div>'
+  ).join('');
+  document.body.appendChild(menu);
+  menu.querySelectorAll('.menu-item').forEach(el => {
+    el.addEventListener('click', function() {
+      const idx = parseInt(this.dataset.idx);
+      items[idx].action();
+      menu.remove();
+    });
+  });
+  // Close on click outside
+  setTimeout(() => {
+    document.addEventListener('click', function handler() {
+      menu.remove();
+      document.removeEventListener('click', handler);
+    });
+  }, 10);
+}
+
+// --- Delete Edge & Node ---
+async function deleteGraphEdge(fromApp, fromOutput, toApp, toInput) {
+  const ctxId = getCtxId();
+  if (!ctxId || !graphCache) return;
+  graphCache.edges = graphCache.edges.filter(e =>
+    !(e.from.appId === fromApp && e.from.output === fromOutput && e.to.appId === toApp && e.to.input === toInput)
+  );
+  await saveCurrentGraph();
+  renderGraphView();
+}
+
+async function deleteGraphNode(appId) {
+  if (!graphCache) return;
+  graphCache.nodes = graphCache.nodes.filter(n => n.appId !== appId);
+  graphCache.edges = graphCache.edges.filter(e => e.from.appId !== appId && e.to.appId !== appId);
+  await saveCurrentGraph();
+  renderGraphView();
+}
+
+// --- Data flow cache for popup ---
+const graphDataFlowCache = {};
+
+function showDataFlowPopup(edgeIdx, x, y) {
+  document.querySelectorAll('.graph-data-popup').forEach(p => p.remove());
+  const edge = graphCache?.edges?.[edgeIdx];
+  if (!edge) return;
+  const key = edge.from.appId + '.' + edge.from.output + '->' + edge.to.appId + '.' + edge.to.input;
+  const cached = graphDataFlowCache[key];
+  const popup = document.createElement('div');
+  popup.className = 'graph-data-popup';
+  const graphArea = document.getElementById('graphArea');
+  const rect = graphArea.getBoundingClientRect();
+  popup.style.left = (x - rect.left) + 'px';
+  popup.style.top = (y - rect.top + 12) + 'px';
+  popup.innerHTML = '<div style="font-weight:600;margin-bottom:4px;">' + edge.from.output + ' → ' + edge.to.input + '</div>' +
+    (cached ? '<pre>' + escapeHtml(JSON.stringify(cached, null, 2).substring(0, 500)) + '</pre>' : '<div style="color:var(--text-muted);">Noch keine Daten geflossen</div>');
+  graphArea.appendChild(popup);
+  setTimeout(() => {
+    document.addEventListener('click', function handler() {
+      popup.remove();
+      document.removeEventListener('click', handler);
+    });
+  }, 10);
+}
+
+function startNodeDrag(e) {
+  if (e.target.classList.contains('port')) return;
+  const node = e.currentTarget;
+  node.classList.add('dragging');
+  const startX = e.clientX - parseInt(node.style.left);
+  const startY = e.clientY - parseInt(node.style.top);
+  const appId = node.dataset.appId;
+
+  function onMove(ev) {
+    node.style.left = (ev.clientX - startX) + 'px';
+    node.style.top = (ev.clientY - startY) + 'px';
+    renderGraphEdges();
+  }
+  function onUp() {
+    node.classList.remove('dragging');
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    // Save position
+    if (graphCache) {
+      const n = graphCache.nodes.find(n => n.appId === appId);
+      if (n) {
+        n.x = parseInt(node.style.left);
+        n.y = parseInt(node.style.top);
+        clearTimeout(graphSaveTimer);
+        graphSaveTimer = setTimeout(() => saveCurrentGraph(), 500);
+      }
+    }
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function startNodeDragTouch(e) {
+  if (e.target.classList.contains('port') || e.target.classList.contains('node-delete')) return;
+  e.preventDefault();
+  const touch = e.touches[0];
+  const node = e.currentTarget;
+  node.classList.add('dragging');
+  const startX = touch.clientX - parseInt(node.style.left);
+  const startY = touch.clientY - parseInt(node.style.top);
+  const appId = node.dataset.appId;
+
+  function onMove(ev) {
+    ev.preventDefault();
+    const t = ev.touches[0];
+    node.style.left = (t.clientX - startX) + 'px';
+    node.style.top = (t.clientY - startY) + 'px';
+    renderGraphEdges();
+  }
+  function onEnd() {
+    node.classList.remove('dragging');
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+    if (graphCache) {
+      const n = graphCache.nodes.find(n => n.appId === appId);
+      if (n) {
+        n.x = parseInt(node.style.left);
+        n.y = parseInt(node.style.top);
+        clearTimeout(graphSaveTimer);
+        graphSaveTimer = setTimeout(() => saveCurrentGraph(), 500);
+      }
+    }
+  }
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('touchend', onEnd);
+}
+
+async function saveCurrentGraph() {
+  const ctxId = getCtxId();
+  if (!graphCache || !ctxId) return;
+  await fetch(API_BASE + '/api/graphs/' + ctxId, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(graphCache)
+  });
+}
+
+async function showAddNodeDialog() {
+  if (!getCtxId()) return;
+  if (!registryCache) registryCache = await fetch(API_BASE + '/api/app-registry').then(r => r.json());
+  const existing = graphCache?.nodes?.map(n => n.appId) || [];
+  const available = (registryCache.apps || []).filter(a => !existing.includes(a.id));
+
+  const html = available.map(a => {
+    const m = a.manifest || {};
+    return '<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;" onclick="addNodeToGraph(\'' + a.id + '\')">' +
+      '<span>' + (m.icon || '📦') + '</span>' +
+      '<span style="font-size:13px;font-weight:500;">' + escapeHtml(m.name || a.id) + '</span>' +
+      '<span style="font-size:10px;color:var(--text-muted);margin-left:auto;">' + (m.nodeType || 'app') + '</span>' +
+      '</div>';
+  }).join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'addNodeModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = '<div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:12px;width:360px;max-height:400px;overflow:hidden;display:flex;flex-direction:column;">' +
+    '<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"><span style="font-size:14px;font-weight:600;">App zum Graph hinzufuegen</span><button onclick="this.closest(\'#addNodeModal\').remove()" style="background:none;border:none;color:var(--text-muted);font-size:16px;cursor:pointer;">x</button></div>' +
+    '<div style="overflow-y:auto;flex:1;">' + (html || '<div style="padding:16px;color:var(--text-muted);text-align:center;">Alle Apps bereits im Graph</div>') + '</div></div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+function getCtxId() {
+  return state.activeContextId || new URLSearchParams(window.location.search).get('contextId');
+}
+
+async function addNodeToGraph(appId) {
+  document.getElementById('addNodeModal')?.remove();
+  const ctxId = getCtxId();
+  if (!ctxId) return;
+  // Initialize graph if empty
+  if (!graphCache || !graphCache.nodes) {
+    graphCache = { projectId: ctxId, nodes: [], edges: [] };
+  }
+  // Skip if already in graph
+  if (graphCache.nodes.some(n => n.appId === appId)) return;
+  // Get nodeType from registry
+  const app = registryCache?.apps?.find(a => a.id === appId);
+  const nodeType = app?.manifest?.nodeType || 'consumer';
+  // Position: grid layout, wrap after 3 columns
+  const cols = 3, gapX = 220, gapY = 160;
+  const idx = graphCache.nodes.length;
+  const x = 60 + (idx % cols) * gapX;
+  const y = 60 + Math.floor(idx / cols) * gapY;
+  graphCache.nodes.push({ appId, nodeType, x, y });
+  await saveCurrentGraph();
+  renderGraphView();
+}
+
+async function runCurrentGraph() {
+  const ctxId = getCtxId();
+  if (!ctxId) return;
+  const result = await fetch(API_BASE + '/api/graphs/' + ctxId + '/run', { method: 'POST' }).then(r => r.json());
+  if (result.triggered) {
+    result.triggered.forEach(t => {
+      const dot = document.querySelector('.graph-node[data-app-id="' + t.appId + '"] .node-status-dot');
+      if (dot) { dot.classList.add('running'); setTimeout(() => dot.classList.remove('running'), 3000); }
+    });
+  }
+}
+
+function flashGraphEdge(fromAppId, toAppId) {
+  const path = document.querySelector('.graph-svg path.edge[data-from="' + fromAppId + '"][data-to="' + toAppId + '"]');
+  if (path) {
+    path.classList.add('active');
+    setTimeout(() => path.classList.remove('active'), 600);
+  }
+  // Flash source node status dot
+  const dot = document.querySelector('.graph-node[data-app-id="' + fromAppId + '"] .node-status-dot');
+  if (dot) { dot.classList.add('running'); setTimeout(() => dot.classList.remove('running'), 2000); }
+}
 </script>
 </body>
 </html>

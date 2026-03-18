@@ -121,17 +121,222 @@ body{font-family:system-ui,sans-serif;background:#0F172A;min-height:100vh;color:
 
 @keyframes syncPulse{0%{box-shadow:0 0 0 0 rgba(139,92,246,.4)}100%{box-shadow:0 0 0 12px rgba(139,92,246,0)}}
 .sse-pulse{animation:syncPulse .6s ease-out}
+
+/* Profile Edit Modal */
+.profile-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:fadeIn .2s}
+.profile-modal{background:#1E293B;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px;width:420px;max-width:92vw;max-height:90vh;overflow-y:auto}
+.profile-modal h2{font-size:18px;font-weight:700;margin-bottom:4px}
+.profile-modal .subtitle{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:20px}
+.profile-modal label{font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;margin-top:12px}
+.profile-modal input,.profile-modal textarea{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;font-family:inherit;transition:border-color .2s}
+.profile-modal input:focus,.profile-modal textarea:focus{border-color:rgba(139,92,246,0.5)}
+.profile-modal textarea{resize:vertical;min-height:60px}
+.profile-modal .avatar-row{display:flex;align-items:center;gap:12px;margin-top:12px}
+.profile-modal .avatar-big{font-size:48px;width:64px;height:64px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);border-radius:16px}
+.profile-modal .btn-row{display:flex;gap:8px;margin-top:24px}
+.profile-modal .btn-primary{flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#8B5CF6,#6366F1);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.profile-modal .btn-primary:hover{opacity:.9}
+.profile-modal .btn-secondary{padding:12px 20px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.6);font-size:14px;cursor:pointer;font-family:inherit}
+.profile-modal .btn-secondary:hover{background:rgba(255,255,255,0.05)}
+.profile-modal .room-id{font-size:11px;color:rgba(255,255,255,0.3);margin-top:16px;text-align:center;word-break:break-all}
+.profile-modal .room-id code{background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:4px;cursor:pointer}
+.profile-modal .room-id code:hover{background:rgba(255,255,255,0.1)}
+
+/* Topbar profile clickable */
+.topbar-title{cursor:pointer;transition:color .2s}
+.topbar-title:hover{color:rgba(255,255,255,1)}
+
+/* System Chat Tabs */
+.sys-chat-tabs{display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.06)}
+.sys-chat-tab{flex:1;padding:10px 0;text-align:center;font-size:12px;font-weight:600;color:rgba(255,255,255,0.4);cursor:pointer;border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
+.sys-chat-tab:hover{color:rgba(255,255,255,0.6)}
+.sys-chat-tab.active{color:rgba(255,255,255,0.9);border-bottom-color:#8B5CF6}
+
+/* Contacts list */
+.contacts-list{padding:8px 12px;overflow-y:auto;flex:1}
+.contact-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .15s;margin-bottom:4px}
+.contact-item:hover{background:rgba(255,255,255,0.06)}
+.contact-avatar{font-size:24px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);border-radius:10px;flex-shrink:0}
+.contact-info{flex:1;min-width:0}
+.contact-name{font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contact-handle{font-size:11px;color:rgba(255,255,255,0.35)}
+.contact-status{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.contact-status.online{background:#22C55E}
+.contact-status.offline{background:rgba(255,255,255,0.15)}
+.contact-ghlink{font-size:11px;color:#8B5CF6;text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contact-ghlink:hover{text-decoration:underline}
+.contacts-empty{text-align:center;color:rgba(255,255,255,0.25);font-size:12px;padding:32px 16px}
+
+/* ---- Home Screen ---- */
+.home-screen{flex:1;overflow-y:auto;padding:24px 32px 80px;max-width:900px;margin:0 auto;width:100%}
+.home-greeting{margin-bottom:28px}
+.home-greeting h1{font-size:28px;font-weight:700;color:rgba(255,255,255,0.95);margin-bottom:4px}
+.home-greeting p{font-size:14px;color:rgba(255,255,255,0.4)}
+
+.home-section{margin-bottom:24px}
+.home-section-title{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.3);font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+
+.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.quick-action{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px 14px;cursor:pointer;transition:all .2s;text-align:center}
+.quick-action:hover{background:rgba(255,255,255,0.08);border-color:rgba(139,92,246,0.3);transform:translateY(-2px)}
+.quick-action:active{transform:scale(0.97)}
+.quick-action .qa-icon{font-size:24px;margin-bottom:6px}
+.quick-action .qa-label{font-size:11px;font-weight:600;color:rgba(255,255,255,0.7)}
+.quick-action .qa-sub{font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px}
+
+.recent-contexts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.ctx-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;cursor:pointer;transition:all .2s;overflow:hidden}
+.ctx-card:hover{background:rgba(255,255,255,0.08);border-color:rgba(139,92,246,0.3);transform:translateY(-2px)}
+.ctx-card .ctx-card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ctx-card .ctx-icon{font-size:20px;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ctx-card .ctx-name{font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctx-card .ctx-meta{font-size:10px;color:rgba(255,255,255,0.3)}
+.ctx-card .ctx-widgets{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.ctx-card .ctx-widget-pill{font-size:9px;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5)}
+
+.active-graphs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.graph-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px}
+.graph-card .graph-nodes{display:flex;gap:4px;align-items:center}
+.graph-card .graph-node{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3)}
+.graph-card .graph-arrow{color:rgba(255,255,255,0.2);font-size:10px}
+.graph-card .graph-info{flex:1;min-width:0}
+.graph-card .graph-name{font-size:12px;font-weight:600;color:rgba(255,255,255,0.75)}
+.graph-card .graph-status{font-size:10px;color:rgba(255,255,255,0.3)}
+
+.pulse-feed{display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto}
+.pulse-entry{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;font-size:11px;color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.02)}
+.pulse-entry .pe-icon{font-size:14px;flex-shrink:0}
+.pulse-entry .pe-time{font-size:9px;color:rgba(255,255,255,0.2);margin-left:auto;flex-shrink:0}
+.pulse-entry.pe-error{border-left:2px solid #EF4444}
+.pulse-entry.pe-success{border-left:2px solid #22C55E}
+
+/* ---- Responsive ---- */
+@media (max-width:768px) {
+  .topbar{padding:8px 12px}
+  .topbar-title{font-size:.85rem}
+  .dock-bar{gap:4px;padding:6px 8px;border-radius:16px}
+  .dock-icon{width:38px;height:38px;font-size:18px;border-radius:10px}
+  .dock-sep{height:24px;margin:0 2px}
+  .dock{padding:8px 0 12px}
+  .home-screen{padding:16px 16px 80px}
+  .home-greeting h1{font-size:22px}
+  .quick-actions{grid-template-columns:repeat(2,1fr)}
+  .recent-contexts{grid-template-columns:1fr}
+  .active-graphs{grid-template-columns:1fr}
+  #dock-contexts{display:none !important}
+  #dock-sep-ctx{display:none !important}
+  #dock-sep-end{display:none !important}
+  .launcher-grid{gap:12px;padding:10px 16px 80px}
+  .launcher-app{width:72px}
+  .launcher-app .icon{width:50px;height:50px;font-size:22px;border-radius:12px}
+  .launcher-app .name{font-size:.62rem}
+  .app-window{border-radius:0 !important;min-width:100vw !important;min-height:auto !important}
+  .win-titlebar{border-radius:0 !important}
+  .app-window iframe{border-radius:0 !important}
+  .command-center{width:100vw;right:-100vw}
+  #systemChat{width:calc(100vw - 16px) !important;right:8px !important;bottom:70px !important;max-height:60vh !important}
+  .profile-modal{padding:24px;width:100%;border-radius:16px}
+  .store-overlay .store-header,.store-overlay .store-list{max-width:100%;padding-left:16px;padding-right:16px}
+}
+@media (max-width:480px) {
+  .topbar-right #tunnelBtn,.topbar-right #fsBtn{display:none}
+  .dock-bar{gap:2px;padding:4px 6px}
+  .dock-icon{width:34px;height:34px;font-size:16px}
+}
 </style>
 </head>
 <body>
 
 <!-- Top bar -->
 <div class="topbar">
-  <span class="topbar-title" id="title">Claude Desktop</span>
+  <span class="topbar-title" id="title" onclick="showProfileEdit()">Claude Desktop</span>
   <div class="topbar-right">
     <button id="tunnelBtn" onclick="toggleTunnel()" style="background:none;border:1px solid #3b3e52;color:#7a7e96;padding:2px 10px;border-radius:4px;font:12px/1.4 -apple-system,sans-serif;cursor:pointer;display:flex;align-items:center;gap:4px" title="Port Forwarding">🌐 <span id="tunnelLabel">Share</span></button>
     <button id="fsBtn" onclick="toggleFullscreen()" style="background:none;border:1px solid #3b3e52;color:#7a7e96;padding:2px 8px;border-radius:4px;font:12px/1.4 -apple-system,sans-serif;cursor:pointer" title="Fullscreen">⛶</button>
     <span id="clock"></span><span class="sync-dot" id="syncDot"></span>
+  </div>
+</div>
+
+<!-- Home Screen -->
+<div class="home-screen" id="homeScreen">
+  <div class="home-greeting" id="homeGreeting">
+    <h1 id="greetingText">Guten Abend, Chris</h1>
+    <p id="greetingSub">Was möchtest du heute machen?</p>
+  </div>
+
+  <div class="home-section">
+    <div class="home-section-title">Schnellzugriff</div>
+    <div class="quick-actions" id="quickActions">
+      <div class="quick-action" onclick="toggleLauncher()">
+        <div class="qa-icon">🚀</div>
+        <div class="qa-label">Apps</div>
+        <div class="qa-sub">Alle Apps öffnen</div>
+      </div>
+      <div class="quick-action" onclick="toggleContextLauncher()">
+        <div class="qa-icon">🧩</div>
+        <div class="qa-label">Projekte</div>
+        <div class="qa-sub">Contexts & Graphen</div>
+      </div>
+      <div class="quick-action" onclick="toggleSystemChat()">
+        <div class="qa-icon">💬</div>
+        <div class="qa-label">Chat</div>
+        <div class="qa-sub">WebRTC Peers</div>
+      </div>
+      <div class="quick-action" onclick="toggleCC()">
+        <div class="qa-icon">📡</div>
+        <div class="qa-label">System</div>
+        <div class="qa-sub">Command Center</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-section">
+    <div class="home-section-title">Letzte Projekte</div>
+    <div class="recent-contexts" id="recentContexts">
+      <div style="color:rgba(255,255,255,0.2);font-size:12px;padding:8px;">Lade...</div>
+    </div>
+  </div>
+
+  <div class="home-section" id="graphSection" style="display:none;">
+    <div class="home-section-title">Aktive Graphen</div>
+    <div class="active-graphs" id="activeGraphs"></div>
+  </div>
+
+  <div class="home-section">
+    <div class="home-section-title">System Pulse</div>
+    <div class="pulse-feed" id="pulseFeed">
+      <div class="pulse-entry pe-success"><span class="pe-icon">✅</span> Server gestartet <span class="pe-time">gerade eben</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Peer Bar -->
+<div id="peerBar" style="position:fixed;bottom:64px;left:0;right:0;display:flex;justify-content:center;gap:8px;padding:6px 0;z-index:140;pointer-events:none;opacity:0;transition:opacity 0.3s;">
+</div>
+
+<!-- System Chat Panel (Chat + Contacts tabs) -->
+<div id="systemChat" style="position:fixed;bottom:80px;right:16px;width:340px;max-height:460px;background:rgba(15,23,42,0.95);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);border-radius:16px;z-index:200;display:none;flex-direction:column;overflow:hidden;">
+  <div style="padding:10px 16px 0;display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.9);">PulseOS</span>
+    <button onclick="toggleSystemChat()" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:16px;">✕</button>
+  </div>
+  <div class="sys-chat-tabs">
+    <div class="sys-chat-tab active" onclick="switchSysChatTab('chat')" id="tabChat">💬 Chat</div>
+    <div class="sys-chat-tab" onclick="switchSysChatTab('contacts')" id="tabContacts">👥 Kontakte <span id="contactCount" style="font-size:10px;opacity:0.5;"></span></div>
+  </div>
+  <div id="sysChatView" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+    <div id="systemChatMessages" style="flex:1;overflow-y:auto;padding:8px 12px;max-height:300px;display:flex;flex-direction:column;gap:6px;">
+      <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;padding:20px 0;">Noch keine Nachrichten</div>
+    </div>
+    <div style="padding:8px 12px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:8px;">
+      <input id="systemChatInput" type="text" placeholder="Nachricht..." style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:13px;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')sendSystemChat()">
+      <button onclick="sendSystemChat()" style="padding:8px 12px;border-radius:8px;border:none;background:#8B5CF6;color:#fff;cursor:pointer;font-size:13px;">▶</button>
+    </div>
+  </div>
+  <div id="sysContactsView" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+    <div class="contacts-list" id="contactsList">
+      <div class="contacts-empty">Noch keine Kontakte.<br>Verbinde dich über WebRTC!</div>
+    </div>
   </div>
 </div>
 
@@ -841,6 +1046,9 @@ function addFeed(text, type) {
   feed.unshift({ text, type, time: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) });
   if (feed.length > 50) feed.length = 50;
   renderFeed();
+  // Also add to home screen pulse feed
+  const icon = type === 'error' ? '❌' : type === 'mutation' ? '⚡' : type === 'sse' ? '📡' : 'ℹ️';
+  if (typeof addPulseEntry === 'function') addPulseEntry(icon, text, type === 'error' ? 'error' : 'success');
 }
 
 function renderFeed() {
@@ -880,6 +1088,20 @@ window.addEventListener('message', e => {
   if (e.data && e.data.type === 'error') {
     addFeed(`App Error: ${e.data.message || 'Unknown'}`, 'error');
   }
+  // Graph output: app emits data → route through graph
+  if (e.data && e.data.type === 'graph-output' && e.data.appId && e.data.outputName) {
+    // Find which graph(s) contain this app and route the output
+    fetch('/api/graphs').then(r => r.json()).then(gData => {
+      const graphs = (gData.graphs || []).filter(g => g.nodes && g.nodes.some(n => n.appId === e.data.appId));
+      for (const g of graphs) {
+        fetch(`/api/graphs/${g.projectId}/output`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ appId: e.data.appId, outputName: e.data.outputName, data: e.data.data })
+        }).catch(err => console.error('[graph-output] routing error:', err));
+      }
+    }).catch(() => {});
+  }
   // Open app from projects context (app widget L0 click or button)
   if (e.data && e.data.type === 'open-app' && e.data.appId) {
     const app = state?.apps?.find(a => a.id === e.data.appId);
@@ -913,6 +1135,150 @@ function updateClock() {
   document.getElementById('clock').textContent = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 }
 
+// --- Profile & Onboarding ---
+let userProfile = null;
+
+async function checkOnboarding() {
+  try {
+    const res = await fetch('/api/profile/onboarding');
+    const { needed } = await res.json();
+    if (needed) showOnboarding();
+    else {
+      const pRes = await fetch('/api/profile');
+      userProfile = await pRes.json();
+      updateProfileDisplay();
+    }
+  } catch (e) { console.error('[profile]', e); }
+}
+
+function showOnboarding() {
+  const overlay = document.createElement('div');
+  overlay.id = 'onboardingOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);';
+  overlay.innerHTML = `
+    <div style="background:#1E293B;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center;">
+      <div style="font-size:48px;margin-bottom:16px;">🧑‍💻</div>
+      <h2 style="font-size:22px;margin-bottom:8px;color:#fff;">Willkommen bei PulseOS</h2>
+      <p style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:28px;">Richte dein Profil ein — andere sehen das wenn sie sich mit dir verbinden.</p>
+      <div style="display:flex;flex-direction:column;gap:12px;text-align:left;">
+        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">Name *</label>
+        <input id="ob-name" type="text" placeholder="Dein Name" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;">
+        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">Handle</label>
+        <input id="ob-handle" type="text" placeholder="@dein-handle" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;">
+        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">Bio</label>
+        <input id="ob-bio" type="text" placeholder="Was machst du?" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;">
+        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">GitHub Pages URL</label>
+        <input id="ob-ghpages" type="url" placeholder="https://username.github.io" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;">
+        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">Avatar Emoji</label>
+        <input id="ob-avatar" type="text" value="🧑‍💻" maxlength="4" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:24px;outline:none;text-align:center;width:80px;">
+      </div>
+      <button onclick="submitOnboarding()" style="margin-top:24px;padding:12px 32px;border-radius:12px;border:none;background:linear-gradient(135deg,#8B5CF6,#6366F1);color:#fff;font-size:14px;font-weight:600;cursor:pointer;width:100%;transition:opacity 0.15s;">Los geht's</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('ob-name').focus();
+}
+
+async function submitOnboarding() {
+  const name = document.getElementById('ob-name').value.trim();
+  if (!name) { document.getElementById('ob-name').style.borderColor = '#EF4444'; return; }
+  const profile = {
+    name,
+    handle: document.getElementById('ob-handle').value.trim() || name.toLowerCase().replace(/\s+/g, '-'),
+    avatar: document.getElementById('ob-avatar').value || '🧑‍💻',
+    bio: document.getElementById('ob-bio').value.trim(),
+    githubPages: document.getElementById('ob-ghpages').value.trim()
+  };
+  await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) });
+  const res = await fetch('/api/profile');
+  userProfile = await res.json();
+  updateProfileDisplay();
+  document.getElementById('onboardingOverlay')?.remove();
+}
+
+function updateProfileDisplay() {
+  if (!userProfile) return;
+  const titleEl = document.querySelector('.topbar-title');
+  if (titleEl && userProfile.name) {
+    titleEl.textContent = userProfile.avatar + ' ' + userProfile.name;
+  }
+  updateGreeting();
+}
+
+// --- Home Screen ---
+function updateGreeting() {
+  const h = new Date().getHours();
+  const name = userProfile?.name || '';
+  let greeting = 'Guten Tag';
+  let sub = 'Was möchtest du heute machen?';
+  if (h < 6) { greeting = 'Gute Nacht'; sub = 'Noch wach? PulseOS ist bereit.'; }
+  else if (h < 12) { greeting = 'Guten Morgen'; sub = 'Starte deinen Tag mit PulseOS.'; }
+  else if (h < 18) { greeting = 'Guten Tag'; sub = 'Was möchtest du heute machen?'; }
+  else { greeting = 'Guten Abend'; sub = 'Noch etwas erledigen?'; }
+  const el = document.getElementById('greetingText');
+  if (el) el.textContent = greeting + (name ? ', ' + name : '');
+  const subEl = document.getElementById('greetingSub');
+  if (subEl) subEl.textContent = sub;
+}
+
+function renderRecentContexts() {
+  const el = document.getElementById('recentContexts');
+  if (!el || !contextList || contextList.length === 0) {
+    if (el) el.innerHTML = '<div style="color:rgba(255,255,255,0.2);font-size:12px;padding:8px;">Keine Projekte vorhanden. Erstelle eins über den Contexts-Launcher!</div>';
+    return;
+  }
+  const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉', context: '📂', app: '📱' };
+  const recent = contextList.slice(0, 6);
+  el.innerHTML = recent.map(ctx => {
+    const widgetCount = ctx.widgetCount || (ctx.widgets ? ctx.widgets.length : 0);
+    const widgetPills = (ctx.widgets || []).slice(0, 4).map(w => '<span class="ctx-widget-pill">' + (icons[w.type] || '🧩') + ' ' + (w.type || '?') + '</span>').join('');
+    const age = ctx.updated ? getRelativeTime(new Date(ctx.updated)) : '';
+    return '<div class="ctx-card" onclick="openContext(' + JSON.stringify(ctx).replace(/"/g, '&quot;') + ')">' +
+      '<div class="ctx-card-head">' +
+        '<div class="ctx-icon" style="background:' + (ctx.color || '#8B5CF6') + '">' + (ctx.icon || '📁') + '</div>' +
+        '<div><div class="ctx-name">' + (ctx.name || ctx.id) + '</div>' +
+        '<div class="ctx-meta">' + (widgetCount ? widgetCount + ' Widgets' : '') + (age ? ' · ' + age : '') + '</div></div>' +
+      '</div>' +
+      (widgetPills ? '<div class="ctx-widgets">' + widgetPills + '</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+async function renderActiveGraphs() {
+  const section = document.getElementById('graphSection');
+  const el = document.getElementById('activeGraphs');
+  if (!section || !el) return;
+  try {
+    const r = await fetch('/api/graphs');
+    if (!r.ok) { section.style.display = 'none'; return; }
+    const data = await r.json();
+    const graphs = data.graphs || [];
+    if (graphs.length === 0) { section.style.display = 'none'; return; }
+    section.style.display = '';
+    el.innerHTML = graphs.slice(0, 4).map(g => {
+      const nodes = (g.nodes || []).slice(0, 4);
+      const nodesHtml = nodes.map((n, i) =>
+        (i > 0 ? '<span class="graph-arrow">→</span>' : '') +
+        '<div class="graph-node" title="' + (n.name || n.appId || '?') + '">' + (n.icon || '⚡') + '</div>'
+      ).join('');
+      return '<div class="graph-card">' +
+        '<div class="graph-nodes">' + nodesHtml + '</div>' +
+        '<div class="graph-info"><div class="graph-name">' + (g.name || g.id) + '</div>' +
+        '<div class="graph-status">' + nodes.length + ' Nodes · ' + (g.edges || []).length + ' Edges</div></div></div>';
+    }).join('');
+  } catch (e) { section.style.display = 'none'; }
+}
+
+function addPulseEntry(icon, text, type) {
+  const feed = document.getElementById('pulseFeed');
+  if (!feed) return;
+  const entry = document.createElement('div');
+  entry.className = 'pulse-entry' + (type === 'error' ? ' pe-error' : type === 'success' ? ' pe-success' : '');
+  entry.innerHTML = '<span class="pe-icon">' + icon + '</span> ' + text + ' <span class="pe-time">gerade eben</span>';
+  feed.prepend(entry);
+  // Keep max 20 entries
+  while (feed.children.length > 20) feed.removeChild(feed.lastChild);
+}
+
 // --- Init ---
 updateClock();
 setInterval(updateClock, 30000);
@@ -920,6 +1286,184 @@ load();
 connectSSE();
 setInterval(load, 30000);
 setInterval(generateStateSummary, 60000);
+checkOnboarding();
+
+// --- Peer Bar & System Chat UI ---
+let unreadChatCount = 0;
+
+function updatePeerBar() {
+  const bar = document.getElementById('peerBar');
+  if (!bar) return;
+  const peers = window.PulseOS?.getPeers?.() || {};
+  const online = Object.values(peers).filter(p => p.online);
+  if (online.length === 0 && unreadChatCount === 0) { bar.style.opacity = '0'; return; }
+  bar.style.opacity = '1';
+  const badge = unreadChatCount > 0 ? '<span style="position:absolute;top:-4px;right:-4px;background:#EF4444;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;">' + unreadChatCount + '</span>' : '';
+  bar.innerHTML = online.map(p =>
+    '<div style="pointer-events:auto;display:flex;align-items:center;gap:6px;background:rgba(30,41,59,0.9);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:6px 12px;cursor:pointer;position:relative;" onclick="toggleSystemChat();unreadChatCount=0;updatePeerBar();" title="' + (p.name || p.peerId?.substring(0,8) || '?') + '">' +
+    badge +
+    '<span style="font-size:16px;">' + (p.avatar || '👤') + '</span>' +
+    '<span style="font-size:11px;color:rgba(255,255,255,0.7);font-weight:500;">' + (p.name || p.peerId?.substring(0,8) || '?') + '</span>' +
+    '<span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span>' +
+    '</div>'
+  ).join('');
+  // If no online peers but unread messages, show a chat bubble
+  if (online.length === 0 && unreadChatCount > 0) {
+    bar.innerHTML = '<div style="pointer-events:auto;display:flex;align-items:center;gap:6px;background:rgba(30,41,59,0.9);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:6px 12px;cursor:pointer;position:relative;" onclick="toggleSystemChat();unreadChatCount=0;updatePeerBar();">'+badge+'<span style="font-size:14px;">💬</span><span style="font-size:11px;color:rgba(255,255,255,0.5);">Neue Nachrichten</span></div>';
+  }
+}
+
+let systemChatOpen = false;
+function toggleSystemChat() {
+  systemChatOpen = !systemChatOpen;
+  const panel = document.getElementById('systemChat');
+  panel.style.display = systemChatOpen ? 'flex' : 'none';
+  if (systemChatOpen) {
+    const msgs = document.getElementById('systemChatMessages');
+    msgs.scrollTop = msgs.scrollHeight;
+    document.getElementById('systemChatInput')?.focus();
+  }
+}
+
+function renderSystemChatMessage(msg) {
+  const msgs = document.getElementById('systemChatMessages');
+  if (!msgs) return;
+  // Remove empty placeholder
+  if (msgs.children.length === 1 && msgs.children[0].textContent.includes('Noch keine')) msgs.innerHTML = '';
+  const isSelf = msg.peerId === 'self';
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;' + (isSelf ? 'flex-direction:row-reverse;' : '');
+  div.innerHTML = '<span style="font-size:18px;flex-shrink:0;">' + (msg.avatar || '👤') + '</span>' +
+    '<div style="max-width:220px;padding:6px 10px;border-radius:10px;font-size:12px;' + (isSelf ? 'background:#8B5CF6;color:#fff;border-bottom-right-radius:4px;' : 'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border-bottom-left-radius:4px;') + '">' +
+    '<div style="font-size:10px;opacity:0.6;margin-bottom:2px;">' + (msg.from || '?') + '</div>' +
+    '<div>' + (msg.text || '') + '</div></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function sendSystemChat() {
+  const input = document.getElementById('systemChatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  if (window.PulseOS?.sendChat) window.PulseOS.sendChat(text);
+}
+
+// --- Profile Edit Modal ---
+function showProfileEdit() {
+  if (document.getElementById('profileModal')) return;
+  const p = userProfile || { name: '', handle: '', avatar: '🧑‍💻', bio: '', githubPages: '', roomId: '' };
+  const overlay = document.createElement('div');
+  overlay.id = 'profileModal';
+  overlay.className = 'profile-modal-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="profile-modal">
+      <div class="avatar-row">
+        <div class="avatar-big" id="pe-avatar-preview">${p.avatar || '🧑‍💻'}</div>
+        <div>
+          <h2>Dein Profil</h2>
+          <div class="subtitle">Sichtbar für verbundene Peers</div>
+        </div>
+      </div>
+      <label>Name *</label>
+      <input id="pe-name" type="text" value="${esc(p.name)}" placeholder="Dein Name">
+      <label>Handle</label>
+      <input id="pe-handle" type="text" value="${esc(p.handle)}" placeholder="@dein-handle">
+      <label>Bio</label>
+      <textarea id="pe-bio" placeholder="Was machst du?">${esc(p.bio)}</textarea>
+      <label>GitHub Pages URL</label>
+      <input id="pe-ghpages" type="url" value="${esc(p.githubPages)}" placeholder="https://username.github.io">
+      <label>Avatar Emoji</label>
+      <input id="pe-avatar" type="text" value="${p.avatar || '🧑‍💻'}" maxlength="4" style="width:80px;text-align:center;font-size:24px;" oninput="document.getElementById('pe-avatar-preview').textContent=this.value||'🧑‍💻'">
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="document.getElementById('profileModal').remove()">Abbrechen</button>
+        <button class="btn-primary" onclick="saveProfileEdit()">Speichern</button>
+      </div>
+      ${p.roomId ? '<div class="room-id">Room: <code onclick="navigator.clipboard.writeText(\'' + esc(p.roomId) + '\');this.textContent=\'Kopiert!\';setTimeout(()=>this.textContent=\'' + esc(p.roomId) + '\',1500)" title="Klick zum Kopieren">' + esc(p.roomId) + '</code></div>' : ''}
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('pe-name').focus();
+}
+
+function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+async function saveProfileEdit() {
+  const name = document.getElementById('pe-name').value.trim();
+  if (!name) { document.getElementById('pe-name').style.borderColor = '#EF4444'; return; }
+  const profile = {
+    name,
+    handle: document.getElementById('pe-handle').value.trim() || name.toLowerCase().replace(/\s+/g, '-'),
+    avatar: document.getElementById('pe-avatar').value || '🧑‍💻',
+    bio: document.getElementById('pe-bio').value.trim(),
+    githubPages: document.getElementById('pe-ghpages').value.trim()
+  };
+  try {
+    await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) });
+    const res = await fetch('/api/profile');
+    userProfile = await res.json();
+    updateProfileDisplay();
+    document.getElementById('profileModal')?.remove();
+  } catch (e) { console.error('[profile] save error:', e); }
+}
+
+// --- System Chat Tab Switching ---
+function switchSysChatTab(tab) {
+  const chatView = document.getElementById('sysChatView');
+  const contactsView = document.getElementById('sysContactsView');
+  const tabChat = document.getElementById('tabChat');
+  const tabContacts = document.getElementById('tabContacts');
+  if (tab === 'chat') {
+    chatView.style.display = 'flex';
+    contactsView.style.display = 'none';
+    tabChat.classList.add('active');
+    tabContacts.classList.remove('active');
+  } else {
+    chatView.style.display = 'none';
+    contactsView.style.display = 'flex';
+    tabChat.classList.remove('active');
+    tabContacts.classList.add('active');
+    loadContacts();
+  }
+}
+
+// --- Contacts List ---
+let contactsCache = [];
+async function loadContacts() {
+  try {
+    const r = await fetch('/api/contacts');
+    const data = await r.json();
+    contactsCache = data.contacts || [];
+    renderContacts();
+  } catch (e) { console.error('[contacts]', e); }
+}
+
+function renderContacts() {
+  const list = document.getElementById('contactsList');
+  const countEl = document.getElementById('contactCount');
+  if (!list) return;
+  if (countEl) countEl.textContent = contactsCache.length > 0 ? `(${contactsCache.length})` : '';
+  if (contactsCache.length === 0) {
+    list.innerHTML = '<div class="contacts-empty">Noch keine Kontakte.<br>Verbinde dich über WebRTC!</div>';
+    return;
+  }
+  const peers = window.PulseOS?.getPeers?.() || {};
+  const onlineHandles = new Set(Object.values(peers).filter(p => p.online).map(p => p.handle || p.name));
+  list.innerHTML = contactsCache.map(c => {
+    const isOnline = onlineHandles.has(c.handle) || onlineHandles.has(c.name);
+    const lastSeen = c.lastSeen ? getRelativeTime(new Date(c.lastSeen)) : '';
+    return `<div class="contact-item" title="${esc(c.bio || '')}">
+      <div class="contact-avatar">${c.avatar || '👤'}</div>
+      <div class="contact-info">
+        <div class="contact-name">${esc(c.name || c.handle || '?')}</div>
+        <div class="contact-handle">@${esc(c.handle || '?')}${lastSeen ? ' · ' + lastSeen : ''}</div>
+        ${c.githubPages ? '<a class="contact-ghlink" href="' + esc(c.githubPages) + '" target="_blank" onclick="event.stopPropagation()">🌐 ' + esc(c.githubPages.replace('https://', '')) + '</a>' : ''}
+      </div>
+      <div class="contact-status ${isOnline ? 'online' : 'offline'}"></div>
+    </div>`;
+  }).join('');
+}
+
 </script>
 
 <!-- WebRTC Bridge Host (for tunnel reconnect) -->
@@ -1133,7 +1677,36 @@ setInterval(generateStateSummary, 60000);
         break;
 
       case 'text':
-        console.log('[bridge-host] Message from peer:', data.content);
+      case 'chat-message':
+        console.log('[bridge-host] Message from peer:', data.content || data.text);
+        // Store in chat history and notify UI
+        const chatMsg = { from: connectedPeers[senderId]?.name || senderId.substring(0, 8), avatar: connectedPeers[senderId]?.avatar || '👤', text: data.content || data.text, time: Date.now(), peerId: senderId };
+        systemChatHistory.push(chatMsg);
+        if (systemChatHistory.length > 200) systemChatHistory.shift();
+        renderSystemChatMessage(chatMsg);
+        // Increment unread if chat panel is not visible
+        if (!systemChatOpen) unreadChatCount++;
+        updatePeerBar();
+        break;
+
+      case 'profile-exchange':
+        console.log('[bridge-host] Profile received from peer:', data.profile?.name);
+        if (data.profile) {
+          connectedPeers[senderId] = { ...connectedPeers[senderId], ...data.profile, peerId: senderId, online: true, lastSeen: Date.now() };
+          // Save to contacts
+          fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data.profile) }).catch(() => {});
+          updatePeerBar();
+        }
+        break;
+
+      case 'app-share':
+        console.log('[bridge-host] App shared by peer:', data.appId);
+        dispatchPulseEvent('app-share', { ...data, from: senderId });
+        break;
+
+      case 'pulse-signal':
+        console.log('[bridge-host] Remote pulse from peer:', data.appId);
+        if (data.appId) fetch('/api/pulse/fire/' + data.appId, { method: 'POST' }).catch(() => {});
         break;
     }
   }
@@ -1145,10 +1718,96 @@ setInterval(generateStateSummary, 60000);
     }
   }
 
+  function sendToAllPeers(data) {
+    Object.keys(bridgeChannels).forEach(id => sendBridgeMsg(id, data));
+  }
+
   function cleanupBridgePeer(targetId) {
     if (bridgeChannels[targetId]) { try { bridgeChannels[targetId].close(); } catch {} delete bridgeChannels[targetId]; }
     if (bridgePeers[targetId]) { try { bridgePeers[targetId].close(); } catch {} delete bridgePeers[targetId]; }
+    if (connectedPeers[targetId]) { connectedPeers[targetId].online = false; }
+    updatePeerBar();
   }
+
+  // --- Connected Peers & System Chat ---
+  const connectedPeers = {};
+  const systemChatHistory = [];
+  const pulseEventListeners = {};
+
+  // Auto-send profile when DataChannel opens
+  const origSetupChannel = setupBridgeChannel;
+  // Patch setupBridgeChannel to auto-send profile
+  function setupBridgeChannelPatched(dc, targetId) {
+    bridgeChannels[targetId] = dc;
+    dc.onopen = () => {
+      console.log('[bridge-host] DataChannel open with', targetId.substring(0, 8));
+      connectedPeers[targetId] = { peerId: targetId, online: true, lastSeen: Date.now() };
+      updatePeerBar();
+      // Send our profile
+      if (userProfile) {
+        sendBridgeMsg(targetId, { type: 'profile-exchange', profile: userProfile });
+      }
+    };
+    dc.onclose = () => {
+      console.log('[bridge-host] DataChannel closed with', targetId.substring(0, 8));
+      if (connectedPeers[targetId]) connectedPeers[targetId].online = false;
+      updatePeerBar();
+    };
+    dc.onmessage = (e) => {
+      let data;
+      try { data = JSON.parse(e.data); } catch { data = { type: 'text', content: e.data }; }
+      handleBridgeMessage(data, targetId);
+    };
+  }
+  // Replace the original
+  setupBridgeChannel = setupBridgeChannelPatched;
+
+  // --- PulseOS System API (exposed to window + iframes) ---
+  function dispatchPulseEvent(type, data) {
+    const listeners = pulseEventListeners[type] || [];
+    listeners.forEach(fn => { try { fn(data); } catch (e) { console.error('[PulseOS]', e); } });
+    // Also dispatch to window
+    window.dispatchEvent(new CustomEvent('pulse-message', { detail: { type, ...data } }));
+  }
+
+  window.PulseOS = {
+    send: function(peerId, type, data) {
+      if (peerId === '*') {
+        sendToAllPeers({ type, ...data, fromProfile: userProfile });
+      } else {
+        sendBridgeMsg(peerId, { type, ...data, fromProfile: userProfile });
+      }
+    },
+    onMessage: function(type, callback) {
+      if (!pulseEventListeners[type]) pulseEventListeners[type] = [];
+      pulseEventListeners[type].push(callback);
+    },
+    offMessage: function(type, callback) {
+      if (pulseEventListeners[type]) {
+        pulseEventListeners[type] = pulseEventListeners[type].filter(fn => fn !== callback);
+      }
+    },
+    getPeers: function() { return { ...connectedPeers }; },
+    getProfile: function() { return userProfile; },
+    getChatHistory: function() { return [...systemChatHistory]; },
+    sendChat: function(text) {
+      const msg = { type: 'chat-message', text, timestamp: Date.now() };
+      sendToAllPeers(msg);
+      const localMsg = { from: userProfile?.name || 'Du', avatar: userProfile?.avatar || '🧑‍💻', text, time: Date.now(), peerId: 'self' };
+      systemChatHistory.push(localMsg);
+      if (systemChatHistory.length > 200) systemChatHistory.shift();
+      renderSystemChatMessage(localMsg);
+    }
+  };
+
+  // Listen for messages from iframes (apps)
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.__pulseOS) {
+      const { action, peerId, type, data } = e.data;
+      if (action === 'send') window.PulseOS.send(peerId || '*', type, data);
+      if (action === 'sendChat') window.PulseOS.sendChat(data?.text || '');
+    }
+  });
 })();
 
 // ── Context Launcher & Dock Favorites ──
@@ -1242,10 +1901,13 @@ function getRelativeTime(date) {
   return days + ' Tage';
 }
 
-// Load contexts on startup
-loadContexts();
+// Load contexts on startup + render home screen
+loadContexts().then(() => { renderRecentContexts(); renderActiveGraphs(); });
 // Refresh contexts every 30s
-setInterval(loadContexts, 30000);
+setInterval(() => loadContexts().then(() => renderRecentContexts()), 30000);
+// Update greeting on load and periodically
+setTimeout(updateGreeting, 500);
+setInterval(updateGreeting, 60000);
 
 // Close context launcher on Escape
 document.addEventListener('keydown', e => {

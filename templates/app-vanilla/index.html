@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Template</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #111110;
+      --surface:  #1a1a17;
+      --border:   rgba(255,255,255,0.08);
+      --text:     #e8e6de;
+      --muted:    #7a7870;
+      --accent:   #e85d24;
+      --success:  #1d9e75;
+      --radius:   8px;
+      --font:     system-ui, -apple-system, sans-serif;
+      --mono:     'Menlo', 'Monaco', monospace;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 16px;
+      min-height: 100vh;
+    }
+
+    body[data-zoom="L0"] .l1-only,
+    body[data-zoom="L0"] .l2-only { display: none; }
+    body[data-zoom="L1"] .l0-only,
+    body[data-zoom="L1"] .l2-only { display: none; }
+    body[data-zoom="L2"] .l0-only,
+    body[data-zoom="L2"] .l1-only { display: none; }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .app-title { font-weight: 600; font-size: 15px; }
+    .app-status {
+      margin-left: auto;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--muted);
+    }
+    .app-status.active { color: var(--success); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .btn:hover { border-color: rgba(255,255,255,0.2); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); }
+
+    .l0-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .l0-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    .l0-dot.active { background: var(--success); }
+  </style>
+</head>
+<body data-zoom="L1">
+
+  <!-- L0 View: Kompakter Chip -->
+  <div class="l0-only">
+    <div class="l0-status">
+      <span class="l0-dot" id="l0-dot"></span>
+      <span id="l0-label">Bereit</span>
+    </div>
+  </div>
+
+  <!-- L1 / L2 View: Volle App -->
+  <div class="l1-only l2-only">
+    <div class="app-header">
+      <span>📦</span>
+      <span class="app-title">Meine App</span>
+      <span class="app-status" id="status-text">Bereit</span>
+    </div>
+
+    <div class="content">
+      <p style="color:var(--muted); margin-bottom:16px">
+        App-Inhalt. Ersetze diesen Block mit deiner Logik.
+      </p>
+      <button class="btn primary" onclick="run()">&#9654; Ausführen</button>
+    </div>
+
+    <!-- L2: Konfiguration -->
+    <div class="l2-only" style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border)">
+      <div style="color:var(--muted); font-size:12px; margin-bottom:8px">Konfiguration</div>
+    </div>
+  </div>
+
+  <script>
+    // ══════════════════════════════════════════════
+    //  PulseOS Graph-Infrastruktur (nicht ändern)
+    // ══════════════════════════════════════════════
+
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'set-zoom') {
+        document.body.dataset.zoom = e.data.zoom;
+      }
+      if (e.data?.type === 'app-input') {
+        handleInput(e.data.inputName, e.data.data);
+      }
+      if (e.data?.type === 'pulse') {
+        onPulse(e.data.data);
+      }
+    });
+
+    function emit(outputName, data) {
+      parent.postMessage({ type: 'graph-output', outputName, data }, '*');
+      setStatus('Output gesendet: ' + outputName);
+    }
+
+    function setStatus(text, active) {
+      const s = document.getElementById('status-text');
+      const d = document.getElementById('l0-dot');
+      const l = document.getElementById('l0-label');
+      if (s) s.textContent = text;
+      if (l) l.textContent = text;
+      if (d) d.className = 'l0-dot' + (active ? ' active' : '');
+      parent.postMessage({ type: 'status', text }, '*');
+    }
+
+    async function saveState(data) {
+      await fetch('/api/apps/' + getAppId() + '/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'set-state', data })
+      });
+    }
+
+    async function loadState() {
+      const res = await fetch('/api/apps/' + getAppId() + '/state');
+      const result = await res.json();
+      return result.data;
+    }
+
+    function getAppId() {
+      return document.body.dataset.appId
+        || new URLSearchParams(location.search).get('appId')
+        || 'unknown';
+    }
+
+    async function callApp(appId, actionType, data) {
+      const res = await fetch('/api/apps/' + appId + '/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: actionType, data })
+      });
+      return res.json();
+    }
+
+    async function getAppState(appId) {
+      const res = await fetch('/api/apps/' + appId + '/state');
+      return res.json();
+    }
+
+    // ══════════════════════════════════════════════
+    //  App-Logik — hier schreiben
+    // ══════════════════════════════════════════════
+
+    function handleInput(inputName, data) {
+      console.log('Input empfangen:', inputName, data);
+    }
+
+    function onPulse(pulseData) {
+      console.log('Pulse:', pulseData.type);
+      run();
+    }
+
+    async function run() {
+      setStatus('Läuft...', true);
+      try {
+        const result = { example: 'data', timestamp: Date.now() };
+        emit('output', result);
+        setStatus('Fertig', false);
+      } catch (err) {
+        setStatus('Fehler: ' + err.message, false);
+        console.error(err);
+      }
+    }
+
+    async function init() {
+      const state = await loadState().catch(() => null);
+      setStatus('Bereit');
+    }
+
+    init();
+  </script>
+</body>
+</html>

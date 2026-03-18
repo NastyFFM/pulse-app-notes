@@ -1814,31 +1814,31 @@ KI Actions (sequenziell):
 13a Manifest + Migration       ← Fundament, erst das           ✅ FERTIG
         │
         ▼
-13b Node-App Scaffold + Templates  ← App-Vorlagen erstellen    🔧 AKTUELL
+13b Node-App Scaffold + Templates  ← App-Vorlagen erstellen    ✅ FERTIG
         │
         ▼
-13c Process Manager            ← Damit Node-Apps starten/stoppen  🔲
+13c Process Manager            ← Damit Node-Apps starten/stoppen  ✅ FERTIG
         │
         ▼
-13d Graph Router               ← Datenfluss zwischen Apps      🔲
+13d Graph Router               ← Datenfluss zwischen Apps      ✅ FERTIG
         │
-        ├──► 13e Pulse Engine  ← Gleichzeitig mit Graph möglich 🔲
-        │
-        ▼
-13f CLI                        ← Alles oben benutzbar machen   🔲
+        ├──► 13e Pulse Engine  ← Gleichzeitig mit Graph möglich ✅ FERTIG
         │
         ▼
-13g Graph-UI                   ← Visueller Editor              🔲
+13f CLI                        ← Alles oben benutzbar machen   ✅ FERTIG
         │
         ▼
-13h MCP-Server (optional)      ← Entscheidung ob nötig         🔲❓
+13g Graph-UI                   ← Visueller Editor              ✅ FERTIG
+        │
+        ▼
+13h MCP-Server (optional)      ← ÜBERSPRUNGEN (CLI+API reicht) ⏭️
 ```
 
 ---
 
 ## Implementierungs-Status
 
-> **Aktueller Stand:** Phase 13a ✅ → Phase 13b 🔧
+> **Aktueller Stand:** Phase 13 KOMPLETT ✅ (13h MCP übersprungen)
 > **Letzte Aktualisierung:** 2026-03-18
 
 ### Phase 13a — manifest.json + Migration ✅
@@ -1852,69 +1852,128 @@ KI Actions (sequenziell):
 - [x] Server-API: `DELETE /api/app-registry/:id`
 - [x] `jsonRes()` erweitert mit optionalem Status-Code Parameter
 
-### Phase 13b — Node-App Scaffold + Templates
-- [ ] `templates/app-vanilla/` mit index.html + manifest.json
-- [ ] `templates/app-node/` mit src/server.js + package.json + manifest.json + public/index.html
-- [ ] Vanilla-Template: `PulseOS.emit()`, `PulseOS.onInput()`, `PulseOS.onPulse()`, `saveState()`, `loadState()`
-- [ ] Node-Template: 3 Pflicht-Endpoints (`/api/state`, `/api/action`, `/api/events`)
-- [ ] Node-Template: `emit()`, `callApp()`, `getAppState()`, `reportStatus()`
+### Phase 13b — Node-App Scaffold + Templates ✅
+- [x] `templates/app-vanilla/` mit index.html + manifest.json
+- [x] `templates/app-node/` mit src/server.js + package.json + manifest.json + .gitignore
+- [x] Vanilla-Template: `emit()`, `handleInput()`, `onPulse()`, `saveState()`, `loadState()`, `callApp()`
+- [x] Node-Template: 3 Pflicht-Endpoints (`/api/state`, `/api/action`, `/api/events`)
+- [x] Node-Template: `emit()`, `callApp()`, `getAppState()`, `reportStatus()`, `broadcastSSE()`
 
-### Phase 13c — Process Manager
-- [ ] `startNodeApp(appId)` in server.js (child_process.spawn)
-- [ ] `stopNodeApp(appId)` mit SIGTERM
-- [ ] `waitForPort()` — wartet max 30s bis App antwortet
-- [ ] Registry-Status Updates (starting/running/stopped)
-- [ ] Crash-Detection → `app-crashed` SSE
-- [ ] `autoRestart` Support
-- [ ] Vanilla-App State Runtime (in-memory + state.json)
-- [ ] `POST /api/apps/:id/start` + `POST /api/apps/:id/stop`
-- [ ] `GET /api/apps/:id/state` (unified vanilla + node)
-- [ ] `POST /api/apps/:id/action` (proxy für node, runtime für vanilla)
+### Phase 13c — Process Manager ✅
+- [x] `startNodeApp(appId)` in server.js (child_process.spawn)
+- [x] `stopNodeApp(appId)` mit SIGTERM
+- [x] `waitForPort()` — wartet max 15s bis App antwortet
+- [x] Registry-Status Updates (starting/running/stopped)
+- [ ] Crash-Detection → `app-crashed` SSE (deferred)
+- [ ] `autoRestart` Support (deferred)
+- [x] Vanilla-App State Runtime (in-memory + state.json)
+- [x] `POST /api/apps/:id/start` + `POST /api/apps/:id/stop`
+- [x] `GET /api/apps/:id/state` (unified vanilla + node)
+- [x] `POST /api/apps/:id/action` (proxy für node, runtime für vanilla)
+- [x] `POST /api/apps/:id/status` (status broadcast via SSE)
+- [x] `loadManifest(appId)` — liest aus apps/ oder ~/pulse-workspace/
+- [x] `proxyToNodeApp()` — HTTP-Weiterleitung an laufende Node-App
 
-### Phase 13d — Graph Router
-- [ ] `data/graphs/` Verzeichnis
-- [ ] Graph-Datei Format: nodes + edges + x/y-Positionen
-- [ ] `loadGraph(projectId)` + `saveGraph()`
-- [ ] `routeOutput(projectId, fromAppId, outputName, data)`
-- [ ] `sendInputToApp(appId, inputName, data)` — unified vanilla + node
-- [ ] PulseOS Bridge erweitern: `PulseOS.emit()`, `PulseOS.onInput()`, `PulseOS.onPulse()`
-- [ ] Graph-API: `GET /api/graphs/:projectId`
-- [ ] Graph-API: `POST /api/graphs/:projectId`
-- [ ] Graph-API: `POST /api/graphs/:projectId/connect`
-- [ ] Graph-API: `DELETE /api/graphs/:projectId/connect`
-- [ ] Graph-API: `POST /api/graphs/:projectId/run`
-- [ ] Graph-Routing-Fehler → SSE
+### Phase 13d — Graph Router ✅
+- [x] `data/graphs/` Verzeichnis
+- [x] Graph-Datei Format: nodes + edges + x/y-Positionen + updatedAt
+- [x] `loadGraph(projectId)` + `saveGraph()`
+- [x] `routeOutput(projectId, fromAppId, outputName, data)`
+- [x] `sendInputToApp(appId, inputName, data)` — unified vanilla + node
+- [x] PulseOS Bridge erweitern: `PulseOS.emit()`, `PulseOS.onInput()`, `PulseOS.onPulse()`
+- [x] Graph-API: `GET /api/graphs/:projectId`
+- [x] Graph-API: `POST /api/graphs/:projectId`
+- [x] Graph-API: `POST /api/graphs/:projectId/connect` (auto-adds nodes)
+- [x] Graph-API: `DELETE /api/graphs/:projectId/connect`
+- [x] Graph-API: `POST /api/graphs/:projectId/run` (triggers all producers)
+- [x] Graph-API: `POST /api/graphs/:projectId/output` (app reports output for routing)
+- [x] Graph-Routing-Fehler → SSE (`graph-routing-error` event)
+- [x] `findGraphsForApp(appId)` — finds all graphs containing an app
 
-### Phase 13e — Pulse Engine
-- [ ] `parseClockSchedule()` — clock:30m, clock:1h, clock:daily@08:00
-- [ ] `registerPulseSubscription(appId, subscription)`
-- [ ] `fireAppPulse(appId, pulseData)` — unified vanilla + node
-- [ ] `startPulseEngine()` beim Server-Start
-- [ ] `POST /api/pulse/fire/:appId` — manueller Trigger
-- [ ] `POST /api/pulse/webhook/:token` — externer Webhook
+### Phase 13e — Pulse Engine ✅
+- [x] `parseClockSchedule()` — clock:30m, clock:1h, clock:daily@08:00
+- [x] `registerPulseSubscription(appId, subscription)`
+- [x] `fireAppPulse(appId, pulseData)` — unified vanilla + node
+- [x] `startPulseEngine()` beim Server-Start (scannt Registry für clock: subscriptions)
+- [x] `POST /api/pulse/fire/:appId` — manueller Trigger
+- [x] `POST /api/pulse/webhook/:token` — externer Webhook (scannt Registry für matching apps)
 
-### Phase 13f — CLI (`bin/pulse.js`)
-- [ ] `pulse app list` / `pulse app list --running`
-- [ ] `pulse app start <id>` / `pulse app stop <id>`
-- [ ] `pulse app create <id> --type vanilla|node`
-- [ ] `pulse app install <source>` (GitHub + lokal)
-- [ ] `pulse app call <id> state|action`
-- [ ] `pulse graph show <projectId>`
-- [ ] `pulse graph connect` / `pulse graph disconnect`
-- [ ] `pulse graph run <projectId>`
-- [ ] `pulse fire <appId>`
+### Phase 13f — CLI (`bin/pulse.js`) ✅
+- [x] `pulse app list` / `pulse app list --running|--node|--vanilla`
+- [x] `pulse app start <id>` / `pulse app stop <id>` / `pulse app restart <id>`
+- [x] `pulse app status <id>` (zeigt type, status, manifest, state)
+- [x] `pulse app create <id> --type vanilla|node` (kopiert Template, ersetzt Platzhalter, registriert)
+- [x] `pulse app call <id> state|action [json]`
+- [x] `pulse graph show <projectId>` (Nodes + Edges ASCII)
+- [x] `pulse graph connect` / `pulse graph disconnect` mit `--project`
+- [x] `pulse graph run <projectId>` (alle Producer pulsieren)
+- [x] `pulse fire <appId|project:projectId>`
+- [x] `pulse help`
+- [ ] `pulse app install <source>` (deferred — braucht git clone Logik)
 
-### Phase 13g — Graph-UI
-- [ ] Graph-Tab in apps/projects/index.html
-- [ ] `renderGraphNodes()` + `renderGraphEdges()`
-- [ ] Drag-to-connect zwischen Nodes
-- [ ] Node-Drag persistiert Position (debounced)
-- [ ] SSE-Updates: Node-Status live, Edge-Flash bei Datenfluss
-- [ ] "Add App" Dialog
-- [ ] "Run Graph" Button
-- [ ] KI-Graph-Actions im Context-Chat
+### Phase 13g — Graph-UI ✅
+- [x] Graph-Tab in apps/projects/index.html (Canvas/Graph tab switcher)
+- [x] `renderGraphView()` + `renderGraphEdges()` (SVG lines with arrowheads)
+- [x] Node-Drag persistiert Position (debounced 500ms, saves via POST)
+- [x] SSE-Updates: `graph-updated` → re-render, `graph-data-flow` → edge flash animation
+- [x] "Add App" Dialog (modal with available apps from registry)
+- [x] "Run Graph" Button (triggers all producers, status dot animation)
+- [x] Node styling by nodeType (producer=green, transformer=amber, consumer=blue border)
+- [x] Port visualization (output=purple, input=blue badges)
+- [ ] Drag-to-connect between ports (deferred — use CLI/API for now)
+- [ ] KI-Graph-Actions im Context-Chat (deferred)
 
-### Phase 13h — MCP-Server (optional, Entscheidung später)
-- [ ] ❓ Entscheiden ob MCP-Server nötig ist (CLI + API reichen evtl.)
-- [ ] Falls ja: `mcp/pulse-mcp-server.js` mit Tools
-- [ ] Falls ja: `.mcp.json` Konfiguration
+### Phase 13h — MCP-Server — ÜBERSPRUNGEN
+- [x] Entscheidung: CLI + direkte API reichen. MCP-Server wird nicht gebaut.
+- Grund: PulseOS IST der Server. Claude Code kann curl/API direkt nutzen. Extra Layer bringt keinen Mehrwert.
+
+---
+
+## V3 UX-Refresh (feature/major-change Branch)
+
+> **Status:** Phase A-C ✅, Phase D 🔲 nächster Schritt
+> **Letzte Aktualisierung:** 2026-03-19
+> **Branch:** `feature/major-change`
+
+### Phase A — Profile & Contacts ✅
+- [x] Profil-Edit Modal (Klick auf TopBar Name → Modal mit allen Feldern)
+- [x] System Chat mit Tabs (💬 Chat / 👥 Kontakte)
+- [x] Kontaktliste mit Online-Status, GitHub Pages Links, relative Timestamps
+- [x] Responsive CSS (768px + 480px Breakpoints)
+- [x] Mobile: Dock kompakter, Context-Favoriten hidden, App-Windows full-width
+
+### Phase B — WebRTC System-Bus ✅
+- [x] Unread-Message Badge auf Peer Bar (rote Zähler-Badge)
+- [x] Chat-Bubble auch ohne Online-Peers wenn ungelesene Nachrichten
+- [x] Badge reset beim Öffnen des Chat-Panels
+- [x] WebRTC Bridge Host mit Profile-Exchange, Tunnel-Request, System-Chat
+
+### Phase C — Revolutionary Agentic OS Dashboard ✅
+- [x] Home Screen mit personalisierter Begrüßung (zeitabhängig: Morgen/Tag/Abend/Nacht)
+- [x] Quick Actions Grid (Apps, Projekte, Chat, System) — 4-col Desktop, 2-col Mobile
+- [x] Recent Contexts Cards mit Widget-Pills und relativen Timestamps
+- [x] Active Graphs Section (auto-hide wenn keine Graphen)
+- [x] System Pulse Feed (Live-Event-Stream aus SSE/Mutations)
+- [x] `addFeed()` → Pulse Feed Brücke für Echtzeit-Updates
+- [x] Fully responsive: Desktop 4-col → Mobile 2-col/1-col
+
+### Phase D — Graph-UI Visual Editor 🔲
+- [ ] Canvas-basierter Node-Editor mit Drag-and-Drop
+- [ ] SVG Edge-Rendering zwischen Ports
+- [ ] Drag-to-Connect zwischen Output/Input Ports
+- [ ] Responsive: Full Editor Desktop, vereinfachte Liste Mobile
+- **Voraussetzung:** Phase 13d Graph-Router Backend muss getestet/verifiziert werden
+
+### Nächster Schritt
+Phase 13d Graph-Router Backend verifizieren und testen:
+- `routeOutput()` End-to-End testen
+- Graph-Datenfluss zwischen Apps prüfen
+- Danach Phase D (Graph-UI) mit echtem Datenfluss bauen
+
+### Session-Einstieg (für neue Sessions)
+1. Lies dieses Dokument ab "V3 UX-Refresh"
+2. Lies `VISION.md` für die Gesamtvision
+3. Prüfe Branch: `git branch` → sollte `feature/major-change` sein
+4. Starte Server: `node server.js`
+5. Öffne `http://localhost:3000` — Home Screen sollte sichtbar sein
+6. Weiter bei "Nächster Schritt"

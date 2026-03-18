@@ -1,0 +1,19 @@
+{
+  "id": "REPLACE_ID",
+  "name": "REPLACE_NAME",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "",
+  "icon": "📦",
+  "category": "productivity",
+
+  "nodeType": "producer",
+  "inputs": [],
+  "outputs": [
+    { "name": "output", "schema": "record" }
+  ],
+  "pulseSubscriptions": ["manual"],
+
+  "repo": null,
+  "source": "local"
+}
