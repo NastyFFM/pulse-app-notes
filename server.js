@@ -873,7 +873,30 @@ async function fireAppPulse(appId, pulseData) {
   if (manifest.type === 'node' && runningProcesses.has(appId)) {
     await proxyToNodeApp(appId, 'POST', '/api/action', { type: 'pulse', data: pulseData });
   } else {
+    // Broadcast to any open iframe
     broadcast(appId, { type: 'pulse', appId, data: pulseData });
+
+    // For vanilla producer apps: also auto-route outputs through graphs
+    // (because vanilla apps only run when open in an iframe)
+    if (manifest.nodeType === 'producer' && manifest.outputs && manifest.outputs.length > 0) {
+      const graphs = findGraphsForApp(appId);
+      if (graphs.length > 0) {
+        // Check if app has a pulse handler that produces state
+        const statePath = path.join(ROOT, 'data', 'app-state', appId + '.json');
+        let appState = null;
+        try { appState = JSON.parse(fs.readFileSync(statePath, 'utf8')); } catch {}
+
+        // Route current state as output through all graphs
+        for (const graph of graphs) {
+          for (const output of manifest.outputs) {
+            const data = appState || { pulsedAt: new Date().toISOString(), type: pulseData.type, appId };
+            routeOutput(graph.projectId, appId, output.name, data)
+              .then(() => console.log(`[pulse] auto-routed ${appId}.${output.name} → graph ${graph.projectId}`))
+              .catch(e => console.error(`[pulse] auto-route error:`, e.message));
+          }
+        }
+      }
+    }
   }
 }
 

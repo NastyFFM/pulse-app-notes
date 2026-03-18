@@ -353,6 +353,60 @@
       "status": "active",
       "pid": null,
       "port": null
+    },
+    {
+      "id": "quote-generator",
+      "name": "Zitat-Generator",
+      "icon": "💬",
+      "installed": true,
+      "manifest": {
+        "id": "quote-generator",
+        "name": "Zitat-Generator",
+        "version": "1.0.0",
+        "type": "vanilla",
+        "description": "Generiert zufällige Zitate und sendet sie weiter",
+        "icon": "💬",
+        "category": "demo",
+        "nodeType": "producer",
+        "inputs": [],
+        "outputs": [
+          {
+            "name": "quote",
+            "schema": "record"
+          }
+        ],
+        "pulseSubscriptions": [
+          "clock:1m"
+        ],
+        "repo": null,
+        "source": "local"
+      }
+    },
+    {
+      "id": "quote-display",
+      "name": "Zitat-Anzeige",
+      "icon": "📜",
+      "installed": true,
+      "manifest": {
+        "id": "quote-display",
+        "name": "Zitat-Anzeige",
+        "version": "1.0.0",
+        "type": "vanilla",
+        "description": "Empfängt und zeigt Zitate aus dem Graph an",
+        "icon": "📜",
+        "category": "demo",
+        "nodeType": "consumer",
+        "inputs": [
+          {
+            "name": "quote",
+            "schema": "record"
+          }
+        ],
+        "outputs": [],
+        "pulseSubscriptions": [],
+        "repo": null,
+        "source": "local"
+      }
     }
   ]
 }
