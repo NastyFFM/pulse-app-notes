@@ -1926,3 +1926,54 @@ KI Actions (sequenziell):
 ### Phase 13h — MCP-Server — ÜBERSPRUNGEN
 - [x] Entscheidung: CLI + direkte API reichen. MCP-Server wird nicht gebaut.
 - Grund: PulseOS IST der Server. Claude Code kann curl/API direkt nutzen. Extra Layer bringt keinen Mehrwert.
+
+---
+
+## V3 UX-Refresh (feature/major-change Branch)
+
+> **Status:** Phase A-C ✅, Phase D 🔲 nächster Schritt
+> **Letzte Aktualisierung:** 2026-03-19
+> **Branch:** `feature/major-change`
+
+### Phase A — Profile & Contacts ✅
+- [x] Profil-Edit Modal (Klick auf TopBar Name → Modal mit allen Feldern)
+- [x] System Chat mit Tabs (💬 Chat / 👥 Kontakte)
+- [x] Kontaktliste mit Online-Status, GitHub Pages Links, relative Timestamps
+- [x] Responsive CSS (768px + 480px Breakpoints)
+- [x] Mobile: Dock kompakter, Context-Favoriten hidden, App-Windows full-width
+
+### Phase B — WebRTC System-Bus ✅
+- [x] Unread-Message Badge auf Peer Bar (rote Zähler-Badge)
+- [x] Chat-Bubble auch ohne Online-Peers wenn ungelesene Nachrichten
+- [x] Badge reset beim Öffnen des Chat-Panels
+- [x] WebRTC Bridge Host mit Profile-Exchange, Tunnel-Request, System-Chat
+
+### Phase C — Revolutionary Agentic OS Dashboard ✅
+- [x] Home Screen mit personalisierter Begrüßung (zeitabhängig: Morgen/Tag/Abend/Nacht)
+- [x] Quick Actions Grid (Apps, Projekte, Chat, System) — 4-col Desktop, 2-col Mobile
+- [x] Recent Contexts Cards mit Widget-Pills und relativen Timestamps
+- [x] Active Graphs Section (auto-hide wenn keine Graphen)
+- [x] System Pulse Feed (Live-Event-Stream aus SSE/Mutations)
+- [x] `addFeed()` → Pulse Feed Brücke für Echtzeit-Updates
+- [x] Fully responsive: Desktop 4-col → Mobile 2-col/1-col
+
+### Phase D — Graph-UI Visual Editor 🔲
+- [ ] Canvas-basierter Node-Editor mit Drag-and-Drop
+- [ ] SVG Edge-Rendering zwischen Ports
+- [ ] Drag-to-Connect zwischen Output/Input Ports
+- [ ] Responsive: Full Editor Desktop, vereinfachte Liste Mobile
+- **Voraussetzung:** Phase 13d Graph-Router Backend muss getestet/verifiziert werden
+
+### Nächster Schritt
+Phase 13d Graph-Router Backend verifizieren und testen:
+- `routeOutput()` End-to-End testen
+- Graph-Datenfluss zwischen Apps prüfen
+- Danach Phase D (Graph-UI) mit echtem Datenfluss bauen
+
+### Session-Einstieg (für neue Sessions)
+1. Lies dieses Dokument ab "V3 UX-Refresh"
+2. Lies `VISION.md` für die Gesamtvision
+3. Prüfe Branch: `git branch` → sollte `feature/major-change` sein
+4. Starte Server: `node server.js`
+5. Öffne `http://localhost:3000` — Home Screen sollte sichtbar sein
+6. Weiter bei "Nächster Schritt"
