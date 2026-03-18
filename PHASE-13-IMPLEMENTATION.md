@@ -1828,7 +1828,7 @@ KI Actions (sequenziell):
 13f CLI                        ← Alles oben benutzbar machen   ✅ FERTIG
         │
         ▼
-13g Graph-UI                   ← Visueller Editor              🔲
+13g Graph-UI                   ← Visueller Editor              ✅ FERTIG
         │
         ▼
 13h MCP-Server (optional)      ← Entscheidung ob nötig         🔲❓
@@ -1838,7 +1838,7 @@ KI Actions (sequenziell):
 
 ## Implementierungs-Status
 
-> **Aktueller Stand:** Phase 13a-f ✅ → Phase 13g 🔧
+> **Aktueller Stand:** Phase 13a-g ✅ → Phase 13h ❓ (MCP optional)
 > **Letzte Aktualisierung:** 2026-03-18
 
 ### Phase 13a — manifest.json + Migration ✅
@@ -1911,15 +1911,17 @@ KI Actions (sequenziell):
 - [x] `pulse help`
 - [ ] `pulse app install <source>` (deferred — braucht git clone Logik)
 
-### Phase 13g — Graph-UI
-- [ ] Graph-Tab in apps/projects/index.html
-- [ ] `renderGraphNodes()` + `renderGraphEdges()`
-- [ ] Drag-to-connect zwischen Nodes
-- [ ] Node-Drag persistiert Position (debounced)
-- [ ] SSE-Updates: Node-Status live, Edge-Flash bei Datenfluss
-- [ ] "Add App" Dialog
-- [ ] "Run Graph" Button
-- [ ] KI-Graph-Actions im Context-Chat
+### Phase 13g — Graph-UI ✅
+- [x] Graph-Tab in apps/projects/index.html (Canvas/Graph tab switcher)
+- [x] `renderGraphView()` + `renderGraphEdges()` (SVG lines with arrowheads)
+- [x] Node-Drag persistiert Position (debounced 500ms, saves via POST)
+- [x] SSE-Updates: `graph-updated` → re-render, `graph-data-flow` → edge flash animation
+- [x] "Add App" Dialog (modal with available apps from registry)
+- [x] "Run Graph" Button (triggers all producers, status dot animation)
+- [x] Node styling by nodeType (producer=green, transformer=amber, consumer=blue border)
+- [x] Port visualization (output=purple, input=blue badges)
+- [ ] Drag-to-connect between ports (deferred — use CLI/API for now)
+- [ ] KI-Graph-Actions im Context-Chat (deferred)
 
 ### Phase 13h — MCP-Server (optional, Entscheidung später)
 - [ ] ❓ Entscheiden ob MCP-Server nötig ist (CLI + API reichen evtl.)
