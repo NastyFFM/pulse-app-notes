@@ -1,0 +1,16 @@
+{
+  "id": "webrtc-chat",
+  "name": "webrtc-chat",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "",
+  "icon": "📦",
+  "color": "#8B5CF6",
+  "category": "social",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

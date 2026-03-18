@@ -1,0 +1,16 @@
+{
+  "id": "travel-planner",
+  "name": "Reiseplaner",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Reisen planen mit Tagesplanung, Aktivitäten und Packliste",
+  "icon": "✈️",
+  "color": "#0EA5E9",
+  "category": "productivity",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

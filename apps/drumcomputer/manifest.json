@@ -1,0 +1,16 @@
+{
+  "id": "drumcomputer",
+  "name": "Drum Computer",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "4-Track Step Sequencer mit Web Audio",
+  "icon": "🥁",
+  "color": "#EF4444",
+  "category": "tools",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "podcast-search",
+  "name": "Podcast",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Podcasts suchen und hören",
+  "icon": "🎙️",
+  "color": "#8b5cf6",
+  "category": "media",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

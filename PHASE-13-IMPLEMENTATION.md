@@ -1811,10 +1811,10 @@ KI Actions (sequenziell):
 ## Reihenfolge der Implementierung
 
 ```
-13a Manifest + Migration       ← Fundament, erst das           🔧 AKTUELL
+13a Manifest + Migration       ← Fundament, erst das           ✅ FERTIG
         │
         ▼
-13b Node-App Scaffold + Templates  ← App-Vorlagen erstellen    🔲
+13b Node-App Scaffold + Templates  ← App-Vorlagen erstellen    🔧 AKTUELL
         │
         ▼
 13c Process Manager            ← Damit Node-Apps starten/stoppen  🔲
@@ -1838,19 +1838,19 @@ KI Actions (sequenziell):
 
 ## Implementierungs-Status
 
-> **Aktueller Stand:** Phase 13a 🔧
+> **Aktueller Stand:** Phase 13a ✅ → Phase 13b 🔧
 > **Letzte Aktualisierung:** 2026-03-18
 
-### Phase 13a — manifest.json + Migration
-- [ ] manifest.json Schema definiert (siehe oben)
-- [ ] Migrationsskript `scripts/migrate-to-manifest.js` erstellt
-- [ ] manifest.json für alle ~40 bestehenden Apps generiert
-- [ ] `data/app-registry.json` erstellt (ersetzt apps.json)
-- [ ] Server-API: `GET /api/app-registry`
-- [ ] Server-API: `GET /api/app-registry/:id`
-- [ ] Server-API: `POST /api/app-registry`
-- [ ] Server-API: `DELETE /api/app-registry/:id`
-- [ ] server.js liest Manifeste statt apps.json
+### Phase 13a — manifest.json + Migration ✅
+- [x] manifest.json Schema definiert (siehe oben)
+- [x] Migrationsskript `scripts/migrate-to-manifest.js` erstellt
+- [x] manifest.json für alle 44 bestehenden Apps generiert
+- [x] `data/app-registry.json` erstellt (44 Apps)
+- [x] Server-API: `GET /api/app-registry` (mit Manifest-Enrichment)
+- [x] Server-API: `GET /api/app-registry/:id`
+- [x] Server-API: `POST /api/app-registry` (Upsert)
+- [x] Server-API: `DELETE /api/app-registry/:id`
+- [x] `jsonRes()` erweitert mit optionalem Status-Code Parameter
 
 ### Phase 13b — Node-App Scaffold + Templates
 - [ ] `templates/app-vanilla/` mit index.html + manifest.json

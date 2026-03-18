@@ -1,0 +1,16 @@
+{
+  "id": "youtube-search",
+  "name": "YouTube",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "YouTube-Videos suchen und abspielen",
+  "icon": "▶️",
+  "color": "#dc2626",
+  "category": "media",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

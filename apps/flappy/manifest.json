@@ -1,0 +1,16 @@
+{
+  "id": "flappy",
+  "name": "Flappy Bird",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Flappy Bird – Fliege durch die Rohre!",
+  "icon": "🐦",
+  "color": "#F59E0B",
+  "category": "games",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

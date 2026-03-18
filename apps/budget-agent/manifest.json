@@ -1,0 +1,16 @@
+{
+  "id": "budget-agent",
+  "name": "Budget Agent",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Trackt Einnahmen, Ausgaben und Budget-Ziele",
+  "icon": "💰",
+  "color": "#22c55e",
+  "category": "productivity",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

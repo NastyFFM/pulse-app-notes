@@ -1,0 +1,16 @@
+{
+  "id": "budget",
+  "name": "Budget-Tracker",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Einnahmen und Ausgaben verwalten, Kategorien, Monatsübersicht",
+  "icon": "💰",
+  "color": "#F59E0B",
+  "category": "productivity",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

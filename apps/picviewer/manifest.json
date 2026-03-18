@@ -1,0 +1,16 @@
+{
+  "id": "picviewer",
+  "name": "Picture Viewer",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Browse and view images in a gallery",
+  "icon": "🖼️",
+  "color": "#EC4899",
+  "category": "media",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

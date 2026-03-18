@@ -1,0 +1,16 @@
+{
+  "id": "podcast",
+  "name": "Podcasts",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Podcasts entdecken, Episoden hoeren und Favoriten speichern",
+  "icon": "🎙️",
+  "color": "#EA580C",
+  "category": "media",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}

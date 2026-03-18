@@ -16,7 +16,7 @@ if (!fs.existsSync(MODIFY_QUEUE_FILE)) fs.writeFileSync(MODIFY_QUEUE_FILE, JSON.
 if (!fs.existsSync(AGENTS_FILE)) fs.writeFileSync(AGENTS_FILE, JSON.stringify({ agents: [] }, null, 2));
 
 // --- Helpers ---
-function jsonRes(res, data) { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(typeof data === 'string' ? data : JSON.stringify(data)); }
+function jsonRes(res, data, status = 200) { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(typeof data === 'string' ? data : JSON.stringify(data)); }
 function htmlRes(res, file) { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache, no-store, must-revalidate' }); res.end(fs.readFileSync(file)); }
 function readBody(req, cb) { let b = ''; req.on('data', c => b += c); req.on('end', () => cb(b)); }
 function safeReadJSON(file, fallback) { try { return fs.readFileSync(file, 'utf8'); } catch { return JSON.stringify(fallback); } }
@@ -1034,6 +1034,76 @@ const server = http.createServer((req, res) => {
       broadcast('dashboard', { type: 'change', file: 'apps.json', time: Date.now() });
       jsonRes(res, { ok: true });
     });
+  }
+
+  // ── APP REGISTRY (Phase 13a) ──────────────────────────────
+  if (url === '/api/app-registry' && req.method === 'GET') {
+    const regFile = path.join(ROOT, 'data', 'app-registry.json');
+    if (!fs.existsSync(regFile)) return jsonRes(res, { version: '1.0.0', apps: [] });
+    const reg = JSON.parse(fs.readFileSync(regFile, 'utf8'));
+    // Enrich with manifest data
+    reg.apps = reg.apps.map(entry => {
+      try {
+        const mPath = path.join(ROOT, entry.path, 'manifest.json');
+        if (fs.existsSync(mPath)) entry.manifest = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+      } catch {}
+      return entry;
+    });
+    return jsonRes(res, reg);
+  }
+
+  const appRegMatch = url.match(/^\/api\/app-registry\/([a-z0-9_-]+)$/);
+  if (appRegMatch && req.method === 'GET') {
+    const appId = appRegMatch[1];
+    const regFile = path.join(ROOT, 'data', 'app-registry.json');
+    if (!fs.existsSync(regFile)) return jsonRes(res, { error: 'Registry not found' }, 404);
+    const reg = JSON.parse(fs.readFileSync(regFile, 'utf8'));
+    const entry = reg.apps.find(a => a.id === appId);
+    if (!entry) return jsonRes(res, { error: 'App not found' }, 404);
+    try {
+      const mPath = path.join(ROOT, entry.path, 'manifest.json');
+      if (fs.existsSync(mPath)) entry.manifest = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+    } catch {}
+    return jsonRes(res, entry);
+  }
+
+  if (url === '/api/app-registry' && req.method === 'POST') {
+    return readBody(req, b => {
+      const newApp = JSON.parse(b);
+      if (!newApp.id) return jsonRes(res, { error: 'id required' }, 400);
+      const regFile = path.join(ROOT, 'data', 'app-registry.json');
+      const reg = fs.existsSync(regFile) ? JSON.parse(fs.readFileSync(regFile, 'utf8')) : { version: '1.0.0', apps: [] };
+      // Upsert
+      const idx = reg.apps.findIndex(a => a.id === newApp.id);
+      const entry = {
+        id: newApp.id,
+        type: newApp.type || 'vanilla',
+        path: newApp.path || `./apps/${newApp.id}`,
+        status: newApp.status || 'active',
+        pid: null,
+        port: newApp.port || null,
+        repo: newApp.repo || null
+      };
+      if (idx >= 0) reg.apps[idx] = entry; else reg.apps.push(entry);
+      reg.updatedAt = new Date().toISOString();
+      fs.writeFileSync(regFile, JSON.stringify(reg, null, 2));
+      broadcast('dashboard', { type: 'change', file: 'app-registry.json', time: Date.now() });
+      jsonRes(res, { ok: true, app: entry });
+    });
+  }
+
+  if (appRegMatch && req.method === 'DELETE') {
+    const appId = appRegMatch[1];
+    const regFile = path.join(ROOT, 'data', 'app-registry.json');
+    if (!fs.existsSync(regFile)) return jsonRes(res, { error: 'Registry not found' }, 404);
+    const reg = JSON.parse(fs.readFileSync(regFile, 'utf8'));
+    const before = reg.apps.length;
+    reg.apps = reg.apps.filter(a => a.id !== appId);
+    if (reg.apps.length === before) return jsonRes(res, { error: 'App not found' }, 404);
+    reg.updatedAt = new Date().toISOString();
+    fs.writeFileSync(regFile, JSON.stringify(reg, null, 2));
+    broadcast('dashboard', { type: 'change', file: 'app-registry.json', time: Date.now() });
+    return jsonRes(res, { ok: true, removed: appId });
   }
 
   // App status — returns summary info from app's data directory

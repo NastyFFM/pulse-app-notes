@@ -1,0 +1,16 @@
+{
+  "id": "mediaplayer",
+  "name": "MediaPlayer",
+  "version": "1.0.0",
+  "type": "vanilla",
+  "description": "Alles-in-einem Mediaplayer: YouTube, Internet-Radio und Podcasts",
+  "icon": "🎵",
+  "color": "#7c3aed",
+  "category": "media",
+  "nodeType": "consumer",
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": [],
+  "repo": null,
+  "source": "local"
+}
