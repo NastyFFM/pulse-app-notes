@@ -1,0 +1,24 @@
+{
+  "id": "REPLACE_ID",
+  "name": "REPLACE_NAME",
+  "version": "1.0.0",
+  "type": "node",
+  "description": "",
+  "icon": "📦",
+  "category": "productivity",
+
+  "start": "node src/server.js",
+  "build": null,
+  "port": 3050,
+  "env": { "PORT": "3050" },
+
+  "nodeType": "producer",
+  "inputs": [],
+  "outputs": [
+    { "name": "output", "schema": "record" }
+  ],
+  "pulseSubscriptions": ["manual"],
+
+  "repo": null,
+  "source": "local"
+}

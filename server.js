@@ -588,6 +588,166 @@ function vikingSyncContextDebounced(contextId) {
   }, 2000);
 }
 
+// --- Process Manager (Phase 13b/c) ---
+const runningProcesses = new Map(); // appId → { process, port, pid, startedAt }
+const vanillaStates = new Map();    // appId → { data, lastUpdated }
+
+function loadManifest(appId) {
+  // Try local apps/ first, then ~/pulse-workspace/
+  const localPath = path.join(ROOT, 'apps', appId, 'manifest.json');
+  if (fs.existsSync(localPath)) {
+    return JSON.parse(fs.readFileSync(localPath, 'utf8'));
+  }
+  const wsPath = path.join(require('os').homedir(), 'pulse-workspace', appId, 'manifest.json');
+  if (fs.existsSync(wsPath)) {
+    return JSON.parse(fs.readFileSync(wsPath, 'utf8'));
+  }
+  return null;
+}
+
+function updateRegistryStatus(appId, status, pid) {
+  const regFile = path.join(ROOT, 'data', 'app-registry.json');
+  try {
+    const reg = JSON.parse(fs.readFileSync(regFile, 'utf8'));
+    const entry = reg.apps.find(a => a.id === appId);
+    if (entry) {
+      entry.status = status;
+      entry.pid = pid || null;
+      reg.updatedAt = new Date().toISOString();
+      fs.writeFileSync(regFile, JSON.stringify(reg, null, 2));
+    }
+  } catch {}
+}
+
+function waitForPort(port, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const check = () => {
+      const req = http.request({ hostname: '127.0.0.1', port, path: '/api/state', method: 'GET', timeout: 1000 }, (res) => {
+        resolve(true);
+      });
+      req.on('error', () => {
+        if (Date.now() - start > timeoutMs) return reject(new Error(`Port ${port} not ready after ${timeoutMs}ms`));
+        setTimeout(check, 500);
+      });
+      req.end();
+    };
+    check();
+  });
+}
+
+function startNodeApp(appId) {
+  return new Promise(async (resolve, reject) => {
+    if (runningProcesses.has(appId)) return resolve(runningProcesses.get(appId));
+
+    const manifest = loadManifest(appId);
+    if (!manifest || manifest.type !== 'node') return reject(new Error(`${appId} is not a node app`));
+
+    const appDir = manifest.workspacePath
+      ? manifest.workspacePath.replace(/^~/, require('os').homedir())
+      : path.join(ROOT, 'apps', appId);
+
+    if (!fs.existsSync(appDir)) return reject(new Error(`App directory not found: ${appDir}`));
+
+    const startCmd = manifest.start || 'node src/server.js';
+    const parts = startCmd.split(' ');
+    const port = manifest.port || 3050;
+
+    const env = { ...process.env, PORT: String(port), APP_ID: appId, PULSE_URL: `http://localhost:${PORT}`, ...(manifest.env || {}) };
+
+    console.log(`[PM] Starting ${appId} on port ${port}: ${startCmd}`);
+    updateRegistryStatus(appId, 'starting', null);
+
+    const child = spawn(parts[0], parts.slice(1), { cwd: appDir, env, stdio: ['ignore', 'pipe', 'pipe'] });
+
+    child.stdout.on('data', d => console.log(`[${appId}] ${d.toString().trim()}`));
+    child.stderr.on('data', d => console.error(`[${appId}] ${d.toString().trim()}`));
+
+    child.on('exit', (code) => {
+      console.log(`[PM] ${appId} exited with code ${code}`);
+      runningProcesses.delete(appId);
+      updateRegistryStatus(appId, 'stopped', null);
+    });
+
+    const info = { process: child, port, pid: child.pid, startedAt: Date.now() };
+    runningProcesses.set(appId, info);
+
+    try {
+      await waitForPort(port);
+      updateRegistryStatus(appId, 'running', child.pid);
+      console.log(`[PM] ${appId} ready on port ${port} (pid ${child.pid})`);
+      resolve(info);
+    } catch (err) {
+      child.kill('SIGTERM');
+      runningProcesses.delete(appId);
+      updateRegistryStatus(appId, 'stopped', null);
+      reject(err);
+    }
+  });
+}
+
+function stopNodeApp(appId) {
+  const info = runningProcesses.get(appId);
+  if (!info) return false;
+  console.log(`[PM] Stopping ${appId} (pid ${info.pid})`);
+  info.process.kill('SIGTERM');
+  runningProcesses.delete(appId);
+  updateRegistryStatus(appId, 'stopped', null);
+  return true;
+}
+
+function proxyToNodeApp(appId, method, proxyPath, body) {
+  return new Promise((resolve, reject) => {
+    const info = runningProcesses.get(appId);
+    if (!info) return reject(new Error(`${appId} not running`));
+
+    const options = {
+      hostname: '127.0.0.1',
+      port: info.port,
+      path: proxyPath,
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 10000
+    };
+
+    const req = http.request(options, (proxyRes) => {
+      let data = '';
+      proxyRes.on('data', c => data += c);
+      proxyRes.on('end', () => {
+        try { resolve(JSON.parse(data)); } catch { resolve(data); }
+      });
+    });
+    req.on('error', reject);
+    if (body) req.write(typeof body === 'string' ? body : JSON.stringify(body));
+    req.end();
+  });
+}
+
+// Vanilla app state (in-memory + file persistence)
+function getVanillaState(appId) {
+  if (vanillaStates.has(appId)) return vanillaStates.get(appId);
+  const stateFile = path.join(ROOT, 'apps', appId, 'state.json');
+  try {
+    const data = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+    vanillaStates.set(appId, data);
+    return data;
+  } catch {
+    const empty = { id: appId, status: 'active', data: {}, lastOutput: null };
+    vanillaStates.set(appId, empty);
+    return empty;
+  }
+}
+
+function setVanillaState(appId, updates) {
+  const current = getVanillaState(appId);
+  Object.assign(current.data, updates);
+  current.lastUpdated = Date.now();
+  vanillaStates.set(appId, current);
+  const stateFile = path.join(ROOT, 'apps', appId, 'state.json');
+  try { fs.writeFileSync(stateFile, JSON.stringify(current, null, 2)); } catch {}
+  broadcast(appId, { type: 'state-update', state: current, time: Date.now() });
+}
+
 // --- SSE ---
 const sseClients = new Map();
 const debounceTimers = new Map();
@@ -972,7 +1132,7 @@ setTimeout(() => {
 // =============================================================================
 
 // --- Server ---
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -1104,6 +1264,83 @@ const server = http.createServer((req, res) => {
     fs.writeFileSync(regFile, JSON.stringify(reg, null, 2));
     broadcast('dashboard', { type: 'change', file: 'app-registry.json', time: Date.now() });
     return jsonRes(res, { ok: true, removed: appId });
+  }
+
+  // --- App Process & State Endpoints (Phase 13b/c) ---
+  const appActionMatch = url.match(/^\/api\/apps\/([a-z0-9_-]+)\/(start|stop|state|action|status)$/);
+  if (appActionMatch) {
+    const appId = appActionMatch[1];
+    const endpoint = appActionMatch[2];
+
+    // POST /api/apps/:id/start
+    if (endpoint === 'start' && req.method === 'POST') {
+      try {
+        const info = await startNodeApp(appId);
+        return jsonRes(res, { ok: true, appId, pid: info.pid, port: info.port });
+      } catch (err) {
+        return jsonRes(res, { error: err.message }, 500);
+      }
+    }
+
+    // POST /api/apps/:id/stop
+    if (endpoint === 'stop' && req.method === 'POST') {
+      const stopped = stopNodeApp(appId);
+      return jsonRes(res, { ok: stopped, appId });
+    }
+
+    // GET /api/apps/:id/state
+    if (endpoint === 'state' && req.method === 'GET') {
+      const manifest = loadManifest(appId);
+      if (manifest && manifest.type === 'node' && runningProcesses.has(appId)) {
+        try {
+          const state = await proxyToNodeApp(appId, 'GET', '/api/state', null);
+          return jsonRes(res, state);
+        } catch (err) {
+          return jsonRes(res, { error: err.message }, 502);
+        }
+      }
+      // Vanilla or not running → return local state
+      return jsonRes(res, getVanillaState(appId));
+    }
+
+    // POST /api/apps/:id/action
+    if (endpoint === 'action' && req.method === 'POST') {
+      return readBody(req, async (b) => {
+        const body = JSON.parse(b);
+        const manifest = loadManifest(appId);
+        if (manifest && manifest.type === 'node' && runningProcesses.has(appId)) {
+          try {
+            const result = await proxyToNodeApp(appId, 'POST', '/api/action', body);
+            return jsonRes(res, result);
+          } catch (err) {
+            return jsonRes(res, { error: err.message }, 502);
+          }
+        }
+        // Vanilla: handle locally
+        if (body.type === 'set-state') {
+          setVanillaState(appId, body.data || {});
+          return jsonRes(res, { ok: true });
+        }
+        if (body.type === 'graph-input') {
+          broadcast(appId, { type: 'app-input', inputName: body.inputName, data: body.data });
+          return jsonRes(res, { ok: true });
+        }
+        if (body.type === 'pulse') {
+          broadcast(appId, { type: 'pulse', data: body.data || {} });
+          return jsonRes(res, { ok: true });
+        }
+        return jsonRes(res, { ok: true, unhandled: body.type });
+      });
+    }
+
+    // POST /api/apps/:id/status
+    if (endpoint === 'status' && req.method === 'POST') {
+      return readBody(req, (b) => {
+        const { text } = JSON.parse(b);
+        broadcast(appId, { type: 'status-update', status: text, time: Date.now() });
+        return jsonRes(res, { ok: true });
+      });
+    }
   }
 
   // App status — returns summary info from app's data directory

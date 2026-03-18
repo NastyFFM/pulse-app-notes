@@ -1814,10 +1814,10 @@ KI Actions (sequenziell):
 13a Manifest + Migration       ← Fundament, erst das           ✅ FERTIG
         │
         ▼
-13b Node-App Scaffold + Templates  ← App-Vorlagen erstellen    🔧 AKTUELL
+13b Node-App Scaffold + Templates  ← App-Vorlagen erstellen    ✅ FERTIG
         │
         ▼
-13c Process Manager            ← Damit Node-Apps starten/stoppen  🔲
+13c Process Manager            ← Damit Node-Apps starten/stoppen  ✅ FERTIG
         │
         ▼
 13d Graph Router               ← Datenfluss zwischen Apps      🔲
@@ -1838,7 +1838,7 @@ KI Actions (sequenziell):
 
 ## Implementierungs-Status
 
-> **Aktueller Stand:** Phase 13a ✅ → Phase 13b 🔧
+> **Aktueller Stand:** Phase 13a-c ✅ → Phase 13d 🔧
 > **Letzte Aktualisierung:** 2026-03-18
 
 ### Phase 13a — manifest.json + Migration ✅
@@ -1852,24 +1852,27 @@ KI Actions (sequenziell):
 - [x] Server-API: `DELETE /api/app-registry/:id`
 - [x] `jsonRes()` erweitert mit optionalem Status-Code Parameter
 
-### Phase 13b — Node-App Scaffold + Templates
-- [ ] `templates/app-vanilla/` mit index.html + manifest.json
-- [ ] `templates/app-node/` mit src/server.js + package.json + manifest.json + public/index.html
-- [ ] Vanilla-Template: `PulseOS.emit()`, `PulseOS.onInput()`, `PulseOS.onPulse()`, `saveState()`, `loadState()`
-- [ ] Node-Template: 3 Pflicht-Endpoints (`/api/state`, `/api/action`, `/api/events`)
-- [ ] Node-Template: `emit()`, `callApp()`, `getAppState()`, `reportStatus()`
+### Phase 13b — Node-App Scaffold + Templates ✅
+- [x] `templates/app-vanilla/` mit index.html + manifest.json
+- [x] `templates/app-node/` mit src/server.js + package.json + manifest.json + .gitignore
+- [x] Vanilla-Template: `emit()`, `handleInput()`, `onPulse()`, `saveState()`, `loadState()`, `callApp()`
+- [x] Node-Template: 3 Pflicht-Endpoints (`/api/state`, `/api/action`, `/api/events`)
+- [x] Node-Template: `emit()`, `callApp()`, `getAppState()`, `reportStatus()`, `broadcastSSE()`
 
-### Phase 13c — Process Manager
-- [ ] `startNodeApp(appId)` in server.js (child_process.spawn)
-- [ ] `stopNodeApp(appId)` mit SIGTERM
-- [ ] `waitForPort()` — wartet max 30s bis App antwortet
-- [ ] Registry-Status Updates (starting/running/stopped)
-- [ ] Crash-Detection → `app-crashed` SSE
-- [ ] `autoRestart` Support
-- [ ] Vanilla-App State Runtime (in-memory + state.json)
-- [ ] `POST /api/apps/:id/start` + `POST /api/apps/:id/stop`
-- [ ] `GET /api/apps/:id/state` (unified vanilla + node)
-- [ ] `POST /api/apps/:id/action` (proxy für node, runtime für vanilla)
+### Phase 13c — Process Manager ✅
+- [x] `startNodeApp(appId)` in server.js (child_process.spawn)
+- [x] `stopNodeApp(appId)` mit SIGTERM
+- [x] `waitForPort()` — wartet max 15s bis App antwortet
+- [x] Registry-Status Updates (starting/running/stopped)
+- [ ] Crash-Detection → `app-crashed` SSE (deferred)
+- [ ] `autoRestart` Support (deferred)
+- [x] Vanilla-App State Runtime (in-memory + state.json)
+- [x] `POST /api/apps/:id/start` + `POST /api/apps/:id/stop`
+- [x] `GET /api/apps/:id/state` (unified vanilla + node)
+- [x] `POST /api/apps/:id/action` (proxy für node, runtime für vanilla)
+- [x] `POST /api/apps/:id/status` (status broadcast via SSE)
+- [x] `loadManifest(appId)` — liest aus apps/ oder ~/pulse-workspace/
+- [x] `proxyToNodeApp()` — HTTP-Weiterleitung an laufende Node-App
 
 ### Phase 13d — Graph Router
 - [ ] `data/graphs/` Verzeichnis
