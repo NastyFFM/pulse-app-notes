@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>News Display</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#111110;--surface:#1a1a17;--border:rgba(255,255,255,0.08);--text:#e8e6de;--muted:#7a7870;--accent:#8B5CF6;--green:#1d9e75;--radius:8px;--font:system-ui,-apple-system,sans-serif}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;padding:16px;min-height:100vh}
+.header{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.title{font-weight:600;font-size:15px}
+.status{margin-left:auto;font-size:11px;color:var(--muted)}
+.status.active{color:var(--green)}
+.empty{color:var(--muted);text-align:center;padding:40px 16px}
+.empty .icon{font-size:32px;margin-bottom:8px}
+.news-list{display:flex;flex-direction:column;gap:8px}
+.news-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;transition:border-color .15s;cursor:pointer}
+.news-card:hover{border-color:var(--accent)}
+.news-card.new{animation:slideIn .3s ease;border-left:3px solid var(--accent)}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.news-card .nc-title{font-size:14px;font-weight:600;line-height:1.4;margin-bottom:6px;color:var(--text)}
+.news-card .nc-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);flex-wrap:wrap;gap:4px}
+.news-card .nc-score{font-weight:600;color:var(--accent)}
+.update-info{font-size:10px;color:var(--muted);margin-top:12px;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span>📋</span>
+  <span class="title">News Display</span>
+  <span class="status" id="status">Warte auf Daten...</span>
+</div>
+
+<div id="content">
+  <div class="empty" id="emptyState">
+    <div class="icon">📭</div>
+    <div>Noch keine News empfangen.</div>
+    <div style="font-size:11px;margin-top:4px;">Verbinde den News-Fetcher im Graph!</div>
+  </div>
+</div>
+
+<div class="update-info" id="updateInfo"></div>
+
+<script>
+// === PulseOS Graph Bridge ===
+window.addEventListener('message', (e) => {
+  if (e.data?.type === 'app-input') handleInput(e.data.inputName, e.data.data);
+  if (e.data?.type === 'pulse') onPulse(e.data);
+});
+
+let lastArticles = [];
+let updateCount = 0;
+
+function handleInput(inputName, data) {
+  console.log('[news-display] Input:', inputName, data);
+  if (inputName === 'articles' && data && data.articles) {
+    lastArticles = data.articles;
+    updateCount++;
+    render();
+
+    document.getElementById('status').textContent = data.count + ' Artikel empfangen';
+    document.getElementById('status').classList.add('active');
+    setTimeout(() => document.getElementById('status').classList.remove('active'), 3000);
+  }
+}
+
+function render() {
+  const content = document.getElementById('content');
+  const empty = document.getElementById('emptyState');
+
+  if (lastArticles.length === 0) {
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  content.innerHTML = '<div class="news-list">' + lastArticles.map((a, i) =>
+    '<div class="news-card' + (updateCount <= 1 && i < 3 ? ' new' : '') + '" onclick="window.open(\'' + escapeHtml(a.url) + '\',\'_blank\')">' +
+    '<div class="nc-title">' + escapeHtml(a.title) + '</div>' +
+    '<div class="nc-meta">' +
+    '<span>' + escapeHtml(a.source || '?') + '</span>' +
+    '<span class="nc-score">' + (a.score || 0) + ' pts</span>' +
+    '<span>' + (a.comments || 0) + ' comments</span>' +
+    '</div></div>'
+  ).join('') + '</div>';
+
+  document.getElementById('updateInfo').textContent = 'Update #' + updateCount + ' · ' + new Date().toLocaleTimeString('de-DE');
+}
+
+function onPulse(data) { console.log('[news-display] Pulse (ignored)'); }
+function escapeHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>

@@ -407,6 +407,60 @@
         "repo": null,
         "source": "local"
       }
+    },
+    {
+      "id": "news-fetcher",
+      "name": "News Fetcher",
+      "icon": "📰",
+      "installed": true,
+      "manifest": {
+        "id": "news-fetcher",
+        "name": "News Fetcher",
+        "version": "1.0.0",
+        "type": "vanilla",
+        "description": "Holt aktuelle Tech-News Headlines",
+        "icon": "📰",
+        "category": "productivity",
+        "nodeType": "producer",
+        "inputs": [],
+        "outputs": [
+          {
+            "name": "articles",
+            "schema": "link"
+          }
+        ],
+        "pulseSubscriptions": [
+          "clock:30m"
+        ],
+        "repo": null,
+        "source": "local"
+      }
+    },
+    {
+      "id": "news-display",
+      "name": "News Display",
+      "icon": "📋",
+      "installed": true,
+      "manifest": {
+        "id": "news-display",
+        "name": "News Display",
+        "version": "1.0.0",
+        "type": "vanilla",
+        "description": "Zeigt empfangene News-Artikel als Karten an",
+        "icon": "📋",
+        "category": "productivity",
+        "nodeType": "consumer",
+        "inputs": [
+          {
+            "name": "articles",
+            "schema": "link"
+          }
+        ],
+        "outputs": [],
+        "pulseSubscriptions": [],
+        "repo": null,
+        "source": "local"
+      }
     }
   ]
 }

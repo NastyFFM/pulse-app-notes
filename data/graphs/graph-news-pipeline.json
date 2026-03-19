@@ -1,0 +1,15 @@
+{
+  "projectId": "news-pipeline",
+  "name": "News Pipeline",
+  "nodes": [
+    { "appId": "news-fetcher", "nodeType": "producer", "x": 80, "y": 120 },
+    { "appId": "news-display", "nodeType": "consumer", "x": 420, "y": 120 }
+  ],
+  "edges": [
+    {
+      "from": { "appId": "news-fetcher", "output": "articles" },
+      "to": { "appId": "news-display", "input": "articles" }
+    }
+  ],
+  "updatedAt": "2026-03-19T02:00:00.000Z"
+}

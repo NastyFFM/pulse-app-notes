@@ -431,6 +431,40 @@
       "color": "#8B5CF6",
       "installed": true,
       "category": "demo"
+    },
+    {
+      "id": "clock",
+      "name": "Uhr",
+      "icon": "🕐",
+      "color": "#06B6D4",
+      "description": "Digitale Uhr mit großer Zeitanzeige, Datum und Wochentag – aktualisiert sich jede Sekunde",
+      "installed": true,
+      "position": 45
+    },
+    {
+      "id": "weather-app",
+      "name": "Wetter",
+      "icon": "🌤️",
+      "color": "#00BCD4",
+      "description": "Zeigt das aktuelle Wetter einer Stadt mit Temperatur und Icon",
+      "installed": true,
+      "position": 46
+    },
+    {
+      "id": "news-fetcher",
+      "name": "News Fetcher",
+      "icon": "📰",
+      "color": "#e85d24",
+      "installed": true,
+      "category": "productivity"
+    },
+    {
+      "id": "news-display",
+      "name": "News Display",
+      "icon": "📋",
+      "color": "#8B5CF6",
+      "installed": true,
+      "category": "productivity"
     }
   ]
 }
