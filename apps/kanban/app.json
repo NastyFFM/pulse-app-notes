@@ -1,7 +1,0 @@
-{
-  "name": "Kanban Board",
-  "icon": "📋",
-  "color": "#3B82F6",
-  "description": "Projektmanagement mit Drag & Drop",
-  "agentManaged": true
-}

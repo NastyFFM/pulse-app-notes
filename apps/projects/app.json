@@ -1,7 +1,0 @@
-{
-  "name": "Projects",
-  "icon": "🧩",
-  "color": "#8B5CF6",
-  "description": "Chat-gesteuerte Projekt-Kontexte mit dynamischen Widget-Canvas",
-  "agentManaged": true
-}

@@ -1,6 +1,0 @@
-{
-  "name": "Triangulation",
-  "icon": "📍",
-  "color": "#ef4444",
-  "description": "Trilateration: 3 Standorte + Distanzen → Schnittpunkt auf der Karte"
-}

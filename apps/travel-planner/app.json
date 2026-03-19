@@ -1,8 +1,0 @@
-{
-  "id": "travel-planner",
-  "name": "Reiseplaner",
-  "icon": "✈️",
-  "color": "#0EA5E9",
-  "description": "Reisen planen mit Tagesplanung, Aktivitäten und Packliste",
-  "agentManaged": true
-}

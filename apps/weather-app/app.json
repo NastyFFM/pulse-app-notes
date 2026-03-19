@@ -1,7 +1,0 @@
-{
-  "name": "Wetter",
-  "icon": "🌤️",
-  "color": "#00BCD4",
-  "description": "Zeigt das aktuelle Wetter einer Stadt mit Temperatur und Icon",
-  "agentManaged": false
-}

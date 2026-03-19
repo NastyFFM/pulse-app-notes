@@ -1,7 +1,0 @@
-{
-  "name": "Kalender Agent",
-  "icon": "📅",
-  "color": "#3B82F6",
-  "description": "Verwaltet Termine, Events und Erinnerungen",
-  "agentManaged": true
-}

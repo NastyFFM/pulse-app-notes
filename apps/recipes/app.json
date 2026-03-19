@@ -1,8 +1,0 @@
-{
-  "id": "recipes",
-  "name": "Rezepte",
-  "icon": "🍳",
-  "color": "#F97316",
-  "description": "Rezepte suchen, speichern und entdecken",
-  "agentManaged": true
-}

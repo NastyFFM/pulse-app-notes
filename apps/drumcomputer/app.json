@@ -1,7 +1,0 @@
-{
-  "id": "drumcomputer",
-  "name": "Drum Computer",
-  "icon": "🥁",
-  "color": "#EF4444",
-  "description": "4-Track Step Sequencer mit Web Audio"
-}
