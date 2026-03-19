@@ -35,8 +35,8 @@
 - [x] System Chat Panel (WebRTC)
 - [x] Kontakte-Liste
 - [x] Tunnel/Share mit QR-Code
-- [ ] Agent-Bar Klick oeffnet Chat (Cmd+K Verknuepfung)
-- [ ] Shortcut-Overlay bei langem Cmd
+- [x] Agent-Bar Klick oeffnet Chat (Cmd+K Verknuepfung)
+- [x] Shortcut-Overlay bei langem Cmd
 
 ---
 

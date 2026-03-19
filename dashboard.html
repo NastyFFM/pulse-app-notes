@@ -1596,6 +1596,49 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ── Shortcut Overlay (long Cmd hold) ──
+let cmdTimer = null;
+let shortcutOverlayVisible = false;
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Meta' || e.key === 'Control') && !shortcutOverlayVisible && !cmdTimer) {
+    cmdTimer = setTimeout(() => {
+      showShortcutOverlay();
+    }, 600);
+  }
+});
+document.addEventListener('keyup', e => {
+  if (e.key === 'Meta' || e.key === 'Control') {
+    clearTimeout(cmdTimer);
+    cmdTimer = null;
+    hideShortcutOverlay();
+  }
+});
+
+function showShortcutOverlay() {
+  shortcutOverlayVisible = true;
+  let el = document.getElementById('shortcutOverlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'shortcutOverlay';
+    el.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:80000;background:rgba(17,17,24,.95);border:1px solid var(--teal);border-radius:8px;padding:14px 20px;display:flex;gap:20px;font:11px var(--font);color:rgba(255,255,255,.7);backdrop-filter:blur(8px);transition:opacity .15s;';
+    el.innerHTML =
+      '<div><span style="color:var(--teal);font-weight:600;">Space</span> Launcher</div>' +
+      '<div><span style="color:var(--teal);font-weight:600;">Tab</span> Fenster</div>' +
+      '<div><span style="color:var(--teal);font-weight:600;">W</span> Schliessen</div>' +
+      '<div><span style="color:var(--teal);font-weight:600;">K</span> Chat</div>' +
+      '<div><span style="color:var(--teal);font-weight:600;">G</span> Projects</div>';
+    document.body.appendChild(el);
+  }
+  el.style.opacity = '1';
+  el.style.display = 'flex';
+}
+
+function hideShortcutOverlay() {
+  shortcutOverlayVisible = false;
+  const el = document.getElementById('shortcutOverlay');
+  if (el) { el.style.opacity = '0'; setTimeout(() => { if (!shortcutOverlayVisible) el.style.display = 'none'; }, 150); }
+}
+
 // ── Launcher ──
 function toggleLauncher() {
   launcherOpen = !launcherOpen;
