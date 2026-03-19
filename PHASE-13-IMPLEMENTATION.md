@@ -1929,51 +1929,71 @@ KI Actions (sequenziell):
 
 ---
 
-## V3 UX-Refresh (feature/major-change Branch)
+## V3 UX-Refresh — KOMPLETT ✅
 
-> **Status:** Phase A-C ✅, Phase D 🔲 nächster Schritt
+> **Status:** Alle Phasen abgeschlossen, gemergt in `main`
 > **Letzte Aktualisierung:** 2026-03-19
-> **Branch:** `feature/major-change`
+> **Branch:** `main` (feature/major-change gemergt)
 
 ### Phase A — Profile & Contacts ✅
 - [x] Profil-Edit Modal (Klick auf TopBar Name → Modal mit allen Feldern)
 - [x] System Chat mit Tabs (💬 Chat / 👥 Kontakte)
 - [x] Kontaktliste mit Online-Status, GitHub Pages Links, relative Timestamps
 - [x] Responsive CSS (768px + 480px Breakpoints)
-- [x] Mobile: Dock kompakter, Context-Favoriten hidden, App-Windows full-width
 
 ### Phase B — WebRTC System-Bus ✅
-- [x] Unread-Message Badge auf Peer Bar (rote Zähler-Badge)
-- [x] Chat-Bubble auch ohne Online-Peers wenn ungelesene Nachrichten
+- [x] Unread-Message Badge (rote Zähler-Badge in Topbar)
 - [x] Badge reset beim Öffnen des Chat-Panels
 - [x] WebRTC Bridge Host mit Profile-Exchange, Tunnel-Request, System-Chat
+- [x] Peer-Avatare in Topbar (nicht mehr als separater Peer Bar)
 
 ### Phase C — Revolutionary Agentic OS Dashboard ✅
-- [x] Home Screen mit personalisierter Begrüßung (zeitabhängig: Morgen/Tag/Abend/Nacht)
-- [x] Quick Actions Grid (Apps, Projekte, Chat, System) — 4-col Desktop, 2-col Mobile
-- [x] Recent Contexts Cards mit Widget-Pills und relativen Timestamps
-- [x] Active Graphs Section (auto-hide wenn keine Graphen)
-- [x] System Pulse Feed (Live-Event-Stream aus SSE/Mutations)
-- [x] `addFeed()` → Pulse Feed Brücke für Echtzeit-Updates
-- [x] Fully responsive: Desktop 4-col → Mobile 2-col/1-col
+- [x] Home Screen mit personalisierter Begrüßung (zeitabhängig)
+- [x] Quick Actions Grid (Apps, Projekte, Chat, System)
+- [x] Recent Contexts Cards mit Widget-Pills und Timestamps
+- [x] Active Graphs Section mit Context-Namen + App-Icons aus Registry
+- [x] System Pulse Feed (Live-Event-Stream)
 
-### Phase D — Graph-UI Visual Editor 🔲
-- [ ] Canvas-basierter Node-Editor mit Drag-and-Drop
-- [ ] SVG Edge-Rendering zwischen Ports
-- [ ] Drag-to-Connect zwischen Output/Input Ports
-- [ ] Responsive: Full Editor Desktop, vereinfachte Liste Mobile
-- **Voraussetzung:** Phase 13d Graph-Router Backend muss getestet/verifiziert werden
+### Phase D — Graph-UI + Graph-Router ✅
+- [x] Graph-UI mit Drag, SVG-Edges, Port-to-Port Connect, Touch-Support
+- [x] Graph-Router Backend: `GET /api/graphs`, `routeOutput()`, postMessage Bridge
+- [x] Demo-Graph: quote-generator → quote-display (end-to-end verifiziert)
+- [x] KI-Graph-Actions: AI kann Graphen per Chat bauen/verbinden/starten
 
-### Nächster Schritt
-Phase 13d Graph-Router Backend verifizieren und testen:
-- `routeOutput()` End-to-End testen
-- Graph-Datenfluss zwischen Apps prüfen
-- Danach Phase D (Graph-UI) mit echtem Datenfluss bauen
+### Dock → Topbar Migration ✅
+- [x] Dock komplett entfernt (Desktop + Mobile)
+- [x] Topbar-Tabs: 🏠 Home + dynamische App-Tabs mit ✕
+- [x] `showHome()` / `focusTab()` statt minimize/restore
+- [x] Peer-Avatare in Topbar-Right
+- [x] Share/Tunnel + Fullscreen Buttons wiederhergestellt
+
+### Mobile UX ✅
+- [x] Apps als Fullscreen-Sheets (kein Titlebar, kein Border, full viewport)
+- [x] Topbar-Tabs: Icon-only auf Mobile
+- [x] Home Screen scrollbar (`min-height:0` + `-webkit-overflow-scrolling:touch`)
+- [x] Share/Fullscreen hidden auf ≤480px
+
+### Pulse Engine ✅
+- [x] Auto-Routing für Vanilla-Producer bei Pulse (kein offenes iframe nötig)
+- [x] Clock-Pulse verifiziert: `quote-generator` alle 60s → Graph-Routing
+- [x] Manual Pulse via `/api/pulse/fire/:appId`
+
+### App-Erstellung per Chat ✅
+- [x] AI erstellt funktionierende Apps on-the-fly ("baue mir eine Uhr-App")
+- [x] HTML wird in `apps/<id>/index.html` gespeichert
+- [x] App erscheint sofort im Launcher + als Tab öffenbar
+- [x] Verifiziert: Uhr-App (99 Zeilen), Wetter-App (213 Zeilen)
 
 ### Session-Einstieg (für neue Sessions)
 1. Lies dieses Dokument ab "V3 UX-Refresh"
 2. Lies `VISION.md` für die Gesamtvision
-3. Prüfe Branch: `git branch` → sollte `feature/major-change` sein
-4. Starte Server: `node server.js`
-5. Öffne `http://localhost:3000` — Home Screen sollte sichtbar sein
-6. Weiter bei "Nächster Schritt"
+3. Starte Server: `node server.js`
+4. Öffne `http://localhost:3000` — Home Screen mit Greeting, Quick Actions, Projekte
+5. Topbar: 🏠 Home Tab + App-Tabs + Peer-Avatare + Share + Clock
+6. Keine Dock mehr — alles über Topbar-Tabs navigiert
+
+### Nächste mögliche Schritte
+- Dashboard Quick-Stats (offene Todos, nächster Termin)
+- News-Pipeline Graph (realer API-Fetch Use-Case)
+- AI-Suggestion-Cards auf Home Screen
+- `pulse app install` von GitHub-Repos
