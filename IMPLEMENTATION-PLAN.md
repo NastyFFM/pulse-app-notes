@@ -104,7 +104,7 @@
 - [x] Graph-Definitionen in data/graphs/
 - [x] routeOutput() Datenfluss
 - [x] Graph CRUD API
-- [ ] Demo-Graph: z.B. Weather-Producer -> Display-Consumer
+- [x] Demo-Graph: z.B. Weather-Producer -> Display-Consumer
 - [ ] Graph-UI in Projects-App (Nodes, Edges, Drag-Connect)
 
 ---
