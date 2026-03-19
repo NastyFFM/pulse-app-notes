@@ -1,5 +1,19 @@
 {
   "version": 1,
-  "contacts": [],
-  "updatedAt": null
+  "contacts": [
+    {
+      "name": "Chris",
+      "handle": "nastycoder",
+      "avatar": "🧑‍💻",
+      "bio": "Building PulseOS",
+      "githubPages": "https://nastycoder.github.io",
+      "links": [],
+      "roomId": "pulse-5093113b",
+      "createdAt": "2026-03-18T22:44:20.728Z",
+      "updatedAt": "2026-03-18T22:44:20.728Z",
+      "firstSeen": "2026-03-18T23:42:29.291Z",
+      "lastSeen": "2026-03-19T12:35:50.674Z"
+    }
+  ],
+  "updatedAt": "2026-03-19T12:35:50.674Z"
 }

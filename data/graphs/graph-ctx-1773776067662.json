@@ -1,0 +1,46 @@
+{
+  "projectId": "ctx-1773776067662",
+  "nodes": [
+    {
+      "appId": "weather",
+      "nodeType": "producer",
+      "x": 80,
+      "y": 120
+    },
+    {
+      "appId": "notes",
+      "nodeType": "consumer",
+      "x": 400,
+      "y": 120
+    },
+    {
+      "appId": "calendar",
+      "nodeType": "producer",
+      "x": 80,
+      "y": 280
+    }
+  ],
+  "edges": [
+    {
+      "from": {
+        "appId": "weather",
+        "output": "forecast"
+      },
+      "to": {
+        "appId": "notes",
+        "input": "data"
+      }
+    },
+    {
+      "from": {
+        "appId": "calendar",
+        "output": "events"
+      },
+      "to": {
+        "appId": "notes",
+        "input": "events"
+      }
+    }
+  ],
+  "updatedAt": "2026-03-18T21:59:34.251Z"
+}

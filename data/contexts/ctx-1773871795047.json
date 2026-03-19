@@ -1,0 +1,20 @@
+{
+  "id": "ctx-1773871795047",
+  "name": "Neues Projekt",
+  "icon": "🚀",
+  "color": "#8B5CF6",
+  "chat": [
+    {
+      "id": "msg-sys-1773871795047",
+      "role": "system",
+      "text": "Neues Projekt erstellt! Beschreibe was du bauen oder planen willst.",
+      "time": "2026-03-18T22:09:55.047Z"
+    }
+  ],
+  "widgets": [],
+  "data": {},
+  "connections": [],
+  "skills": [],
+  "created": "2026-03-18T22:09:55.051Z",
+  "updated": "2026-03-18T22:09:55.051Z"
+}

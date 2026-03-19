@@ -1,0 +1,7 @@
+{
+  "name": "Uhr",
+  "icon": "🕐",
+  "color": "#06B6D4",
+  "description": "Digitale Uhr mit großer Zeitanzeige, Datum und Wochentag – aktualisiert sich jede Sekunde",
+  "agentManaged": false
+}

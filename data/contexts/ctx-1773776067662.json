@@ -1097,7 +1097,7 @@
         "description": "Interaktives Balkendiagramm des Gewichtsverlaufs über Zeit mit Range-Filtern"
       },
       "scope": "local",
-      "zoomLevel": "L0"
+      "zoomLevel": "L1"
     },
     {
       "id": "w-1773796742829-5y09",
@@ -1804,7 +1804,7 @@
   "connections": [],
   "skills": [],
   "created": "2026-03-17T19:34:27.667Z",
-  "updated": "2026-03-18T18:36:09.945Z",
+  "updated": "2026-03-19T01:04:44.488Z",
   "canvas": {
     "widgets": [
       {
@@ -2321,7 +2321,7 @@
           "description": "Interaktives Balkendiagramm des Gewichtsverlaufs über Zeit mit Range-Filtern"
         },
         "scope": "local",
-        "zoomLevel": "L0"
+        "zoomLevel": "L1"
       },
       {
         "id": "w-1773796742829-5y09",

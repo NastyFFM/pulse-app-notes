@@ -5,7 +5,7 @@
   "color": "#8B5CF6",
   "parentId": null,
   "created": "2026-03-17T02:00:00.000Z",
-  "updated": "2026-03-17T20:31:50.289Z",
+  "updated": "2026-03-19T00:37:23.995Z",
   "widgets": [
     {
       "id": "w-1773713289208-r1lm",
@@ -161,6 +161,40 @@
         "contextId": "ctx-1773717194327",
         "dataKey": "kpi-1773717241433-9e"
       }
+    },
+    {
+      "id": "w-1773879900635-ewy1",
+      "type": "app",
+      "title": "Uhr",
+      "size": "full",
+      "dataKey": "app-1773879900635-i1",
+      "color": "#06B6D4",
+      "config": {},
+      "data": {
+        "appId": "clock",
+        "status": "Neu erstellt",
+        "name": "Uhr",
+        "icon": "🕐",
+        "description": "Digitale Uhr mit großer Zeitanzeige, Datum und Wochentag – aktualisiert sich jede Sekunde"
+      },
+      "zoomLevel": "L2"
+    },
+    {
+      "id": "w-1773880643995-ple0",
+      "type": "app",
+      "title": "Wetter",
+      "size": "md",
+      "dataKey": "app-1773880643995-zy",
+      "color": "#00BCD4",
+      "config": {},
+      "data": {
+        "appId": "weather-app",
+        "status": "Neu erstellt",
+        "name": "Wetter",
+        "icon": "🌤️",
+        "description": "Zeigt das aktuelle Wetter einer Stadt mit Temperatur und Icon"
+      },
+      "zoomLevel": "L1"
     }
   ],
   "data": {
@@ -275,6 +309,21 @@
     "progress-1773713289208-ss": {
       "percent": 10,
       "label": "Planung gestartet"
+    },
+    "app-1773879900635-i1": {
+      "appId": "clock",
+      "status": "Uhr läuft...",
+      "name": "Uhr",
+      "icon": "🕐",
+      "description": "Digitale Uhr mit großer Zeitanzeige, Datum und Wochentag – aktualisiert sich jede Sekunde",
+      "lastInteraction": "2026-03-19T00:36:16.511Z"
+    },
+    "app-1773880643995-zy": {
+      "appId": "weather-app",
+      "status": "Neu erstellt",
+      "name": "Wetter",
+      "icon": "🌤️",
+      "description": "Zeigt das aktuelle Wetter einer Stadt mit Temperatur und Icon"
     }
   },
   "chat": [
@@ -555,6 +604,23 @@
           "contextId": "ctx-1773717194327",
           "dataKey": "kpi-1773717241433-9e"
         }
+      },
+      {
+        "id": "w-1773879900635-ewy1",
+        "type": "app",
+        "title": "Uhr",
+        "size": "full",
+        "dataKey": "app-1773879900635-i1",
+        "color": "#06B6D4",
+        "config": {},
+        "data": {
+          "appId": "clock",
+          "status": "Neu erstellt",
+          "name": "Uhr",
+          "icon": "🕐",
+          "description": "Digitale Uhr mit großer Zeitanzeige, Datum und Wochentag – aktualisiert sich jede Sekunde"
+        },
+        "zoomLevel": "L2"
       }
     ]
   },
