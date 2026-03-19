@@ -45,24 +45,24 @@
 > Jede App: index.html + manifest.json, PulseOS Design Language, nutzt injiziertes SDK
 
 ### 2.1 System-Apps
-- [ ] **terminal** — System-Terminal (PTY via Server)
-- [ ] **files** — Datei-Browser (apps/ und data/ durchsuchen)
-- [ ] **settings** — OS-Einstellungen (Profil, Theme, Shortcuts, About)
+- [x] **terminal** — System-Terminal (PTY via Server)
+- [x] **files** — Datei-Browser (apps/ und data/ durchsuchen)
+- [x] **settings** — OS-Einstellungen (Profil, Theme, Shortcuts, About)
 
 ### 2.2 Work-Apps
-- [ ] **notes** — Notizen erstellen/bearbeiten, Markdown, dark theme
-- [ ] **tasks** — Todo-Liste mit Prioritaeten und Status
-- [ ] **calendar** — Monats/Wochen-Ansicht, Events erstellen
-- [ ] **projects** — Projekt-Manager mit Chat + Widget-Canvas + Graph-Editor
+- [x] **notes** — Notizen erstellen/bearbeiten, Markdown, dark theme
+- [x] **tasks** — Todo-Liste mit Prioritaeten und Status
+- [x] **calendar** — Monats/Wochen-Ansicht, Events erstellen
+- [x] **projects** — Projekt-Manager mit Chat + Widget-Canvas + Graph-Editor
 
 ### 2.3 Fun-Apps
-- [ ] **weather** — Wetter-Anzeige (API oder manuell)
-- [ ] **music** — Internet-Radio Player mit Sender-Liste
+- [x] **weather** — Wetter-Anzeige (API oder manuell)
+- [x] **music** — Internet-Radio Player mit Sender-Liste
 
 ### 2.4 Registrierung
-- [ ] Alle Apps in app-registry.json registriert
-- [ ] Alle Apps haben manifest.json mit icon, name, description, color
-- [ ] Dashboard zeigt alle Default-Apps im Grid
+- [x] Alle Apps in app-registry.json registriert
+- [x] Alle Apps haben manifest.json mit icon, name, description, color
+- [x] Dashboard zeigt alle Default-Apps im Grid
 
 ---
 
@@ -70,14 +70,14 @@
 
 > Jede Default-App muss diese Standards erfuellen:
 
-- [ ] IBM Plex Mono Font (oder bewusste Abweichung dokumentiert)
-- [ ] Dark Theme: #0d0d14 bg, rgba(255,255,255,.85) text
-- [ ] Semantic Colors: Amber fuer Aktionen, Teal fuer KI/Agent, Lila fuer Daten
-- [ ] Keine Emojis im UI-Chrome (Text-Zeichen stattdessen)
-- [ ] Responsive: funktioniert in Fenster und Fullscreen
-- [ ] Konsistente Border-Radius (8px), Spacing, Hover-States
-- [ ] Daten in apps/<id>/data/ als JSON
-- [ ] Kein externer CDN-Abhaengigkeit (ausser Fonts)
+- [x] IBM Plex Mono Font (oder bewusste Abweichung dokumentiert)
+- [x] Dark Theme: #0d0d14 bg, rgba(255,255,255,.85) text
+- [x] Semantic Colors: Amber fuer Aktionen, Teal fuer KI/Agent, Lila fuer Daten
+- [x] Keine Emojis im UI-Chrome (Text-Zeichen stattdessen)
+- [x] Responsive: funktioniert in Fenster und Fullscreen
+- [x] Konsistente Border-Radius (8px), Spacing, Hover-States
+- [x] Daten in apps/<id>/data/ als JSON
+- [x] Kein externer CDN-Abhaengigkeit (ausser Fonts)
 
 ---
 
@@ -89,9 +89,9 @@
 - [x] PulseOS.onPulse(fn)
 - [x] PulseOS.reportStatus(status)
 - [x] PulseOS.logInteraction(action, detail)
-- [ ] PulseOS.ai('task', data) — KI-Funktion aufrufen
-- [ ] PulseOS.saveState(data) / loadState() — persistente App-Daten
-- [ ] PulseOS.alert('msg') — Agent-Bar Benachrichtigung
+- [x] PulseOS.ai('task', data) — KI-Funktion aufrufen
+- [x] PulseOS.saveState(data) / loadState() — persistente App-Daten
+- [x] PulseOS.alert('msg') — Agent-Bar Benachrichtigung
 
 ---
 
@@ -146,8 +146,8 @@
 
 ## Prioritaets-Reihenfolge
 
-1. **Default Apps erstellen** (Abschnitt 2) ← JETZT
-2. **App Design Standards** durchsetzen (Abschnitt 3)
+1. ~~**Default Apps erstellen** (Abschnitt 2)~~ DONE
+2. ~~**App Design Standards** durchsetzen (Abschnitt 3)~~ DONE
 3. **SDK vervollstaendigen** (Abschnitt 4)
 4. **Onboarding/Tutorial** (Abschnitt 7)
 5. **Agent-Chat Integration** (Abschnitt 6)

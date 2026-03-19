@@ -63,6 +63,18 @@ function appHtmlRes(res, file, appId) {
         window.addEventListener('message', function(e) {
           if (e.data && e.data.type === 'pulse') callback(e.data);
         });
+      },
+      alert: function(msg) {
+        try { window.parent.postMessage({ type: 'app-alert', appId: '${appId}', message: String(msg).slice(0, 300) }, '*'); } catch(e) {}
+      },
+      saveState: function(data) {
+        return fetch('/app/${appId}/api/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function(r) { return r.json(); });
+      },
+      loadState: function() {
+        return fetch('/app/${appId}/api/state').then(function(r) { return r.json(); });
+      },
+      ai: function(task, data) {
+        return fetch('/api/ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ appId: '${appId}', task: task, data: data }) }).then(function(r) { return r.json(); });
       }
     };
   }
@@ -1365,6 +1377,22 @@ const server = http.createServer(async (req, res) => {
       fs.writeFileSync(file, JSON.stringify(JSON.parse(b), null, 2));
       broadcast('dashboard', { type: 'change', file: 'apps.json', time: Date.now() });
       jsonRes(res, { ok: true });
+    });
+  }
+
+  // ── AI Endpoint (SDK) ──
+  if (url === '/api/ai' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { appId, task, data } = JSON.parse(b);
+        // Queue for chat agent if available
+        const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
+        const queue = safeReadJSON(queueFile, { messages: [] });
+        const msg = { id: 'ai-' + Date.now(), appId, task, data, status: 'queued', created: new Date().toISOString() };
+        queue.messages.push(msg);
+        fs.writeFileSync(queueFile, JSON.stringify(queue, null, 2));
+        jsonRes(res, { ok: true, id: msg.id, status: 'queued' });
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
     });
   }
 
