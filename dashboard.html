@@ -1852,65 +1852,200 @@ async function submitOnboarding() {
   }
 }
 
-// ── Guided Tutorial ──
+// ── Interactive Tutorial System ──
 const tutorialSteps = [
-  { target: '.agent-bar', title: 'Agent-Bar', text: 'Hier siehst du was dein KI-Agent gerade macht. Events und Insights erscheinen in Echtzeit.', pos: 'below' },
-  { target: '.app-grid', title: 'Deine Apps', text: 'Klicke auf eine App um sie in einem Fenster zu oeffnen. Jede App laeuft isoliert mit eigenem Zustand.', pos: 'above' },
-  { target: '.mode-group', title: 'Modi', text: 'Flow (minimal), Cockpit (voll), Builder (Projekte). Wechsle je nach Aufgabe.', pos: 'below' },
-  { target: null, title: 'Shortcuts', text: 'Cmd+Space: App-Launcher\nCmd+Tab: Fenster wechseln\nCmd+W: Fenster schliessen\nCmd+K: Chat oeffnen', pos: 'center' }
+  // Chapter 1: Orientation
+  {
+    chapter: 'Das System',
+    title: 'Willkommen bei PulseOS',
+    text: 'PulseOS ist ein agentic Operating System — KI-nativ, modular, erweiterbar.\n\nDieses Tutorial zeigt dir die wichtigsten Faehigkeiten.',
+    pos: 'center'
+  },
+  {
+    chapter: 'Das System',
+    target: '.agent-bar',
+    title: 'Die Agent-Bar',
+    text: 'Dein KI-Agent lebt hier. Er beobachtet Events, erkennt Muster und gibt dir proaktive Hinweise.\n\nKlicke auf die Bar oder druecke Cmd+K um den Chat zu oeffnen.',
+    pos: 'below'
+  },
+  {
+    chapter: 'Das System',
+    target: '.mode-group',
+    title: 'Drei Modi',
+    text: 'Flow — minimale Oberflaeche, fokussiertes Arbeiten\nCockpit — volle Uebersicht mit Graphen und Projekten\nBuilder — Projekte mit Chat und Widget-Canvas\n\nProbiere es: Klicke auf COCKPIT.',
+    pos: 'below',
+    action: 'try-cockpit'
+  },
+  // Chapter 2: Apps
+  {
+    chapter: 'Apps nutzen',
+    target: '.app-grid',
+    title: 'App-Grid',
+    text: '9 Default-Apps stehen bereit. Jede App laeuft in einem eigenen Fenster.\n\nApps speichern ihre Daten automatisch als JSON — alles ist transparent und editierbar.',
+    pos: 'above'
+  },
+  {
+    chapter: 'Apps nutzen',
+    title: 'Use Case: Notiz erstellen',
+    text: 'Oeffne die Notes-App und erstelle eine Notiz.\n\nKlicke auf das N-Icon oder druecke Cmd+Space und tippe "Notes".',
+    pos: 'center',
+    action: 'open-notes',
+    waitFor: 'notes-open'
+  },
+  {
+    chapter: 'Apps nutzen',
+    title: 'Use Case: Task anlegen',
+    text: 'Oeffne die Tasks-App (T-Icon).\n\nTippe "!!Wichtige Aufgabe" — das !! markiert sie als High Priority.\nEin einzelnes ! = Medium, ohne = Low.',
+    pos: 'center',
+    action: 'open-tasks'
+  },
+  // Chapter 3: Window Management
+  {
+    chapter: 'Fenster-System',
+    title: 'Window Management',
+    text: 'Jede App oeffnet sich in einem Fenster das du:\n\n- Verschieben (Titelleiste ziehen)\n- Skalieren (Ecken ziehen)\n- Minimieren/Maximieren (Buttons bei Hover)\n- Schliessen (x oder Cmd+W)\n\nTabs in der Topbar zeigen offene Fenster.',
+    pos: 'center'
+  },
+  {
+    chapter: 'Fenster-System',
+    title: 'Spotlight Launcher',
+    text: 'Cmd+Space oeffnet den Spotlight-Launcher.\n\nTippe den Namen einer App um sie sofort zu finden und zu oeffnen. Wie Spotlight auf macOS.',
+    pos: 'center',
+    action: 'try-launcher'
+  },
+  // Chapter 4: Agent & Chat
+  {
+    chapter: 'KI-Agent',
+    title: 'Agent-Chat',
+    text: 'Druecke Cmd+K um mit dem Agent zu chatten.\n\nDer Agent kann:\n- Fragen beantworten\n- App-Daten analysieren\n- Vorschlaege machen\n- Morgens ein Briefing liefern',
+    pos: 'center',
+    action: 'open-chat'
+  },
+  {
+    chapter: 'KI-Agent',
+    title: 'SDK in jeder App',
+    text: 'Jede App hat Zugriff auf das PulseOS SDK:\n\nPulseOS.alert("Hinweis") — Agent-Bar Nachricht\nPulseOS.ai("task", data) — KI aufrufen\nPulseOS.saveState(data) — Zustand speichern\nPulseOS.emit("output", data) — Graph-Output\n\nApps koennen so miteinander kommunizieren.',
+    pos: 'center'
+  },
+  // Chapter 5: Graphs & Data Flow
+  {
+    chapter: 'Datenfluss',
+    title: 'Graph-Pipelines',
+    text: 'Apps koennen ueber Graphen verbunden werden.\n\nBeispiel: Weather-App -> Notes-App\nWenn Weather Daten emittiert, empfaengt Notes sie automatisch.\n\nWechsle zu Cockpit-Modus um die GRAPHEN-Sektion zu sehen.',
+    pos: 'center',
+    action: 'show-cockpit-graphs'
+  },
+  // Chapter 6: Collaboration
+  {
+    chapter: 'Zusammenarbeit',
+    title: 'WebRTC & Sharing',
+    text: 'PulseOS unterstuetzt P2P-Verbindungen ueber WebRTC.\n\nKlicke "Share" in der Topbar um:\n- Einen Room zu erstellen\n- Andere Instanzen einzuladen\n- Echtzeit-Chat zwischen Instanzen\n- Daten und Events zu teilen',
+    pos: 'center'
+  },
+  // Chapter 7: Shortcuts & Customization
+  {
+    chapter: 'Power-User',
+    title: 'Keyboard Shortcuts',
+    text: 'Cmd+Space  App-Launcher oeffnen\nCmd+Tab    Naechstes Fenster\nCmd+W      Fenster schliessen\nCmd+K      Agent-Chat oeffnen\nCmd+G      Projects oeffnen\nEsc        Overlay schliessen\n\nHalte Cmd/Ctrl gedrueckt fuer eine Shortcut-Uebersicht.',
+    pos: 'center'
+  },
+  {
+    chapter: 'Power-User',
+    title: 'Alles ist editierbar',
+    text: 'PulseOS ist Open Source und vollstaendig transparent:\n\n- Apps sind einzelne HTML-Dateien\n- Daten liegen als JSON in apps/*/data/\n- Der Server ist eine einzige server.js\n- Kein npm, kein Build-Tool, kein Framework\n\nDu kannst jede App direkt bearbeiten.',
+    pos: 'center'
+  },
+  // Final
+  {
+    chapter: 'Fertig',
+    title: 'Bereit!',
+    text: 'Du kennst jetzt die Grundlagen von PulseOS.\n\nStarte mit Notes fuer Notizen, Tasks fuer Aufgaben, oder oeffne den Agent-Chat (Cmd+K) fuer KI-Hilfe.\n\nViel Spass!',
+    pos: 'center'
+  }
 ];
 let tutorialIdx = 0;
+let tutorialChapter = '';
 
 function startTutorial() {
   tutorialIdx = 0;
+  tutorialChapter = '';
   showTutorialStep();
 }
 
 function showTutorialStep() {
-  // Remove previous
   document.getElementById('tutorialOverlay')?.remove();
   if (tutorialIdx >= tutorialSteps.length) {
     localStorage.setItem('pulse-tutorial-done', '1');
+    setMode('flow');
     return;
   }
   const step = tutorialSteps[tutorialIdx];
   const overlay = document.createElement('div');
   overlay.id = 'tutorialOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:90000;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:90000;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;';
 
-  let boxStyle = 'background:var(--surface,#111118);border:1px solid var(--teal,#4ecdc4);border-radius:8px;padding:20px 24px;max-width:360px;color:rgba(255,255,255,.85);font-family:var(--font);';
+  let boxStyle = 'background:#111118;border:1px solid var(--teal,#4ecdc4);border-radius:10px;padding:24px 28px;max-width:420px;width:90%;color:rgba(255,255,255,.85);font-family:var(--font);';
   let spotlightCSS = '';
 
   if (step.target) {
     const el = document.querySelector(step.target);
     if (el) {
       const rect = el.getBoundingClientRect();
-      spotlightCSS = 'position:fixed;left:' + (rect.left - 4) + 'px;top:' + (rect.top - 4) + 'px;width:' + (rect.width + 8) + 'px;height:' + (rect.height + 8) + 'px;border:2px solid var(--teal,#4ecdc4);border-radius:6px;z-index:90001;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,.6);';
-      // Position box relative to target
+      spotlightCSS = 'position:fixed;left:' + (rect.left - 6) + 'px;top:' + (rect.top - 6) + 'px;width:' + (rect.width + 12) + 'px;height:' + (rect.height + 12) + 'px;border:2px solid var(--teal,#4ecdc4);border-radius:8px;z-index:90001;pointer-events:none;box-shadow:0 0 20px rgba(78,205,196,.15);';
       if (step.pos === 'below') {
-        boxStyle += 'position:fixed;left:' + Math.max(20, rect.left) + 'px;top:' + (rect.bottom + 16) + 'px;z-index:90002;';
-      } else {
-        boxStyle += 'position:fixed;left:' + Math.max(20, rect.left) + 'px;bottom:' + (window.innerHeight - rect.top + 16) + 'px;z-index:90002;';
+        boxStyle += 'position:fixed;left:' + Math.max(20, Math.min(rect.left, window.innerWidth - 440)) + 'px;top:' + (rect.bottom + 20) + 'px;z-index:90002;';
+      } else if (step.pos === 'above') {
+        boxStyle += 'position:fixed;left:' + Math.max(20, Math.min(rect.left, window.innerWidth - 440)) + 'px;bottom:' + (window.innerHeight - rect.top + 20) + 'px;z-index:90002;';
       }
     }
   }
 
   const stepNum = (tutorialIdx + 1) + '/' + tutorialSteps.length;
   const isLast = tutorialIdx === tutorialSteps.length - 1;
+  const isNewChapter = step.chapter !== tutorialChapter;
+  tutorialChapter = step.chapter;
+
+  // Progress bar
+  const progress = Math.round(((tutorialIdx + 1) / tutorialSteps.length) * 100);
+  const progressBar = '<div style="width:100%;height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-bottom:16px;overflow:hidden;"><div style="width:' + progress + '%;height:100%;background:var(--teal,#4ecdc4);border-radius:2px;transition:width .3s;"></div></div>';
+
+  // Chapter badge
+  const chapterBadge = isNewChapter ?
+    '<div style="display:inline-block;background:rgba(78,205,196,.1);color:var(--teal,#4ecdc4);padding:2px 10px;border-radius:4px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">' + step.chapter + '</div>' : '';
+
+  // Action hint
+  let actionHint = '';
+  if (step.action === 'try-cockpit') actionHint = '<div style="margin-top:12px;padding:8px 12px;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);border-radius:6px;font-size:10px;color:var(--amber,#f5a623);">Tipp: Du kannst den Modus jederzeit wechseln</div>';
+  if (step.action === 'open-notes') actionHint = '<div style="margin-top:12px;padding:8px 12px;background:rgba(78,205,196,.08);border:1px solid rgba(78,205,196,.2);border-radius:6px;font-size:10px;color:var(--teal,#4ecdc4);">Aktion: Klicke auf N oder druecke Cmd+Space</div>';
+  if (step.action === 'open-tasks') actionHint = '<div style="margin-top:12px;padding:8px 12px;background:rgba(78,205,196,.08);border:1px solid rgba(78,205,196,.2);border-radius:6px;font-size:10px;color:var(--teal,#4ecdc4);">Tipp: !! = hoch, ! = mittel, ohne = niedrig</div>';
+  if (step.action === 'try-launcher') actionHint = '<div style="margin-top:12px;padding:8px 12px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:6px;font-size:10px;color:var(--lila,#a855f7);">Probiere es nach dem Tutorial: Cmd+Space</div>';
+  if (step.action === 'open-chat') actionHint = '<div style="margin-top:12px;padding:8px 12px;background:rgba(78,205,196,.08);border:1px solid rgba(78,205,196,.2);border-radius:6px;font-size:10px;color:var(--teal,#4ecdc4);">Shortcut: Cmd+K oeffnet den Chat</div>';
+  if (step.action === 'show-cockpit-graphs') actionHint = '<div style="margin-top:12px;padding:8px 12px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:6px;font-size:10px;color:var(--lila,#a855f7);">Graphen sind in der Cockpit-Ansicht sichtbar</div>';
 
   overlay.innerHTML =
     (spotlightCSS ? '<div style="' + spotlightCSS + '"></div>' : '') +
     '<div style="' + boxStyle + '">' +
-      '<div style="font-size:9px;color:rgba(78,205,196,.7);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Tutorial ' + stepNum + '</div>' +
-      '<div style="font-size:14px;font-weight:600;margin-bottom:8px;">' + step.title + '</div>' +
-      '<div style="font-size:12px;color:rgba(255,255,255,.6);white-space:pre-line;line-height:1.6;">' + step.text + '</div>' +
-      '<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">' +
-        '<button onclick="skipTutorial()" style="background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);padding:4px 12px;border-radius:4px;font:11px var(--font);cursor:pointer;">Skip</button>' +
-        '<button onclick="nextTutorialStep()" style="background:var(--teal,#4ecdc4);color:#0d0d14;border:none;padding:4px 14px;border-radius:4px;font:600 11px var(--font);cursor:pointer;">' + (isLast ? 'Fertig' : 'Weiter') + '</button>' +
+      progressBar +
+      chapterBadge +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+        '<div style="font-size:16px;font-weight:700;">' + step.title + '</div>' +
+        '<div style="font-size:9px;color:rgba(255,255,255,.3);">' + stepNum + '</div>' +
+      '</div>' +
+      '<div style="font-size:12px;color:rgba(255,255,255,.55);white-space:pre-line;line-height:1.7;">' + step.text + '</div>' +
+      actionHint +
+      '<div style="display:flex;gap:8px;margin-top:18px;justify-content:space-between;align-items:center;">' +
+        '<button onclick="skipTutorial()" style="background:none;border:none;color:rgba(255,255,255,.25);padding:4px 0;font:10px var(--font);cursor:pointer;">Tutorial ueberspringen</button>' +
+        '<div style="display:flex;gap:8px;">' +
+          (tutorialIdx > 0 ? '<button onclick="prevTutorialStep()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);padding:5px 14px;border-radius:5px;font:11px var(--font);cursor:pointer;">Zurueck</button>' : '') +
+          '<button onclick="nextTutorialStep()" style="background:var(--teal,#4ecdc4);color:#0d0d14;border:none;padding:5px 16px;border-radius:5px;font:600 11px var(--font);cursor:pointer;">' + (isLast ? 'Los geht\'s!' : 'Weiter') + '</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
 
   document.body.appendChild(overlay);
+
+  // Execute step actions
+  if (step.action === 'show-cockpit-graphs') setMode('cockpit');
 }
 
 function nextTutorialStep() {
@@ -1918,9 +2053,14 @@ function nextTutorialStep() {
   showTutorialStep();
 }
 
+function prevTutorialStep() {
+  if (tutorialIdx > 0) { tutorialIdx--; showTutorialStep(); }
+}
+
 function skipTutorial() {
   document.getElementById('tutorialOverlay')?.remove();
   localStorage.setItem('pulse-tutorial-done', '1');
+  setMode('flow');
 }
 
 function updateProfileDisplay() {
