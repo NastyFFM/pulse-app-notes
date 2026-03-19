@@ -1974,8 +1974,73 @@ function sendSystemChat() {
   const text = input.value.trim();
   if (!text) return;
   input.value = '';
-  if (window.PulseOS?.sendChat) window.PulseOS.sendChat(text);
+
+  // WebRTC sendChat renders the message itself, so only render locally if no WebRTC
+  if (window.PulseOS?.sendChat) {
+    window.PulseOS.sendChat(text);
+  } else {
+    renderSystemChatMessage({ peerId: 'self', from: userProfile?.name || 'Du', text, avatar: userProfile?.avatar || '>' });
+  }
+  // Also send to server agent
+  sendToAgent(text);
 }
+
+async function sendToAgent(text) {
+  try {
+    const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, source: 'dashboard' }) });
+    const data = await res.json();
+    if (data.reply) {
+      renderSystemChatMessage({ peerId: 'agent', from: 'Agent', text: data.reply, avatar: '*' });
+    } else if (data.queued) {
+      // Poll for response
+      pollAgentReply(data.id);
+    }
+  } catch(e) {
+    renderSystemChatMessage({ peerId: 'agent', from: 'Agent', text: 'Offline — kein Agent verbunden.', avatar: '*' });
+  }
+}
+
+async function pollAgentReply(msgId) {
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    try {
+      const res = await fetch('/api/chat/reply/' + msgId);
+      const data = await res.json();
+      if (data.reply) {
+        renderSystemChatMessage({ peerId: 'agent', from: 'Agent', text: data.reply, avatar: '*' });
+        return;
+      }
+    } catch { break; }
+  }
+}
+
+// ── Morning Briefing ──
+function checkMorningBriefing() {
+  const now = new Date();
+  const hour = now.getHours();
+  const today = now.toISOString().slice(0, 10);
+  const lastBriefing = localStorage.getItem('pulse-last-briefing');
+  if (lastBriefing === today || hour < 6 || hour > 11) return;
+
+  localStorage.setItem('pulse-last-briefing', today);
+  fetch('/api/dashboard-stats').then(r => r.json()).then(data => {
+    if (!data.stats) return;
+    const s = data.stats;
+    const parts = [];
+    if (s.openTodos > 0) parts.push(s.openTodos + ' offene Todos');
+    if (s.highPriorityTodos > 0) parts.push(s.highPriorityTodos + ' dringend');
+    if (s.activeContexts > 0) parts.push(s.activeContexts + ' aktive Projekte');
+    if (s.staleContexts > 0) parts.push(s.staleContexts + ' Projekte brauchen Aufmerksamkeit');
+
+    if (parts.length > 0) {
+      const briefing = 'Guten Morgen! Heute: ' + parts.join(', ') + '.';
+      renderSystemChatMessage({ peerId: 'agent', from: 'Agent', text: briefing, avatar: '*' });
+      const ab = document.getElementById('agentText');
+      if (ab) ab.textContent = briefing;
+    }
+  }).catch(() => {});
+}
+setTimeout(checkMorningBriefing, 2000);
 
 function switchSysChatTab(tab) {
   document.getElementById('sysChatView').style.display = tab === 'chat' ? 'flex' : 'none';

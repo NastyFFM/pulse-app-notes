@@ -114,9 +114,9 @@
 - [x] agent/ Verzeichnis (relay.ts, memory.ts, etc.)
 - [x] agent/PULSEOS.md dynamisches Kontext-Dokument
 - [x] Agent-Bar zeigt Insights
-- [ ] Agent-Chat im Browser (nicht nur Telegram)
-- [ ] Morgens-Briefing
-- [ ] Stale-Detection
+- [x] Agent-Chat im Browser (nicht nur Telegram)
+- [x] Morgens-Briefing
+- [x] Stale-Detection
 - [ ] Memory-Tags unter Antworten
 
 ---

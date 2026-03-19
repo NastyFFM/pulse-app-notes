@@ -1380,6 +1380,42 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // ── Dashboard Chat Endpoint ──
+  if (url === '/api/chat' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { message, source } = JSON.parse(b);
+        const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
+        const queue = JSON.parse(safeReadJSON(queueFile, { pending: [] }));
+        if (!queue.pending) queue.pending = [];
+        const msg = { id: 'chat-' + Date.now(), message, source: source || 'dashboard', status: 'queued', created: new Date().toISOString() };
+        queue.pending.push(msg);
+        fs.writeFileSync(queueFile, JSON.stringify(queue, null, 2));
+        // Check if chat agent is alive
+        const agents = JSON.parse(safeReadJSON(path.join(ROOT, 'data', 'agents.json'), { agents: [] }));
+        const chatAgent = (agents.agents || []).find(a => a.type === 'chat' && a.status === 'alive');
+        if (chatAgent) {
+          jsonRes(res, { ok: true, id: msg.id, queued: true });
+        } else {
+          jsonRes(res, { ok: true, reply: 'Agent ist offline. Nachricht gespeichert — wird beantwortet sobald ein Agent verbunden ist.' });
+        }
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+    });
+  }
+
+  if (url.startsWith('/api/chat/reply/') && req.method === 'GET') {
+    const msgId = url.split('/').pop();
+    const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
+    const queue = JSON.parse(safeReadJSON(queueFile, { pending: [] }));
+    const msg = (queue.pending || []).find(m => m.id === msgId);
+    if (msg && msg.reply) {
+      jsonRes(res, { reply: msg.reply });
+    } else {
+      jsonRes(res, { pending: true });
+    }
+    return;
+  }
+
   // ── AI Endpoint (SDK) ──
   if (url === '/api/ai' && req.method === 'POST') {
     return readBody(req, b => {
@@ -1387,9 +1423,10 @@ const server = http.createServer(async (req, res) => {
         const { appId, task, data } = JSON.parse(b);
         // Queue for chat agent if available
         const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
-        const queue = safeReadJSON(queueFile, { messages: [] });
+        const queue = JSON.parse(safeReadJSON(queueFile, { pending: [] }));
+        if (!queue.pending) queue.pending = [];
         const msg = { id: 'ai-' + Date.now(), appId, task, data, status: 'queued', created: new Date().toISOString() };
-        queue.messages.push(msg);
+        queue.pending.push(msg);
         fs.writeFileSync(queueFile, JSON.stringify(queue, null, 2));
         jsonRes(res, { ok: true, id: msg.id, status: 'queued' });
       } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
