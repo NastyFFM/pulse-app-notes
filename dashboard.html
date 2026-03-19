@@ -2,418 +2,1186 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Claude Desktop</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PulseOS</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,sans-serif;background:#0F172A;min-height:100vh;color:#fff;display:flex;flex-direction:column;overflow-x:hidden;overflow-y:auto;overscroll-behavior:none;user-select:none}
+/* ═══════════════════════════════════════════════════
+   PulseOS — Agentic GUI Operating System
+   Design Language: IBM Plex Mono, Semantic Colors
+   ═══════════════════════════════════════════════════ */
 
-/* Pulse background */
+:root {
+  --bg: #0d0d14;
+  --bg-surface: rgba(13, 13, 20, 0.95);
+  --bg-card: rgba(255, 255, 255, 0.03);
+  --bg-card-hover: rgba(255, 255, 255, 0.06);
+  --amber: #f5a623;
+  --teal: #4ecdc4;
+  --lila: #a855f7;
+  --red: #ef4444;
+  --green: #22c55e;
+  --text: rgba(255, 255, 255, 0.85);
+  --text-dim: rgba(255, 255, 255, 0.4);
+  --text-muted: rgba(255, 255, 255, 0.2);
+  --border: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --font: 'IBM Plex Mono', monospace;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --topbar-h: 40px;
+  --agent-bar-h: 32px;
+}
 
-/* Top bar */
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 24px;font-size:.85rem;color:rgba(255,255,255,.6);z-index:100;position:sticky;top:0;background:rgba(15,23,42,.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.topbar-title{font-weight:600;font-size:1rem;color:rgba(255,255,255,.8)}
-.topbar-right{display:flex;align-items:center;gap:12px}
-.sync-dot{width:8px;height:8px;border-radius:50%;background:#22C55E;transition:background .3s}
-.sync-dot.syncing{background:#F59E0B;animation:pulse 1s infinite}
-.sync-dot.error{background:#EF4444}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* Topbar Tabs */
-.topbar-tabs{display:flex;gap:4px;align-items:center;overflow-x:auto;flex:1;margin:0 12px;scrollbar-width:none}
-.topbar-tabs::-webkit-scrollbar{display:none}
-.tab{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid transparent;color:rgba(255,255,255,0.6);font-size:12px;white-space:nowrap;cursor:pointer;flex-shrink:0;transition:all .15s}
-.tab:hover{background:rgba(255,255,255,0.1)}
-.tab.active{border-color:rgba(139,92,246,0.5);color:#fff;background:rgba(139,92,246,0.15)}
-.tab .tab-icon{font-size:14px}
-.tab .tab-close{font-size:10px;opacity:0.4;margin-left:2px;padding:2px;border-radius:4px}
-.tab .tab-close:hover{opacity:1;color:#EF4444;background:rgba(239,68,68,0.15)}
-.topbar-peers{display:flex;gap:4px;align-items:center;margin-right:4px}
-.topbar-peer{width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;background:rgba(255,255,255,0.06);cursor:pointer;position:relative;transition:transform .15s}
-.topbar-peer:hover{transform:scale(1.15)}
-.topbar-peer .peer-dot{position:absolute;bottom:-1px;right:-1px;width:6px;height:6px;border-radius:50%;background:#22C55E;border:1.5px solid #0F172A}
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
 
-/* App Launcher overlay */
-.launcher-overlay{position:fixed;inset:0;z-index:400;background:rgba(15,23,42,.88);backdrop-filter:blur(30px);display:none;flex-direction:column;align-items:center;animation:fadeIn .2s ease-out}
-.launcher-overlay.show{display:flex}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+/* ── Topbar ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  height: var(--topbar-h);
+  padding: 0 16px;
+  background: var(--bg-surface);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-shrink: 0;
+  gap: 12px;
+}
 
-.launcher-header{padding:24px 24px 16px;width:100%;max-width:700px;display:flex;align-items:center;gap:12px}
-.launcher-search{flex:1;padding:10px 16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:12px;color:#fff;font-size:.9rem;outline:none;font-family:inherit}
-.launcher-search:focus{border-color:rgba(139,92,246,.4);background:rgba(255,255,255,.1)}
-.launcher-search::placeholder{color:rgba(255,255,255,.3)}
-.launcher-close{width:36px;height:36px;border-radius:10px;border:none;background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.launcher-close:hover{background:rgba(255,255,255,.2);color:#fff}
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
 
-.launcher-grid{flex:1;overflow-y:auto;padding:10px 24px 80px;width:100%;max-width:700px;display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-content:start}
-.launcher-app{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:transform .15s;width:90px}
-.launcher-app:hover{transform:scale(1.1)}
-.launcher-app:active{transform:scale(.95)}
-.launcher-app .icon{width:60px;height:60px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 12px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.15)}
-.launcher-app .name{font-size:.68rem;color:rgba(255,255,255,.8);text-align:center;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.launcher-app.hidden{display:none}
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--amber);
+  animation: breathe 3s ease-in-out infinite;
+  flex-shrink: 0;
+  cursor: pointer;
+}
 
-/* Store overlay */
-.store-overlay{position:fixed;inset:0;z-index:400;background:rgba(15,23,42,.92);backdrop-filter:blur(30px);display:none;flex-direction:column;align-items:center;animation:fadeIn .2s ease-out}
-.store-overlay.show{display:flex}
-.store-header{padding:24px;width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center}
-.store-header h2{font-size:1.1rem;font-weight:700;color:rgba(255,255,255,.9)}
-.store-list{flex:1;overflow-y:auto;padding:0 24px 80px;width:100%;max-width:560px}
-.store-item{display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px 16px;margin-bottom:8px;border:1px solid rgba(255,255,255,.06)}
-.store-item .icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.store-item .info{flex:1}
-.store-item .info h3{font-size:.85rem;font-weight:600;margin-bottom:2px}
-.store-item .info p{font-size:.72rem;color:rgba(255,255,255,.4)}
-.store-item button{padding:5px 14px;border-radius:16px;border:none;font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit}
-.btn-install{background:#3B82F6;color:#fff}
-.btn-installed{background:rgba(255,255,255,.12);color:rgba(255,255,255,.5)}
-.btn-install:hover{background:#2563EB}
+@keyframes breathe {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
 
-/* ---- App Windows ---- */
-.app-window{position:fixed;background:#1E293B;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;z-index:200;min-width:min(400px,100vw);min-height:300px;animation:bloom .25s ease-out;box-sizing:border-box}
-@keyframes bloom{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
-.app-window.closing{animation:shrink .2s ease-in forwards}
-@keyframes shrink{to{transform:scale(.8);opacity:0}}
-.app-window.minimized{animation:none;display:none}
+@keyframes flash {
+  0% { transform: scale(1.8); box-shadow: 0 0 12px var(--amber); }
+  100% { transform: scale(1); box-shadow: none; }
+}
 
-.win-titlebar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(0,0,0,.3);border-radius:12px 12px 0 0;cursor:grab;flex-shrink:0;user-select:none}
-.win-titlebar:active{cursor:grabbing}
-.win-title{font-size:.8rem;font-weight:600;color:rgba(255,255,255,.8);display:flex;align-items:center;gap:8px}
-.win-title .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.win-btns{display:flex;gap:6px}
-.win-btn{width:24px;height:24px;border-radius:6px;border:none;font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);font-family:inherit;position:relative}
-@media (pointer:coarse){.win-btn{min-width:36px;min-height:36px}.win-btns{gap:2px}}
-.win-btn:hover{background:rgba(255,255,255,.2)}
-.win-btn.close:hover{background:#EF4444;color:#fff}
+.pulse-dot.flash { animation: flash 0.4s ease-out; }
 
-.app-window iframe{flex:1;border:none;border-radius:0 0 12px 12px;background:#fff}
+.topbar-brand {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  cursor: pointer;
+}
+.topbar-brand:hover { color: #fff; }
+
+.topbar-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 4px;
+}
+.topbar-tabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-family: var(--font);
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.tab:hover { background: var(--bg-card-hover); color: var(--text); }
+.tab.active {
+  background: rgba(78, 205, 196, 0.08);
+  border-color: rgba(78, 205, 196, 0.2);
+  color: var(--teal);
+}
+.tab .tab-icon { font-size: 12px; }
+.tab .tab-close {
+  font-size: 9px;
+  opacity: 0;
+  margin-left: 2px;
+  padding: 2px 3px;
+  border-radius: 3px;
+  transition: opacity 0.15s;
+}
+.tab:hover .tab-close { opacity: 0.5; }
+.tab .tab-close:hover { opacity: 1; color: var(--red); background: rgba(239, 68, 68, 0.1); }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.topbar-peers { display: flex; gap: 3px; align-items: center; }
+.topbar-peer {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  background: var(--bg-card);
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s;
+}
+.topbar-peer:hover { transform: scale(1.15); }
+.topbar-peer .peer-dot {
+  position: absolute; bottom: -1px; right: -1px;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--green);
+  border: 1.5px solid var(--bg);
+}
+
+.topbar-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 3px 8px;
+  border-radius: 5px;
+  font: 11px/1.4 var(--font);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+.topbar-btn:hover { border-color: var(--border-hover); color: var(--text); }
+.topbar-btn.active { border-color: var(--green); color: var(--green); }
+
+.topbar-clock {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
+  text-align: right;
+}
+
+.topbar-sync {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.topbar-sync.syncing { background: var(--amber); animation: breathe 1s infinite; }
+.topbar-sync.error { background: var(--red); }
+
+/* ── Agent-Bar ── */
+.agent-bar {
+  display: flex;
+  align-items: center;
+  height: var(--agent-bar-h);
+  padding: 0 16px;
+  background: rgba(13, 13, 20, 0.8);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-dim);
+  gap: 8px;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.agent-bar:hover { background: rgba(78, 205, 196, 0.03); }
+
+.agent-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.agent-label {
+  color: var(--teal);
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.agent-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-time {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ── Mode Buttons ── */
+.mode-group {
+  display: flex;
+  gap: 1px;
+  background: var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.mode-btn {
+  padding: 3px 8px;
+  font: 500 10px/1 var(--font);
+  color: var(--text-dim);
+  background: var(--bg);
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.15s;
+}
+.mode-btn:hover { color: var(--text); background: var(--bg-card-hover); }
+.mode-btn.active { color: var(--teal); background: rgba(78, 205, 196, 0.08); }
+
+/* ── Home Screen ── */
+.home-screen {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 32px 40px 40px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.greeting {
+  margin-bottom: 32px;
+}
+.greeting h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: -0.03em;
+  margin-bottom: 4px;
+}
+.greeting p {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.section {
+  margin-bottom: 28px;
+}
+.section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title .collapse-btn {
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  font-size: 9px;
+}
+.section:hover .section-title .collapse-btn { opacity: 0.6; }
+.section-title .collapse-btn:hover { opacity: 1; }
+
+/* ── Stats ── */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.stat-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+.stat-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.stat-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.stat-sub {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.stat-card.urgent .stat-val { color: var(--red); }
+
+/* ── App Grid ── */
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 6px;
+}
+.app-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 4px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.app-item:hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+}
+.app-item:active { transform: scale(0.95); }
+.app-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+.app-name {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Briefing Items ── */
+.briefing-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.briefing-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.briefing-item:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+}
+.briefing-item .bi-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.briefing-item .bi-dot.amber { background: var(--amber); }
+.briefing-item .bi-dot.teal { background: var(--teal); }
+.briefing-item .bi-dot.red { background: var(--red); }
+.briefing-item .bi-text { flex: 1; }
+.briefing-item .bi-action {
+  font-size: 10px;
+  color: var(--teal);
+  font-weight: 500;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.briefing-item:hover .bi-action { opacity: 1; }
+.briefing-item .bi-dismiss {
+  font-size: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.briefing-item:hover .bi-dismiss { opacity: 0.6; }
+.briefing-item .bi-dismiss:hover { opacity: 1; color: var(--text); }
+
+/* ── Projects ── */
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+.project-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.project-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+.project-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.project-icon {
+  font-size: 18px;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.project-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.project-pills {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.project-pill {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-dim);
+}
+
+/* ── Graph Cards ── */
+.graph-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+.graph-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.graph-nodes { display: flex; gap: 4px; align-items: center; }
+.graph-node {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+.graph-arrow { color: var(--text-muted); font-size: 9px; }
+.graph-info { flex: 1; min-width: 0; }
+.graph-name { font-size: 11px; font-weight: 600; color: var(--text-dim); }
+.graph-status { font-size: 10px; color: var(--text-muted); }
+
+/* ── Pulse Feed ── */
+.pulse-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.pulse-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.pulse-entry .pe-icon { font-size: 11px; flex-shrink: 0; }
+.pulse-entry .pe-time { font-size: 9px; color: var(--text-muted); margin-left: auto; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+
+/* ── Suggestion List ── */
+.suggestion-list { display: flex; flex-direction: column; gap: 4px; }
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.suggestion-item:hover { background: var(--bg-card-hover); border-color: var(--border-hover); }
+.suggestion-item .sg-icon { font-size: 14px; flex-shrink: 0; }
+.suggestion-item.type-urgent { border-left: 2px solid var(--red); }
+.suggestion-item.type-stale { border-left: 2px solid var(--amber); }
+.suggestion-item.type-empty { border-left: 2px solid var(--text-muted); }
+
+/* ═══ Launcher Overlay (Cmd+Space) ═══ */
+.launcher-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(13, 13, 20, 0.88);
+  backdrop-filter: blur(40px);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeIn 0.15s ease-out;
+}
+.launcher-overlay.show { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.launcher-header {
+  padding: 24px 24px 12px;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.launcher-search {
+  flex: 1;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius);
+  color: #fff;
+  font: 13px var(--font);
+  outline: none;
+}
+.launcher-search:focus { border-color: rgba(78, 205, 196, 0.3); }
+.launcher-search::placeholder { color: var(--text-muted); }
+.launcher-close {
+  width: 32px; height: 32px;
+  border-radius: var(--radius);
+  border: none;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.launcher-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+.launcher-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 24px 60px;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  align-content: start;
+}
+.launcher-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.15s;
+  width: 80px;
+}
+.launcher-app:hover { transform: scale(1.08); }
+.launcher-app:active { transform: scale(0.95); }
+.launcher-app .icon {
+  width: 52px; height: 52px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.launcher-app .name {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.launcher-app.hidden { display: none; }
+
+/* ═══ App Windows ═══ */
+.app-window {
+  position: fixed;
+  background: #111118;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  border: 1px solid var(--border-hover);
+  display: flex;
+  flex-direction: column;
+  z-index: 200;
+  min-width: min(420px, 100vw);
+  min-height: 300px;
+  animation: windowOpen 0.2s ease-out;
+}
+@keyframes windowOpen {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.app-window.closing { animation: windowClose 0.15s ease-in forwards; }
+@keyframes windowClose { to { transform: scale(0.92); opacity: 0; } }
+.app-window.minimized { display: none; }
+
+.win-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(0,0,0,0.4);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  cursor: grab;
+  flex-shrink: 0;
+  user-select: none;
+}
+.win-titlebar:active { cursor: grabbing; }
+.win-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font);
+}
+.win-title .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.win-btns { display: flex; gap: 4px; }
+.win-btn {
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  border: none;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-dim);
+  font-family: var(--font);
+  opacity: 0;
+  transition: all 0.15s;
+}
+.win-titlebar:hover .win-btn { opacity: 1; }
+.win-btn:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+.win-btn.close:hover { background: var(--red); color: #fff; }
+
+.app-window iframe {
+  flex: 1;
+  border: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: #fff;
+}
 
 /* Resize handles */
-.resize-handle{position:absolute;z-index:10}
-.resize-handle.r{right:-4px;top:12px;bottom:12px;width:8px;cursor:ew-resize}
-.resize-handle.b{bottom:-4px;left:12px;right:12px;height:8px;cursor:ns-resize}
-.resize-handle.br{right:-4px;bottom:-4px;width:16px;height:16px;cursor:nwse-resize}
-.resize-handle.bl{left:-4px;bottom:-4px;width:16px;height:16px;cursor:nesw-resize}
-.resize-handle.tr{right:-4px;top:-4px;width:16px;height:16px;cursor:nesw-resize}
-.resize-handle.tl{left:-4px;top:-4px;width:16px;height:16px;cursor:nwse-resize}
-.resize-handle.l{left:-4px;top:12px;bottom:12px;width:8px;cursor:ew-resize}
-.resize-handle.t{top:-4px;left:12px;right:12px;height:8px;cursor:ns-resize}
+.resize-handle { position: absolute; z-index: 10; }
+.resize-handle.r { right: -4px; top: 12px; bottom: 12px; width: 8px; cursor: ew-resize; }
+.resize-handle.b { bottom: -4px; left: 12px; right: 12px; height: 8px; cursor: ns-resize; }
+.resize-handle.br { right: -4px; bottom: -4px; width: 16px; height: 16px; cursor: nwse-resize; }
+.resize-handle.bl { left: -4px; bottom: -4px; width: 16px; height: 16px; cursor: nesw-resize; }
+.resize-handle.tr { right: -4px; top: -4px; width: 16px; height: 16px; cursor: nesw-resize; }
+.resize-handle.tl { left: -4px; top: -4px; width: 16px; height: 16px; cursor: nwse-resize; }
+.resize-handle.l { left: -4px; top: 12px; bottom: 12px; width: 8px; cursor: ew-resize; }
+.resize-handle.t { top: -4px; left: 12px; right: 12px; height: 8px; cursor: ns-resize; }
 
-/* ---- Command Center ---- */
-.command-center{position:fixed;top:0;right:-320px;width:320px;height:100vh;background:rgba(15,23,42,.95);backdrop-filter:blur(20px);border-left:1px solid rgba(255,255,255,.1);z-index:300;transition:right .3s ease;display:flex;flex-direction:column}
-.command-center.open{right:0}
-.cc-header{padding:16px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center}
-.cc-header h2{font-size:.9rem;font-weight:600;color:rgba(255,255,255,.8)}
-.cc-close{background:none;border:none;color:rgba(255,255,255,.5);font-size:1.2rem;cursor:pointer}
-.cc-close:hover{color:#fff}
-
-.cc-section{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
-.cc-section h3{font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.4);margin-bottom:8px}
-.cc-status{display:flex;gap:12px}
-.cc-stat{flex:1;background:rgba(255,255,255,.06);border-radius:8px;padding:8px;text-align:center}
-.cc-stat .val{font-size:1.2rem;font-weight:700;color:#fff}
-.cc-stat .lbl{font-size:.65rem;color:rgba(255,255,255,.4);margin-top:2px}
-
-.cc-feed{flex:1;overflow-y:auto;padding:8px 16px}
-.cc-entry{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.75rem;color:rgba(255,255,255,.6)}
-.cc-entry .time{color:rgba(255,255,255,.3);font-size:.65rem;margin-top:2px}
-.cc-entry.mutation{border-left:2px solid #3B82F6;padding-left:8px}
-.cc-entry.sse{border-left:2px solid #8B5CF6;padding-left:8px}
-.cc-entry.error{border-left:2px solid #EF4444;padding-left:8px}
-
-@keyframes syncPulse{0%{box-shadow:0 0 0 0 rgba(139,92,246,.4)}100%{box-shadow:0 0 0 12px rgba(139,92,246,0)}}
-.sse-pulse{animation:syncPulse .6s ease-out}
-
-/* Profile Edit Modal */
-.profile-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:fadeIn .2s}
-.profile-modal{background:#1E293B;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px;width:420px;max-width:92vw;max-height:90vh;overflow-y:auto}
-.profile-modal h2{font-size:18px;font-weight:700;margin-bottom:4px}
-.profile-modal .subtitle{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:20px}
-.profile-modal label{font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px;margin-top:12px}
-.profile-modal input,.profile-modal textarea{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;font-family:inherit;transition:border-color .2s}
-.profile-modal input:focus,.profile-modal textarea:focus{border-color:rgba(139,92,246,0.5)}
-.profile-modal textarea{resize:vertical;min-height:60px}
-.profile-modal .avatar-row{display:flex;align-items:center;gap:12px;margin-top:12px}
-.profile-modal .avatar-big{font-size:48px;width:64px;height:64px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);border-radius:16px}
-.profile-modal .btn-row{display:flex;gap:8px;margin-top:24px}
-.profile-modal .btn-primary{flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#8B5CF6,#6366F1);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
-.profile-modal .btn-primary:hover{opacity:.9}
-.profile-modal .btn-secondary{padding:12px 20px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.6);font-size:14px;cursor:pointer;font-family:inherit}
-.profile-modal .btn-secondary:hover{background:rgba(255,255,255,0.05)}
-.profile-modal .room-id{font-size:11px;color:rgba(255,255,255,0.3);margin-top:16px;text-align:center;word-break:break-all}
-.profile-modal .room-id code{background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:4px;cursor:pointer}
-.profile-modal .room-id code:hover{background:rgba(255,255,255,0.1)}
-
-/* Topbar profile clickable */
-.topbar-title{cursor:pointer;transition:color .2s}
-.topbar-title:hover{color:rgba(255,255,255,1)}
-
-/* System Chat Tabs */
-.sys-chat-tabs{display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.06)}
-.sys-chat-tab{flex:1;padding:10px 0;text-align:center;font-size:12px;font-weight:600;color:rgba(255,255,255,0.4);cursor:pointer;border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
-.sys-chat-tab:hover{color:rgba(255,255,255,0.6)}
-.sys-chat-tab.active{color:rgba(255,255,255,0.9);border-bottom-color:#8B5CF6}
-
-/* Contacts list */
-.contacts-list{padding:8px 12px;overflow-y:auto;flex:1}
-.contact-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .15s;margin-bottom:4px}
-.contact-item:hover{background:rgba(255,255,255,0.06)}
-.contact-avatar{font-size:24px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);border-radius:10px;flex-shrink:0}
-.contact-info{flex:1;min-width:0}
-.contact-name{font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.contact-handle{font-size:11px;color:rgba(255,255,255,0.35)}
-.contact-status{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.contact-status.online{background:#22C55E}
-.contact-status.offline{background:rgba(255,255,255,0.15)}
-.contact-ghlink{font-size:11px;color:#8B5CF6;text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.contact-ghlink:hover{text-decoration:underline}
-.contacts-empty{text-align:center;color:rgba(255,255,255,0.25);font-size:12px;padding:32px 16px}
-
-/* ---- Home Screen ---- */
-.home-screen{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px 32px 24px;max-width:900px;margin:0 auto;width:100%;min-height:0}
-.home-greeting{margin-bottom:28px}
-.home-greeting h1{font-size:28px;font-weight:700;color:rgba(255,255,255,0.95);margin-bottom:4px}
-.home-greeting p{font-size:14px;color:rgba(255,255,255,0.4)}
-
-.home-section{margin-bottom:24px}
-.home-section-title{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.3);font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}
-
-.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.quick-action{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px 14px;cursor:pointer;transition:all .2s;text-align:center}
-.quick-action:hover{background:rgba(255,255,255,0.08);border-color:rgba(139,92,246,0.3);transform:translateY(-2px)}
-.quick-action:active{transform:scale(0.97)}
-.quick-action .qa-icon{font-size:24px;margin-bottom:6px}
-.quick-action .qa-label{font-size:11px;font-weight:600;color:rgba(255,255,255,0.7)}
-.quick-action .qa-sub{font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px}
-
-.recent-contexts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
-.ctx-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;cursor:pointer;transition:all .2s;overflow:hidden}
-.ctx-card:hover{background:rgba(255,255,255,0.08);border-color:rgba(139,92,246,0.3);transform:translateY(-2px)}
-.ctx-card .ctx-card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.ctx-card .ctx-icon{font-size:20px;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.ctx-card .ctx-name{font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ctx-card .ctx-meta{font-size:10px;color:rgba(255,255,255,0.3)}
-.ctx-card .ctx-widgets{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
-.ctx-card .ctx-widget-pill{font-size:9px;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5)}
-
-.stat-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px}
-.stat-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;cursor:pointer;transition:all .2s;text-align:center}
-.stat-card:hover{background:rgba(255,255,255,0.08);transform:translateY(-2px)}
-.stat-card .sc-value{font-size:24px;font-weight:700;color:rgba(255,255,255,0.9)}
-.stat-card .sc-label{font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px}
-.stat-card .sc-sub{font-size:10px;color:rgba(255,255,255,0.25);margin-top:1px}
-.stat-card.urgent .sc-value{color:#EF4444}
-.suggestion-list{display:flex;flex-direction:column;gap:6px}
-.suggestion-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:all .15s;font-size:12px;color:rgba(255,255,255,0.6)}
-.suggestion-item:hover{background:rgba(255,255,255,0.07);border-color:rgba(139,92,246,0.3)}
-.suggestion-item .sg-icon{font-size:16px;flex-shrink:0}
-.suggestion-item.type-urgent{border-left:2px solid #EF4444}
-.suggestion-item.type-stale{border-left:2px solid #F59E0B}
-.suggestion-item.type-empty{border-left:2px solid rgba(255,255,255,0.15)}
-
-.active-graphs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-.graph-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px}
-.graph-card .graph-nodes{display:flex;gap:4px;align-items:center}
-.graph-card .graph-node{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3)}
-.graph-card .graph-arrow{color:rgba(255,255,255,0.2);font-size:10px}
-.graph-card .graph-info{flex:1;min-width:0}
-.graph-card .graph-name{font-size:12px;font-weight:600;color:rgba(255,255,255,0.75)}
-.graph-card .graph-status{font-size:10px;color:rgba(255,255,255,0.3)}
-
-.pulse-feed{display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto}
-.pulse-entry{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;font-size:11px;color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.02)}
-.pulse-entry .pe-icon{font-size:14px;flex-shrink:0}
-.pulse-entry .pe-time{font-size:9px;color:rgba(255,255,255,0.2);margin-left:auto;flex-shrink:0}
-.pulse-entry.pe-error{border-left:2px solid #EF4444}
-.pulse-entry.pe-success{border-left:2px solid #22C55E}
-
-/* ---- Responsive ---- */
-@media (max-width:768px) {
-  .topbar{padding:6px 10px}
-  .topbar-title{font-size:.8rem}
-  .topbar-tabs{margin:0 8px}
-  .tab .tab-name{display:none}
-  .tab{padding:4px 8px;gap:4px}
-  .home-screen{padding:16px 16px 16px}
-  .home-greeting h1{font-size:22px}
-  .stat-cards{grid-template-columns:1fr 1fr 1fr}
-  .stat-card .sc-value{font-size:18px}
-  .quick-actions{grid-template-columns:repeat(2,1fr)}
-  .recent-contexts{grid-template-columns:1fr}
-  .active-graphs{grid-template-columns:1fr}
-  .launcher-grid{gap:12px;padding:10px 16px 24px}
-  .launcher-app{width:72px}
-  .launcher-app .icon{width:50px;height:50px;font-size:22px;border-radius:12px}
-  .launcher-app .name{font-size:.62rem}
-  .app-window{border-radius:0 !important;left:0 !important;top:36px !important;width:100vw !important;height:calc(100vh - 36px) !important;min-width:auto !important;min-height:auto !important;border:none !important;box-shadow:none !important}
-  .win-titlebar{display:none !important}
-  .app-window iframe{border-radius:0 !important;height:100% !important}
-  .command-center{width:100vw;right:-100vw}
-  #systemChat{width:calc(100vw - 16px) !important;right:8px !important;top:44px !important;max-height:70vh !important}
-  .profile-modal{padding:24px;width:100%;border-radius:16px}
-  .store-overlay .store-header,.store-overlay .store-list{max-width:100%;padding-left:16px;padding-right:16px}
+/* ═══ System Chat Panel ═══ */
+.chat-panel {
+  position: fixed;
+  top: calc(var(--topbar-h) + var(--agent-bar-h) + 8px);
+  right: 16px;
+  width: 320px;
+  max-height: calc(100vh - var(--topbar-h) - var(--agent-bar-h) - 24px);
+  background: var(--bg-surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-lg);
+  z-index: 250;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
 }
-@media (max-width:480px) {
-  .topbar-title .title-name{display:none}
-  .topbar-right #tunnelBtn,.topbar-right #fsBtn{display:none}
+.chat-panel.open { display: flex; }
+
+.chat-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
+.chat-header-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.chat-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  font-family: var(--font);
+}
+.chat-close:hover { color: var(--text); }
+
+.chat-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+.chat-tab {
+  flex: 1;
+  padding: 8px 0;
+  text-align: center;
+  font: 500 10px var(--font);
+  color: var(--text-dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.chat-tab:hover { color: var(--text); }
+.chat-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+  max-height: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chat-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 24px 0;
+}
+
+.chat-input-row {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 6px;
+}
+.chat-input {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  font: 12px var(--font);
+  outline: none;
+}
+.chat-input:focus { border-color: rgba(78, 205, 196, 0.3); }
+.chat-send {
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: none;
+  background: var(--teal);
+  color: var(--bg);
+  cursor: pointer;
+  font: 12px var(--font);
+  font-weight: 600;
+}
+.chat-send:hover { opacity: 0.9; }
+
+.contacts-list {
+  padding: 8px 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 2px;
+}
+.contact-item:hover { background: var(--bg-card-hover); }
+.contact-avatar {
+  font-size: 20px;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.contact-info { flex: 1; min-width: 0; }
+.contact-name { font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.contact-handle { font-size: 10px; color: var(--text-muted); }
+.contact-ghlink { font-size: 10px; color: var(--lila); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.contact-ghlink:hover { text-decoration: underline; }
+.contact-status { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.contact-status.online { background: var(--green); }
+.contact-status.offline { background: var(--text-muted); }
+.contacts-empty { text-align: center; color: var(--text-muted); font-size: 11px; padding: 24px 12px; }
+
+/* ═══ Profile Modal ═══ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(13, 13, 20, 0.92);
+  z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.15s;
+}
+.modal-box {
+  background: #111118;
+  border: 1px solid var(--border-hover);
+  border-radius: 16px;
+  padding: 28px;
+  width: 400px;
+  max-width: 92vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-box h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.modal-box .subtitle {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 20px;
+}
+.modal-box label {
+  font: 600 10px var(--font);
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: block;
+  margin-bottom: 4px;
+  margin-top: 12px;
+}
+.modal-box input, .modal-box textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  font: 13px var(--font);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.modal-box input:focus, .modal-box textarea:focus { border-color: rgba(78, 205, 196, 0.4); }
+.modal-box textarea { resize: vertical; min-height: 60px; }
+.modal-box .btn-row { display: flex; gap: 8px; margin-top: 20px; }
+.modal-box .btn-primary {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--teal);
+  color: var(--bg);
+  font: 600 13px var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.modal-box .btn-primary:hover { opacity: 0.9; }
+.modal-box .btn-secondary {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font: 13px var(--font);
+  cursor: pointer;
+}
+.modal-box .btn-secondary:hover { background: var(--bg-card-hover); }
+
+/* ═══ Responsive ═══ */
+@media (max-width: 768px) {
+  .topbar { padding: 0 10px; }
+  .topbar-brand { font-size: 12px; }
+  .tab .tab-name { display: none; }
+  .home-screen { padding: 16px 16px 24px; }
+  .greeting h1 { font-size: 20px; }
+  .stat-row { grid-template-columns: 1fr 1fr 1fr; }
+  .stat-val { font-size: 18px; }
+  .project-grid { grid-template-columns: 1fr; }
+  .graph-grid { grid-template-columns: 1fr; }
+  .app-grid { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+  .launcher-grid { gap: 12px; padding: 8px 16px 24px; }
+  .launcher-app { width: 70px; }
+  .launcher-app .icon { width: 46px; height: 46px; font-size: 20px; }
+  .app-window {
+    border-radius: 0 !important;
+    left: 0 !important; top: calc(var(--topbar-h) + var(--agent-bar-h)) !important;
+    width: 100vw !important;
+    height: calc(100vh - var(--topbar-h) - var(--agent-bar-h)) !important;
+    min-width: auto !important; min-height: auto !important;
+    border: none !important;
+  }
+  .win-titlebar { display: none !important; }
+  .app-window iframe { border-radius: 0 !important; }
+  .chat-panel { width: calc(100vw - 16px); right: 8px; }
+  .mode-group { display: none; }
+}
+
+@media (max-width: 480px) {
+  .topbar-brand { display: none; }
+  #tunnelBtn, #fsBtn { display: none; }
+}
+
+/* ── Modes ── */
+body.mode-flow .home-screen { max-width: 600px; }
+body.mode-flow #statsSection,
+body.mode-flow #graphSection { display: none !important; }
+
+body.mode-cockpit .home-screen { max-width: 1100px; }
+
+body.mode-builder .home-screen { max-width: 600px; }
 </style>
 </head>
 <body>
 
-<!-- Top bar -->
+<!-- ═══ Topbar ═══ -->
 <div class="topbar">
-  <span class="topbar-title" id="title" onclick="showProfileEdit()">Claude Desktop</span>
-  <div class="topbar-tabs" id="topbarTabs">
-    <div class="tab active" onclick="showHome()" title="Home">🏠</div>
+  <div class="topbar-left">
+    <div class="pulse-dot" id="pulseDot" title="System Pulse"></div>
+    <span class="topbar-brand" id="topbarBrand" onclick="showProfileEdit()">PulseOS</span>
   </div>
+
+  <div class="topbar-tabs" id="topbarTabs">
+    <div class="tab active" onclick="showHome()" title="Home"><span class="tab-icon">~</span></div>
+  </div>
+
   <div class="topbar-right">
     <div class="topbar-peers" id="topbarPeers"></div>
-    <button id="tunnelBtn" onclick="toggleTunnel()" style="background:none;border:1px solid #3b3e52;color:#7a7e96;padding:2px 10px;border-radius:4px;font:12px/1.4 -apple-system,sans-serif;cursor:pointer;display:flex;align-items:center;gap:4px" title="Port Forwarding">🌐 <span id="tunnelLabel">Share</span></button>
-    <button id="fsBtn" onclick="toggleFullscreen()" style="background:none;border:1px solid #3b3e52;color:#7a7e96;padding:2px 8px;border-radius:4px;font:12px/1.4 -apple-system,sans-serif;cursor:pointer" title="Fullscreen">⛶</button>
-    <span id="clock"></span><span class="sync-dot" id="syncDot"></span>
+
+    <div class="mode-group">
+      <button class="mode-btn active" id="modeFlow" onclick="setMode('flow')">Flow</button>
+      <button class="mode-btn" id="modeCockpit" onclick="setMode('cockpit')">Cockpit</button>
+      <button class="mode-btn" id="modeBuilder" onclick="setMode('builder')">Builder</button>
+    </div>
+
+    <button class="topbar-btn" id="tunnelBtn" onclick="toggleTunnel()" title="Share">Share</button>
+    <button class="topbar-btn" id="fsBtn" onclick="toggleFullscreen()" title="Fullscreen">F</button>
+
+    <span class="topbar-clock" id="clock"></span>
+    <div class="topbar-sync" id="syncDot"></div>
   </div>
 </div>
 
-<!-- Home Screen -->
+<!-- ═══ Agent-Bar ═══ -->
+<div class="agent-bar" id="agentBar" onclick="toggleSystemChat()">
+  <div class="agent-dot"></div>
+  <span class="agent-label">Agent</span>
+  <span class="agent-text" id="agentText">bereit</span>
+  <span class="agent-time" id="agentTime"></span>
+</div>
+
+<!-- ═══ Home Screen ═══ -->
 <div class="home-screen" id="homeScreen">
-  <div class="home-greeting" id="homeGreeting">
-    <h1 id="greetingText">Guten Abend, Chris</h1>
-    <p id="greetingSub">Was möchtest du heute machen?</p>
+  <div class="greeting" id="greeting">
+    <h1 id="greetingText">PulseOS</h1>
+    <p id="greetingSub">Agentic Operating System</p>
   </div>
 
-  <div class="home-section">
-    <div class="home-section-title">Schnellzugriff</div>
-    <div class="quick-actions" id="quickActions">
-      <div class="quick-action" onclick="toggleLauncher()">
-        <div class="qa-icon">🚀</div>
-        <div class="qa-label">Apps</div>
-        <div class="qa-sub">Alle Apps öffnen</div>
-      </div>
-      <div class="quick-action" onclick="toggleContextLauncher()">
-        <div class="qa-icon">🧩</div>
-        <div class="qa-label">Projekte</div>
-        <div class="qa-sub">Contexts & Graphen</div>
-      </div>
-      <div class="quick-action" onclick="toggleSystemChat()">
-        <div class="qa-icon">💬</div>
-        <div class="qa-label">Chat</div>
-        <div class="qa-sub">WebRTC Peers</div>
-      </div>
-      <div class="quick-action" onclick="toggleCC()">
-        <div class="qa-icon">📡</div>
-        <div class="qa-label">System</div>
-        <div class="qa-sub">Command Center</div>
-      </div>
-    </div>
+  <!-- Zone 1: Agent Briefing -->
+  <div class="section" id="briefingSection" style="display:none;">
+    <div class="section-title">Briefing</div>
+    <div class="briefing-list" id="briefingList"></div>
   </div>
 
-  <div class="home-section" id="statsSection" style="display:none;">
-    <div class="stat-cards" id="statCards"></div>
+  <!-- Stats -->
+  <div class="section" id="statsSection" style="display:none;">
+    <div class="stat-row" id="statCards"></div>
   </div>
 
-  <div class="home-section" id="suggestionsSection" style="display:none;">
-    <div class="home-section-title">Vorschlaege</div>
+  <!-- Suggestions -->
+  <div class="section" id="suggestionsSection" style="display:none;">
+    <div class="section-title">Vorschlaege</div>
     <div class="suggestion-list" id="suggestionList"></div>
   </div>
 
-  <div class="home-section">
-    <div class="home-section-title">Letzte Projekte</div>
-    <div class="recent-contexts" id="recentContexts">
-      <div style="color:rgba(255,255,255,0.2);font-size:12px;padding:8px;">Lade...</div>
+  <!-- Zone 2: Quick Apps -->
+  <div class="section">
+    <div class="section-title">
+      Apps
+      <span style="margin-left:auto;font-size:10px;color:var(--text-muted);cursor:pointer;" onclick="toggleLauncher()">Alle anzeigen</span>
+    </div>
+    <div class="app-grid" id="appGrid">
+      <div style="color:var(--text-muted);font-size:11px;padding:8px;">Lade...</div>
     </div>
   </div>
 
-  <div class="home-section" id="graphSection" style="display:none;">
-    <div class="home-section-title">Aktive Graphen</div>
-    <div class="active-graphs" id="activeGraphs"></div>
+  <!-- Projects -->
+  <div class="section">
+    <div class="section-title">Projekte</div>
+    <div class="project-grid" id="recentContexts">
+      <div style="color:var(--text-muted);font-size:11px;padding:8px;">Lade...</div>
+    </div>
   </div>
 
-  <div class="home-section">
-    <div class="home-section-title">System Pulse</div>
+  <!-- Zone 3: Graph Activity -->
+  <div class="section" id="graphSection" style="display:none;">
+    <div class="section-title">
+      Graphen
+      <span class="collapse-btn" onclick="this.closest('.section').style.display='none'">x</span>
+    </div>
+    <div class="graph-grid" id="activeGraphs"></div>
+  </div>
+
+  <!-- System Pulse -->
+  <div class="section">
+    <div class="section-title">System Pulse</div>
     <div class="pulse-feed" id="pulseFeed">
-      <div class="pulse-entry pe-success"><span class="pe-icon">✅</span> Server gestartet <span class="pe-time">gerade eben</span></div>
+      <div class="pulse-entry"><span class="pe-icon">+</span> Server gestartet <span class="pe-time">jetzt</span></div>
     </div>
   </div>
 </div>
 
-<!-- System Chat Panel (Chat + Contacts tabs) -->
-<div id="systemChat" style="position:fixed;top:48px;right:16px;width:340px;max-height:calc(100vh - 80px);background:rgba(15,23,42,0.95);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);border-radius:16px;z-index:250;display:none;flex-direction:column;overflow:hidden;">
-  <div style="padding:10px 16px 0;display:flex;justify-content:space-between;align-items:center;">
-    <span style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.9);">PulseOS</span>
-    <button onclick="toggleSystemChat()" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:16px;">✕</button>
+<!-- ═══ System Chat Panel ═══ -->
+<div class="chat-panel" id="systemChat">
+  <div class="chat-header">
+    <span class="chat-header-title">PulseOS</span>
+    <button class="chat-close" onclick="toggleSystemChat()">x</button>
   </div>
-  <div class="sys-chat-tabs">
-    <div class="sys-chat-tab active" onclick="switchSysChatTab('chat')" id="tabChat">💬 Chat</div>
-    <div class="sys-chat-tab" onclick="switchSysChatTab('contacts')" id="tabContacts">👥 Kontakte <span id="contactCount" style="font-size:10px;opacity:0.5;"></span></div>
+  <div class="chat-tabs">
+    <div class="chat-tab active" id="tabChat" onclick="switchSysChatTab('chat')">Chat</div>
+    <div class="chat-tab" id="tabContacts" onclick="switchSysChatTab('contacts')">Kontakte <span id="contactCount" style="opacity:0.4;"></span></div>
   </div>
   <div id="sysChatView" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
-    <div id="systemChatMessages" style="flex:1;overflow-y:auto;padding:8px 12px;max-height:300px;display:flex;flex-direction:column;gap:6px;">
-      <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;padding:20px 0;">Noch keine Nachrichten</div>
+    <div class="chat-messages" id="systemChatMessages">
+      <div class="chat-empty">Noch keine Nachrichten</div>
     </div>
-    <div style="padding:8px 12px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:8px;">
-      <input id="systemChatInput" type="text" placeholder="Nachricht..." style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:13px;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')sendSystemChat()">
-      <button onclick="sendSystemChat()" style="padding:8px 12px;border-radius:8px;border:none;background:#8B5CF6;color:#fff;cursor:pointer;font-size:13px;">▶</button>
+    <div class="chat-input-row">
+      <input class="chat-input" id="systemChatInput" type="text" placeholder="Nachricht..." onkeydown="if(event.key==='Enter')sendSystemChat()">
+      <button class="chat-send" onclick="sendSystemChat()">&#9654;</button>
     </div>
   </div>
   <div id="sysContactsView" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
     <div class="contacts-list" id="contactsList">
-      <div class="contacts-empty">Noch keine Kontakte.<br>Verbinde dich über WebRTC!</div>
+      <div class="contacts-empty">Noch keine Kontakte.</div>
     </div>
   </div>
 </div>
 
-
-<!-- App Launcher Overlay -->
+<!-- ═══ App Launcher Overlay ═══ -->
 <div class="launcher-overlay" id="launcher">
   <div class="launcher-header">
     <input class="launcher-search" id="launcherSearch" placeholder="App suchen..." oninput="filterApps(this.value)" autofocus>
-    <button class="launcher-close" onclick="toggleLauncher()">✕</button>
+    <button class="launcher-close" onclick="toggleLauncher()">x</button>
   </div>
   <div class="launcher-grid" id="launcherGrid"></div>
 </div>
 
-<!-- Context Launcher Overlay -->
-<div class="launcher-overlay" id="contextLauncher" style="display:none;">
+<!-- ═══ Context Launcher Overlay ═══ -->
+<div class="launcher-overlay" id="contextLauncher">
   <div class="launcher-header">
-    <input class="launcher-search" id="ctxLauncherSearch" placeholder="Context suchen..." oninput="filterContexts(this.value)" autofocus>
-    <button class="launcher-close" onclick="toggleContextLauncher()">✕</button>
+    <input class="launcher-search" id="ctxLauncherSearch" placeholder="Projekt suchen..." oninput="filterContexts(this.value)" autofocus>
+    <button class="launcher-close" onclick="toggleContextLauncher()">x</button>
   </div>
-  <div class="launcher-grid" id="ctxLauncherGrid" style="max-width:800px;"></div>
+  <div class="launcher-grid" id="ctxLauncherGrid" style="max-width:700px;"></div>
 </div>
 
-<!-- Store Overlay -->
-<div class="store-overlay" id="storeOverlay">
-  <div class="store-header">
-    <h2>App Store</h2>
-    <button class="launcher-close" onclick="toggleStore()">✕</button>
-  </div>
-  <div class="store-list" id="store-list"></div>
-</div>
-
-<!-- Command Center -->
-<div class="command-center" id="cc">
-  <div class="cc-header"><h2>Command Center</h2><button class="cc-close" onclick="toggleCC()">&times;</button></div>
-  <div class="cc-section">
-    <h3>Sync Status</h3>
-    <div class="cc-status">
-      <div class="cc-stat"><div class="val" id="cc-pending">0</div><div class="lbl">Pending</div></div>
-      <div class="cc-stat"><div class="val" id="cc-apps">0</div><div class="lbl">Apps</div></div>
-      <div class="cc-stat"><div class="val" id="cc-windows">0</div><div class="lbl">Fenster</div></div>
-    </div>
-  </div>
-  <div class="cc-section"><h3>Activity Feed</h3></div>
-  <div class="cc-feed" id="cc-feed"></div>
-</div>
-
+<!-- ═══ JavaScript ═══ -->
 <script>
+// ── State ──
 let state = null, lastHash = '';
 let openWindows = [], nextZ = 300, windowIdCounter = 0;
 let mutationQueue = [], batchTimer = null;
 const feed = [];
-let launcherOpen = false, storeOpen = false, ccOpen = false;
+let launcherOpen = false, ccOpen = false;
+let activeTabWinId = null;
+let currentMode = localStorage.getItem('pulseMode') || 'flow';
 
-// --- SSE ---
+// ── Modes ──
+function setMode(mode) {
+  currentMode = mode;
+  localStorage.setItem('pulseMode', mode);
+  document.body.className = 'mode-' + mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1));
+  if (btn) btn.classList.add('active');
+  if (mode === 'builder') {
+    const app = state?.apps?.find(a => a.id === 'projects');
+    if (app) openApp(app);
+  }
+}
+
+// ── SSE ──
 let sse = null;
 function connectSSE() {
   if (sse) sse.close();
@@ -423,34 +1191,7 @@ function connectSSE() {
     try {
       const msg = JSON.parse(e.data);
       if (msg.type === 'tunnel') {
-        tunnelActive = !!msg.active;
-        tunnelCurrentUrl = msg.url || null;
-        if (msg.bridgeUrl) bridgeCurrentUrl = msg.bridgeUrl;
-        const btn = document.getElementById('tunnelBtn');
-        const label = document.getElementById('tunnelLabel');
-        if (tunnelActive && tunnelCurrentUrl) {
-          btn.style.borderColor = '#9ece6a';
-          btn.style.color = '#9ece6a';
-          label.textContent = 'Live';
-          label.title = tunnelCurrentUrl;
-          // Update QR modal if open
-          const qrImg = document.getElementById('tunnelQR');
-          if (qrImg) { qrImg.src = generateQR(tunnelCurrentUrl); }
-          const urlInp = document.getElementById('tunnelUrlInput');
-          if (urlInp) { urlInp.value = tunnelCurrentUrl; }
-          addFeed('Tunnel connected: ' + tunnelCurrentUrl, 'sse');
-        } else if (msg.reconnecting) {
-          btn.style.borderColor = '#e0af68';
-          btn.style.color = '#e0af68';
-          label.textContent = 'Reconnecting...';
-          addFeed('Tunnel reconnecting...', 'sse');
-        } else {
-          btn.style.borderColor = '#3b3e52';
-          btn.style.color = '#7a7e96';
-          label.textContent = 'Share';
-          label.title = '';
-          addFeed('Tunnel disconnected', 'sse');
-        }
+        handleTunnelSSE(msg);
         return;
       }
     } catch {}
@@ -460,7 +1201,36 @@ function connectSSE() {
   sse.onerror = () => { setSyncStatus('error'); setTimeout(connectSSE, 5000); };
 }
 
-// --- Data ---
+// ── Pulse SSE ──
+let pulseSSE = null;
+function connectPulseSSE() {
+  if (pulseSSE) pulseSSE.close();
+  pulseSSE = new EventSource('/sse/pulse');
+  pulseSSE.onmessage = e => {
+    if (e.data === 'connected') return;
+    try {
+      const evt = JSON.parse(e.data);
+      // Flash pulse dot
+      const dot = document.getElementById('pulseDot');
+      dot.classList.remove('flash');
+      void dot.offsetWidth;
+      dot.classList.add('flash');
+      setTimeout(() => dot.classList.remove('flash'), 500);
+      // Update agent bar
+      const source = evt.source || evt.type || '';
+      const detail = evt.data ? (evt.data.appId || evt.data.from || '') : '';
+      document.getElementById('agentText').textContent = (evt.type || 'event') + (detail ? ' · ' + detail : '');
+      document.getElementById('agentTime').textContent = 'jetzt';
+      lastPulseTime = Date.now();
+      // Add to feed
+      addPulseEntry('*', (evt.type || 'event') + (detail ? ' · ' + detail : ''), 'success');
+    } catch {}
+  };
+  pulseSSE.onerror = () => setTimeout(connectPulseSSE, 5000);
+}
+let lastPulseTime = 0;
+
+// ── Data ──
 async function load() {
   try {
     const r = await fetch('/api/apps');
@@ -483,17 +1253,27 @@ async function save() {
 
 function setSyncStatus(s) {
   const dot = document.getElementById('syncDot');
-  dot.className = 'sync-dot' + (s === 'syncing' ? ' syncing' : s === 'error' ? ' error' : '');
+  dot.className = 'topbar-sync' + (s === 'syncing' ? ' syncing' : s === 'error' ? ' error' : '');
 }
 
-// --- Render ---
+// ── Render ──
 function render() {
   if (!state) return;
-  document.getElementById('title').textContent = state.meta.title || 'Claude Desktop';
   renderLauncher();
-  renderStore();
-  renderDockWindows();
-  updateCCStats();
+  renderAppGrid();
+  renderTopbarTabs();
+}
+
+function renderAppGrid() {
+  const apps = state.apps.filter(a => a.installed).sort((a, b) => (a.position || 0) - (b.position || 0));
+  const grid = document.getElementById('appGrid');
+  // Show first 8 pinned apps on home screen
+  const shown = apps.slice(0, 8);
+  grid.innerHTML = shown.map(app =>
+    '<div class="app-item" onclick="openApp(state.apps.find(a=>a.id===\'' + app.id + '\'))">' +
+    '<div class="app-icon" style="background:' + app.color + '">' + app.icon + '</div>' +
+    '<div class="app-name">' + app.name + '</div></div>'
+  ).join('');
 }
 
 function renderLauncher() {
@@ -505,7 +1285,7 @@ function renderLauncher() {
     el.className = 'launcher-app';
     el.dataset.name = app.name.toLowerCase();
     el.onclick = () => { openApp(app); toggleLauncher(); };
-    el.innerHTML = `<div class="icon" style="background:${app.color}">${app.icon}</div><div class="name">${app.name}</div>`;
+    el.innerHTML = '<div class="icon" style="background:' + app.color + '">' + app.icon + '</div><div class="name">' + app.name + '</div>';
     grid.appendChild(el);
   });
 }
@@ -517,20 +1297,7 @@ function filterApps(q) {
   });
 }
 
-function renderStore() {
-  const list = document.getElementById('store-list');
-  list.innerHTML = '';
-  if (!state) return;
-  state.apps.forEach(app => {
-    const el = document.createElement('div');
-    el.className = 'store-item';
-    el.innerHTML = `<div class="icon" style="background:${app.color}">${app.icon}</div><div class="info"><h3>${app.name}</h3><p>${app.description || ''}</p></div><button class="${app.installed ? 'btn-installed' : 'btn-install'}" onclick="toggleInstall('${app.id}')">${app.installed ? 'Installiert' : 'Installieren'}</button>`;
-    list.appendChild(el);
-  });
-}
-
-let activeTabWinId = null; // null = home screen
-
+// ── Topbar Tabs ──
 function renderTopbarTabs() {
   const tabs = document.getElementById('topbarTabs');
   if (!tabs) return;
@@ -538,15 +1305,15 @@ function renderTopbarTabs() {
   const isHome = activeTabWinId === null || !active.find(w => w.winId === activeTabWinId);
   if (isHome) activeTabWinId = null;
 
-  let html = '<div class="tab' + (isHome ? ' active' : '') + '" onclick="showHome()" title="Home"><span class="tab-icon">🏠</span></div>';
+  let html = '<div class="tab' + (isHome ? ' active' : '') + '" onclick="showHome()" title="Home"><span class="tab-icon">~</span></div>';
   active.forEach(w => {
     const app = state.apps.find(a => a.id === w.appId);
     if (!app) return;
     const isActive = w.winId === activeTabWinId && !w.minimized;
     html += '<div class="tab' + (isActive ? ' active' : '') + '" onclick="focusTab(\'' + w.winId + '\')" title="' + (app.name || w.appId) + '">' +
-      '<span class="tab-icon">' + (app.icon || '📦') + '</span>' +
+      '<span class="tab-icon">' + (app.icon || '#') + '</span>' +
       '<span class="tab-name">' + (app.name || w.appId) + '</span>' +
-      '<span class="tab-close" onclick="event.stopPropagation();closeWin(\'' + w.winId + '\')">✕</span>' +
+      '<span class="tab-close" onclick="event.stopPropagation();closeWin(\'' + w.winId + '\')">x</span>' +
     '</div>';
   });
   tabs.innerHTML = html;
@@ -554,10 +1321,7 @@ function renderTopbarTabs() {
 
 function showHome() {
   activeTabWinId = null;
-  // Hide all windows (minimize)
-  openWindows.filter(w => !w.closed).forEach(w => {
-    w.el.style.display = 'none';
-  });
+  openWindows.filter(w => !w.closed).forEach(w => { w.el.style.display = 'none'; });
   document.getElementById('homeScreen').style.display = '';
   renderTopbarTabs();
 }
@@ -565,255 +1329,26 @@ function showHome() {
 function focusTab(winId) {
   const win = openWindows.find(w => w.winId === winId);
   if (!win || win.closed) return;
-  // Show window, hide home
-  if (win.minimized) {
-    win.minimized = false;
-    win.el.classList.remove('minimized');
-  }
+  if (win.minimized) { win.minimized = false; win.el.classList.remove('minimized'); }
   win.el.style.display = '';
   document.getElementById('homeScreen').style.display = 'none';
-  // Hide other windows on mobile
   if (window.innerWidth <= 768) {
-    openWindows.filter(w => !w.closed && w.winId !== winId).forEach(w => {
-      w.el.style.display = 'none';
-    });
+    openWindows.filter(w => !w.closed && w.winId !== winId).forEach(w => { w.el.style.display = 'none'; });
   }
   focusWindow(winId);
   activeTabWinId = winId;
   renderTopbarTabs();
 }
 
-// Keep old name as alias for compatibility
 function renderDockWindows() { renderTopbarTabs(); }
 
-function toggleInstall(id) {
-  const app = state.apps.find(a => a.id === id);
-  app.installed = !app.installed;
-  if (app.installed) app.position = state.apps.filter(a => a.installed).length - 1;
-  trackMutation('install', `${app.name} ${app.installed ? 'installiert' : 'deinstalliert'}`);
-  render(); save();
-}
-
-// --- QR Code Generator (pure JS, no dependencies) ---
-function generateQR(text) {
-  // Use a QR code API via an img tag — zero dependency
-  return 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&bgcolor=1a1b26&color=a9b1d6&data=' + encodeURIComponent(text);
-}
-
-function showTunnelModal(url, bridgeUrl) {
-  let modal = document.getElementById('tunnelModal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'tunnelModal';
-    modal.innerHTML = `
-      <div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center" onclick="if(event.target===this)closeTunnelModal()">
-        <div style="background:#1a1b26;border:1px solid #292e42;border-radius:12px;padding:28px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)">
-          <div style="font:600 16px/1.4 -apple-system,sans-serif;color:#c0caf5;margin-bottom:4px">Dashboard ist live!</div>
-          <div style="font:12px/1.4 -apple-system,sans-serif;color:#565f89;margin-bottom:20px">Scanne den QR-Code oder kopiere die URL</div>
-          <div style="background:#fff;border-radius:8px;padding:12px;display:inline-block;margin-bottom:16px">
-            <img id="tunnelQR" width="176" height="176" style="display:block" alt="QR Code">
-          </div>
-          <div style="display:flex;gap:6px;margin-bottom:12px">
-            <input id="tunnelUrlInput" readonly style="flex:1;background:#16161e;border:1px solid #292e42;color:#7aa2f7;padding:8px 12px;border-radius:6px;font:13px/1.4 'SF Mono',monospace;outline:none;cursor:text" onclick="this.select()">
-            <button onclick="copyTunnelUrl()" style="background:#7aa2f7;color:#1a1b26;border:none;padding:8px 14px;border-radius:6px;font:13px/1.4 -apple-system,sans-serif;cursor:pointer;white-space:nowrap" id="tunnelCopyBtn">Copy</button>
-          </div>
-          <div id="bridgeLinkSection" style="margin-bottom:16px;display:none">
-            <div style="width:100%;height:1px;background:#292e42;margin:4px 0 16px"></div>
-            <div style="font:600 12px/1.4 -apple-system,sans-serif;color:#0ea5e9;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px">🌐 Reconnect-Bookmark</div>
-            <div style="font:11px/1.5 -apple-system,sans-serif;color:#565f89;margin-bottom:12px">Diesen Link bookmarken — damit kannst du einen neuen Tunnel-Link anfordern falls die Verbindung abbricht</div>
-            <div style="background:#fff;border-radius:8px;padding:12px;display:inline-block;margin-bottom:12px">
-              <img id="bridgeQR" width="140" height="140" style="display:block" alt="Bridge QR Code">
-            </div>
-            <div style="display:flex;gap:6px;margin-bottom:8px">
-              <input id="bridgeUrlInput" readonly style="flex:1;background:#16161e;border:1px solid #1e3a5f;color:#0ea5e9;padding:8px 12px;border-radius:6px;font:11px/1.4 'SF Mono',monospace;outline:none;cursor:text" onclick="this.select()">
-              <button onclick="copyBridgeUrl()" style="background:#0ea5e9;color:#fff;border:none;padding:8px 14px;border-radius:6px;font:12px/1.4 -apple-system,sans-serif;cursor:pointer;white-space:nowrap" id="bridgeCopyBtn">Copy</button>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center;justify-content:center;margin-top:10px">
-              <span style="font:11px/1.4 -apple-system,sans-serif;color:#565f89">Room: <span id="bridgeRoomDisplay" style="color:#7aa2f7;font-family:'SF Mono',monospace"></span></span>
-              <button onclick="resetBridgeRoom()" style="background:none;border:1px solid #3b3e52;color:#f7768e;padding:3px 10px;border-radius:4px;font:11px/1.4 -apple-system,sans-serif;cursor:pointer" title="Neue Room-ID generieren — alle bisherigen Clients verlieren Zugriff">🔄 Neue Room-ID</button>
-            </div>
-          </div>
-          <button onclick="closeTunnelModal()" style="background:none;border:1px solid #3b3e52;color:#7a7e96;padding:6px 20px;border-radius:6px;font:12px/1.4 -apple-system,sans-serif;cursor:pointer">Schliessen</button>
-        </div>
-      </div>`;
-    document.body.appendChild(modal);
-  }
-  document.getElementById('tunnelQR').src = generateQR(url);
-  document.getElementById('tunnelUrlInput').value = url;
-  // Show bridge link if available
-  if (bridgeUrl) {
-    document.getElementById('bridgeLinkSection').style.display = 'block';
-    document.getElementById('bridgeUrlInput').value = bridgeUrl;
-    document.getElementById('bridgeQR').src = generateQR(bridgeUrl);
-    bridgeCurrentUrl = bridgeUrl;
-    // Extract and display room ID
-    try {
-      const roomId = new URL(bridgeUrl).searchParams.get('room');
-      document.getElementById('bridgeRoomDisplay').textContent = roomId || '—';
-    } catch {}
-  }
-  modal.style.display = 'block';
-}
-
-function closeTunnelModal() {
-  const m = document.getElementById('tunnelModal');
-  if (m) m.style.display = 'none';
-}
-
-function copyTunnelUrl() {
-  const inp = document.getElementById('tunnelUrlInput');
-  navigator.clipboard.writeText(inp.value).then(() => {
-    const btn = document.getElementById('tunnelCopyBtn');
-    btn.textContent = 'Copied!';
-    btn.style.background = '#9ece6a';
-    setTimeout(() => { btn.textContent = 'Copy'; btn.style.background = '#7aa2f7'; }, 1500);
-  });
-}
-
-let bridgeCurrentUrl = null;
-function copyBridgeUrl() {
-  const inp = document.getElementById('bridgeUrlInput');
-  navigator.clipboard.writeText(inp.value).then(() => {
-    const btn = document.getElementById('bridgeCopyBtn');
-    btn.textContent = 'Copied!';
-    btn.style.background = '#22c55e';
-    setTimeout(() => { btn.textContent = 'Copy'; btn.style.background = '#0ea5e9'; }, 1500);
-  });
-}
-
-async function resetBridgeRoom() {
-  if (!confirm('Neue Room-ID generieren?\n\nAlle bisherigen Bookmark-Links werden ungültig. Clients müssen den neuen Link erhalten.')) return;
-  try {
-    const r = await fetch('/api/bridge-room', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action:'reset'}) });
-    const d = await r.json();
-    if (d.ok) {
-      bridgeCurrentUrl = d.bridgeUrl;
-      document.getElementById('bridgeUrlInput').value = d.bridgeUrl;
-      document.getElementById('bridgeQR').src = generateQR(d.bridgeUrl);
-      document.getElementById('bridgeRoomDisplay').textContent = d.roomId;
-      // Reconnect bridge host to new room
-      if (typeof startBridgeHost === 'function') startBridgeHost(d.roomId);
-      addFeed('Bridge Room-ID geändert: ' + d.roomId, 'sse');
-    }
-  } catch (e) { console.error('resetBridgeRoom error:', e); }
-}
-
-// --- Port Forwarding Tunnel ---
-let tunnelActive = false;
-let tunnelCurrentUrl = null;
-async function toggleTunnel() {
-  const btn = document.getElementById('tunnelBtn');
-  const label = document.getElementById('tunnelLabel');
-  // If already active, show the modal again (don't stop)
-  if (tunnelActive && tunnelCurrentUrl) {
-    showTunnelModal(tunnelCurrentUrl, bridgeCurrentUrl);
-    return;
-  }
-  label.textContent = 'Starting...';
-  btn.style.color = '#e0af68';
-  try {
-    const r = await fetch('/api/tunnel', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action:'start'}) });
-    const d = await r.json();
-    if (d.ok && d.url) {
-      tunnelActive = true;
-      tunnelCurrentUrl = d.url;
-      bridgeCurrentUrl = d.bridgeUrl || null;
-      btn.style.borderColor = '#9ece6a';
-      btn.style.color = '#9ece6a';
-      label.textContent = 'Live';
-      label.title = d.url;
-      showTunnelModal(d.url, d.bridgeUrl);
-      // Start WebRTC bridge host
-      if (d.bridgeRoom) startBridgeHost(d.bridgeRoom);
-    } else {
-      btn.style.color = '#f7768e';
-      label.textContent = d.message || 'Failed';
-      setTimeout(() => { label.textContent = 'Share'; btn.style.color = '#7a7e96'; }, 3000);
-    }
-  } catch {
-    btn.style.color = '#f7768e';
-    label.textContent = 'Error';
-    setTimeout(() => { label.textContent = 'Share'; btn.style.color = '#7a7e96'; }, 3000);
-  }
-}
-
-function stopTunnel() {
-  fetch('/api/tunnel', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action:'stop'}) }).catch(()=>{});
-  tunnelActive = false;
-  tunnelCurrentUrl = null;
-  const btn = document.getElementById('tunnelBtn');
-  btn.style.borderColor = '#3b3e52';
-  btn.style.color = '#7a7e96';
-  document.getElementById('tunnelLabel').textContent = 'Share';
-  closeTunnelModal();
-}
-
-// Check tunnel status on load
-fetch('/api/tunnel').then(r=>r.json()).then(d => {
-  if (d.active && d.url) {
-    tunnelActive = true;
-    tunnelCurrentUrl = d.url;
-    bridgeCurrentUrl = d.bridgeUrl || null;
-    document.getElementById('tunnelBtn').style.borderColor = '#9ece6a';
-    document.getElementById('tunnelBtn').style.color = '#9ece6a';
-    document.getElementById('tunnelLabel').textContent = 'Live';
-    document.getElementById('tunnelLabel').title = d.url;
-  }
-  // Always start bridge host if we have a room (even without active tunnel)
-  if (d.bridgeRoom) startBridgeHost(d.bridgeRoom);
-}).catch(()=>{});
-
-// --- Fullscreen ---
-function toggleFullscreen() {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(()=>{});
-  } else {
-    document.exitFullscreen();
-  }
-}
-document.addEventListener('fullscreenchange', () => {
-  const btn = document.getElementById('fsBtn');
-  btn.style.borderColor = document.fullscreenElement ? '#9ece6a' : '#3b3e52';
-  btn.style.color = document.fullscreenElement ? '#9ece6a' : '#7a7e96';
-});
-
-// --- Launcher ---
-function toggleLauncher() {
-  launcherOpen = !launcherOpen;
-  document.getElementById('launcher').classList.toggle('show', launcherOpen);
-  document.getElementById('dock-launcher').classList.toggle('active', launcherOpen);
-  if (launcherOpen) {
-    if (storeOpen) toggleStore();
-    const search = document.getElementById('launcherSearch');
-    search.value = '';
-    filterApps('');
-    setTimeout(() => search.focus(), 100);
-  }
-}
-
-function toggleStore() {
-  storeOpen = !storeOpen;
-  document.getElementById('storeOverlay').classList.toggle('show', storeOpen);
-  document.getElementById('dock-store').classList.toggle('active', storeOpen);
-  if (storeOpen && launcherOpen) toggleLauncher();
-}
-
-// Close overlays on Escape
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    if (launcherOpen) toggleLauncher();
-    if (storeOpen) toggleStore();
-  }
-});
-
-// --- Window Manager ---
+// ── Window Manager ──
 function openApp(app, opts) {
   opts = opts || {};
   const contextId = opts.contextId || null;
   const titleSuffix = opts.titleSuffix || '';
-
-  // For context-specific windows, check if already open with same context
   const matchKey = contextId ? app.id + ':' + contextId : app.id;
+
   const existing = openWindows.find(w => w.matchKey === matchKey && !w.minimized && !w.closed);
   if (existing) { focusWindow(existing.winId); return; }
 
@@ -827,45 +1362,42 @@ function openApp(app, opts) {
   w.style.width = '700px';
   w.style.height = '500px';
   w.style.left = (80 + openWindows.filter(x => !x.closed).length * 30) + 'px';
-  w.style.top = (60 + openWindows.filter(x => !x.closed).length * 30) + 'px';
+  w.style.top = (80 + openWindows.filter(x => !x.closed).length * 30) + 'px';
   w.style.zIndex = ++nextZ;
 
-  const iframeSrc = contextId ? `/app/${app.id}/?contextId=${contextId}` : `/app/${app.id}/`;
-  const displayName = titleSuffix ? `${app.name} — ${titleSuffix}` : app.name;
+  const iframeSrc = contextId ? '/app/' + app.id + '/?contextId=' + contextId : '/app/' + app.id + '/';
+  const displayName = titleSuffix ? app.name + ' — ' + titleSuffix : app.name;
 
-  w.innerHTML = `
-    <div class="win-titlebar" onmousedown="startDrag(event,'${winId}')" ontouchstart="startDrag(event,'${winId}')">
-      <div class="win-title"><span class="dot" style="background:${app.color}"></span>${displayName}</div>
-      <div class="win-btns">
-        <button class="win-btn" onclick="historyWin('${winId}','${app.id}')" title="Versionen">🕐</button>
-        <button class="win-btn" onclick="editWin('${winId}')" title="App anpassen (AI)">✏️</button>
-        <button class="win-btn" onclick="minimizeWin('${winId}')" title="Minimize">−</button>
-        <button class="win-btn" onclick="maximizeWin('${winId}')" title="Maximize">□</button>
-        <button class="win-btn close" onclick="closeWin('${winId}')" title="Close">×</button>
-      </div>
-    </div>
-    <iframe src="${iframeSrc}"></iframe>
-    <div class="resize-handle r" onmousedown="startResize(event,'${winId}','r')" ontouchstart="startResize(event,'${winId}','r')"></div>
-    <div class="resize-handle b" onmousedown="startResize(event,'${winId}','b')" ontouchstart="startResize(event,'${winId}','b')"></div>
-    <div class="resize-handle br" onmousedown="startResize(event,'${winId}','br')" ontouchstart="startResize(event,'${winId}','br')"></div>
-    <div class="resize-handle bl" onmousedown="startResize(event,'${winId}','bl')" ontouchstart="startResize(event,'${winId}','bl')"></div>
-    <div class="resize-handle l" onmousedown="startResize(event,'${winId}','l')" ontouchstart="startResize(event,'${winId}','l')"></div>
-    <div class="resize-handle t" onmousedown="startResize(event,'${winId}','t')" ontouchstart="startResize(event,'${winId}','t')"></div>
-    <div class="resize-handle tr" onmousedown="startResize(event,'${winId}','tr')" ontouchstart="startResize(event,'${winId}','tr')"></div>
-    <div class="resize-handle tl" onmousedown="startResize(event,'${winId}','tl')" ontouchstart="startResize(event,'${winId}','tl')"></div>`;
+  w.innerHTML =
+    '<div class="win-titlebar" onmousedown="startDrag(event,\'' + winId + '\')" ontouchstart="startDrag(event,\'' + winId + '\')">' +
+      '<div class="win-title"><span class="dot" style="background:' + app.color + '"></span>' + displayName + '</div>' +
+      '<div class="win-btns">' +
+        '<button class="win-btn" onclick="historyWin(\'' + winId + '\',\'' + app.id + '\')" title="Versionen">h</button>' +
+        '<button class="win-btn" onclick="editWin(\'' + winId + '\')" title="Anpassen">e</button>' +
+        '<button class="win-btn" onclick="minimizeWin(\'' + winId + '\')" title="Minimize">-</button>' +
+        '<button class="win-btn" onclick="maximizeWin(\'' + winId + '\')" title="Maximize">+</button>' +
+        '<button class="win-btn close" onclick="closeWin(\'' + winId + '\')" title="Close">x</button>' +
+      '</div>' +
+    '</div>' +
+    '<iframe src="' + iframeSrc + '"></iframe>' +
+    '<div class="resize-handle r" onmousedown="startResize(event,\'' + winId + '\',\'r\')" ontouchstart="startResize(event,\'' + winId + '\',\'r\')"></div>' +
+    '<div class="resize-handle b" onmousedown="startResize(event,\'' + winId + '\',\'b\')" ontouchstart="startResize(event,\'' + winId + '\',\'b\')"></div>' +
+    '<div class="resize-handle br" onmousedown="startResize(event,\'' + winId + '\',\'br\')" ontouchstart="startResize(event,\'' + winId + '\',\'br\')"></div>' +
+    '<div class="resize-handle bl" onmousedown="startResize(event,\'' + winId + '\',\'bl\')" ontouchstart="startResize(event,\'' + winId + '\',\'bl\')"></div>' +
+    '<div class="resize-handle l" onmousedown="startResize(event,\'' + winId + '\',\'l\')" ontouchstart="startResize(event,\'' + winId + '\',\'l\')"></div>' +
+    '<div class="resize-handle t" onmousedown="startResize(event,\'' + winId + '\',\'t\')" ontouchstart="startResize(event,\'' + winId + '\',\'t\')"></div>' +
+    '<div class="resize-handle tr" onmousedown="startResize(event,\'' + winId + '\',\'tr\')" ontouchstart="startResize(event,\'' + winId + '\',\'tr\')"></div>' +
+    '<div class="resize-handle tl" onmousedown="startResize(event,\'' + winId + '\',\'tl\')" ontouchstart="startResize(event,\'' + winId + '\',\'tl\')"></div>';
 
   w.addEventListener('mousedown', () => focusWindow(winId));
   w.addEventListener('touchstart', () => focusWindow(winId));
   document.body.appendChild(w);
 
-  const winObj = { winId, appId: app.id, matchKey: contextId ? app.id + ':' + contextId : app.id, el: w, minimized: false, maximized: false, closed: false, savedRect: null, contextId };
-  openWindows.push(winObj);
-  addFeed(`${app.name} geoeffnet`, 'mutation');
-  // Hide home, show app
+  openWindows.push({ winId, appId: app.id, matchKey, el: w, minimized: false, maximized: false, closed: false, savedRect: null, contextId });
+  addFeed(app.name + ' geoeffnet', 'mutation');
   document.getElementById('homeScreen').style.display = 'none';
   activeTabWinId = winId;
   renderTopbarTabs();
-  updateCCStats();
 }
 
 function focusWindow(winId) {
@@ -876,96 +1408,66 @@ function focusWindow(winId) {
 async function editWin(winId) {
   const win = openWindows.find(w => w.winId === winId);
   if (!win) return;
-  const appId = win.appId;
-  const app = state.apps.find(a => a.id === appId);
+  const app = state.apps.find(a => a.id === win.appId);
   if (!app) return;
-
   try {
     const r = await fetch('/app/chat/api/chat');
     const chatData = await r.json();
-
-    let existingEditChat = chatData.chats.find(c => c.appContext === appId);
+    let existingEditChat = chatData.chats.find(c => c.appContext === win.appId);
     if (existingEditChat) {
       chatData.activeChat = existingEditChat.id;
     } else {
       const chatId = 'chat-' + Date.now();
-      chatData.chats.push({
-        id: chatId,
-        title: app.name + ' anpassen',
-        appContext: appId,
-        messages: [
-          { id: 'msg-welcome-' + chatId, role: 'claude', text: 'Du bearbeitest die App **' + app.name + '** (ID: `' + appId + '`). Schreib einfach was du aendern moechtest!', time: new Date().toISOString() }
-        ]
-      });
+      chatData.chats.push({ id: chatId, title: app.name + ' anpassen', appContext: win.appId, messages: [{ id: 'msg-welcome-' + chatId, role: 'claude', text: 'Du bearbeitest **' + app.name + '** (' + win.appId + '). Was moechtest du aendern?', time: new Date().toISOString() }] });
       chatData.activeChat = chatId;
     }
-    await fetch('/app/chat/api/chat', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(chatData) });
-
+    await fetch('/app/chat/api/chat', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(chatData) });
     const chatApp = state.apps.find(a => a.id === 'chat');
     if (chatApp) {
       const existingChat = openWindows.find(w => w.appId === 'chat' && !w.minimized && !w.closed);
-      if (existingChat) {
-        focusWindow(existingChat.winId);
-        const iframe = existingChat.el.querySelector('iframe');
-        if (iframe) iframe.src = iframe.src;
-      } else {
-        openApp(chatApp);
-      }
+      if (existingChat) { focusWindow(existingChat.winId); const iframe = existingChat.el.querySelector('iframe'); if (iframe) iframe.src = iframe.src; }
+      else openApp(chatApp);
     }
-    addFeed(app.name + ': Edit-Chat geoeffnet', 'mutation');
-  } catch(e) {
-    console.error('Edit failed:', e);
-    addFeed('Edit-Chat Fehler: ' + e.message, 'error');
-  }
+  } catch (e) { addFeed('Edit-Chat Fehler: ' + e.message, 'error'); }
 }
 
 async function historyWin(winId, appId) {
   const existing = document.getElementById('version-panel');
   if (existing) { existing.remove(); return; }
-
-  const r = await fetch(`/app/${appId}/versions`);
+  const r = await fetch('/app/' + appId + '/versions');
   const versions = await r.json();
-
   const panel = document.createElement('div');
   panel.id = 'version-panel';
-  panel.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:340px;max-height:400px;background:#0f0f1a;border-radius:14px;border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 40px rgba(0,0,0,.6);z-index:9999;display:flex;flex-direction:column;font-family:system-ui,sans-serif;overflow:hidden';
-
+  panel.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:320px;max-height:380px;background:#111118;border-radius:12px;border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 40px rgba(0,0,0,.6);z-index:9999;display:flex;flex-direction:column;font-family:var(--font);overflow:hidden';
   let listHTML = '';
   if (versions.length === 0) {
-    listHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,.4);font-size:.85rem">Noch keine Versionen gespeichert.</div>';
+    listHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:12px">Keine Versionen</div>';
   } else {
     listHTML = versions.map((v, i) => {
       const d = new Date(v.timestamp);
-      const label = d.toLocaleDateString('de-DE') + ' ' + d.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-      const tag = i === 0 ? ' <span style="color:#3B82F6;font-size:.65rem;font-weight:600">NEUESTE</span>' : '';
-      return `<div onclick="restoreVersion('${appId}','${winId}',${v.timestamp})" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);font-size:.82rem;color:rgba(255,255,255,.7);display:flex;justify-content:space-between;align-items:center;transition:background .15s" onmouseover="this.style.background='rgba(59,130,246,.15)'" onmouseout="this.style.background='transparent'"><span>v${versions.length - i}${tag}</span><span style="color:rgba(255,255,255,.4);font-size:.75rem">${label}</span></div>`;
+      const label = d.toLocaleDateString('de-DE') + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      return '<div onclick="restoreVersion(\'' + appId + '\',\'' + winId + '\',' + v.timestamp + ')" style="padding:8px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:var(--text-dim);display:flex;justify-content:space-between;transition:background .15s" onmouseover="this.style.background=\'rgba(78,205,196,.08)\'" onmouseout="this.style.background=\'transparent\'"><span>v' + (versions.length - i) + '</span><span style="color:var(--text-muted);font-size:10px">' + label + '</span></div>';
     }).join('');
   }
-
-  panel.innerHTML = `<div style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center"><span style="font-size:.8rem;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Versionen</span><button onclick="this.closest('#version-panel').remove()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:1.1rem;cursor:pointer">✕</button></div><div style="overflow-y:auto;flex:1">${listHTML}</div>`;
+  panel.innerHTML = '<div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Versionen</span><button onclick="this.closest(\'#version-panel\').remove()" style="background:none;border:none;color:var(--text-dim);font-size:14px;cursor:pointer;font-family:var(--font)">x</button></div><div style="overflow-y:auto;flex:1">' + listHTML + '</div>';
   document.body.appendChild(panel);
 }
 
 async function restoreVersion(appId, winId, timestamp) {
-  const panel = document.getElementById('version-panel');
-  if (panel) panel.remove();
-  const r = await fetch(`/app/${appId}/versions/restore`, {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ timestamp })
-  });
+  document.getElementById('version-panel')?.remove();
+  const r = await fetch('/app/' + appId + '/versions/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ timestamp }) });
   const d = await r.json();
   if (d.ok) {
     const win = openWindows.find(w => w.winId === winId);
     if (win) { const iframe = win.el.querySelector('iframe'); if (iframe) iframe.src = iframe.src; }
-    addFeed(`${appId}: Version wiederhergestellt`, 'mutation');
+    addFeed(appId + ': Version wiederhergestellt', 'mutation');
   }
 }
 
 function minimizeWin(winId) {
   const win = openWindows.find(w => w.winId === winId);
   if (win) { win.minimized = true; win.el.classList.add('minimized'); }
-  renderDockWindows();
-  updateCCStats();
+  renderTopbarTabs();
 }
 
 function maximizeWin(winId) {
@@ -974,7 +1476,7 @@ function maximizeWin(winId) {
   if (win.maximized) {
     const r = win.savedRect;
     win.el.style.left = r.left; win.el.style.top = r.top; win.el.style.width = r.width; win.el.style.height = r.height;
-    win.el.style.borderRadius = '12px';
+    win.el.style.borderRadius = '';
     win.maximized = false;
   } else {
     win.savedRect = { left: win.el.style.left, top: win.el.style.top, width: win.el.style.width, height: win.el.style.height };
@@ -992,21 +1494,16 @@ function closeWin(winId) {
   setTimeout(() => {
     win.el.remove();
     openWindows = openWindows.filter(w => w.winId !== winId);
-    // If closed tab was active, show home
     if (activeTabWinId === winId) {
       const remaining = openWindows.filter(w => !w.closed);
-      if (remaining.length > 0) {
-        focusTab(remaining[remaining.length - 1].winId);
-      } else {
-        showHome();
-      }
+      if (remaining.length > 0) focusTab(remaining[remaining.length - 1].winId);
+      else showHome();
     }
     renderTopbarTabs();
-    updateCCStats();
-  }, 200);
+  }, 150);
 }
 
-// Window dragging (mouse + touch)
+// ── Drag & Resize ──
 let dragWin = null, dragOff = { x: 0, y: 0 };
 function getPointer(e) {
   if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -1025,15 +1522,8 @@ function startDrag(e, winId) {
   e.preventDefault();
 }
 function stopDragAndResize() {
-  if (dragWin) {
-    dragWin = null;
-    document.querySelectorAll('.app-window iframe').forEach(f => f.style.pointerEvents = '');
-  }
-  if (resizeState) {
-    resizeState.el.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = '');
-    document.querySelectorAll('.app-window iframe').forEach(f => f.style.pointerEvents = '');
-    resizeState = null;
-  }
+  if (dragWin) { dragWin = null; document.querySelectorAll('.app-window iframe').forEach(f => f.style.pointerEvents = ''); }
+  if (resizeState) { resizeState.el.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = ''); document.querySelectorAll('.app-window iframe').forEach(f => f.style.pointerEvents = ''); resizeState = null; }
 }
 function onDragMove(e) {
   if (!dragWin) return;
@@ -1049,7 +1539,6 @@ document.addEventListener('mouseleave', stopDragAndResize);
 document.addEventListener('touchend', stopDragAndResize);
 document.addEventListener('touchcancel', stopDragAndResize);
 
-// Window resizing
 let resizeState = null;
 function startResize(e, winId, dir) {
   const el = document.getElementById(winId);
@@ -1066,8 +1555,7 @@ function startResize(e, winId, dir) {
 }
 function onResizeMove(e) {
   if (!resizeState) return;
-  const p = getPointer(e);
-  const s = resizeState, dx = p.x - s.startX, dy = p.y - s.startY;
+  const p = getPointer(e), s = resizeState, dx = p.x - s.startX, dy = p.y - s.startY;
   if (e.cancelable) e.preventDefault();
   const minW = 400, minH = 300;
   if (s.dir.includes('r')) s.el.style.width = Math.max(minW, s.startW + dx) + 'px';
@@ -1080,39 +1568,69 @@ function onResizeMove(e) {
 document.addEventListener('mousemove', onResizeMove);
 document.addEventListener('touchmove', onResizeMove, { passive: false });
 
-// --- Command Center ---
-function toggleCC() {
-  ccOpen = !ccOpen;
-  document.getElementById('cc').classList.toggle('open', ccOpen);
-  document.getElementById('dock-cc').classList.toggle('active', ccOpen);
+// ── Keyboard Shortcuts ──
+document.addEventListener('keydown', e => {
+  const isMeta = e.metaKey || e.ctrlKey;
+  if (e.key === 'Escape') {
+    if (launcherOpen) toggleLauncher();
+    if (ctxLauncherOpen) toggleContextLauncher();
+    if (systemChatOpen) toggleSystemChat();
+    return;
+  }
+  if (isMeta && e.key === ' ') { e.preventDefault(); toggleLauncher(); return; }
+  if (isMeta && e.key === 'k') { e.preventDefault(); toggleSystemChat(); return; }
+  if (isMeta && e.key === 'g') { e.preventDefault(); const app = state?.apps?.find(a => a.id === 'projects'); if (app) openApp(app); return; }
+  if (isMeta && e.key === 'w') {
+    e.preventDefault();
+    if (activeTabWinId) closeWin(activeTabWinId);
+    return;
+  }
+  if (isMeta && e.key === 'Tab') {
+    e.preventDefault();
+    const active = openWindows.filter(w => !w.closed);
+    if (active.length === 0) return;
+    const idx = active.findIndex(w => w.winId === activeTabWinId);
+    const next = active[(idx + 1) % active.length];
+    focusTab(next.winId);
+    return;
+  }
+});
+
+// ── Launcher ──
+function toggleLauncher() {
+  launcherOpen = !launcherOpen;
+  document.getElementById('launcher').classList.toggle('show', launcherOpen);
+  if (launcherOpen) {
+    const search = document.getElementById('launcherSearch');
+    search.value = '';
+    filterApps('');
+    setTimeout(() => search.focus(), 50);
+  }
 }
 
+// ── Feed / Pulse ──
 function addFeed(text, type) {
   const now = new Date();
   feed.unshift({ text, type, time: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) });
   if (feed.length > 50) feed.length = 50;
-  renderFeed();
-  // Also add to home screen pulse feed
-  const icon = type === 'error' ? '❌' : type === 'mutation' ? '⚡' : type === 'sse' ? '📡' : 'ℹ️';
-  if (typeof addPulseEntry === 'function') addPulseEntry(icon, text, type === 'error' ? 'error' : 'success');
+  const icon = type === 'error' ? '!' : type === 'mutation' ? '*' : type === 'sse' ? '~' : '.';
+  addPulseEntry(icon, text, type === 'error' ? 'error' : 'success');
 }
 
-function renderFeed() {
-  const el = document.getElementById('cc-feed');
-  el.innerHTML = feed.map(f => `<div class="cc-entry ${f.type}"><div>${f.text}</div><div class="time">${f.time}</div></div>`).join('');
+function addPulseEntry(icon, text, type) {
+  const feed = document.getElementById('pulseFeed');
+  if (!feed) return;
+  const entry = document.createElement('div');
+  entry.className = 'pulse-entry';
+  entry.innerHTML = '<span class="pe-icon">' + icon + '</span> ' + text + ' <span class="pe-time">jetzt</span>';
+  feed.prepend(entry);
+  while (feed.children.length > 20) feed.removeChild(feed.lastChild);
 }
 
-function updateCCStats() {
-  document.getElementById('cc-pending').textContent = mutationQueue.length;
-  document.getElementById('cc-apps').textContent = state ? state.apps.filter(a => a.installed).length : 0;
-  document.getElementById('cc-windows').textContent = openWindows.filter(w => !w.minimized && !w.closed).length;
-}
-
-// --- Mutation Queue + Changelog ---
+// ── Mutation Queue ──
 function trackMutation(action, detail) {
   mutationQueue.push({ action, detail, time: new Date().toISOString() });
-  addFeed(`${action}: ${detail}`, 'mutation');
-  updateCCStats();
+  addFeed(action + ': ' + detail, 'mutation');
   clearTimeout(batchTimer);
   batchTimer = setTimeout(flushMutations, 30000);
 }
@@ -1122,49 +1640,10 @@ async function flushMutations() {
   const batch = mutationQueue.splice(0);
   try {
     await fetch('/api/changelog', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(batch) });
-    addFeed(`${batch.length} Mutations gesynct`, 'sse');
   } catch { mutationQueue.unshift(...batch); }
-  updateCCStats();
 }
 
-window.addEventListener('message', e => {
-  if (e.data && e.data.type === 'mutation') {
-    trackMutation(e.data.action || 'app', e.data.detail || '');
-  }
-  if (e.data && e.data.type === 'error') {
-    addFeed(`App Error: ${e.data.message || 'Unknown'}`, 'error');
-  }
-  // Graph output: app emits data → route through graph
-  if (e.data && e.data.type === 'graph-output' && e.data.appId && e.data.outputName) {
-    // Find which graph(s) contain this app and route the output
-    fetch('/api/graphs').then(r => r.json()).then(gData => {
-      const graphs = (gData.graphs || []).filter(g => g.nodes && g.nodes.some(n => n.appId === e.data.appId));
-      for (const g of graphs) {
-        fetch(`/api/graphs/${g.projectId}/output`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ appId: e.data.appId, outputName: e.data.outputName, data: e.data.data })
-        }).catch(err => console.error('[graph-output] routing error:', err));
-      }
-    }).catch(() => {});
-  }
-  // Open app from projects context (app widget L0 click or button)
-  if (e.data && e.data.type === 'open-app' && e.data.appId) {
-    const app = state?.apps?.find(a => a.id === e.data.appId);
-    if (app) {
-      openApp(app);
-    } else {
-      // App might be newly created, reload apps list first
-      fetch('/api/apps').then(r => r.json()).then(data => {
-        if (data.apps) state.apps = data.apps;
-        const freshApp = data.apps?.find(a => a.id === e.data.appId);
-        if (freshApp) openApp(freshApp);
-      }).catch(() => {});
-    }
-  }
-});
-
-// --- State Summary ---
+// ── State Summary ──
 async function generateStateSummary() {
   if (!state) return;
   const summary = {
@@ -1176,12 +1655,104 @@ async function generateStateSummary() {
   try { await fetch('/api/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(summary) }); } catch {}
 }
 
-// --- Clock ---
+// ── Clock ──
 function updateClock() {
   document.getElementById('clock').textContent = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 }
 
-// --- Profile & Onboarding ---
+// ── Fullscreen ──
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+  else document.exitFullscreen();
+}
+document.addEventListener('fullscreenchange', () => {
+  const btn = document.getElementById('fsBtn');
+  btn.classList.toggle('active', !!document.fullscreenElement);
+});
+
+// ── Tunnel ──
+let tunnelActive = false, tunnelCurrentUrl = null, bridgeCurrentUrl = null;
+
+function handleTunnelSSE(msg) {
+  tunnelActive = !!msg.active;
+  tunnelCurrentUrl = msg.url || null;
+  if (msg.bridgeUrl) bridgeCurrentUrl = msg.bridgeUrl;
+  const btn = document.getElementById('tunnelBtn');
+  if (tunnelActive && tunnelCurrentUrl) {
+    btn.classList.add('active');
+    btn.textContent = 'Live';
+    addFeed('Tunnel: ' + tunnelCurrentUrl, 'sse');
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = 'Share';
+  }
+}
+
+async function toggleTunnel() {
+  const btn = document.getElementById('tunnelBtn');
+  if (tunnelActive && tunnelCurrentUrl) {
+    showTunnelModal(tunnelCurrentUrl, bridgeCurrentUrl);
+    return;
+  }
+  btn.textContent = '...';
+  try {
+    const r = await fetch('/api/tunnel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start' }) });
+    const d = await r.json();
+    if (d.ok && d.url) {
+      tunnelActive = true;
+      tunnelCurrentUrl = d.url;
+      bridgeCurrentUrl = d.bridgeUrl || null;
+      btn.classList.add('active');
+      btn.textContent = 'Live';
+      showTunnelModal(d.url, d.bridgeUrl);
+      if (d.bridgeRoom) startBridgeHost(d.bridgeRoom);
+    } else {
+      btn.textContent = 'Share';
+    }
+  } catch {
+    btn.textContent = 'Share';
+  }
+}
+
+function showTunnelModal(url, bridgeUrl) {
+  let modal = document.getElementById('tunnelModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'tunnelModal';
+    modal.className = 'modal-overlay';
+    modal.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
+    modal.innerHTML = '<div class="modal-box" style="text-align:center;">' +
+      '<h2>Dashboard ist live</h2>' +
+      '<div class="subtitle">Scanne QR oder kopiere URL</div>' +
+      '<div style="background:#fff;border-radius:8px;padding:12px;display:inline-block;margin:12px 0">' +
+        '<img id="tunnelQR" width="160" height="160" style="display:block" alt="QR">' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;margin:8px 0">' +
+        '<input id="tunnelUrlInput" readonly style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--teal);font:12px var(--font);outline:none;cursor:text" onclick="this.select()">' +
+        '<button id="tunnelCopyBtn" onclick="navigator.clipboard.writeText(document.getElementById(\'tunnelUrlInput\').value).then(()=>{this.textContent=\'ok\';setTimeout(()=>this.textContent=\'copy\',1500)})" class="btn-primary" style="flex:none;padding:8px 12px;">copy</button>' +
+      '</div>' +
+      '<div class="btn-row" style="justify-content:center"><button class="btn-secondary" onclick="document.getElementById(\'tunnelModal\').style.display=\'none\'">schliessen</button></div>' +
+    '</div>';
+    document.body.appendChild(modal);
+  }
+  document.getElementById('tunnelQR').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&bgcolor=111118&color=4ecdc4&data=' + encodeURIComponent(url);
+  document.getElementById('tunnelUrlInput').value = url;
+  modal.style.display = 'flex';
+}
+
+// Check tunnel on load
+fetch('/api/tunnel').then(r => r.json()).then(d => {
+  if (d.active && d.url) {
+    tunnelActive = true;
+    tunnelCurrentUrl = d.url;
+    bridgeCurrentUrl = d.bridgeUrl || null;
+    document.getElementById('tunnelBtn').classList.add('active');
+    document.getElementById('tunnelBtn').textContent = 'Live';
+  }
+  if (d.bridgeRoom) startBridgeHost(d.bridgeRoom);
+}).catch(() => {});
+
+// ── Profile & Onboarding ──
 let userProfile = null;
 
 async function checkOnboarding() {
@@ -1194,43 +1765,36 @@ async function checkOnboarding() {
       userProfile = await pRes.json();
       updateProfileDisplay();
     }
-  } catch (e) { console.error('[profile]', e); }
+  } catch {}
 }
 
 function showOnboarding() {
   const overlay = document.createElement('div');
   overlay.id = 'onboardingOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);';
-  overlay.innerHTML = `
-    <div style="background:#1E293B;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center;">
-      <div style="font-size:48px;margin-bottom:16px;">🧑‍💻</div>
-      <h2 style="font-size:22px;margin-bottom:8px;color:#fff;">Willkommen bei PulseOS</h2>
-      <p style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:28px;">Richte dein Profil ein — andere sehen das wenn sie sich mit dir verbinden.</p>
-      <div style="display:flex;flex-direction:column;gap:12px;text-align:left;">
-        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">Name *</label>
-        <input id="ob-name" type="text" placeholder="Dein Name" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;">
-        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">Handle</label>
-        <input id="ob-handle" type="text" placeholder="@dein-handle" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;">
-        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">Bio</label>
-        <input id="ob-bio" type="text" placeholder="Was machst du?" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;">
-        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">GitHub Pages URL</label>
-        <input id="ob-ghpages" type="url" placeholder="https://username.github.io" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;">
-        <label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;">Avatar Emoji</label>
-        <input id="ob-avatar" type="text" value="🧑‍💻" maxlength="4" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:24px;outline:none;text-align:center;width:80px;">
-      </div>
-      <button onclick="submitOnboarding()" style="margin-top:24px;padding:12px 32px;border-radius:12px;border:none;background:linear-gradient(135deg,#8B5CF6,#6366F1);color:#fff;font-size:14px;font-weight:600;cursor:pointer;width:100%;transition:opacity 0.15s;">Los geht's</button>
-    </div>`;
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = '<div class="modal-box" style="text-align:center;">' +
+    '<h2 style="font-size:18px;">Willkommen bei PulseOS</h2>' +
+    '<div class="subtitle">Richte dein Profil ein</div>' +
+    '<div style="text-align:left;">' +
+      '<label>Name *</label><input id="ob-name" type="text" placeholder="Dein Name">' +
+      '<label>Handle</label><input id="ob-handle" type="text" placeholder="@handle">' +
+      '<label>Bio</label><input id="ob-bio" type="text" placeholder="Was machst du?">' +
+      '<label>GitHub Pages</label><input id="ob-ghpages" type="url" placeholder="https://user.github.io">' +
+      '<label>Avatar</label><input id="ob-avatar" type="text" value=">" maxlength="4" style="width:60px;text-align:center;font-size:18px;">' +
+    '</div>' +
+    '<div class="btn-row"><button class="btn-primary" onclick="submitOnboarding()">Start</button></div>' +
+  '</div>';
   document.body.appendChild(overlay);
   document.getElementById('ob-name').focus();
 }
 
 async function submitOnboarding() {
   const name = document.getElementById('ob-name').value.trim();
-  if (!name) { document.getElementById('ob-name').style.borderColor = '#EF4444'; return; }
+  if (!name) { document.getElementById('ob-name').style.borderColor = 'var(--red)'; return; }
   const profile = {
     name,
     handle: document.getElementById('ob-handle').value.trim() || name.toLowerCase().replace(/\s+/g, '-'),
-    avatar: document.getElementById('ob-avatar').value || '🧑‍💻',
+    avatar: document.getElementById('ob-avatar').value || '>',
     bio: document.getElementById('ob-bio').value.trim(),
     githubPages: document.getElementById('ob-ghpages').value.trim()
   };
@@ -1243,48 +1807,241 @@ async function submitOnboarding() {
 
 function updateProfileDisplay() {
   if (!userProfile) return;
-  const titleEl = document.querySelector('.topbar-title');
-  if (titleEl && userProfile.name) {
-    titleEl.textContent = userProfile.avatar + ' ' + userProfile.name;
-  }
+  const brand = document.getElementById('topbarBrand');
+  if (brand && userProfile.name) brand.textContent = userProfile.name;
   updateGreeting();
 }
 
-// --- Home Screen ---
+function showProfileEdit() {
+  if (document.getElementById('profileModal')) return;
+  const p = userProfile || { name: '', handle: '', avatar: '>', bio: '', githubPages: '' };
+  const overlay = document.createElement('div');
+  overlay.id = 'profileModal';
+  overlay.className = 'modal-overlay';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = '<div class="modal-box">' +
+    '<h2>Profil</h2><div class="subtitle">Sichtbar fuer Peers</div>' +
+    '<label>Name *</label><input id="pe-name" type="text" value="' + esc(p.name) + '">' +
+    '<label>Handle</label><input id="pe-handle" type="text" value="' + esc(p.handle) + '">' +
+    '<label>Bio</label><textarea id="pe-bio">' + esc(p.bio) + '</textarea>' +
+    '<label>GitHub Pages</label><input id="pe-ghpages" type="url" value="' + esc(p.githubPages) + '">' +
+    '<label>Avatar</label><input id="pe-avatar" type="text" value="' + esc(p.avatar || '>') + '" maxlength="4" style="width:60px;text-align:center;font-size:18px;">' +
+    '<div class="btn-row"><button class="btn-secondary" onclick="document.getElementById(\'profileModal\').remove()">Abbrechen</button><button class="btn-primary" onclick="saveProfileEdit()">Speichern</button></div>' +
+  '</div>';
+  document.body.appendChild(overlay);
+  document.getElementById('pe-name').focus();
+}
+
+function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+async function saveProfileEdit() {
+  const name = document.getElementById('pe-name').value.trim();
+  if (!name) { document.getElementById('pe-name').style.borderColor = 'var(--red)'; return; }
+  const profile = {
+    name,
+    handle: document.getElementById('pe-handle').value.trim() || name.toLowerCase().replace(/\s+/g, '-'),
+    avatar: document.getElementById('pe-avatar').value || '>',
+    bio: document.getElementById('pe-bio').value.trim(),
+    githubPages: document.getElementById('pe-ghpages').value.trim()
+  };
+  try {
+    await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) });
+    const res = await fetch('/api/profile');
+    userProfile = await res.json();
+    updateProfileDisplay();
+    document.getElementById('profileModal')?.remove();
+  } catch {}
+}
+
+// ── Greeting ──
 function updateGreeting() {
   const h = new Date().getHours();
   const name = userProfile?.name || '';
   let greeting = 'Guten Tag';
-  let sub = 'Was möchtest du heute machen?';
-  if (h < 6) { greeting = 'Gute Nacht'; sub = 'Noch wach? PulseOS ist bereit.'; }
-  else if (h < 12) { greeting = 'Guten Morgen'; sub = 'Starte deinen Tag mit PulseOS.'; }
-  else if (h < 18) { greeting = 'Guten Tag'; sub = 'Was möchtest du heute machen?'; }
+  let sub = 'Agentic Operating System';
+  if (h < 6) { greeting = 'Gute Nacht'; sub = 'PulseOS laeuft im Hintergrund.'; }
+  else if (h < 12) { greeting = 'Guten Morgen'; sub = 'Dein System ist bereit.'; }
+  else if (h < 18) { greeting = 'Guten Tag'; sub = 'Was steht an?'; }
   else { greeting = 'Guten Abend'; sub = 'Noch etwas erledigen?'; }
-  const el = document.getElementById('greetingText');
-  if (el) el.textContent = greeting + (name ? ', ' + name : '');
-  const subEl = document.getElementById('greetingSub');
-  if (subEl) subEl.textContent = sub;
+  document.getElementById('greetingText').textContent = greeting + (name ? ', ' + name : '');
+  document.getElementById('greetingSub').textContent = sub;
+}
+
+// ── System Chat ──
+let systemChatOpen = false;
+function toggleSystemChat() {
+  systemChatOpen = !systemChatOpen;
+  document.getElementById('systemChat').classList.toggle('open', systemChatOpen);
+  if (systemChatOpen) {
+    const msgs = document.getElementById('systemChatMessages');
+    msgs.scrollTop = msgs.scrollHeight;
+    document.getElementById('systemChatInput')?.focus();
+  }
+}
+
+function renderSystemChatMessage(msg) {
+  const msgs = document.getElementById('systemChatMessages');
+  if (!msgs) return;
+  if (msgs.querySelector('.chat-empty')) msgs.innerHTML = '';
+  const isSelf = msg.peerId === 'self';
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;' + (isSelf ? 'flex-direction:row-reverse;' : '');
+  div.innerHTML = '<span style="font-size:14px;flex-shrink:0;width:20px;text-align:center;">' + (msg.avatar || '>') + '</span>' +
+    '<div style="max-width:200px;padding:6px 10px;border-radius:8px;font-size:11px;' + (isSelf ? 'background:var(--teal);color:var(--bg);' : 'background:var(--bg-card-hover);color:var(--text);') + '">' +
+    '<div style="font-size:9px;opacity:0.6;margin-bottom:2px;">' + (msg.from || '?') + '</div>' +
+    '<div>' + (msg.text || '') + '</div></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function sendSystemChat() {
+  const input = document.getElementById('systemChatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  if (window.PulseOS?.sendChat) window.PulseOS.sendChat(text);
+}
+
+function switchSysChatTab(tab) {
+  document.getElementById('sysChatView').style.display = tab === 'chat' ? 'flex' : 'none';
+  document.getElementById('sysContactsView').style.display = tab === 'contacts' ? 'flex' : 'none';
+  document.getElementById('tabChat').classList.toggle('active', tab === 'chat');
+  document.getElementById('tabContacts').classList.toggle('active', tab === 'contacts');
+  if (tab === 'contacts') loadContacts();
+}
+
+// ── Contacts ──
+let contactsCache = [];
+async function loadContacts() {
+  try {
+    const r = await fetch('/api/contacts');
+    const data = await r.json();
+    contactsCache = data.contacts || [];
+    renderContacts();
+  } catch {}
+}
+
+function renderContacts() {
+  const list = document.getElementById('contactsList');
+  const countEl = document.getElementById('contactCount');
+  if (!list) return;
+  if (countEl) countEl.textContent = contactsCache.length > 0 ? '(' + contactsCache.length + ')' : '';
+  if (contactsCache.length === 0) {
+    list.innerHTML = '<div class="contacts-empty">Noch keine Kontakte.</div>';
+    return;
+  }
+  const peers = window.PulseOS?.getPeers?.() || {};
+  const onlineHandles = new Set(Object.values(peers).filter(p => p.online).map(p => p.handle || p.name));
+  list.innerHTML = contactsCache.map(c => {
+    const isOnline = onlineHandles.has(c.handle) || onlineHandles.has(c.name);
+    const lastSeen = c.lastSeen ? getRelativeTime(new Date(c.lastSeen)) : '';
+    return '<div class="contact-item">' +
+      '<div class="contact-avatar">' + (c.avatar || '>') + '</div>' +
+      '<div class="contact-info"><div class="contact-name">' + esc(c.name || '?') + '</div>' +
+      '<div class="contact-handle">@' + esc(c.handle || '?') + (lastSeen ? ' · ' + lastSeen : '') + '</div>' +
+      (c.githubPages ? '<a class="contact-ghlink" href="' + esc(c.githubPages) + '" target="_blank" onclick="event.stopPropagation()">' + esc(c.githubPages.replace('https://', '')) + '</a>' : '') +
+      '</div><div class="contact-status ' + (isOnline ? 'online' : 'offline') + '"></div></div>';
+  }).join('');
+}
+
+// ── Peers ──
+let unreadChatCount = 0;
+function updatePeerBar() {
+  const bar = document.getElementById('topbarPeers');
+  if (!bar) return;
+  const peers = window.PulseOS?.getPeers?.() || {};
+  const online = Object.values(peers).filter(p => p.online);
+  if (online.length === 0 && unreadChatCount === 0) { bar.innerHTML = ''; return; }
+  const badge = unreadChatCount > 0 ? '<span style="position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:7px;font-weight:700;min-width:12px;height:12px;border-radius:6px;display:flex;align-items:center;justify-content:center;padding:0 2px;">' + unreadChatCount + '</span>' : '';
+  bar.innerHTML = online.map(p =>
+    '<div class="topbar-peer" onclick="toggleSystemChat();unreadChatCount=0;updatePeerBar();" title="' + (p.name || '?') + '">' + badge +
+    '<span>' + (p.avatar || '>') + '</span><span class="peer-dot"></span></div>'
+  ).join('');
+  if (online.length === 0 && unreadChatCount > 0) {
+    bar.innerHTML = '<div class="topbar-peer" onclick="toggleSystemChat();unreadChatCount=0;updatePeerBar();">' + badge + '!</div>';
+  }
+}
+
+// ── Message Handler ──
+window.addEventListener('message', e => {
+  if (e.data && e.data.type === 'mutation') trackMutation(e.data.action || 'app', e.data.detail || '');
+  if (e.data && e.data.type === 'error') addFeed('Error: ' + (e.data.message || '?'), 'error');
+  if (e.data && e.data.type === 'graph-output' && e.data.appId && e.data.outputName) {
+    fetch('/api/graphs').then(r => r.json()).then(gData => {
+      (gData.graphs || []).filter(g => g.nodes && g.nodes.some(n => n.appId === e.data.appId)).forEach(g => {
+        fetch('/api/graphs/' + g.projectId + '/output', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ appId: e.data.appId, outputName: e.data.outputName, data: e.data.data }) }).catch(() => {});
+      });
+    }).catch(() => {});
+  }
+  if (e.data && e.data.type === 'open-app' && e.data.appId) {
+    const app = state?.apps?.find(a => a.id === e.data.appId);
+    if (app) openApp(app);
+    else fetch('/api/apps').then(r => r.json()).then(data => { if (data.apps) state.apps = data.apps; const a = data.apps?.find(a => a.id === e.data.appId); if (a) openApp(a); }).catch(() => {});
+  }
+});
+
+// ── Contexts ──
+let ctxLauncherOpen = false;
+let contextList = [];
+
+async function loadContexts() {
+  try {
+    const r = await fetch('/api/contexts');
+    const data = await r.json();
+    contextList = (data.contexts || []).sort((a, b) => (b.updated || '').localeCompare(a.updated || ''));
+  } catch {}
+}
+
+function openContext(ctx) {
+  if (ctxLauncherOpen) toggleContextLauncher();
+  const projectsApp = state?.apps?.find(a => a.id === 'projects');
+  if (projectsApp) openApp(projectsApp, { contextId: ctx.id, titleSuffix: ctx.name });
+}
+
+function toggleContextLauncher() {
+  ctxLauncherOpen = !ctxLauncherOpen;
+  document.getElementById('contextLauncher').style.display = ctxLauncherOpen ? 'flex' : 'none';
+  if (ctxLauncherOpen) {
+    loadContexts().then(() => renderContextGrid(contextList));
+    document.getElementById('ctxLauncherSearch').value = '';
+    document.getElementById('ctxLauncherSearch').focus();
+  }
+}
+
+function renderContextGrid(contexts) {
+  const grid = document.getElementById('ctxLauncherGrid');
+  if (!grid) return;
+  if (contexts.length === 0) { grid.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px;">Keine Projekte</div>'; return; }
+  grid.innerHTML = contexts.map(ctx =>
+    '<div class="launcher-app" onclick="openContext(' + JSON.stringify(ctx).replace(/"/g, '&quot;') + ')" style="width:100px;">' +
+    '<div class="icon" style="background:' + (ctx.color || 'var(--lila)') + '">' + (ctx.icon || '#') + '</div>' +
+    '<div class="name">' + (ctx.name || ctx.id) + '</div></div>'
+  ).join('');
+}
+
+function filterContexts(query) {
+  const q = query.toLowerCase();
+  renderContextGrid(contextList.filter(c => (c.name || '').toLowerCase().includes(q) || (c.id || '').toLowerCase().includes(q)));
 }
 
 function renderRecentContexts() {
   const el = document.getElementById('recentContexts');
   if (!el || !contextList || contextList.length === 0) {
-    if (el) el.innerHTML = '<div style="color:rgba(255,255,255,0.2);font-size:12px;padding:8px;">Keine Projekte vorhanden. Erstelle eins über den Contexts-Launcher!</div>';
+    if (el) el.innerHTML = '<div style="color:var(--text-muted);font-size:11px;padding:8px;">Keine Projekte vorhanden</div>';
     return;
   }
-  const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉', context: '📂', app: '📱' };
-  const recent = contextList.slice(0, 6);
-  el.innerHTML = recent.map(ctx => {
+  const icons = { todo: 'T', notes: 'N', table: 'D', timeline: 'Z', kpi: 'K', kanban: 'B', links: 'L', progress: 'P' };
+  el.innerHTML = contextList.slice(0, 6).map(ctx => {
     const widgetCount = ctx.widgetCount || (ctx.widgets ? ctx.widgets.length : 0);
-    const widgetPills = (ctx.widgets || []).slice(0, 4).map(w => '<span class="ctx-widget-pill">' + (icons[w.type] || '🧩') + ' ' + (w.type || '?') + '</span>').join('');
+    const pills = (ctx.widgets || []).slice(0, 3).map(w => '<span class="project-pill">' + (icons[w.type] || '?') + ' ' + (w.type || '') + '</span>').join('');
     const age = ctx.updated ? getRelativeTime(new Date(ctx.updated)) : '';
-    return '<div class="ctx-card" onclick="openContext(' + JSON.stringify(ctx).replace(/"/g, '&quot;') + ')">' +
-      '<div class="ctx-card-head">' +
-        '<div class="ctx-icon" style="background:' + (ctx.color || '#8B5CF6') + '">' + (ctx.icon || '📁') + '</div>' +
-        '<div><div class="ctx-name">' + (ctx.name || ctx.id) + '</div>' +
-        '<div class="ctx-meta">' + (widgetCount ? widgetCount + ' Widgets' : '') + (age ? ' · ' + age : '') + '</div></div>' +
+    return '<div class="project-card" onclick="openContext(' + JSON.stringify(ctx).replace(/"/g, '&quot;') + ')">' +
+      '<div class="project-head">' +
+        '<div class="project-icon" style="background:' + (ctx.color || 'var(--lila)') + '">' + (ctx.icon || '#') + '</div>' +
+        '<div><div class="project-name">' + (ctx.name || ctx.id) + '</div>' +
+        '<div class="project-meta">' + (widgetCount ? widgetCount + ' Widgets' : '') + (age ? ' · ' + age : '') + '</div></div>' +
       '</div>' +
-      (widgetPills ? '<div class="ctx-widgets">' + widgetPills + '</div>' : '') +
+      (pills ? '<div class="project-pills">' + pills + '</div>' : '') +
     '</div>';
   }).join('');
 }
@@ -1295,22 +2052,16 @@ async function renderDashboardStats() {
     if (!r.ok) return;
     const d = await r.json();
     const s = d.stats || {};
-
-    // Stat cards
     const statsEl = document.getElementById('statCards');
     const statsSection = document.getElementById('statsSection');
     if (statsEl && s.totalTodos > 0) {
       statsSection.style.display = '';
-      const topTodoCtx = (d.urgentTodos && d.urgentTodos[0]) ? d.urgentTodos[0].contextId : null;
       statsEl.innerHTML =
-        '<div class="stat-card" onclick="' + (topTodoCtx ? "openContextById('" + topTodoCtx + "')" : '') + '"><div class="sc-value">' + (s.openTodos || 0) + '</div><div class="sc-label">Offene Todos</div><div class="sc-sub">von ' + s.totalTodos + ' gesamt</div></div>' +
-        '<div class="stat-card' + (s.highPriorityTodos > 0 ? ' urgent' : '') + '" onclick="' + (topTodoCtx ? "openContextById('" + topTodoCtx + "')" : '') + '"><div class="sc-value">' + (s.highPriorityTodos || 0) + '</div><div class="sc-label">Dringend</div><div class="sc-sub">hohe Prioritaet</div></div>' +
-        '<div class="stat-card"><div class="sc-value">' + (s.totalContexts || 0) + '</div><div class="sc-label">Projekte</div><div class="sc-sub">' + (s.activeContexts || 0) + ' aktiv</div></div>';
-    } else if (statsSection) {
-      statsSection.style.display = 'none';
-    }
+        '<div class="stat-card"><div class="stat-val">' + (s.openTodos || 0) + '</div><div class="stat-label">Offene Todos</div><div class="stat-sub">von ' + s.totalTodos + '</div></div>' +
+        '<div class="stat-card' + (s.highPriorityTodos > 0 ? ' urgent' : '') + '"><div class="stat-val">' + (s.highPriorityTodos || 0) + '</div><div class="stat-label">Dringend</div></div>' +
+        '<div class="stat-card"><div class="stat-val">' + (s.totalContexts || 0) + '</div><div class="stat-label">Projekte</div><div class="stat-sub">' + (s.activeContexts || 0) + ' aktiv</div></div>';
+    } else if (statsSection) statsSection.style.display = 'none';
 
-    // Suggestions
     const sugEl = document.getElementById('suggestionList');
     const sugSection = document.getElementById('suggestionsSection');
     const suggestions = d.suggestions || [];
@@ -1318,21 +2069,17 @@ async function renderDashboardStats() {
       sugSection.style.display = '';
       sugEl.innerHTML = suggestions.map(s =>
         '<div class="suggestion-item type-' + s.type + '" onclick="openContextById(\'' + s.contextId + '\')">' +
-        '<span class="sg-icon">' + s.icon + '</span>' +
-        '<span>' + s.text + '</span></div>'
+        '<span class="sg-icon">' + s.icon + '</span><span>' + s.text + '</span></div>'
       ).join('');
-    } else if (sugSection) {
-      sugSection.style.display = 'none';
-    }
-  } catch (e) { console.error('[stats]', e); }
+    } else if (sugSection) sugSection.style.display = 'none';
+  } catch {}
 }
 
 function openContextById(ctxId) {
   const ctx = contextList.find(c => c.id === ctxId);
   if (ctx) { openContext(ctx); return; }
-  // Fallback: open projects app with contextId
-  const projectsApp = state?.apps?.find(a => a.id === 'projects');
-  if (projectsApp) openApp(projectsApp, { contextId: ctxId });
+  const app = state?.apps?.find(a => a.id === 'projects');
+  if (app) openApp(app, { contextId: ctxId });
 }
 
 async function renderActiveGraphs() {
@@ -1348,558 +2095,170 @@ async function renderActiveGraphs() {
     const regApps = regRes.apps || [];
     if (graphs.length === 0) { section.style.display = 'none'; return; }
     section.style.display = '';
-    // Lookup context names for graph labels
-    const ctxNames = {};
-    contextList.forEach(c => { ctxNames[c.id] = c.name; });
     el.innerHTML = graphs.slice(0, 3).map(g => {
       const nodes = (g.nodes || []).slice(0, 4);
       const nodesHtml = nodes.map((n, i) => {
         const app = regApps.find(a => a.id === n.appId);
-        const icon = app?.manifest?.icon || '📦';
-        const name = app?.manifest?.name || n.appId || '?';
-        return (i > 0 ? '<span class="graph-arrow">→</span>' : '') +
-          '<div class="graph-node" title="' + name + '">' + icon + '</div>';
+        const icon = app?.manifest?.icon || '#';
+        return (i > 0 ? '<span class="graph-arrow">-></span>' : '') +
+          '<div class="graph-node" title="' + (app?.manifest?.name || n.appId) + '">' + icon + '</div>';
       }).join('');
-      const label = g.name || ctxNames[g.projectId] || g.projectId;
-      return '<div class="graph-card">' +
-        '<div class="graph-nodes">' + nodesHtml + '</div>' +
+      const label = g.name || g.projectId;
+      return '<div class="graph-card"><div class="graph-nodes">' + nodesHtml + '</div>' +
         '<div class="graph-info"><div class="graph-name">' + label + '</div>' +
         '<div class="graph-status">' + nodes.length + ' Nodes · ' + (g.edges || []).length + ' Edges</div></div></div>';
     }).join('');
-  } catch (e) { section.style.display = 'none'; }
+  } catch { section.style.display = 'none'; }
 }
 
-function addPulseEntry(icon, text, type) {
-  const feed = document.getElementById('pulseFeed');
-  if (!feed) return;
-  const entry = document.createElement('div');
-  entry.className = 'pulse-entry' + (type === 'error' ? ' pe-error' : type === 'success' ? ' pe-success' : '');
-  entry.innerHTML = '<span class="pe-icon">' + icon + '</span> ' + text + ' <span class="pe-time">gerade eben</span>';
-  feed.prepend(entry);
-  // Keep max 20 entries
-  while (feed.children.length > 20) feed.removeChild(feed.lastChild);
+function getRelativeTime(date) {
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'jetzt';
+  if (mins < 60) return mins + 'm';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h';
+  return Math.floor(hrs / 24) + 'd';
 }
 
-// --- Init ---
+// ── Init ──
+setMode(currentMode);
 updateClock();
 setInterval(updateClock, 30000);
 load();
 connectSSE();
+connectPulseSSE();
 setInterval(load, 30000);
 setInterval(generateStateSummary, 60000);
 checkOnboarding();
-
-// --- Peer Bar & System Chat UI ---
-let unreadChatCount = 0;
-
-function updatePeerBar() {
-  const bar = document.getElementById('topbarPeers');
-  if (!bar) return;
-  const peers = window.PulseOS?.getPeers?.() || {};
-  const online = Object.values(peers).filter(p => p.online);
-  if (online.length === 0 && unreadChatCount === 0) { bar.innerHTML = ''; return; }
-  const badge = unreadChatCount > 0 ? '<span style="position:absolute;top:-3px;right:-3px;background:#EF4444;color:#fff;font-size:8px;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;">' + unreadChatCount + '</span>' : '';
-  bar.innerHTML = online.map(p =>
-    '<div class="topbar-peer" onclick="toggleSystemChat();unreadChatCount=0;updatePeerBar();" title="' + (p.name || p.peerId?.substring(0,8) || '?') + '">' +
-    badge +
-    '<span>' + (p.avatar || '👤') + '</span>' +
-    '<span class="peer-dot"></span>' +
-    '</div>'
-  ).join('');
-  if (online.length === 0 && unreadChatCount > 0) {
-    bar.innerHTML = '<div class="topbar-peer" onclick="toggleSystemChat();unreadChatCount=0;updatePeerBar();" title="Neue Nachrichten">' + badge + '💬</div>';
-  }
-}
-
-let systemChatOpen = false;
-function toggleSystemChat() {
-  systemChatOpen = !systemChatOpen;
-  const panel = document.getElementById('systemChat');
-  panel.style.display = systemChatOpen ? 'flex' : 'none';
-  if (systemChatOpen) {
-    const msgs = document.getElementById('systemChatMessages');
-    msgs.scrollTop = msgs.scrollHeight;
-    document.getElementById('systemChatInput')?.focus();
-  }
-}
-
-function renderSystemChatMessage(msg) {
-  const msgs = document.getElementById('systemChatMessages');
-  if (!msgs) return;
-  // Remove empty placeholder
-  if (msgs.children.length === 1 && msgs.children[0].textContent.includes('Noch keine')) msgs.innerHTML = '';
-  const isSelf = msg.peerId === 'self';
-  const div = document.createElement('div');
-  div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;' + (isSelf ? 'flex-direction:row-reverse;' : '');
-  div.innerHTML = '<span style="font-size:18px;flex-shrink:0;">' + (msg.avatar || '👤') + '</span>' +
-    '<div style="max-width:220px;padding:6px 10px;border-radius:10px;font-size:12px;' + (isSelf ? 'background:#8B5CF6;color:#fff;border-bottom-right-radius:4px;' : 'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border-bottom-left-radius:4px;') + '">' +
-    '<div style="font-size:10px;opacity:0.6;margin-bottom:2px;">' + (msg.from || '?') + '</div>' +
-    '<div>' + (msg.text || '') + '</div></div>';
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-function sendSystemChat() {
-  const input = document.getElementById('systemChatInput');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  if (window.PulseOS?.sendChat) window.PulseOS.sendChat(text);
-}
-
-// --- Profile Edit Modal ---
-function showProfileEdit() {
-  if (document.getElementById('profileModal')) return;
-  const p = userProfile || { name: '', handle: '', avatar: '🧑‍💻', bio: '', githubPages: '', roomId: '' };
-  const overlay = document.createElement('div');
-  overlay.id = 'profileModal';
-  overlay.className = 'profile-modal-overlay';
-  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-  overlay.innerHTML = `
-    <div class="profile-modal">
-      <div class="avatar-row">
-        <div class="avatar-big" id="pe-avatar-preview">${p.avatar || '🧑‍💻'}</div>
-        <div>
-          <h2>Dein Profil</h2>
-          <div class="subtitle">Sichtbar für verbundene Peers</div>
-        </div>
-      </div>
-      <label>Name *</label>
-      <input id="pe-name" type="text" value="${esc(p.name)}" placeholder="Dein Name">
-      <label>Handle</label>
-      <input id="pe-handle" type="text" value="${esc(p.handle)}" placeholder="@dein-handle">
-      <label>Bio</label>
-      <textarea id="pe-bio" placeholder="Was machst du?">${esc(p.bio)}</textarea>
-      <label>GitHub Pages URL</label>
-      <input id="pe-ghpages" type="url" value="${esc(p.githubPages)}" placeholder="https://username.github.io">
-      <label>Avatar Emoji</label>
-      <input id="pe-avatar" type="text" value="${p.avatar || '🧑‍💻'}" maxlength="4" style="width:80px;text-align:center;font-size:24px;" oninput="document.getElementById('pe-avatar-preview').textContent=this.value||'🧑‍💻'">
-      <div class="btn-row">
-        <button class="btn-secondary" onclick="document.getElementById('profileModal').remove()">Abbrechen</button>
-        <button class="btn-primary" onclick="saveProfileEdit()">Speichern</button>
-      </div>
-      ${p.roomId ? '<div class="room-id">Room: <code onclick="navigator.clipboard.writeText(\'' + esc(p.roomId) + '\');this.textContent=\'Kopiert!\';setTimeout(()=>this.textContent=\'' + esc(p.roomId) + '\',1500)" title="Klick zum Kopieren">' + esc(p.roomId) + '</code></div>' : ''}
-    </div>`;
-  document.body.appendChild(overlay);
-  document.getElementById('pe-name').focus();
-}
-
-function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-
-async function saveProfileEdit() {
-  const name = document.getElementById('pe-name').value.trim();
-  if (!name) { document.getElementById('pe-name').style.borderColor = '#EF4444'; return; }
-  const profile = {
-    name,
-    handle: document.getElementById('pe-handle').value.trim() || name.toLowerCase().replace(/\s+/g, '-'),
-    avatar: document.getElementById('pe-avatar').value || '🧑‍💻',
-    bio: document.getElementById('pe-bio').value.trim(),
-    githubPages: document.getElementById('pe-ghpages').value.trim()
-  };
-  try {
-    await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) });
-    const res = await fetch('/api/profile');
-    userProfile = await res.json();
-    updateProfileDisplay();
-    document.getElementById('profileModal')?.remove();
-  } catch (e) { console.error('[profile] save error:', e); }
-}
-
-// --- System Chat Tab Switching ---
-function switchSysChatTab(tab) {
-  const chatView = document.getElementById('sysChatView');
-  const contactsView = document.getElementById('sysContactsView');
-  const tabChat = document.getElementById('tabChat');
-  const tabContacts = document.getElementById('tabContacts');
-  if (tab === 'chat') {
-    chatView.style.display = 'flex';
-    contactsView.style.display = 'none';
-    tabChat.classList.add('active');
-    tabContacts.classList.remove('active');
-  } else {
-    chatView.style.display = 'none';
-    contactsView.style.display = 'flex';
-    tabChat.classList.remove('active');
-    tabContacts.classList.add('active');
-    loadContacts();
-  }
-}
-
-// --- Contacts List ---
-let contactsCache = [];
-async function loadContacts() {
-  try {
-    const r = await fetch('/api/contacts');
-    const data = await r.json();
-    contactsCache = data.contacts || [];
-    renderContacts();
-  } catch (e) { console.error('[contacts]', e); }
-}
-
-function renderContacts() {
-  const list = document.getElementById('contactsList');
-  const countEl = document.getElementById('contactCount');
-  if (!list) return;
-  if (countEl) countEl.textContent = contactsCache.length > 0 ? `(${contactsCache.length})` : '';
-  if (contactsCache.length === 0) {
-    list.innerHTML = '<div class="contacts-empty">Noch keine Kontakte.<br>Verbinde dich über WebRTC!</div>';
-    return;
-  }
-  const peers = window.PulseOS?.getPeers?.() || {};
-  const onlineHandles = new Set(Object.values(peers).filter(p => p.online).map(p => p.handle || p.name));
-  list.innerHTML = contactsCache.map(c => {
-    const isOnline = onlineHandles.has(c.handle) || onlineHandles.has(c.name);
-    const lastSeen = c.lastSeen ? getRelativeTime(new Date(c.lastSeen)) : '';
-    return `<div class="contact-item" title="${esc(c.bio || '')}">
-      <div class="contact-avatar">${c.avatar || '👤'}</div>
-      <div class="contact-info">
-        <div class="contact-name">${esc(c.name || c.handle || '?')}</div>
-        <div class="contact-handle">@${esc(c.handle || '?')}${lastSeen ? ' · ' + lastSeen : ''}</div>
-        ${c.githubPages ? '<a class="contact-ghlink" href="' + esc(c.githubPages) + '" target="_blank" onclick="event.stopPropagation()">🌐 ' + esc(c.githubPages.replace('https://', '')) + '</a>' : ''}
-      </div>
-      <div class="contact-status ${isOnline ? 'online' : 'offline'}"></div>
-    </div>`;
-  }).join('');
-}
-
+loadContexts().then(() => { renderRecentContexts(); renderActiveGraphs(); renderDashboardStats(); });
+setInterval(() => loadContexts().then(() => renderRecentContexts()), 30000);
+setTimeout(updateGreeting, 200);
+setInterval(updateGreeting, 60000);
+setInterval(renderDashboardStats, 60000);
 </script>
 
-<!-- WebRTC Bridge Host (for tunnel reconnect) -->
+<!-- ═══ WebRTC Bridge Host ═══ -->
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
-// --- WebRTC Bridge Host ---
-// Connects to signaling server and responds to tunnel-link requests from remote clients
 (function() {
   const SIGNALING_URL = 'https://web-production-84380f.up.railway.app';
   const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
-
-  let bridgeSocket = null;
-  let bridgeRoom = null;
-  const bridgePeers = {};
-  const bridgeChannels = {};
+  let bridgeSocket = null, bridgeRoom = null;
+  const bridgePeers = {}, bridgeChannels = {}, connectedPeers = {};
+  const systemChatHistory = [];
+  const pulseEventListeners = {};
 
   window.startBridgeHost = function(roomId) {
-    if (bridgeSocket && bridgeRoom === roomId && bridgeSocket.connected) return; // already connected to same room
-
-    // Cleanup all existing peer connections
+    if (bridgeSocket && bridgeRoom === roomId && bridgeSocket.connected) return;
     Object.keys(bridgePeers).forEach(id => cleanupBridgePeer(id));
-
-    // If already connected to signaling server: leave old room, join new one (no reconnect needed)
     if (bridgeSocket && bridgeSocket.connected && bridgeRoom) {
-      console.log('[bridge-host] Leaving old room:', bridgeRoom, '→ joining:', roomId);
       bridgeSocket.emit('leave-room', { roomId: bridgeRoom });
       bridgeRoom = roomId;
       bridgeSocket.emit('join-room', { roomId: bridgeRoom });
       return;
     }
-
-    // First connect or socket lost — create fresh connection
-    if (bridgeSocket) {
-      try { bridgeSocket.removeAllListeners(); bridgeSocket.disconnect(); } catch {}
-      bridgeSocket = null;
-    }
+    if (bridgeSocket) { try { bridgeSocket.removeAllListeners(); bridgeSocket.disconnect(); } catch {} bridgeSocket = null; }
     bridgeRoom = roomId;
 
-    console.log('[bridge-host] Connecting to signaling server, room:', roomId);
-
-    bridgeSocket = io(SIGNALING_URL, {
-      forceNew: true,
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 3000
-    });
-
-    bridgeSocket.on('connect', () => {
-      console.log('[bridge-host] Connected to signaling server as', bridgeSocket.id);
-      bridgeSocket.emit('join-room', { roomId: bridgeRoom });
-    });
-
-    bridgeSocket.on('disconnect', (reason) => {
-      console.log('[bridge-host] Signaling disconnected:', reason);
-    });
-
-    bridgeSocket.on('reconnect', () => {
-      console.log('[bridge-host] Reconnected, rejoining room');
-      bridgeSocket.emit('join-room', { roomId: bridgeRoom });
-    });
-
-    bridgeSocket.on('room-users', ({ roomId, users }) => {
-      console.log('[bridge-host] In room, existing peers:', users.length);
-      users.forEach(targetId => createBridgePeer(targetId, true));
-    });
-
-    bridgeSocket.on('user-joined', ({ userId }) => {
-      console.log('[bridge-host] Peer joined:', userId);
-      // Wait for their offer
-    });
-
-    bridgeSocket.on('user-left', ({ userId }) => {
-      console.log('[bridge-host] Peer left:', userId);
-      cleanupBridgePeer(userId);
-    });
-
+    bridgeSocket = io(SIGNALING_URL, { forceNew: true, transports: ['websocket', 'polling'], reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 3000 });
+    bridgeSocket.on('connect', () => bridgeSocket.emit('join-room', { roomId: bridgeRoom }));
+    bridgeSocket.on('reconnect', () => bridgeSocket.emit('join-room', { roomId: bridgeRoom }));
+    bridgeSocket.on('room-users', ({ users }) => users.forEach(id => createBridgePeer(id, true)));
+    bridgeSocket.on('user-left', ({ userId }) => cleanupBridgePeer(userId));
     bridgeSocket.on('offer', async ({ offer, senderId, roomId }) => {
-      console.log('[bridge-host] Offer from', senderId);
       const pc = createBridgePeer(senderId, false);
-      try {
-        await pc.setRemoteDescription(offer);
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        bridgeSocket.emit('answer', { roomId, answer, targetId: senderId });
-      } catch (e) { console.error('[bridge-host] Error handling offer:', e); }
+      try { await pc.setRemoteDescription(offer); const answer = await pc.createAnswer(); await pc.setLocalDescription(answer); bridgeSocket.emit('answer', { roomId, answer, targetId: senderId }); } catch {}
     });
-
-    bridgeSocket.on('answer', async ({ answer, senderId }) => {
-      if (bridgePeers[senderId]) {
-        try { await bridgePeers[senderId].setRemoteDescription(answer); } catch (e) { console.error('[bridge-host] Answer error:', e); }
-      }
-    });
-
-    bridgeSocket.on('ice-candidate', async ({ candidate, senderId }) => {
-      if (bridgePeers[senderId] && candidate) {
-        try { await bridgePeers[senderId].addIceCandidate(candidate); } catch {}
-      }
-    });
-
-    bridgeSocket.on('room-full', () => {
-      console.log('[bridge-host] Room full (unexpected)');
-    });
+    bridgeSocket.on('answer', async ({ answer, senderId }) => { if (bridgePeers[senderId]) try { await bridgePeers[senderId].setRemoteDescription(answer); } catch {} });
+    bridgeSocket.on('ice-candidate', async ({ candidate, senderId }) => { if (bridgePeers[senderId] && candidate) try { await bridgePeers[senderId].addIceCandidate(candidate); } catch {} });
   };
 
   function createBridgePeer(targetId, isInitiator) {
     if (bridgePeers[targetId]) return bridgePeers[targetId];
-
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     bridgePeers[targetId] = pc;
-
-    if (isInitiator) {
-      const dc = pc.createDataChannel('bridge', { ordered: true });
-      setupBridgeChannel(dc, targetId);
-    }
-
-    pc.ondatachannel = (e) => setupBridgeChannel(e.channel, targetId);
-
-    pc.onicecandidate = (e) => {
-      if (e.candidate && bridgeSocket) {
-        bridgeSocket.emit('ice-candidate', { roomId: bridgeRoom, candidate: e.candidate, targetId });
-      }
-    };
-
-    pc.onconnectionstatechange = () => {
-      console.log('[bridge-host] Peer', targetId.substring(0, 8), ':', pc.connectionState);
-      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
-        cleanupBridgePeer(targetId);
-      }
-    };
-
-    if (isInitiator) {
-      pc.createOffer().then(offer => {
-        pc.setLocalDescription(offer);
-        bridgeSocket.emit('offer', { roomId: bridgeRoom, offer, targetId });
-      }).catch(e => console.error('[bridge-host] Offer error:', e));
-    }
-
+    if (isInitiator) { const dc = pc.createDataChannel('bridge', { ordered: true }); setupBridgeChannel(dc, targetId); }
+    pc.ondatachannel = e => setupBridgeChannel(e.channel, targetId);
+    pc.onicecandidate = e => { if (e.candidate && bridgeSocket) bridgeSocket.emit('ice-candidate', { roomId: bridgeRoom, candidate: e.candidate, targetId }); };
+    pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' || pc.connectionState === 'closed') cleanupBridgePeer(targetId); };
+    if (isInitiator) pc.createOffer().then(offer => { pc.setLocalDescription(offer); bridgeSocket.emit('offer', { roomId: bridgeRoom, offer, targetId }); }).catch(() => {});
     return pc;
   }
 
   function setupBridgeChannel(dc, targetId) {
     bridgeChannels[targetId] = dc;
-
-    dc.onopen = () => console.log('[bridge-host] DataChannel open with', targetId.substring(0, 8));
-    dc.onclose = () => console.log('[bridge-host] DataChannel closed with', targetId.substring(0, 8));
-
-    dc.onmessage = (e) => {
-      let data;
-      try { data = JSON.parse(e.data); } catch { data = { type: 'text', content: e.data }; }
-      handleBridgeMessage(data, targetId);
+    dc.onopen = () => {
+      connectedPeers[targetId] = { peerId: targetId, online: true, lastSeen: Date.now() };
+      updatePeerBar();
+      if (userProfile) sendBridgeMsg(targetId, { type: 'profile-exchange', profile: userProfile });
     };
+    dc.onclose = () => { if (connectedPeers[targetId]) connectedPeers[targetId].online = false; updatePeerBar(); };
+    dc.onmessage = e => { let data; try { data = JSON.parse(e.data); } catch { data = { type: 'text', content: e.data }; } handleBridgeMessage(data, targetId); };
   }
 
   function handleBridgeMessage(data, senderId) {
     switch (data.type) {
       case 'tunnel-request':
-        console.log('[bridge-host] Tunnel link requested by peer');
-        // Get the current tunnel URL and send it back
         fetch('/api/tunnel').then(r => r.json()).then(d => {
-          if (d.active && d.url) {
-            sendBridgeMsg(senderId, { type: 'tunnel-response', url: d.url });
-            console.log('[bridge-host] Sent tunnel URL:', d.url);
-          } else {
-            // No tunnel active — start one!
-            console.log('[bridge-host] No tunnel active, starting one...');
-            sendBridgeMsg(senderId, { type: 'text', content: '⏳ Tunnel wird gestartet...' });
-            fetch('/api/tunnel', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'start' })
-            }).then(r => r.json()).then(result => {
-              if (result.ok && result.url) {
-                sendBridgeMsg(senderId, { type: 'tunnel-response', url: result.url });
-                console.log('[bridge-host] Tunnel started, sent URL:', result.url);
-                // Update dashboard UI
-                tunnelActive = true;
-                tunnelCurrentUrl = result.url;
-                const btn = document.getElementById('tunnelBtn');
-                btn.style.borderColor = '#9ece6a';
-                btn.style.color = '#9ece6a';
-                document.getElementById('tunnelLabel').textContent = 'Live';
-              } else {
-                sendBridgeMsg(senderId, { type: 'text', content: '❌ Tunnel konnte nicht gestartet werden' });
-              }
-            }).catch(() => {
-              sendBridgeMsg(senderId, { type: 'text', content: '❌ Fehler beim Tunnel-Start' });
-            });
+          if (d.active && d.url) sendBridgeMsg(senderId, { type: 'tunnel-response', url: d.url });
+          else {
+            sendBridgeMsg(senderId, { type: 'text', content: 'Starting tunnel...' });
+            fetch('/api/tunnel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start' }) }).then(r => r.json()).then(result => {
+              if (result.ok && result.url) { sendBridgeMsg(senderId, { type: 'tunnel-response', url: result.url }); tunnelActive = true; tunnelCurrentUrl = result.url; }
+            }).catch(() => {});
           }
-        }).catch(() => {
-          sendBridgeMsg(senderId, { type: 'text', content: '❌ Server nicht erreichbar' });
-        });
-        break;
-
-      case 'ping':
-        sendBridgeMsg(senderId, { type: 'pong', timestamp: data.timestamp });
-        break;
-
-      case 'status-request':
-        fetch('/api/tunnel').then(r => r.json()).then(d => {
-          sendBridgeMsg(senderId, {
-            type: 'status-response',
-            data: {
-              server: 'PulseOS',
-              tunnelActive: d.active,
-              tunnelUrl: d.url || 'inactive',
-              timestamp: new Date().toISOString()
-            }
-          });
         }).catch(() => {});
         break;
-
-      case 'text':
-      case 'chat-message':
-        console.log('[bridge-host] Message from peer:', data.content || data.text);
-        // Store in chat history and notify UI
-        const chatMsg = { from: connectedPeers[senderId]?.name || senderId.substring(0, 8), avatar: connectedPeers[senderId]?.avatar || '👤', text: data.content || data.text, time: Date.now(), peerId: senderId };
-        systemChatHistory.push(chatMsg);
-        if (systemChatHistory.length > 200) systemChatHistory.shift();
-        renderSystemChatMessage(chatMsg);
-        // Increment unread if chat panel is not visible
+      case 'ping': sendBridgeMsg(senderId, { type: 'pong', timestamp: data.timestamp }); break;
+      case 'status-request':
+        fetch('/api/tunnel').then(r => r.json()).then(d => sendBridgeMsg(senderId, { type: 'status-response', data: { server: 'PulseOS', tunnelActive: d.active, tunnelUrl: d.url || 'inactive' } })).catch(() => {});
+        break;
+      case 'text': case 'chat-message':
+        const msg = { from: connectedPeers[senderId]?.name || senderId.substring(0, 8), avatar: connectedPeers[senderId]?.avatar || '>', text: data.content || data.text, time: Date.now(), peerId: senderId };
+        systemChatHistory.push(msg); if (systemChatHistory.length > 200) systemChatHistory.shift();
+        renderSystemChatMessage(msg);
         if (!systemChatOpen) unreadChatCount++;
         updatePeerBar();
         break;
-
       case 'profile-exchange':
-        console.log('[bridge-host] Profile received from peer:', data.profile?.name);
         if (data.profile) {
           connectedPeers[senderId] = { ...connectedPeers[senderId], ...data.profile, peerId: senderId, online: true, lastSeen: Date.now() };
-          // Save to contacts
           fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data.profile) }).catch(() => {});
           updatePeerBar();
         }
         break;
-
-      case 'app-share':
-        console.log('[bridge-host] App shared by peer:', data.appId);
-        dispatchPulseEvent('app-share', { ...data, from: senderId });
-        break;
-
       case 'pulse-signal':
-        console.log('[bridge-host] Remote pulse from peer:', data.appId);
         if (data.appId) fetch('/api/pulse/fire/' + data.appId, { method: 'POST' }).catch(() => {});
         break;
     }
   }
 
-  function sendBridgeMsg(targetId, data) {
-    const dc = bridgeChannels[targetId];
-    if (dc && dc.readyState === 'open') {
-      dc.send(JSON.stringify(data));
-    }
-  }
-
-  function sendToAllPeers(data) {
-    Object.keys(bridgeChannels).forEach(id => sendBridgeMsg(id, data));
-  }
-
+  function sendBridgeMsg(targetId, data) { const dc = bridgeChannels[targetId]; if (dc && dc.readyState === 'open') dc.send(JSON.stringify(data)); }
+  function sendToAllPeers(data) { Object.keys(bridgeChannels).forEach(id => sendBridgeMsg(id, data)); }
   function cleanupBridgePeer(targetId) {
     if (bridgeChannels[targetId]) { try { bridgeChannels[targetId].close(); } catch {} delete bridgeChannels[targetId]; }
     if (bridgePeers[targetId]) { try { bridgePeers[targetId].close(); } catch {} delete bridgePeers[targetId]; }
-    if (connectedPeers[targetId]) { connectedPeers[targetId].online = false; }
+    if (connectedPeers[targetId]) connectedPeers[targetId].online = false;
     updatePeerBar();
   }
 
-  // --- Connected Peers & System Chat ---
-  const connectedPeers = {};
-  const systemChatHistory = [];
-  const pulseEventListeners = {};
-
-  // Auto-send profile when DataChannel opens
-  const origSetupChannel = setupBridgeChannel;
-  // Patch setupBridgeChannel to auto-send profile
-  function setupBridgeChannelPatched(dc, targetId) {
-    bridgeChannels[targetId] = dc;
-    dc.onopen = () => {
-      console.log('[bridge-host] DataChannel open with', targetId.substring(0, 8));
-      connectedPeers[targetId] = { peerId: targetId, online: true, lastSeen: Date.now() };
-      updatePeerBar();
-      // Send our profile
-      if (userProfile) {
-        sendBridgeMsg(targetId, { type: 'profile-exchange', profile: userProfile });
-      }
-    };
-    dc.onclose = () => {
-      console.log('[bridge-host] DataChannel closed with', targetId.substring(0, 8));
-      if (connectedPeers[targetId]) connectedPeers[targetId].online = false;
-      updatePeerBar();
-    };
-    dc.onmessage = (e) => {
-      let data;
-      try { data = JSON.parse(e.data); } catch { data = { type: 'text', content: e.data }; }
-      handleBridgeMessage(data, targetId);
-    };
-  }
-  // Replace the original
-  setupBridgeChannel = setupBridgeChannelPatched;
-
-  // --- PulseOS System API (exposed to window + iframes) ---
-  function dispatchPulseEvent(type, data) {
-    const listeners = pulseEventListeners[type] || [];
-    listeners.forEach(fn => { try { fn(data); } catch (e) { console.error('[PulseOS]', e); } });
-    // Also dispatch to window
-    window.dispatchEvent(new CustomEvent('pulse-message', { detail: { type, ...data } }));
-  }
-
   window.PulseOS = {
-    send: function(peerId, type, data) {
-      if (peerId === '*') {
-        sendToAllPeers({ type, ...data, fromProfile: userProfile });
-      } else {
-        sendBridgeMsg(peerId, { type, ...data, fromProfile: userProfile });
-      }
-    },
-    onMessage: function(type, callback) {
-      if (!pulseEventListeners[type]) pulseEventListeners[type] = [];
-      pulseEventListeners[type].push(callback);
-    },
-    offMessage: function(type, callback) {
-      if (pulseEventListeners[type]) {
-        pulseEventListeners[type] = pulseEventListeners[type].filter(fn => fn !== callback);
-      }
-    },
-    getPeers: function() { return { ...connectedPeers }; },
-    getProfile: function() { return userProfile; },
-    getChatHistory: function() { return [...systemChatHistory]; },
-    sendChat: function(text) {
-      const msg = { type: 'chat-message', text, timestamp: Date.now() };
-      sendToAllPeers(msg);
-      const localMsg = { from: userProfile?.name || 'Du', avatar: userProfile?.avatar || '🧑‍💻', text, time: Date.now(), peerId: 'self' };
-      systemChatHistory.push(localMsg);
-      if (systemChatHistory.length > 200) systemChatHistory.shift();
+    send: (peerId, type, data) => peerId === '*' ? sendToAllPeers({ type, ...data, fromProfile: userProfile }) : sendBridgeMsg(peerId, { type, ...data, fromProfile: userProfile }),
+    onMessage: (type, cb) => { if (!pulseEventListeners[type]) pulseEventListeners[type] = []; pulseEventListeners[type].push(cb); },
+    offMessage: (type, cb) => { if (pulseEventListeners[type]) pulseEventListeners[type] = pulseEventListeners[type].filter(fn => fn !== cb); },
+    getPeers: () => ({ ...connectedPeers }),
+    getProfile: () => userProfile,
+    getChatHistory: () => [...systemChatHistory],
+    sendChat: text => {
+      sendToAllPeers({ type: 'chat-message', text, timestamp: Date.now() });
+      const localMsg = { from: userProfile?.name || 'Du', avatar: userProfile?.avatar || '>', text, time: Date.now(), peerId: 'self' };
+      systemChatHistory.push(localMsg); if (systemChatHistory.length > 200) systemChatHistory.shift();
       renderSystemChatMessage(localMsg);
     }
   };
 
-  // Listen for messages from iframes (apps)
-  window.addEventListener('message', function(e) {
+  window.addEventListener('message', e => {
     if (e.data && e.data.__pulseOS) {
       const { action, peerId, type, data } = e.data;
       if (action === 'send') window.PulseOS.send(peerId || '*', type, data);
@@ -1907,95 +2266,6 @@ function renderContacts() {
     }
   });
 })();
-
-// ── Context Launcher & Dock Favorites ──
-let ctxLauncherOpen = false;
-let contextList = [];
-
-async function loadContexts() {
-  try {
-    const r = await fetch('/api/contexts');
-    const data = await r.json();
-    contextList = (data.contexts || []).sort((a, b) => (b.updated || '').localeCompare(a.updated || ''));
-    renderDockContexts();
-  } catch (e) { console.error('Context load error:', e); }
-}
-
-function renderDockContexts() {
-  // No-op: dock removed, contexts shown in home screen
-}
-
-function openContext(ctx) {
-  if (ctxLauncherOpen) toggleContextLauncher();
-  const projectsApp = state && state.apps ? state.apps.find(a => a.id === 'projects') : null;
-  if (projectsApp) {
-    openApp(projectsApp, { contextId: ctx.id, titleSuffix: ctx.name });
-  }
-}
-
-function toggleContextLauncher() {
-  const overlay = document.getElementById('contextLauncher');
-  ctxLauncherOpen = !ctxLauncherOpen;
-  overlay.style.display = ctxLauncherOpen ? 'flex' : 'none';
-  if (ctxLauncherOpen) {
-    loadContexts().then(() => renderContextGrid(contextList));
-    document.getElementById('ctxLauncherSearch').value = '';
-    document.getElementById('ctxLauncherSearch').focus();
-  }
-}
-
-function renderContextGrid(contexts) {
-  const grid = document.getElementById('ctxLauncherGrid');
-  if (!grid) return;
-  if (contexts.length === 0) {
-    grid.innerHTML = '<div style="text-align:center;color:#7a7e96;padding:40px;grid-column:1/-1;">Keine Contexts vorhanden</div>';
-    return;
-  }
-  const icons = { todo: '✅', notes: '📝', table: '📊', timeline: '⏱️', kpi: '📈', kanban: '📋', links: '🔗', progress: '📉', context: '📂' };
-  grid.innerHTML = contexts.map(ctx => {
-    const widgetCount = ctx.widgetCount || (ctx.canvas && ctx.canvas.widgets ? ctx.canvas.widgets.length : 0);
-    const widgetIcons = (ctx.widgets || []).slice(0, 5).map(w => icons[w.type] || '🧩').join(' ');
-    const age = ctx.updated ? getRelativeTime(new Date(ctx.updated)) : '';
-    return `
-      <div class="launcher-icon" onclick="openContext(${JSON.stringify(ctx).replace(/"/g, '&quot;')})" style="cursor:pointer;">
-        <div class="icon" style="background:${ctx.color || '#8B5CF6'};font-size:28px;">${ctx.icon || '📁'}</div>
-        <div class="name">${ctx.name || ctx.id}</div>
-        <div style="font-size:9px;color:#7a7e96;margin-top:2px;">${widgetIcons || ''} ${widgetCount ? widgetCount + ' Widgets' : ''}</div>
-        ${age ? `<div style="font-size:8px;color:#565869;margin-top:1px;">${age}</div>` : ''}
-      </div>`;
-  }).join('');
-}
-
-function filterContexts(query) {
-  const q = query.toLowerCase();
-  const filtered = contextList.filter(c => (c.name || '').toLowerCase().includes(q) || (c.id || '').toLowerCase().includes(q));
-  renderContextGrid(filtered);
-}
-
-function getRelativeTime(date) {
-  const diff = Date.now() - date.getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'gerade eben';
-  if (mins < 60) return mins + ' Min';
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return hrs + ' Std';
-  const days = Math.floor(hrs / 24);
-  return days + ' Tage';
-}
-
-// Load contexts on startup + render home screen
-loadContexts().then(() => { renderRecentContexts(); renderActiveGraphs(); renderDashboardStats(); });
-// Refresh contexts every 30s
-setInterval(() => loadContexts().then(() => renderRecentContexts()), 30000);
-// Update greeting on load and periodically
-setTimeout(updateGreeting, 500);
-setInterval(updateGreeting, 60000);
-setInterval(renderDashboardStats, 60000);
-
-// Close context launcher on Escape
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && ctxLauncherOpen) toggleContextLauncher();
-});
 </script>
 </body>
 </html>
