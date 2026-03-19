@@ -196,6 +196,21 @@ body{font-family:system-ui,sans-serif;background:#0F172A;min-height:100vh;color:
 .ctx-card .ctx-widgets{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
 .ctx-card .ctx-widget-pill{font-size:9px;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5)}
 
+.stat-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px}
+.stat-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;cursor:pointer;transition:all .2s;text-align:center}
+.stat-card:hover{background:rgba(255,255,255,0.08);transform:translateY(-2px)}
+.stat-card .sc-value{font-size:24px;font-weight:700;color:rgba(255,255,255,0.9)}
+.stat-card .sc-label{font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px}
+.stat-card .sc-sub{font-size:10px;color:rgba(255,255,255,0.25);margin-top:1px}
+.stat-card.urgent .sc-value{color:#EF4444}
+.suggestion-list{display:flex;flex-direction:column;gap:6px}
+.suggestion-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:all .15s;font-size:12px;color:rgba(255,255,255,0.6)}
+.suggestion-item:hover{background:rgba(255,255,255,0.07);border-color:rgba(139,92,246,0.3)}
+.suggestion-item .sg-icon{font-size:16px;flex-shrink:0}
+.suggestion-item.type-urgent{border-left:2px solid #EF4444}
+.suggestion-item.type-stale{border-left:2px solid #F59E0B}
+.suggestion-item.type-empty{border-left:2px solid rgba(255,255,255,0.15)}
+
 .active-graphs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
 .graph-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px}
 .graph-card .graph-nodes{display:flex;gap:4px;align-items:center}
@@ -221,6 +236,8 @@ body{font-family:system-ui,sans-serif;background:#0F172A;min-height:100vh;color:
   .tab{padding:4px 8px;gap:4px}
   .home-screen{padding:16px 16px 16px}
   .home-greeting h1{font-size:22px}
+  .stat-cards{grid-template-columns:1fr 1fr 1fr}
+  .stat-card .sc-value{font-size:18px}
   .quick-actions{grid-template-columns:repeat(2,1fr)}
   .recent-contexts{grid-template-columns:1fr}
   .active-graphs{grid-template-columns:1fr}
@@ -289,6 +306,15 @@ body{font-family:system-ui,sans-serif;background:#0F172A;min-height:100vh;color:
         <div class="qa-sub">Command Center</div>
       </div>
     </div>
+  </div>
+
+  <div class="home-section" id="statsSection" style="display:none;">
+    <div class="stat-cards" id="statCards"></div>
+  </div>
+
+  <div class="home-section" id="suggestionsSection" style="display:none;">
+    <div class="home-section-title">Vorschlaege</div>
+    <div class="suggestion-list" id="suggestionList"></div>
   </div>
 
   <div class="home-section">
@@ -1263,6 +1289,52 @@ function renderRecentContexts() {
   }).join('');
 }
 
+async function renderDashboardStats() {
+  try {
+    const r = await fetch('/api/dashboard-stats');
+    if (!r.ok) return;
+    const d = await r.json();
+    const s = d.stats || {};
+
+    // Stat cards
+    const statsEl = document.getElementById('statCards');
+    const statsSection = document.getElementById('statsSection');
+    if (statsEl && s.totalTodos > 0) {
+      statsSection.style.display = '';
+      const topTodoCtx = (d.urgentTodos && d.urgentTodos[0]) ? d.urgentTodos[0].contextId : null;
+      statsEl.innerHTML =
+        '<div class="stat-card" onclick="' + (topTodoCtx ? "openContextById('" + topTodoCtx + "')" : '') + '"><div class="sc-value">' + (s.openTodos || 0) + '</div><div class="sc-label">Offene Todos</div><div class="sc-sub">von ' + s.totalTodos + ' gesamt</div></div>' +
+        '<div class="stat-card' + (s.highPriorityTodos > 0 ? ' urgent' : '') + '" onclick="' + (topTodoCtx ? "openContextById('" + topTodoCtx + "')" : '') + '"><div class="sc-value">' + (s.highPriorityTodos || 0) + '</div><div class="sc-label">Dringend</div><div class="sc-sub">hohe Prioritaet</div></div>' +
+        '<div class="stat-card"><div class="sc-value">' + (s.totalContexts || 0) + '</div><div class="sc-label">Projekte</div><div class="sc-sub">' + (s.activeContexts || 0) + ' aktiv</div></div>';
+    } else if (statsSection) {
+      statsSection.style.display = 'none';
+    }
+
+    // Suggestions
+    const sugEl = document.getElementById('suggestionList');
+    const sugSection = document.getElementById('suggestionsSection');
+    const suggestions = d.suggestions || [];
+    if (sugEl && suggestions.length > 0) {
+      sugSection.style.display = '';
+      sugEl.innerHTML = suggestions.map(s =>
+        '<div class="suggestion-item type-' + s.type + '" onclick="openContextById(\'' + s.contextId + '\')">' +
+        '<span class="sg-icon">' + s.icon + '</span>' +
+        '<span>' + s.text + '</span></div>'
+      ).join('');
+    } else if (sugSection) {
+      sugSection.style.display = 'none';
+    }
+  } catch (e) { console.error('[stats]', e); }
+}
+
+function openContextById(ctxId) {
+  const ctx = contextList.find(c => c.id === ctxId);
+  if (ctx) { openContext(ctx); return; }
+  // Fallback: open projects app with contextId
+  const projectsApp = state?.apps?.find(a => a.id === 'projects');
+  if (projectsApp) openApp(projectsApp, { contextId: ctxId });
+}
+
 async function renderActiveGraphs() {
   const section = document.getElementById('graphSection');
   const el = document.getElementById('activeGraphs');
@@ -1912,12 +1984,13 @@ function getRelativeTime(date) {
 }
 
 // Load contexts on startup + render home screen
-loadContexts().then(() => { renderRecentContexts(); renderActiveGraphs(); });
+loadContexts().then(() => { renderRecentContexts(); renderActiveGraphs(); renderDashboardStats(); });
 // Refresh contexts every 30s
 setInterval(() => loadContexts().then(() => renderRecentContexts()), 30000);
 // Update greeting on load and periodically
 setTimeout(updateGreeting, 500);
 setInterval(updateGreeting, 60000);
+setInterval(renderDashboardStats, 60000);
 
 // Close context launcher on Escape
 document.addEventListener('keydown', e => {

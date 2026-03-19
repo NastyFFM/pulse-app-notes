@@ -2319,6 +2319,72 @@ const server = http.createServer(async (req, res) => {
     } catch { return jsonRes(res, { error: 'Schema not found' }, 404); }
   }
 
+  // GET /api/dashboard-stats — Aggregated stats + suggestions
+  let dashStatsCache = null, dashStatsCacheTime = 0;
+  if (url === '/api/dashboard-stats' && req.method === 'GET') {
+    const now = Date.now();
+    if (dashStatsCache && now - dashStatsCacheTime < 30000) return jsonRes(res, dashStatsCache);
+
+    const allCtxs = readAllContexts(false);
+    const userCtxs = allCtxs.filter(c => !c.id?.startsWith('ctx-app-') && !c.system);
+    let totalTodos = 0, openTodos = 0, highPriTodos = 0;
+    const urgentTodos = [];
+    const suggestions = [];
+    const threeDaysAgo = now - 3 * 86400000;
+
+    for (const ctx of userCtxs) {
+      const widgets = ctx.widgets || [];
+      const data = ctx.data || {};
+
+      // Scan todos
+      for (const w of widgets) {
+        if (w.type === 'todo') {
+          const items = (data[w.dataKey]?.items || w.data?.items || []);
+          totalTodos += items.length;
+          const open = items.filter(i => !i.done);
+          openTodos += open.length;
+          const urgent = open.filter(i => i.priority === 'high');
+          highPriTodos += urgent.length;
+          for (const t of urgent.slice(0, 3)) {
+            urgentTodos.push({ text: t.text, priority: 'high', contextName: ctx.name, contextId: ctx.id });
+          }
+        }
+      }
+
+      // Suggestions: stale contexts
+      const updatedMs = ctx.updated ? new Date(ctx.updated).getTime() : 0;
+      if (updatedMs && updatedMs < threeDaysAgo && widgets.length > 0) {
+        const days = Math.floor((now - updatedMs) / 86400000);
+        suggestions.push({ type: 'stale', icon: '\u23F0', text: '"' + (ctx.name || ctx.id) + '" seit ' + days + ' Tagen nicht bearbeitet', contextId: ctx.id });
+      }
+
+      // Suggestions: empty contexts
+      if (widgets.length === 0 && ctx.name) {
+        suggestions.push({ type: 'empty', icon: '\uD83D\uDCED', text: '"' + (ctx.name || ctx.id) + '" ist leer \u2014 leg los!', contextId: ctx.id });
+      }
+    }
+
+    // Suggestions: urgent todos
+    if (highPriTodos > 0) {
+      const ctxWithUrgent = [...new Set(urgentTodos.map(t => t.contextId))];
+      for (const cid of ctxWithUrgent.slice(0, 2)) {
+        const count = urgentTodos.filter(t => t.contextId === cid).length;
+        const name = urgentTodos.find(t => t.contextId === cid)?.contextName || cid;
+        suggestions.unshift({ type: 'urgent', icon: '\uD83D\uDD34', text: count + ' dringende Todos in "' + name + '"', contextId: cid });
+      }
+    }
+
+    const graphFiles = (() => { try { return fs.readdirSync(GRAPHS_DIR).filter(f => f.endsWith('.json')).length; } catch { return 0; } })();
+
+    dashStatsCache = {
+      stats: { totalTodos, openTodos, highPriorityTodos: highPriTodos, totalContexts: userCtxs.length, activeContexts: userCtxs.filter(c => c.updated && new Date(c.updated).getTime() > threeDaysAgo).length, staleContexts: suggestions.filter(s => s.type === 'stale').length, totalGraphs: graphFiles },
+      urgentTodos: urgentTodos.slice(0, 5),
+      suggestions: suggestions.slice(0, 5)
+    };
+    dashStatsCacheTime = now;
+    return jsonRes(res, dashStatsCache);
+  }
+
   // GET /api/contexts — List all contexts (L0: id, name, icon, color, parentId, widgetCount)
   // POST /api/contexts — Create new context
   if (url === '/api/contexts') {
