@@ -124,11 +124,11 @@
 ## 7. Onboarding & Tutorial
 
 - [x] Profil-Onboarding (Name, Handle, Avatar)
-- [ ] Guided Tutorial nach erstem Login
-- [ ] Dashboard-Tour (Zonen erklaeren)
-- [ ] App oeffnen Demo
-- [ ] Shortcuts erklaeren
-- [ ] Skip-Option + Neustart ueber Settings
+- [x] Guided Tutorial nach erstem Login
+- [x] Dashboard-Tour (Zonen erklaeren)
+- [x] App oeffnen Demo
+- [x] Shortcuts erklaeren
+- [x] Skip-Option + Neustart ueber Settings
 
 ---
 

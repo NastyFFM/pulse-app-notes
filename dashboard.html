@@ -1803,6 +1803,81 @@ async function submitOnboarding() {
   userProfile = await res.json();
   updateProfileDisplay();
   document.getElementById('onboardingOverlay')?.remove();
+  // Start tutorial after onboarding
+  if (!localStorage.getItem('pulse-tutorial-done')) {
+    setTimeout(() => startTutorial(), 600);
+  }
+}
+
+// ── Guided Tutorial ──
+const tutorialSteps = [
+  { target: '.agent-bar', title: 'Agent-Bar', text: 'Hier siehst du was dein KI-Agent gerade macht. Events und Insights erscheinen in Echtzeit.', pos: 'below' },
+  { target: '.app-grid', title: 'Deine Apps', text: 'Klicke auf eine App um sie in einem Fenster zu oeffnen. Jede App laeuft isoliert mit eigenem Zustand.', pos: 'above' },
+  { target: '.mode-group', title: 'Modi', text: 'Flow (minimal), Cockpit (voll), Builder (Projekte). Wechsle je nach Aufgabe.', pos: 'below' },
+  { target: null, title: 'Shortcuts', text: 'Cmd+Space: App-Launcher\nCmd+Tab: Fenster wechseln\nCmd+W: Fenster schliessen\nCmd+K: Chat oeffnen', pos: 'center' }
+];
+let tutorialIdx = 0;
+
+function startTutorial() {
+  tutorialIdx = 0;
+  showTutorialStep();
+}
+
+function showTutorialStep() {
+  // Remove previous
+  document.getElementById('tutorialOverlay')?.remove();
+  if (tutorialIdx >= tutorialSteps.length) {
+    localStorage.setItem('pulse-tutorial-done', '1');
+    return;
+  }
+  const step = tutorialSteps[tutorialIdx];
+  const overlay = document.createElement('div');
+  overlay.id = 'tutorialOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:90000;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;';
+
+  let boxStyle = 'background:var(--surface,#111118);border:1px solid var(--teal,#4ecdc4);border-radius:8px;padding:20px 24px;max-width:360px;color:rgba(255,255,255,.85);font-family:var(--font);';
+  let spotlightCSS = '';
+
+  if (step.target) {
+    const el = document.querySelector(step.target);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      spotlightCSS = 'position:fixed;left:' + (rect.left - 4) + 'px;top:' + (rect.top - 4) + 'px;width:' + (rect.width + 8) + 'px;height:' + (rect.height + 8) + 'px;border:2px solid var(--teal,#4ecdc4);border-radius:6px;z-index:90001;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,.6);';
+      // Position box relative to target
+      if (step.pos === 'below') {
+        boxStyle += 'position:fixed;left:' + Math.max(20, rect.left) + 'px;top:' + (rect.bottom + 16) + 'px;z-index:90002;';
+      } else {
+        boxStyle += 'position:fixed;left:' + Math.max(20, rect.left) + 'px;bottom:' + (window.innerHeight - rect.top + 16) + 'px;z-index:90002;';
+      }
+    }
+  }
+
+  const stepNum = (tutorialIdx + 1) + '/' + tutorialSteps.length;
+  const isLast = tutorialIdx === tutorialSteps.length - 1;
+
+  overlay.innerHTML =
+    (spotlightCSS ? '<div style="' + spotlightCSS + '"></div>' : '') +
+    '<div style="' + boxStyle + '">' +
+      '<div style="font-size:9px;color:rgba(78,205,196,.7);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Tutorial ' + stepNum + '</div>' +
+      '<div style="font-size:14px;font-weight:600;margin-bottom:8px;">' + step.title + '</div>' +
+      '<div style="font-size:12px;color:rgba(255,255,255,.6);white-space:pre-line;line-height:1.6;">' + step.text + '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">' +
+        '<button onclick="skipTutorial()" style="background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);padding:4px 12px;border-radius:4px;font:11px var(--font);cursor:pointer;">Skip</button>' +
+        '<button onclick="nextTutorialStep()" style="background:var(--teal,#4ecdc4);color:#0d0d14;border:none;padding:4px 14px;border-radius:4px;font:600 11px var(--font);cursor:pointer;">' + (isLast ? 'Fertig' : 'Weiter') + '</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+}
+
+function nextTutorialStep() {
+  tutorialIdx++;
+  showTutorialStep();
+}
+
+function skipTutorial() {
+  document.getElementById('tutorialOverlay')?.remove();
+  localStorage.setItem('pulse-tutorial-done', '1');
 }
 
 function updateProfileDisplay() {
