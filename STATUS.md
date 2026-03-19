@@ -125,11 +125,53 @@ Browser-basiertes agentisches OS. Drei Säulen: **Work** (App-Graphen, KI-Workfl
 - [ ] App-Erstellung per Chat end-to-end testen und polieren
 
 #### Langfristig
-- [ ] Multi-User-Graphen (geteilte Workflows)
+- [ ] **Cross-Instance Graphen über WebRTC** — DAS Killer-Feature (siehe unten)
 - [ ] Voice als Pulse (Sprachbefehl → Graph-Aktion)
 - [ ] Plugin-Ökosystem (Drittanbieter-Apps als Knoten)
 - [ ] Mobile-native L0-Kacheln
 - [ ] Phase 13g (MCP Server) — nur wenn CLI nicht reicht
+
+---
+
+## Vision: Cross-Instance Graphen über WebRTC
+
+**Die Idee:** App-Graphen enden nicht an der Grenze einer einzelnen PulseOS-Instanz. Über WebRTC DataChannels können Graphen sich über mehrere Maschinen spannen — Peer-to-Peer, kein zentraler Server.
+
+```
+┌─ User A (localhost:3000) ─────┐     WebRTC      ┌─ User B (localhost:3000) ─────┐
+│                                │   DataChannel   │                                │
+│  [News-Fetcher] ──► [Filter] ──┼────────────────►┼── [News-Display]              │
+│   (Producer)      (Transformer)│                  │    (Consumer)                  │
+└────────────────────────────────┘                  └────────────────────────────────┘
+```
+
+### Warum das revolutionär ist
+
+1. **Kein Cloud-Server nötig.** Daten fließen direkt zwischen zwei Rechnern. Kein AWS, kein Firebase, keine monatliche Rechnung.
+
+2. **Jeder User hat eigene KI-Kapazität.** User A hat seine Claude-Session, User B hat seine. Zusammen können sie Graphen bauen die mehr leisten als jeder einzeln könnte.
+
+3. **Verteilte Intelligenz.** User A's PulseOS ist gut im Daten-Sammeln (Producer), User B's ist gut im Analysieren (Transformer). Sie spezialisieren sich und verbinden ihre Stärken.
+
+4. **Die KI-Grenze verschwindet.** Ein einzelner Claude hat ein Context-Window. Aber wenn 5 User ihre PulseOS-Instanzen verbinden, hat das Netzwerk 5x die Kapazität — jeder Claude arbeitet an seinem Teil des Graphen.
+
+5. **Social + Work verschmelzen.** Der WebRTC-Chat ist nicht nur zum Reden — er ist die Daten-Pipeline. Eine Nachricht von einem Freund kann ein Pulse-Signal sein das einen Workflow startet.
+
+### Wie es technisch funktioniert
+
+- WebRTC DataChannel existiert bereits (Phase B: WebRTC System-Bus)
+- Graph-Router muss erweitert werden: wenn ein Edge zu einem Remote-Peer zeigt → Daten über DataChannel senden statt lokal routen
+- Remote-Edges im Graph-JSON: `{ "to": { "peerId": "abc123", "appId": "news-display", "input": "articles" } }`
+- Empfänger-Seite: DataChannel-Message → `routeInput(appId, inputName, data)` → App bekommt Daten wie von einem lokalen Producer
+
+### Was noch gebaut werden muss
+
+- [ ] Remote-Edges in Graph-Definition (peerId + appId + input/output)
+- [ ] Graph-Router: Remote-Edge erkennen → DataChannel senden
+- [ ] Empfänger: DataChannel-Message als Graph-Input behandeln
+- [ ] UI: Remote-Nodes im Graph-Editor als "Ghost-Nodes" anzeigen
+- [ ] Handshake: Beim Verbinden austauschen welche Apps/Outputs verfügbar sind
+- [ ] Sicherheit: Nur explizit freigegebene Outputs werden geteilt
 
 ---
 

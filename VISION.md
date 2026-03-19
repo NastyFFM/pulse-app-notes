@@ -402,11 +402,64 @@ PulseOS ist ein arbeitendes Prototyp-Labor für eine fundamentale Frage: **Wie s
 Der App-Graph ist die Antwort auf die nächste Frage: **Was passiert, wenn Apps nicht mehr isolierte Inseln sind, sondern Knoten in einem lebendigen, pulsierenden Netzwerk?**
 
 Zukünftige Richtungen:
-- **Visueller Graph-Editor** — Knoten per Drag-and-Drop verbinden, Pulse konfigurieren, Datenfluss live beobachten
+- **Visueller Graph-Editor** ✅ — Knoten per Drag-and-Drop verbinden, Pulse konfigurieren, Datenfluss live beobachten
 - **Proaktive KI** — Das System erkennt Muster, schlägt neue Graph-Verbindungen vor, automatisiert Workflows ohne expliziten Auftrag
-- **Multi-User-Graphen** — Mehrere Nutzer teilen Graphen, jeder sieht seinen Kontext
 - **Plugin-Ökosystem** — Drittanbieter-Apps als Knoten, veröffentlicht im App-Store
 - **Mobile-Erlebnis** — L0-Ansichten als native Mobile-Kacheln
 - **Voice als Pulse** — Sprachbefehl als Auslöser für Graph-Aktionen
 
-Der zentrale Wette: Die Grenze zwischen "eine App benutzen" und "mit einer KI sprechen" wird verschwinden. PulseOS ist, wie diese Konvergenz aussieht — und der App-Graph ist ihr Herzschlag.
+---
+
+## Cross-Instance Graphen — Die eigentliche Revolution
+
+Die bisherige Architektur denkt in einer Instanz: ein User, ein `localhost:3000`, ein Claude. Aber PulseOS hat bereits WebRTC. Und Graphen. Die logische Konsequenz:
+
+**Graphen die über mehrere PulseOS-Instanzen laufen — Peer-to-Peer, ohne zentralen Server.**
+
+```
+┌─ Anna's PulseOS ──────────────┐                  ┌─ Ben's PulseOS ───────────────┐
+│                                │    WebRTC         │                                │
+│  [Daten-Collector] ─► [Filter]─┼──────────────────►┼─► [Dashboard]                 │
+│  [Wetter-API] ─────────────────┼──────────────────►┼─► [Travel-Planner]            │
+│                                │   DataChannel     │                                │
+└────────────────────────────────┘                  └────────────────────────────────┘
+```
+
+### Warum das alles verändert
+
+**1. Die KI-Grenze fällt.**
+Ein einzelner Claude hat ein Context-Window. Aber wenn 5 User ihre PulseOS-Instanzen verbinden, arbeiten 5 unabhängige Claudes an verschiedenen Teilen desselben Graphen. Jeder mit seinem eigenen Context-Budget. Die kollektive Kapazität multipliziert sich.
+
+**2. Spezialisierung wird möglich.**
+Anna's PulseOS ist gut im Daten-Sammeln — sie hat 20 Producer-Apps die APIs abfragen. Ben's PulseOS ist gut im Analysieren — er hat leistungsstarke Transformer mit angepassten Prompts. Sie verbinden ihre Stärken, ohne dass einer die Apps des anderen kopieren muss.
+
+**3. Kein Cloud-Server, keine monatliche Rechnung.**
+Daten fließen direkt von Rechner zu Rechner. WebRTC handelt NAT-Traversal. Kein AWS, kein Firebase, kein Vendor Lock-in. Zwei Laptops in verschiedenen Städten können einen Graphen teilen — so lange beide online sind.
+
+**4. Social IST der Workflow.**
+Der WebRTC-Chat ist nicht nur zum Reden. Er ist die Daten-Pipeline. Wenn Ben Anna eine Nachricht schickt, kann das ein Pulse-Signal sein das einen Graphen startet. Die Grenze zwischen "kommunizieren" und "automatisieren" verschwindet.
+
+**5. Persönliche App-Stores werden Netzwerk-Knoten.**
+Anna hat `github.com/anna/pulse-apps` mit ihren selbstgebauten Apps. Ben installiert ihre News-Fetcher-App — oder er verbindet sich einfach per WebRTC und nutzt ihren Output direkt, ohne die App selbst zu installieren. Apps werden zu Services die man teilen kann.
+
+### Wie es technisch funktioniert
+
+Das Fundament existiert bereits:
+- **WebRTC DataChannel** — bidirektionaler, verschlüsselter Datenkanal (Phase B)
+- **Graph-Router** — `routeOutput()` leitet Daten entlang der Kanten (Phase 13d)
+- **Kontakte + Profile** — automatischer Austausch bei Verbindung
+
+Was noch fehlt:
+- Remote-Edges im Graph-JSON: `{ "to": { "peerId": "abc123", "appId": "...", "input": "..." } }`
+- Graph-Router erkennt Remote-Edges → sendet über DataChannel statt lokal
+- Empfänger: DataChannel-Message → `routeInput()` → App bekommt Daten
+- Handshake: beim Verbinden austauschen welche Apps/Outputs verfügbar sind
+- Ghost-Nodes im Graph-Editor für Remote-Apps
+
+### Das Endspiel
+
+Stell dir vor: 50 PulseOS-Instanzen, verbunden über WebRTC. Jede hat ihre eigenen Apps, ihre eigene KI, ihre eigenen Daten. Zusammen bilden sie ein verteiltes, pulsierendes Netzwerk — keiner besitzt es, alle profitieren. Das ist kein Cloud-Service. Das ist kein SaaS. Das ist ein **dezentrales Betriebssystem-Netzwerk**, gebaut von den Menschen die es benutzen.
+
+---
+
+Der zentrale Wette: Die Grenze zwischen "eine App benutzen" und "mit einer KI sprechen" wird verschwinden. PulseOS ist, wie diese Konvergenz aussieht — und der App-Graph ist ihr Herzschlag. Cross-Instance Graphen machen daraus ein Netzwerk-Herzschlag.
