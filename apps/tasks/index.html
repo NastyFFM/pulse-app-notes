@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tasks</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d14;--surface:#111118;--text:rgba(255,255,255,.85);--dim:rgba(255,255,255,.4);--muted:rgba(255,255,255,.15);--teal:#4ecdc4;--amber:#f5a623;--red:#ef4444;--green:#22c55e;--border:rgba(255,255,255,.06);--font:'IBM Plex Mono',monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+.header{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0}
+.header-title{font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;flex:1}
+.header-count{font-size:11px;color:var(--muted)}
+.filter-group{display:flex;gap:1px;background:var(--border);border-radius:4px;overflow:hidden}
+.filter-btn{padding:3px 8px;font:500 10px var(--font);color:var(--dim);background:var(--bg);border:none;cursor:pointer;text-transform:uppercase;letter-spacing:.04em}
+.filter-btn:hover{color:var(--text)}
+.filter-btn.active{color:var(--teal);background:rgba(78,205,196,.06)}
+
+.add-row{display:flex;gap:8px;padding:12px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
+.add-input{flex:1;padding:8px 12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;color:var(--text);font:12px var(--font);outline:none}
+.add-input:focus{border-color:rgba(78,205,196,.3)}
+.add-input::placeholder{color:var(--muted)}
+.add-btn{padding:8px 14px;background:var(--teal);color:var(--bg);border:none;border-radius:6px;font:600 11px var(--font);cursor:pointer}
+.add-btn:hover{opacity:.9}
+
+.task-list{flex:1;overflow-y:auto;padding:4px 0}
+.task-item{display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid rgba(255,255,255,.02);transition:background .1s;cursor:default}
+.task-item:hover{background:rgba(255,255,255,.02)}
+.task-check{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--dim);background:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:transparent;transition:all .15s}
+.task-check:hover{border-color:var(--teal)}
+.task-check.done{border-color:var(--green);background:var(--green);color:var(--bg)}
+.task-text{flex:1;font-size:12px}
+.task-text.done{text-decoration:line-through;color:var(--dim)}
+.task-priority{font-size:9px;padding:1px 6px;border-radius:3px;flex-shrink:0;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.task-priority.high{background:rgba(239,68,68,.1);color:var(--red)}
+.task-priority.medium{background:rgba(245,166,35,.1);color:var(--amber)}
+.task-priority.low{background:rgba(255,255,255,.04);color:var(--dim)}
+.task-delete{opacity:0;background:none;border:none;color:var(--dim);cursor:pointer;font:10px var(--font);padding:2px 4px;transition:opacity .15s}
+.task-item:hover .task-delete{opacity:.5}
+.task-delete:hover{opacity:1 !important;color:var(--red)}
+
+.empty{text-align:center;color:var(--muted);font-size:12px;padding:40px 20px}
+.status-bar{padding:4px 20px;border-top:1px solid var(--border);font-size:9px;color:var(--muted);display:flex;justify-content:space-between;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="header">
+  <span class="header-title">Tasks</span>
+  <div class="filter-group">
+    <button class="filter-btn active" onclick="setFilter('all')">Alle</button>
+    <button class="filter-btn" onclick="setFilter('open')">Offen</button>
+    <button class="filter-btn" onclick="setFilter('done')">Fertig</button>
+  </div>
+  <span class="header-count" id="taskCount"></span>
+</div>
+<div class="add-row">
+  <input class="add-input" id="addInput" placeholder="Neue Aufgabe..." onkeydown="if(event.key==='Enter')addTask()">
+  <button class="add-btn" onclick="addTask()">+ Task</button>
+</div>
+<div class="task-list" id="taskList"></div>
+<div class="status-bar">
+  <span id="statusText">bereit</span>
+  <span>PulseOS Tasks</span>
+</div>
+
+<script>
+const DATA_URL = '/app/tasks/data/tasks.json';
+let tasks = [];
+let filter = 'all';
+let saveTimer = null;
+
+async function loadTasks() {
+  try {
+    const r = await fetch(DATA_URL);
+    if (r.ok) { const d = await r.json(); tasks = d.tasks || []; }
+  } catch { tasks = []; }
+  renderTasks();
+}
+
+function renderTasks() {
+  const list = document.getElementById('taskList');
+  let filtered = tasks;
+  if (filter === 'open') filtered = tasks.filter(t => !t.done);
+  if (filter === 'done') filtered = tasks.filter(t => t.done);
+
+  // Sort: undone first, then by priority (high > medium > low), then by created
+  const prio = { high: 0, medium: 1, low: 2 };
+  filtered.sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    const pa = prio[a.priority] ?? 2, pb = prio[b.priority] ?? 2;
+    if (pa !== pb) return pa - pb;
+    return (b.created || '').localeCompare(a.created || '');
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty">' + (filter === 'done' ? 'Keine erledigten Tasks' : filter === 'open' ? 'Alle erledigt!' : 'Keine Tasks. Erstelle einen!') + '</div>';
+  } else {
+    list.innerHTML = filtered.map(t =>
+      '<div class="task-item">' +
+        '<div class="task-check' + (t.done ? ' done' : '') + '" onclick="toggleTask(\'' + t.id + '\')">' + (t.done ? 'x' : '') + '</div>' +
+        '<span class="task-text' + (t.done ? ' done' : '') + '">' + esc(t.text) + '</span>' +
+        '<span class="task-priority ' + (t.priority || 'low') + '">' + (t.priority || 'low') + '</span>' +
+        '<button class="task-delete" onclick="deleteTask(\'' + t.id + '\')">x</button>' +
+      '</div>'
+    ).join('');
+  }
+
+  const open = tasks.filter(t => !t.done).length;
+  document.getElementById('taskCount').textContent = open + '/' + tasks.length;
+  document.getElementById('statusText').textContent = open + ' offen';
+
+  // Update filter buttons
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.toLowerCase().replace('alle','all').replace('offen','open').replace('fertig','done') === filter);
+  });
+}
+
+function addTask() {
+  const input = document.getElementById('addInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Detect priority from prefix: !high !medium or default low
+  let priority = 'low';
+  let cleanText = text;
+  if (text.startsWith('!!')) { priority = 'high'; cleanText = text.slice(2).trim(); }
+  else if (text.startsWith('!')) { priority = 'medium'; cleanText = text.slice(1).trim(); }
+
+  tasks.unshift({
+    id: 'task-' + Date.now(),
+    text: cleanText,
+    priority,
+    done: false,
+    created: new Date().toISOString()
+  });
+  input.value = '';
+  renderTasks();
+  debounceSave();
+}
+
+function toggleTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (t) { t.done = !t.done; t.updated = new Date().toISOString(); renderTasks(); debounceSave(); }
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  renderTasks();
+  debounceSave();
+}
+
+function setFilter(f) {
+  filter = f;
+  renderTasks();
+}
+
+function debounceSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveTasks, 500);
+}
+
+async function saveTasks() {
+  try {
+    await fetch(DATA_URL, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tasks }) });
+  } catch (e) { console.error('Save error:', e); }
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+loadTasks();
+document.getElementById('addInput').focus();
+</script>
+</body>
+</html>

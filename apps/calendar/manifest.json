@@ -1,0 +1,10 @@
+{
+  "name": "Calendar",
+  "icon": "C",
+  "color": "#1a1a3d",
+  "description": "Termine und Events",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}

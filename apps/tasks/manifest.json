@@ -1,0 +1,10 @@
+{
+  "name": "Tasks",
+  "icon": "T",
+  "color": "#1a2e1a",
+  "description": "Aufgaben und Todos verwalten",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}

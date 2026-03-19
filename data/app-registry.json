@@ -1,5 +1,15 @@
 {
   "version": "1.0.0",
-  "updatedAt": "2026-03-19T22:35:00.000Z",
-  "apps": []
+  "updatedAt": "2026-03-19T22:45:00.000Z",
+  "apps": [
+    { "id": "terminal", "type": "vanilla", "path": "./apps/terminal", "status": "active", "pid": null, "port": null },
+    { "id": "notes", "type": "vanilla", "path": "./apps/notes", "status": "active", "pid": null, "port": null },
+    { "id": "tasks", "type": "vanilla", "path": "./apps/tasks", "status": "active", "pid": null, "port": null },
+    { "id": "calendar", "type": "vanilla", "path": "./apps/calendar", "status": "active", "pid": null, "port": null },
+    { "id": "projects", "type": "vanilla", "path": "./apps/projects", "status": "active", "pid": null, "port": null },
+    { "id": "files", "type": "vanilla", "path": "./apps/files", "status": "active", "pid": null, "port": null },
+    { "id": "settings", "type": "vanilla", "path": "./apps/settings", "status": "active", "pid": null, "port": null },
+    { "id": "weather", "type": "vanilla", "path": "./apps/weather", "status": "active", "pid": null, "port": null },
+    { "id": "music", "type": "vanilla", "path": "./apps/music", "status": "active", "pid": null, "port": null }
+  ]
 }

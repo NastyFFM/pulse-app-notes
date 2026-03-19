@@ -1,0 +1,10 @@
+{
+  "name": "Music",
+  "icon": "M",
+  "color": "#3d1a2a",
+  "description": "Internet-Radio",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}

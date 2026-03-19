@@ -1,0 +1,10 @@
+{
+  "name": "Terminal",
+  "icon": ">_",
+  "color": "#1a1a2e",
+  "description": "System-Terminal",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}

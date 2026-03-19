@@ -1,0 +1,10 @@
+{
+  "name": "Notes",
+  "icon": "N",
+  "color": "#2a1f3d",
+  "description": "Notizen erstellen und bearbeiten",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}

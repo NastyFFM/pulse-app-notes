@@ -1,0 +1,10 @@
+{
+  "name": "Projects",
+  "icon": "P",
+  "color": "#2a1a2a",
+  "description": "Projekt-Manager",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d14;--surface:#111118;--text:rgba(255,255,255,.85);--dim:rgba(255,255,255,.4);--muted:rgba(255,255,255,.15);--teal:#4ecdc4;--amber:#f5a623;--lila:#a855f7;--red:#ef4444;--green:#22c55e;--border:rgba(255,255,255,.06);--font:'IBM Plex Mono',monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100vh;display:flex;overflow:hidden}
+
+.sidebar{width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.sidebar-title{font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.btn-new{background:var(--teal);color:var(--bg);border:none;padding:3px 10px;border-radius:4px;font:600 10px var(--font);cursor:pointer}
+.btn-new:hover{opacity:.9}
+.project-list{flex:1;overflow-y:auto;padding:4px 0}
+.project-item{padding:10px 14px;cursor:pointer;border-left:2px solid transparent;transition:all .1s;display:flex;align-items:center;gap:10px}
+.project-item:hover{background:rgba(255,255,255,.03)}
+.project-item.active{background:rgba(78,205,196,.05);border-left-color:var(--teal)}
+.project-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.project-item-name{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.project-item-desc{font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+
+.detail{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.empty-state{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
+
+.detail-content{flex:1;overflow-y:auto;padding:24px 32px;max-width:600px}
+.detail-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.detail-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0}
+.detail-name{font-size:20px;font-weight:700}
+.detail-desc{font-size:12px;color:var(--dim);margin-bottom:20px;line-height:1.7}
+.detail-meta{display:flex;gap:16px;margin-bottom:20px}
+.meta-item{font-size:10px;color:var(--muted)}
+.meta-item span{color:var(--dim);font-weight:500}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:12px}
+.card-title{font-size:11px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.info-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+.info-row:last-child{border-bottom:none}
+.info-label{color:var(--dim)}
+.info-value{color:var(--text);font-weight:500}
+
+.btn-danger{background:none;border:1px solid rgba(239,68,68,.2);color:var(--red);padding:5px 14px;border-radius:4px;font:11px var(--font);cursor:pointer;transition:all .15s;margin-top:16px}
+.btn-danger:hover{background:rgba(239,68,68,.1);border-color:var(--red)}
+
+/* Create form */
+.create-form{display:none;padding:14px;border-bottom:1px solid var(--border)}
+.create-form.active{display:block}
+.create-form label{display:block;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;margin-top:8px}
+.create-form input,.create-form textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font:12px var(--font);padding:6px 8px;border-radius:4px;outline:none;resize:none}
+.create-form input:focus,.create-form textarea:focus{border-color:var(--teal)}
+.color-row{display:flex;gap:6px;margin-top:6px}
+.color-opt{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .1s}
+.color-opt:hover,.color-opt.selected{border-color:var(--text);transform:scale(1.1)}
+.form-actions{display:flex;gap:8px;margin-top:12px}
+.form-btn{border:none;padding:5px 12px;border-radius:4px;font:11px/1 var(--font);cursor:pointer;font-weight:500}
+.form-btn.primary{background:var(--teal);color:var(--bg)}
+.form-btn.secondary{background:rgba(255,255,255,.06);color:var(--dim)}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-title">Projects</span>
+    <button class="btn-new" onclick="toggleCreate()">+ Neu</button>
+  </div>
+  <div class="create-form" id="createForm">
+    <label>Name</label>
+    <input type="text" id="inputName" placeholder="Projektname...">
+    <label>Beschreibung</label>
+    <textarea id="inputDesc" rows="2" placeholder="Kurze Beschreibung..."></textarea>
+    <label>Farbe</label>
+    <div class="color-row" id="colorRow"></div>
+    <div class="form-actions">
+      <button class="form-btn secondary" onclick="toggleCreate()">Abbrechen</button>
+      <button class="form-btn primary" onclick="createProject()">Erstellen</button>
+    </div>
+  </div>
+  <div class="project-list" id="projectList"></div>
+</div>
+
+<div class="detail" id="detail">
+  <div class="empty-state">Waehle oder erstelle ein Projekt</div>
+</div>
+
+<script>
+const DATA_URL = '/app/projects/data/projects.json';
+const COLORS = ['#4ecdc4','#f5a623','#a855f7','#ef4444','#22c55e','#3b82f6','#ec4899','#8b5cf6'];
+let projects = [];
+let activeId = null;
+let selectedColor = COLORS[0];
+
+function initColors() {
+  document.getElementById('colorRow').innerHTML = COLORS.map(c =>
+    '<div class="color-opt' + (c === selectedColor ? ' selected' : '') + '" style="background:' + c + '" onclick="pickColor(\'' + c + '\')"></div>'
+  ).join('');
+}
+
+function pickColor(c) {
+  selectedColor = c;
+  initColors();
+}
+
+async function loadProjects() {
+  try {
+    const r = await fetch(DATA_URL);
+    if (r.ok) { const d = await r.json(); projects = d.projects || []; }
+  } catch { projects = []; }
+  renderList();
+  if (projects.length > 0 && !activeId) selectProject(projects[0].id);
+}
+
+function renderList() {
+  const list = document.getElementById('projectList');
+  list.innerHTML = projects.map(p => {
+    return '<div class="project-item' + (p.id === activeId ? ' active' : '') + '" onclick="selectProject(\'' + p.id + '\')">' +
+      '<div class="project-dot" style="background:' + esc(p.color || '#4ecdc4') + '"></div>' +
+      '<div><div class="project-item-name">' + esc(p.name) + '</div>' +
+      (p.description ? '<div class="project-item-desc">' + esc(p.description) + '</div>' : '') +
+      '</div></div>';
+  }).join('');
+}
+
+function selectProject(id) {
+  activeId = id;
+  const p = projects.find(x => x.id === id);
+  if (!p) return;
+  renderList();
+  const created = p.created ? new Date(p.created).toLocaleDateString('de-DE', { day:'2-digit', month:'long', year:'numeric' }) : '--';
+  const detail = document.getElementById('detail');
+  detail.innerHTML = '<div class="detail-content">' +
+    '<div class="detail-header">' +
+      '<div class="detail-dot" style="background:' + esc(p.color || '#4ecdc4') + '"></div>' +
+      '<div class="detail-name">' + esc(p.name) + '</div>' +
+    '</div>' +
+    (p.description ? '<div class="detail-desc">' + esc(p.description) + '</div>' : '') +
+    '<div class="card"><div class="card-title">Details</div>' +
+      '<div class="info-row"><span class="info-label">ID</span><span class="info-value">' + esc(p.id) + '</span></div>' +
+      '<div class="info-row"><span class="info-label">Erstellt</span><span class="info-value">' + created + '</span></div>' +
+      '<div class="info-row"><span class="info-label">Farbe</span><span class="info-value"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + esc(p.color || '#4ecdc4') + ';vertical-align:middle;margin-right:6px"></span>' + esc(p.color || '#4ecdc4') + '</span></div>' +
+    '</div>' +
+    '<button class="btn-danger" onclick="deleteProject(\'' + p.id + '\')">Projekt loeschen</button>' +
+  '</div>';
+}
+
+function toggleCreate() {
+  const form = document.getElementById('createForm');
+  form.classList.toggle('active');
+  if (form.classList.contains('active')) {
+    document.getElementById('inputName').value = '';
+    document.getElementById('inputDesc').value = '';
+    selectedColor = COLORS[0];
+    initColors();
+    setTimeout(() => document.getElementById('inputName').focus(), 50);
+  }
+}
+
+function createProject() {
+  const name = document.getElementById('inputName').value.trim();
+  const description = document.getElementById('inputDesc').value.trim();
+  if (!name) return;
+  const project = {
+    id: 'proj-' + Date.now(),
+    name,
+    description,
+    color: selectedColor,
+    created: new Date().toISOString()
+  };
+  projects.unshift(project);
+  saveData();
+  toggleCreate();
+  selectProject(project.id);
+}
+
+function deleteProject(id) {
+  projects = projects.filter(p => p.id !== id);
+  activeId = null;
+  document.getElementById('detail').innerHTML = '<div class="empty-state">Waehle oder erstelle ein Projekt</div>';
+  saveData();
+  renderList();
+  if (projects.length > 0) selectProject(projects[0].id);
+}
+
+async function saveData() {
+  try {
+    await fetch(DATA_URL, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projects }) });
+  } catch (e) { console.error('Save error:', e); }
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+initColors();
+loadProjects();
+</script>
+</body>
+</html>

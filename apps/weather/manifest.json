@@ -1,0 +1,10 @@
+{
+  "name": "Weather",
+  "icon": "W",
+  "color": "#1a2a3d",
+  "description": "Wetter-Anzeige",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}

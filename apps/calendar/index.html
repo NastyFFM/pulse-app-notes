@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendar</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d14;--surface:#111118;--text:rgba(255,255,255,.85);--dim:rgba(255,255,255,.4);--muted:rgba(255,255,255,.15);--teal:#4ecdc4;--amber:#f5a623;--lila:#a855f7;--red:#ef4444;--green:#22c55e;--border:rgba(255,255,255,.06);--font:'IBM Plex Mono',monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+.header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface)}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-title{font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.month-label{font-size:15px;font-weight:600;color:var(--text)}
+.nav-btn{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--dim);padding:4px 10px;border-radius:4px;font:11px var(--font);cursor:pointer;transition:all .15s}
+.nav-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.nav-btn.today{color:var(--teal);border-color:rgba(78,205,196,.2)}
+.nav-btn.today:hover{background:rgba(78,205,196,.1)}
+
+.calendar{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:8px}
+.weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;padding:4px 0}
+.weekday{text-align:center;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;padding:4px}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;flex:1}
+.day{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:6px;cursor:pointer;min-height:60px;transition:all .15s;position:relative;overflow:hidden}
+.day:hover{border-color:rgba(78,205,196,.2);background:rgba(78,205,196,.02)}
+.day.other-month{opacity:.3}
+.day.today{border-color:var(--teal);background:rgba(78,205,196,.05)}
+.day-num{font-size:11px;font-weight:500;color:var(--dim)}
+.day.today .day-num{color:var(--teal);font-weight:700}
+.day-events{margin-top:4px;display:flex;flex-direction:column;gap:2px}
+.day-event{font-size:9px;color:var(--text);background:rgba(78,205,196,.1);border-left:2px solid var(--teal);padding:1px 4px;border-radius:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;width:320px;max-width:90vw}
+.modal h3{font-size:13px;font-weight:600;margin-bottom:14px;color:var(--teal)}
+.modal label{display:block;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;margin-top:10px}
+.modal input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font:12px var(--font);padding:6px 8px;border-radius:4px;outline:none}
+.modal input:focus{border-color:var(--teal)}
+.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+.modal-btn{border:none;padding:5px 14px;border-radius:4px;font:11px/1 var(--font);cursor:pointer;font-weight:500}
+.modal-btn.primary{background:var(--teal);color:var(--bg)}
+.modal-btn.secondary{background:rgba(255,255,255,.06);color:var(--dim)}
+.modal-btn:hover{opacity:.9}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span class="header-title">Calendar</span>
+    <span class="month-label" id="monthLabel"></span>
+  </div>
+  <div style="display:flex;gap:6px">
+    <button class="nav-btn" onclick="changeMonth(-1)">&lt; Prev</button>
+    <button class="nav-btn today" onclick="goToday()">Heute</button>
+    <button class="nav-btn" onclick="changeMonth(1)">Next &gt;</button>
+  </div>
+</div>
+
+<div class="calendar">
+  <div class="weekdays">
+    <div class="weekday">Mo</div><div class="weekday">Di</div><div class="weekday">Mi</div>
+    <div class="weekday">Do</div><div class="weekday">Fr</div><div class="weekday">Sa</div><div class="weekday">So</div>
+  </div>
+  <div class="days" id="daysGrid"></div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Neuer Termin</h3>
+    <label>Datum</label>
+    <input type="date" id="eventDate">
+    <label>Titel</label>
+    <input type="text" id="eventTitle" placeholder="Termin-Titel...">
+    <label>Uhrzeit</label>
+    <input type="time" id="eventTime">
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal()">Abbrechen</button>
+      <button class="modal-btn primary" onclick="saveEvent()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA_URL = '/app/calendar/data/calendar.json';
+let events = [];
+let currentYear, currentMonth;
+
+const MONTHS = ['Januar','Februar','Maerz','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+
+function init() {
+  const now = new Date();
+  currentYear = now.getFullYear();
+  currentMonth = now.getMonth();
+  loadEvents();
+}
+
+async function loadEvents() {
+  try {
+    const r = await fetch(DATA_URL);
+    if (r.ok) { const d = await r.json(); events = d.events || []; }
+  } catch { events = []; }
+  render();
+}
+
+function render() {
+  document.getElementById('monthLabel').textContent = MONTHS[currentMonth] + ' ' + currentYear;
+  const grid = document.getElementById('daysGrid');
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  const lastDay = new Date(currentYear, currentMonth + 1, 0);
+  let startDow = firstDay.getDay(); // 0=Sun
+  startDow = startDow === 0 ? 6 : startDow - 1; // convert to Mon=0
+
+  const today = new Date();
+  const todayStr = fmt(today.getFullYear(), today.getMonth() + 1, today.getDate());
+
+  let html = '';
+  // Previous month days
+  const prevLast = new Date(currentYear, currentMonth, 0).getDate();
+  for (let i = startDow - 1; i >= 0; i--) {
+    const d = prevLast - i;
+    html += '<div class="day other-month"><span class="day-num">' + d + '</span></div>';
+  }
+  // Current month days
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const dateStr = fmt(currentYear, currentMonth + 1, d);
+    const isToday = dateStr === todayStr;
+    const dayEvents = events.filter(e => e.date === dateStr);
+    html += '<div class="day' + (isToday ? ' today' : '') + '" onclick="openModal(\'' + dateStr + '\')">';
+    html += '<span class="day-num">' + d + '</span>';
+    if (dayEvents.length) {
+      html += '<div class="day-events">';
+      dayEvents.forEach(e => {
+        html += '<div class="day-event">' + esc(e.time ? e.time + ' ' : '') + esc(e.title) + '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  // Fill remaining cells
+  const totalCells = startDow + lastDay.getDate();
+  const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (let d = 1; d <= remaining; d++) {
+    html += '<div class="day other-month"><span class="day-num">' + d + '</span></div>';
+  }
+
+  grid.innerHTML = html;
+}
+
+function fmt(y, m, d) {
+  return y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+}
+
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  render();
+}
+
+function goToday() {
+  const now = new Date();
+  currentYear = now.getFullYear();
+  currentMonth = now.getMonth();
+  render();
+}
+
+function openModal(dateStr) {
+  document.getElementById('eventDate').value = dateStr;
+  document.getElementById('eventTitle').value = '';
+  document.getElementById('eventTime').value = '';
+  document.getElementById('modal').classList.add('active');
+  setTimeout(() => document.getElementById('eventTitle').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+}
+
+function saveEvent() {
+  const date = document.getElementById('eventDate').value;
+  const title = document.getElementById('eventTitle').value.trim();
+  const time = document.getElementById('eventTime').value;
+  if (!date || !title) return;
+  events.push({ id: 'ev-' + Date.now(), date, title, time, created: new Date().toISOString() });
+  saveData();
+  closeModal();
+  render();
+}
+
+async function saveData() {
+  try {
+    await fetch(DATA_URL, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ events }) });
+  } catch (e) { console.error('Save error:', e); }
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "Files",
+  "icon": "F",
+  "color": "#2a2a1a",
+  "description": "Datei-Browser",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}
