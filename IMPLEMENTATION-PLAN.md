@@ -105,7 +105,7 @@
 - [x] routeOutput() Datenfluss
 - [x] Graph CRUD API
 - [x] Demo-Graph: z.B. Weather-Producer -> Display-Consumer
-- [ ] Graph-UI in Projects-App (Nodes, Edges, Drag-Connect)
+- [x] Graph-UI in Projects-App (Nodes, Edges, Drag-Connect)
 
 ---
 

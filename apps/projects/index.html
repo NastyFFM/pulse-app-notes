@@ -26,6 +26,15 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
 .detail{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .empty-state{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
 
+/* Tabs */
+.tab-bar{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.tab-btn{padding:8px 16px;font:11px/1 var(--font);font-weight:600;color:var(--dim);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;transition:all .15s}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--teal);border-bottom-color:var(--teal)}
+
+.tab-content{flex:1;overflow:hidden;display:none}
+.tab-content.active{display:flex;flex-direction:column}
+
 .detail-content{flex:1;overflow-y:auto;padding:24px 32px;max-width:600px}
 .detail-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
 .detail-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0}
@@ -58,6 +67,55 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
 .form-btn{border:none;padding:5px 12px;border-radius:4px;font:11px/1 var(--font);cursor:pointer;font-weight:500}
 .form-btn.primary{background:var(--teal);color:var(--bg)}
 .form-btn.secondary{background:rgba(255,255,255,.06);color:var(--dim)}
+
+/* ── Graph Editor ── */
+.graph-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.graph-toolbar select{background:var(--bg);border:1px solid var(--border);color:var(--text);font:11px var(--font);padding:4px 8px;border-radius:4px;outline:none}
+.graph-toolbar select:focus{border-color:var(--teal)}
+.graph-toolbar .tb-btn{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--dim);font:11px var(--font);padding:4px 10px;border-radius:4px;cursor:pointer;transition:all .15s}
+.graph-toolbar .tb-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.graph-toolbar .tb-btn.run{color:var(--green);border-color:rgba(34,197,94,.3)}
+.graph-toolbar .tb-btn.run:hover{background:rgba(34,197,94,.1)}
+.graph-toolbar .tb-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.graph-toolbar .tb-spacer{flex:1}
+.graph-toolbar .tb-status{font-size:10px;color:var(--dim)}
+
+.graph-canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg)}
+.graph-canvas-wrap svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+.graph-canvas-wrap svg line, .graph-canvas-wrap svg path{pointer-events:stroke}
+
+/* Nodes */
+.gnode{position:absolute;background:var(--surface);border:1px solid var(--border);border-radius:8px;min-width:140px;cursor:grab;user-select:none;transition:box-shadow .15s}
+.gnode:hover{box-shadow:0 0 0 1px rgba(78,205,196,.2)}
+.gnode.selected{box-shadow:0 0 0 2px var(--teal)}
+.gnode.dragging{cursor:grabbing;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.gnode-header{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;border-radius:8px 8px 0 0}
+.gnode-icon{font-size:14px;flex-shrink:0}
+.gnode-name{font-size:11px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gnode-type{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.04)}
+.gnode-delete{font-size:10px;color:var(--muted);cursor:pointer;padding:2px 4px;border-radius:3px;opacity:0;transition:opacity .15s}
+.gnode:hover .gnode-delete{opacity:1}
+.gnode-delete:hover{color:var(--red);background:rgba(239,68,68,.1)}
+.gnode-ports{padding:6px 0}
+.gnode-port-row{display:flex;align-items:center;padding:3px 12px;font-size:10px;color:var(--dim);gap:6px}
+.gnode-port-row.output{justify-content:flex-end}
+.gnode-port{width:10px;height:10px;border-radius:50%;border:2px solid var(--border);background:var(--bg);cursor:crosshair;transition:all .15s;flex-shrink:0}
+.gnode-port:hover{border-color:var(--teal);background:var(--teal);transform:scale(1.3)}
+.gnode-port.input{border-color:var(--lila)}
+.gnode-port.input:hover{background:var(--lila);border-color:var(--lila)}
+.gnode-port.connected{background:var(--teal);border-color:var(--teal)}
+.gnode-port.input.connected{background:var(--lila);border-color:var(--lila)}
+
+/* Edge styles in SVG */
+.graph-edge{stroke:rgba(78,205,196,.4);stroke-width:2;fill:none;cursor:pointer;transition:stroke .15s}
+.graph-edge:hover{stroke:var(--teal);stroke-width:3}
+.graph-edge-temp{stroke:rgba(78,205,196,.3);stroke-width:2;stroke-dasharray:6 4;fill:none}
+.graph-edge-delete{display:none;cursor:pointer}
+.graph-edge:hover + .graph-edge-delete{display:block}
+
+/* Empty graph state */
+.graph-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--muted);font-size:12px}
+.graph-empty div{margin-top:6px;font-size:10px}
 </style>
 </head>
 <body>
@@ -92,6 +150,18 @@ const COLORS = ['#4ecdc4','#f5a623','#a855f7','#ef4444','#22c55e','#3b82f6','#ec
 let projects = [];
 let activeId = null;
 let selectedColor = COLORS[0];
+let activeTab = 'info';
+
+// Available apps for graph nodes
+let availableApps = [];
+
+// Graph state
+let graph = { nodes: [], edges: [] };
+let selectedNodeId = null;
+let dragNode = null;
+let dragOffset = { x: 0, y: 0 };
+let drawingEdge = null; // { fromNodeId, fromPort, fromX, fromY }
+let canvasOffset = { x: 0, y: 0 };
 
 function initColors() {
   document.getElementById('colorRow').innerHTML = COLORS.map(c =>
@@ -102,6 +172,19 @@ function initColors() {
 function pickColor(c) {
   selectedColor = c;
   initColors();
+}
+
+async function loadApps() {
+  try {
+    const r = await fetch('/api/app-registry');
+    if (r.ok) {
+      const d = await r.json();
+      availableApps = (d.apps || []).map(a => {
+        const m = a.manifest || {};
+        return { id: a.id, name: m.name || a.id, icon: m.icon || '#', color: m.color || '#4ecdc4' };
+      });
+    }
+  } catch {}
 }
 
 async function loadProjects() {
@@ -129,22 +212,466 @@ function selectProject(id) {
   const p = projects.find(x => x.id === id);
   if (!p) return;
   renderList();
+  activeTab = 'info';
+  renderDetail(p);
+}
+
+function renderDetail(p) {
   const created = p.created ? new Date(p.created).toLocaleDateString('de-DE', { day:'2-digit', month:'long', year:'numeric' }) : '--';
   const detail = document.getElementById('detail');
-  detail.innerHTML = '<div class="detail-content">' +
-    '<div class="detail-header">' +
-      '<div class="detail-dot" style="background:' + esc(p.color || '#4ecdc4') + '"></div>' +
-      '<div class="detail-name">' + esc(p.name) + '</div>' +
+  detail.innerHTML =
+    '<div class="tab-bar">' +
+      '<button class="tab-btn' + (activeTab === 'info' ? ' active' : '') + '" onclick="switchTab(\'info\')">Info</button>' +
+      '<button class="tab-btn' + (activeTab === 'graph' ? ' active' : '') + '" onclick="switchTab(\'graph\')">Graph</button>' +
     '</div>' +
-    (p.description ? '<div class="detail-desc">' + esc(p.description) + '</div>' : '') +
-    '<div class="card"><div class="card-title">Details</div>' +
-      '<div class="info-row"><span class="info-label">ID</span><span class="info-value">' + esc(p.id) + '</span></div>' +
-      '<div class="info-row"><span class="info-label">Erstellt</span><span class="info-value">' + created + '</span></div>' +
-      '<div class="info-row"><span class="info-label">Farbe</span><span class="info-value"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + esc(p.color || '#4ecdc4') + ';vertical-align:middle;margin-right:6px"></span>' + esc(p.color || '#4ecdc4') + '</span></div>' +
+    '<div class="tab-content' + (activeTab === 'info' ? ' active' : '') + '" id="tabInfo">' +
+      '<div class="detail-content">' +
+        '<div class="detail-header">' +
+          '<div class="detail-dot" style="background:' + esc(p.color || '#4ecdc4') + '"></div>' +
+          '<div class="detail-name">' + esc(p.name) + '</div>' +
+        '</div>' +
+        (p.description ? '<div class="detail-desc">' + esc(p.description) + '</div>' : '') +
+        '<div class="card"><div class="card-title">Details</div>' +
+          '<div class="info-row"><span class="info-label">ID</span><span class="info-value">' + esc(p.id) + '</span></div>' +
+          '<div class="info-row"><span class="info-label">Erstellt</span><span class="info-value">' + created + '</span></div>' +
+          '<div class="info-row"><span class="info-label">Farbe</span><span class="info-value"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + esc(p.color || '#4ecdc4') + ';vertical-align:middle;margin-right:6px"></span>' + esc(p.color || '#4ecdc4') + '</span></div>' +
+        '</div>' +
+        '<button class="btn-danger" onclick="deleteProject(\'' + p.id + '\')">Projekt loeschen</button>' +
+      '</div>' +
     '</div>' +
-    '<button class="btn-danger" onclick="deleteProject(\'' + p.id + '\')">Projekt loeschen</button>' +
-  '</div>';
+    '<div class="tab-content' + (activeTab === 'graph' ? ' active' : '') + '" id="tabGraph">' +
+      '<div class="graph-toolbar" id="graphToolbar">' +
+        '<span class="tb-label">Nodes:</span>' +
+        '<select id="addNodeSelect"><option value="">+ App hinzufuegen</option></select>' +
+        '<div class="tb-spacer"></div>' +
+        '<span class="tb-status" id="graphStatus"></span>' +
+        '<button class="tb-btn run" onclick="runGraph()">Run</button>' +
+        '<button class="tb-btn" onclick="saveGraph()">Speichern</button>' +
+      '</div>' +
+      '<div class="graph-canvas-wrap" id="graphCanvas">' +
+        '<svg id="graphSvg"></svg>' +
+        '<div id="graphNodes"></div>' +
+      '</div>' +
+    '</div>';
+
+  if (activeTab === 'graph') {
+    initGraphEditor();
+  }
 }
+
+function switchTab(tab) {
+  activeTab = tab;
+  const p = projects.find(x => x.id === activeId);
+  if (p) renderDetail(p);
+}
+
+// ── Graph Editor ──
+
+async function initGraphEditor() {
+  populateAddNodeSelect();
+  await loadGraph();
+  renderGraph();
+  bindCanvasEvents();
+}
+
+function populateAddNodeSelect() {
+  const sel = document.getElementById('addNodeSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">+ App hinzufuegen</option>';
+  for (const app of availableApps) {
+    sel.innerHTML += '<option value="' + app.id + '">' + app.icon + ' ' + esc(app.name) + '</option>';
+  }
+  sel.onchange = function() {
+    if (this.value) {
+      addNodeForApp(this.value);
+      this.value = '';
+    }
+  };
+}
+
+async function loadGraph() {
+  if (!activeId) return;
+  try {
+    const r = await fetch('/api/graphs/' + activeId);
+    if (r.ok) {
+      const d = await r.json();
+      graph = {
+        nodes: (d.nodes || []).map(n => ({
+          id: n.id || 'node-' + (n.appId || Date.now()),
+          appId: n.appId,
+          name: n.name || n.appId,
+          type: n.type || n.nodeType || 'processor',
+          x: n.x || 100,
+          y: n.y || 100,
+          inputs: n.inputs || ['data'],
+          outputs: n.outputs || ['data']
+        })),
+        edges: (d.edges || []).map(e => {
+          // Handle both old format (from/to as strings) and new format (from/to as objects)
+          if (typeof e.from === 'string') {
+            return { id: e.id || 'e-' + Date.now(), fromNode: e.from, toNode: e.to, fromPort: e.fromOutput || 'data', toPort: e.toInput || 'data' };
+          }
+          const fromNode = graph.nodes?.find(n => n.appId === e.from?.appId)?.id || e.from?.appId;
+          const toNode = graph.nodes?.find(n => n.appId === e.to?.appId)?.id || e.to?.appId;
+          return { id: e.id || 'e-' + Date.now(), fromNode, toNode, fromPort: e.from?.output || 'data', toPort: e.to?.input || 'data' };
+        })
+      };
+    } else {
+      graph = { nodes: [], edges: [] };
+    }
+  } catch {
+    graph = { nodes: [], edges: [] };
+  }
+  updateStatus();
+}
+
+function addNodeForApp(appId) {
+  const app = availableApps.find(a => a.id === appId);
+  if (!app) return;
+  // Check if already exists
+  if (graph.nodes.find(n => n.appId === appId)) {
+    updateStatus('App bereits im Graph');
+    return;
+  }
+  const wrap = document.getElementById('graphCanvas');
+  const w = wrap ? wrap.offsetWidth : 600;
+  const h = wrap ? wrap.offsetHeight : 400;
+  // Place node in a reasonable position
+  const existingCount = graph.nodes.length;
+  const col = existingCount % 3;
+  const row = Math.floor(existingCount / 3);
+  const node = {
+    id: 'node-' + appId + '-' + Date.now(),
+    appId: appId,
+    name: app.name,
+    type: 'processor',
+    x: 80 + col * 200,
+    y: 60 + row * 160,
+    inputs: ['data'],
+    outputs: ['data']
+  };
+  graph.nodes.push(node);
+  renderGraph();
+  updateStatus('Node hinzugefuegt');
+  autoSave();
+}
+
+function removeNode(nodeId) {
+  graph.nodes = graph.nodes.filter(n => n.id !== nodeId);
+  graph.edges = graph.edges.filter(e => e.fromNode !== nodeId && e.toNode !== nodeId);
+  if (selectedNodeId === nodeId) selectedNodeId = null;
+  renderGraph();
+  autoSave();
+}
+
+function removeEdge(edgeId) {
+  graph.edges = graph.edges.filter(e => e.id !== edgeId);
+  renderGraph();
+  autoSave();
+}
+
+function renderGraph() {
+  renderNodes();
+  renderEdges();
+}
+
+function renderNodes() {
+  const container = document.getElementById('graphNodes');
+  if (!container) return;
+
+  if (graph.nodes.length === 0) {
+    container.innerHTML = '<div class="graph-empty">Kein Graph vorhanden<div>Fuege Apps ueber die Toolbar hinzu</div></div>';
+    return;
+  }
+
+  container.innerHTML = graph.nodes.map(n => {
+    const app = availableApps.find(a => a.id === n.appId);
+    const icon = app ? app.icon : '#';
+    const color = app ? app.color : '#4ecdc4';
+    const sel = n.id === selectedNodeId ? ' selected' : '';
+    const inputs = (n.inputs || []).map(p => {
+      const connected = graph.edges.some(e => e.toNode === n.id && e.toPort === p);
+      return '<div class="gnode-port-row">' +
+        '<div class="gnode-port input' + (connected ? ' connected' : '') + '" data-node="' + n.id + '" data-port="' + p + '" data-dir="input"></div>' +
+        '<span>' + esc(p) + '</span></div>';
+    }).join('');
+    const outputs = (n.outputs || []).map(p => {
+      const connected = graph.edges.some(e => e.fromNode === n.id && e.fromPort === p);
+      return '<div class="gnode-port-row output">' +
+        '<span>' + esc(p) + '</span>' +
+        '<div class="gnode-port' + (connected ? ' connected' : '') + '" data-node="' + n.id + '" data-port="' + p + '" data-dir="output"></div>' +
+      '</div>';
+    }).join('');
+    return '<div class="gnode' + sel + '" id="' + n.id + '" style="left:' + n.x + 'px;top:' + n.y + 'px" data-id="' + n.id + '">' +
+      '<div class="gnode-header" style="border-top:2px solid ' + color + '">' +
+        '<span class="gnode-icon">' + icon + '</span>' +
+        '<span class="gnode-name">' + esc(n.name) + '</span>' +
+        '<span class="gnode-type">' + esc(n.type) + '</span>' +
+        '<span class="gnode-delete" onclick="event.stopPropagation();removeNode(\'' + n.id + '\')" title="Entfernen">x</span>' +
+      '</div>' +
+      '<div class="gnode-ports">' + inputs + outputs + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function getPortPos(nodeId, portName, dir) {
+  const nodeEl = document.getElementById(nodeId);
+  if (!nodeEl) return null;
+  const portEl = nodeEl.querySelector('[data-node="' + nodeId + '"][data-port="' + portName + '"][data-dir="' + dir + '"]');
+  if (!portEl) return null;
+  const wrap = document.getElementById('graphCanvas');
+  const wrapRect = wrap.getBoundingClientRect();
+  const portRect = portEl.getBoundingClientRect();
+  return {
+    x: portRect.left + portRect.width / 2 - wrapRect.left,
+    y: portRect.top + portRect.height / 2 - wrapRect.top
+  };
+}
+
+function renderEdges() {
+  const svg = document.getElementById('graphSvg');
+  if (!svg) return;
+  let html = '';
+
+  for (const e of graph.edges) {
+    const fromPos = getPortPos(e.fromNode, e.fromPort, 'output');
+    const toPos = getPortPos(e.toNode, e.toPort, 'input');
+    if (!fromPos || !toPos) continue;
+    const dx = Math.abs(toPos.x - fromPos.x) * 0.5;
+    const path = 'M ' + fromPos.x + ' ' + fromPos.y +
+      ' C ' + (fromPos.x + dx) + ' ' + fromPos.y + ', ' +
+      (toPos.x - dx) + ' ' + toPos.y + ', ' +
+      toPos.x + ' ' + toPos.y;
+    html += '<path class="graph-edge" d="' + path + '" data-edge="' + e.id + '" onclick="removeEdge(\'' + e.id + '\')"/>';
+  }
+
+  // Temp edge while drawing
+  if (drawingEdge) {
+    const dx = Math.abs(drawingEdge.toX - drawingEdge.fromX) * 0.5;
+    const path = 'M ' + drawingEdge.fromX + ' ' + drawingEdge.fromY +
+      ' C ' + (drawingEdge.fromX + dx) + ' ' + drawingEdge.fromY + ', ' +
+      (drawingEdge.toX - dx) + ' ' + drawingEdge.toY + ', ' +
+      drawingEdge.toX + ' ' + drawingEdge.toY;
+    html += '<path class="graph-edge-temp" d="' + path + '"/>';
+  }
+
+  svg.innerHTML = html;
+}
+
+function bindCanvasEvents() {
+  const wrap = document.getElementById('graphCanvas');
+  if (!wrap) return;
+
+  wrap.addEventListener('mousedown', function(e) {
+    const port = e.target.closest('.gnode-port');
+    if (port) {
+      e.preventDefault();
+      e.stopPropagation();
+      const nodeId = port.dataset.node;
+      const portName = port.dataset.port;
+      const dir = port.dataset.dir;
+      if (dir === 'output') {
+        const pos = getPortPos(nodeId, portName, 'output');
+        if (pos) {
+          drawingEdge = { fromNodeId: nodeId, fromPort: portName, fromX: pos.x, fromY: pos.y, toX: pos.x, toY: pos.y };
+        }
+      } else if (dir === 'input') {
+        // Allow dragging from input too — connect backwards
+        const pos = getPortPos(nodeId, portName, 'input');
+        if (pos) {
+          drawingEdge = { toNodeId: nodeId, toPort: portName, fromX: pos.x, fromY: pos.y, toX: pos.x, toY: pos.y, reverse: true };
+        }
+      }
+      return;
+    }
+
+    const nodeEl = e.target.closest('.gnode');
+    if (nodeEl) {
+      e.preventDefault();
+      const nodeId = nodeEl.dataset.id;
+      selectedNodeId = nodeId;
+      const node = graph.nodes.find(n => n.id === nodeId);
+      if (node) {
+        const wrapRect = wrap.getBoundingClientRect();
+        dragNode = nodeId;
+        dragOffset = { x: e.clientX - wrapRect.left - node.x, y: e.clientY - wrapRect.top - node.y };
+        nodeEl.classList.add('dragging');
+      }
+      renderNodes();
+      renderEdges();
+      return;
+    }
+
+    // Clicked on empty canvas
+    selectedNodeId = null;
+    renderNodes();
+  });
+
+  wrap.addEventListener('mousemove', function(e) {
+    const wrapRect = wrap.getBoundingClientRect();
+
+    if (dragNode) {
+      const node = graph.nodes.find(n => n.id === dragNode);
+      if (node) {
+        node.x = Math.max(0, e.clientX - wrapRect.left - dragOffset.x);
+        node.y = Math.max(0, e.clientY - wrapRect.top - dragOffset.y);
+        const el = document.getElementById(dragNode);
+        if (el) {
+          el.style.left = node.x + 'px';
+          el.style.top = node.y + 'px';
+        }
+        renderEdges();
+      }
+      return;
+    }
+
+    if (drawingEdge) {
+      drawingEdge.toX = e.clientX - wrapRect.left;
+      drawingEdge.toY = e.clientY - wrapRect.top;
+      renderEdges();
+    }
+  });
+
+  wrap.addEventListener('mouseup', function(e) {
+    if (dragNode) {
+      const el = document.getElementById(dragNode);
+      if (el) el.classList.remove('dragging');
+      dragNode = null;
+      autoSave();
+      return;
+    }
+
+    if (drawingEdge) {
+      // Check if released on a port
+      const port = e.target.closest('.gnode-port');
+      if (port) {
+        const nodeId = port.dataset.node;
+        const portName = port.dataset.port;
+        const dir = port.dataset.dir;
+
+        if (drawingEdge.reverse) {
+          // Drawing from input — expect drop on output
+          if (dir === 'output' && nodeId !== drawingEdge.toNodeId) {
+            addEdge(nodeId, portName, drawingEdge.toNodeId, drawingEdge.toPort);
+          }
+        } else {
+          // Drawing from output — expect drop on input
+          if (dir === 'input' && nodeId !== drawingEdge.fromNodeId) {
+            addEdge(drawingEdge.fromNodeId, drawingEdge.fromPort, nodeId, portName);
+          }
+        }
+      }
+      drawingEdge = null;
+      renderEdges();
+    }
+  });
+
+  // Cancel on mouse leave
+  wrap.addEventListener('mouseleave', function() {
+    if (dragNode) {
+      const el = document.getElementById(dragNode);
+      if (el) el.classList.remove('dragging');
+      dragNode = null;
+      autoSave();
+    }
+    if (drawingEdge) {
+      drawingEdge = null;
+      renderEdges();
+    }
+  });
+}
+
+function addEdge(fromNodeId, fromPort, toNodeId, toPort) {
+  // Check for duplicate
+  const exists = graph.edges.some(e =>
+    e.fromNode === fromNodeId && e.fromPort === fromPort &&
+    e.toNode === toNodeId && e.toPort === toPort
+  );
+  if (exists) return;
+  graph.edges.push({
+    id: 'edge-' + Date.now(),
+    fromNode: fromNodeId,
+    toNode: toNodeId,
+    fromPort: fromPort,
+    toPort: toPort
+  });
+  renderGraph();
+  autoSave();
+  updateStatus('Verbindung erstellt');
+}
+
+let saveTimer = null;
+function autoSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveGraph, 1000);
+}
+
+async function saveGraph() {
+  if (!activeId) return;
+  const payload = {
+    id: activeId,
+    projectId: activeId,
+    name: projects.find(p => p.id === activeId)?.name || activeId,
+    nodes: graph.nodes.map(n => ({
+      id: n.id,
+      appId: n.appId,
+      name: n.name,
+      type: n.type,
+      x: Math.round(n.x),
+      y: Math.round(n.y),
+      inputs: n.inputs,
+      outputs: n.outputs
+    })),
+    edges: graph.edges.map(e => ({
+      id: e.id,
+      from: e.fromNode,
+      to: e.toNode,
+      fromOutput: e.fromPort,
+      toInput: e.toPort
+    })),
+    updated: new Date().toISOString()
+  };
+  try {
+    const r = await fetch('/api/graphs/' + activeId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (r.ok) updateStatus('Gespeichert');
+    else updateStatus('Fehler beim Speichern');
+  } catch {
+    updateStatus('Fehler beim Speichern');
+  }
+}
+
+async function runGraph() {
+  if (!activeId || graph.nodes.length === 0) return;
+  updateStatus('Running...');
+  try {
+    const r = await fetch('/api/graphs/' + activeId + '/run', { method: 'POST' });
+    if (r.ok) {
+      const d = await r.json();
+      updateStatus('Ausgefuehrt: ' + (d.triggered || []).length + ' Nodes');
+    } else {
+      updateStatus('Run fehlgeschlagen');
+    }
+  } catch {
+    updateStatus('Run fehlgeschlagen');
+  }
+}
+
+function updateStatus(msg) {
+  const el = document.getElementById('graphStatus');
+  if (!el) return;
+  if (msg) {
+    el.textContent = msg;
+    setTimeout(() => { if (el.textContent === msg) el.textContent = graph.nodes.length + ' Nodes · ' + graph.edges.length + ' Edges'; }, 2000);
+  } else {
+    el.textContent = graph.nodes.length + ' Nodes · ' + graph.edges.length + ' Edges';
+  }
+}
+
+// ── Project CRUD ──
 
 function toggleCreate() {
   const form = document.getElementById('createForm');
@@ -193,7 +720,7 @@ async function saveData() {
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 initColors();
-loadProjects();
+loadApps().then(() => loadProjects());
 </script>
 </body>
 </html>
