@@ -1380,24 +1380,150 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // ── Smart Chat Handler (built-in proactive agent) ──
+  function handleSmartChat(message) {
+    const msg = message.toLowerCase().trim();
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+
+    // ── Create Note ──
+    const noteMatch = message.match(/(?:notiz|note|schreib auf|merk dir|merke)[:\s]+(.+)/i);
+    if (noteMatch) {
+      const title = noteMatch[1].trim();
+      const notesFile = path.join(ROOT, 'apps', 'notes', 'data', 'notes.json');
+      const data = JSON.parse(safeReadJSON(notesFile, '{"notes":[]}'));
+      if (!data.notes) data.notes = [];
+      data.notes.unshift({ id: 'note-' + Date.now(), title, content: '', created: now.toISOString(), updated: now.toISOString() });
+      fs.writeFileSync(notesFile, JSON.stringify(data, null, 2));
+      broadcast('notes', { type: 'change', file: 'notes.json', time: Date.now() });
+      return 'Notiz erstellt: "' + title + '". Du kannst sie in der Notes-App sehen.';
+    }
+
+    // ── Create Task ──
+    const taskMatch = message.match(/(?:task|aufgabe|todo|erledige|mach)[:\s]+(.+)/i);
+    if (taskMatch) {
+      const title = taskMatch[1].trim();
+      const tasksFile = path.join(ROOT, 'apps', 'tasks', 'data', 'tasks.json');
+      const data = JSON.parse(safeReadJSON(tasksFile, '{"tasks":[]}'));
+      if (!data.tasks) data.tasks = [];
+      data.tasks.unshift({ id: 'task-' + Date.now(), title, status: 'open', priority: 'normal', created: now.toISOString() });
+      fs.writeFileSync(tasksFile, JSON.stringify(data, null, 2));
+      broadcast('tasks', { type: 'change', file: 'tasks.json', time: Date.now() });
+      return 'Task angelegt: "' + title + '". Oeffne die Tasks-App um ihn zu sehen.';
+    }
+
+    // ── Create Calendar Event ──
+    const calMatch = message.match(/(?:termin|event|kalender|meeting)[:\s]+(.+)/i);
+    if (calMatch) {
+      const title = calMatch[1].trim();
+      const timeMatch = title.match(/(?:um|at)\s+(\d{1,2}[:.]\d{2})/i);
+      const dateMatch = title.match(/(?:am|on)\s+(\d{1,2}\.\d{1,2}\.?(?:\d{2,4})?)/i);
+      let eventDate = today;
+      let eventTime = '';
+      if (dateMatch) {
+        const parts = dateMatch[1].replace(/\.$/, '').split('.');
+        eventDate = (parts[2] ? (parts[2].length === 2 ? '20' + parts[2] : parts[2]) : now.getFullYear()) + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
+      }
+      if (timeMatch) eventTime = timeMatch[1].replace('.', ':');
+      const cleanTitle = title.replace(/\s*(?:um|at)\s+\d{1,2}[:.]\d{2}/i, '').replace(/\s*(?:am|on)\s+\d{1,2}\.\d{1,2}\.?(?:\d{2,4})?/i, '').trim();
+      const calFile = path.join(ROOT, 'apps', 'calendar', 'data', 'calendar.json');
+      const data = JSON.parse(safeReadJSON(calFile, '{"events":[]}'));
+      if (!data.events) data.events = [];
+      data.events.push({ id: 'ev-' + Date.now(), date: eventDate, title: cleanTitle || title, time: eventTime, created: now.toISOString() });
+      fs.writeFileSync(calFile, JSON.stringify(data, null, 2));
+      broadcast('calendar', { type: 'change', file: 'calendar.json', time: Date.now() });
+      return 'Termin erstellt: "' + (cleanTitle || title) + '" am ' + eventDate + (eventTime ? ' um ' + eventTime : '') + '.';
+    }
+
+    // ── Briefing / What's going on ──
+    if (msg.match(/(?:was steht an|briefing|uebersicht|status|was gibt.*heute|was.*los)/)) {
+      const parts = [];
+      try {
+        const notes = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'notes', 'data', 'notes.json'), '{"notes":[]}'));
+        if (notes.notes && notes.notes.length > 0) parts.push(notes.notes.length + ' Notizen');
+      } catch {}
+      try {
+        const tasks = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'tasks', 'data', 'tasks.json'), '{"tasks":[]}'));
+        const open = (tasks.tasks || []).filter(t => t.status !== 'done');
+        if (open.length > 0) parts.push(open.length + ' offene Tasks');
+      } catch {}
+      try {
+        const cal = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'calendar', 'data', 'calendar.json'), '{"events":[]}'));
+        const todayEvents = (cal.events || []).filter(e => e.date === today);
+        if (todayEvents.length > 0) parts.push(todayEvents.length + ' Termine heute: ' + todayEvents.map(e => e.title + (e.time ? ' (' + e.time + ')' : '')).join(', '));
+        else parts.push('Keine Termine heute');
+      } catch {}
+      try {
+        const weather = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'weather', 'data', 'weather.json'), '{}'));
+        if (weather.current) parts.push('Wetter: ' + (weather.current.temp || '?') + '°C, ' + (weather.current.condition || '?'));
+      } catch {}
+      return parts.length > 0 ? 'Dein Briefing:\n' + parts.map(p => '• ' + p).join('\n') : 'Alles ruhig — keine offenen Eintraege.';
+    }
+
+    // ── List notes ──
+    if (msg.match(/(?:zeig.*notiz|meine notiz|alle notiz|notes)/)) {
+      try {
+        const notes = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'notes', 'data', 'notes.json'), '{"notes":[]}'));
+        if (!notes.notes || notes.notes.length === 0) return 'Keine Notizen vorhanden.';
+        return 'Deine Notizen:\n' + notes.notes.slice(0, 5).map(n => '• ' + n.title).join('\n');
+      } catch { return 'Fehler beim Lesen der Notizen.'; }
+    }
+
+    // ── List tasks ──
+    if (msg.match(/(?:zeig.*task|meine task|offene task|todos|aufgaben)/)) {
+      try {
+        const tasks = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'tasks', 'data', 'tasks.json'), '{"tasks":[]}'));
+        const open = (tasks.tasks || []).filter(t => t.status !== 'done');
+        if (open.length === 0) return 'Keine offenen Tasks!';
+        return 'Offene Tasks:\n' + open.slice(0, 5).map(t => '• ' + t.title + (t.priority === 'high' ? ' [!]' : '')).join('\n');
+      } catch { return 'Fehler beim Lesen der Tasks.'; }
+    }
+
+    // ── Weather ──
+    if (msg.match(/(?:wetter|weather|temperatur|regen|sonne)/)) {
+      try {
+        const weather = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'weather', 'data', 'weather.json'), '{}'));
+        if (weather.current) return 'Aktuelles Wetter: ' + (weather.current.temp || '?') + '°C, ' + (weather.current.condition || '?') + (weather.current.humidity ? ', Feuchtigkeit: ' + weather.current.humidity + '%' : '');
+        return 'Keine Wetterdaten vorhanden. Oeffne die Weather-App fuer aktuelle Daten.';
+      } catch { return 'Keine Wetterdaten verfuegbar.'; }
+    }
+
+    // ── Help ──
+    if (msg.match(/(?:hilfe|help|was kannst|commands|befehle)/)) {
+      return 'Ich kann:\n• "Notiz: ..." — Notiz erstellen\n• "Task: ..." — Aufgabe anlegen\n• "Termin: ..." — Kalender-Event\n• "Was steht an?" — Briefing\n• "Zeig meine Notizen/Tasks"\n• "Wetter" — Aktuelle Wetterdaten\n\nBeispiel: "Task: Praesentation vorbereiten"';
+    }
+
+    // ── Greeting ──
+    if (msg.match(/^(hi|hallo|hey|moin|guten|servus|yo)/)) {
+      const greetings = ['Hey! Was kann ich fuer dich tun?', 'Hallo! Ich bin bereit — sag mir was du brauchst.', 'Moin! Sag "hilfe" um zu sehen was ich kann.'];
+      return greetings[Math.floor(Math.random() * greetings.length)];
+    }
+
+    // ── Fallback ──
+    return 'Ich verstehe dich noch nicht ganz. Versuch:\n• "Notiz: Einkaufsliste"\n• "Task: Bug fixen"\n• "Termin: Meeting am 21.03. um 14:00"\n• "Was steht an?"';
+  }
+
   // ── Dashboard Chat Endpoint ──
   if (url === '/api/chat' && req.method === 'POST') {
     return readBody(req, b => {
       try {
         const { message, source } = JSON.parse(b);
-        const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
-        const queue = JSON.parse(safeReadJSON(queueFile, { pending: [] }));
-        if (!queue.pending) queue.pending = [];
-        const msg = { id: 'chat-' + Date.now(), message, source: source || 'dashboard', status: 'queued', created: new Date().toISOString() };
-        queue.pending.push(msg);
-        fs.writeFileSync(queueFile, JSON.stringify(queue, null, 2));
-        // Check if chat agent is alive
+        // Check if external chat agent is alive
         const agents = JSON.parse(safeReadJSON(path.join(ROOT, 'data', 'agents.json'), { agents: [] }));
         const chatAgent = (agents.agents || []).find(a => a.type === 'chat' && a.status === 'alive');
         if (chatAgent) {
+          // Queue for external agent
+          const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
+          const queue = JSON.parse(safeReadJSON(queueFile, { pending: [] }));
+          if (!queue.pending) queue.pending = [];
+          const msg = { id: 'chat-' + Date.now(), message, source: source || 'dashboard', status: 'queued', created: new Date().toISOString() };
+          queue.pending.push(msg);
+          fs.writeFileSync(queueFile, JSON.stringify(queue, null, 2));
           jsonRes(res, { ok: true, id: msg.id, queued: true });
         } else {
-          jsonRes(res, { ok: true, reply: 'Agent ist offline. Nachricht gespeichert — wird beantwortet sobald ein Agent verbunden ist.' });
+          // Built-in smart handler — proactive agent demo
+          const reply = handleSmartChat(message);
+          jsonRes(res, { ok: true, reply: reply });
         }
       } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
     });
@@ -1414,6 +1540,70 @@ const server = http.createServer(async (req, res) => {
       jsonRes(res, { pending: true });
     }
     return;
+  }
+
+  // ── Chat Mirror (ClaudeOS → PulseOS) ──
+  if (url === '/api/chat-mirror' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { from, text, source, time } = JSON.parse(b);
+        if (!text) { res.writeHead(400); return res.end(JSON.stringify({ error: 'text required' })); }
+        const histFile = path.join(ROOT, 'data', 'chat-history.json');
+        const hist = JSON.parse(safeReadJSON(histFile, '{"messages":[]}'));
+        if (!hist.messages) hist.messages = [];
+        const msg = { id: 'm-' + Date.now(), from: from || 'agent', text, source: source || 'telegram', time: time || new Date().toISOString() };
+        hist.messages.push(msg);
+        // Ring-buffer: max 200
+        if (hist.messages.length > 200) hist.messages = hist.messages.slice(-200);
+        fs.writeFileSync(histFile, JSON.stringify(hist, null, 2));
+        // Broadcast via SSE to dashboard
+        broadcast('dashboard', { type: 'chat-message', message: msg });
+        jsonRes(res, { ok: true, id: msg.id });
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+    });
+  }
+
+  if (url === '/api/chat-history' && req.method === 'GET') {
+    const histFile = path.join(ROOT, 'data', 'chat-history.json');
+    const hist = JSON.parse(safeReadJSON(histFile, '{"messages":[]}'));
+    const messages = (hist.messages || []).slice(-50);
+    return jsonRes(res, { messages });
+  }
+
+  if (url === '/api/chat-outbox' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { message, source } = JSON.parse(b);
+        if (!message) { res.writeHead(400); return res.end(JSON.stringify({ error: 'message required' })); }
+        const outFile = path.join(ROOT, 'data', 'chat-outbox.json');
+        const out = JSON.parse(safeReadJSON(outFile, '{"messages":[]}'));
+        if (!out.messages) out.messages = [];
+        const msg = { id: 'out-' + Date.now(), message, source: source || 'dashboard', time: new Date().toISOString() };
+        out.messages.push(msg);
+        fs.writeFileSync(outFile, JSON.stringify(out, null, 2));
+        // Also mirror to history so user sees their own message
+        const histFile = path.join(ROOT, 'data', 'chat-history.json');
+        const hist = JSON.parse(safeReadJSON(histFile, '{"messages":[]}'));
+        if (!hist.messages) hist.messages = [];
+        const histMsg = { id: 'm-' + Date.now(), from: 'user', text: message, source: 'dashboard', time: msg.time };
+        hist.messages.push(histMsg);
+        if (hist.messages.length > 200) hist.messages = hist.messages.slice(-200);
+        fs.writeFileSync(histFile, JSON.stringify(hist, null, 2));
+        broadcast('dashboard', { type: 'chat-message', message: histMsg });
+        jsonRes(res, { ok: true, id: msg.id });
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+    });
+  }
+
+  if (url === '/api/chat-outbox' && req.method === 'GET') {
+    const outFile = path.join(ROOT, 'data', 'chat-outbox.json');
+    const out = JSON.parse(safeReadJSON(outFile, '{"messages":[]}'));
+    const messages = out.messages || [];
+    // Clear after pickup
+    if (messages.length > 0) {
+      fs.writeFileSync(outFile, JSON.stringify({ messages: [] }, null, 2));
+    }
+    return jsonRes(res, { messages });
   }
 
   // ── AI Endpoint (SDK) ──

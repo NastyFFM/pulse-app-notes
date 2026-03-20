@@ -1,0 +1,256 @@
+{
+  "messages": [
+    {
+      "id": "m-1774013500611",
+      "from": "user",
+      "text": "Hey, ich bin gerade unterwegs",
+      "source": "telegram",
+      "time": "2026-03-20T13:31:40.611Z"
+    },
+    {
+      "id": "m-1774013508865",
+      "from": "user",
+      "text": "Zeig mir meine Notizen",
+      "source": "telegram",
+      "time": "2026-03-20T13:31:48.865Z"
+    },
+    {
+      "id": "m-1774013508879",
+      "from": "agent",
+      "text": "Du hast 3 Notizen: Einkaufen, Meeting prep, Idee fuer App",
+      "source": "telegram",
+      "time": "2026-03-20T13:31:48.879Z"
+    },
+    {
+      "id": "m-1774013757530",
+      "from": "user",
+      "text": "Was steht heute an?",
+      "source": "dashboard",
+      "time": "2026-03-20T13:35:57.498Z"
+    },
+    {
+      "id": "m-1774013806355",
+      "from": "agent",
+      "text": "Dein Meeting ist in 30 Minuten. Soll ich die Notizen dazu vorbereiten?",
+      "source": "telegram",
+      "time": "2026-03-20T13:36:46.355Z"
+    },
+    {
+      "id": "m-1774014514547",
+      "from": "user",
+      "text": "test",
+      "source": "dashboard",
+      "time": "2026-03-20T13:48:34.543Z"
+    },
+    {
+      "id": "m-1774014514568",
+      "from": "agent",
+      "text": "Ich verstehe dich noch nicht ganz. Versuch:\n• \"Notiz: Einkaufsliste\"\n• \"Task: Bug fixen\"\n• \"Termin: Meeting am 21.03. um 14:00\"\n• \"Was steht an?\"",
+      "source": "dashboard",
+      "time": "2026-03-20T13:48:34.568Z"
+    },
+    {
+      "id": "m-1774014649605",
+      "from": "agent",
+      "text": "Error: No conversation found with session ID: 55f3a62f-8871-4105-8608-c1ce984eb46c",
+      "source": "telegram",
+      "time": "2026-03-20T13:50:49.598Z"
+    },
+    {
+      "id": "m-1774014649616",
+      "from": "user",
+      "text": "wie ist das wetter",
+      "source": "telegram",
+      "time": "2026-03-20T13:50:49.611Z"
+    },
+    {
+      "id": "m-1774014649631",
+      "from": "agent",
+      "text": "Error: No conversation found with session ID: 55f3a62f-8871-4105-8608-c1ce984eb46c",
+      "source": "telegram",
+      "time": "2026-03-20T13:50:49.611Z"
+    },
+    {
+      "id": "m-1774014655318",
+      "from": "user",
+      "text": "test",
+      "source": "telegram",
+      "time": "2026-03-20T13:50:55.308Z"
+    },
+    {
+      "id": "m-1774014655325",
+      "from": "agent",
+      "text": "Error: No conversation found with session ID: 55f3a62f-8871-4105-8608-c1ce984eb46c",
+      "source": "telegram",
+      "time": "2026-03-20T13:50:55.308Z"
+    },
+    {
+      "id": "m-1774014660564",
+      "from": "user",
+      "text": "test",
+      "source": "telegram",
+      "time": "2026-03-20T13:51:00.557Z"
+    },
+    {
+      "id": "m-1774014660575",
+      "from": "agent",
+      "text": "Error: No conversation found with session ID: 55f3a62f-8871-4105-8608-c1ce984eb46c",
+      "source": "telegram",
+      "time": "2026-03-20T13:51:00.557Z"
+    },
+    {
+      "id": "m-1774014894811",
+      "from": "user",
+      "text": "test",
+      "source": "telegram",
+      "time": "2026-03-20T13:54:54.796Z"
+    },
+    {
+      "id": "m-1774014894830",
+      "from": "agent",
+      "text": "Hey Christof! Alles klar, bin da. 👋",
+      "source": "telegram",
+      "time": "2026-03-20T13:54:54.796Z"
+    },
+    {
+      "id": "m-1774014968281",
+      "from": "user",
+      "text": "mache mir nochmal so eine übersicht über die aktuellen creative technology trends",
+      "source": "telegram",
+      "time": "2026-03-20T13:56:08.272Z"
+    },
+    {
+      "id": "m-1774014968289",
+      "from": "agent",
+      "text": "Hier die aktuellen **Creative Technology Trends 2026**:\n\n---\n\n**🤖 AI als Creative Partner**\nKein \"AI-assisted\" mehr — 2026 ist es echte Kollaboration. Human + AI im Tandem, nicht gegeneinander.\n\n**🧠 Agentic AI**\nKI orchestriert selbstständig Kampagnen — reagiert in Echtzeit auf Kultur, Wetter, Intent. Läuft im Hintergrund, ohne dass jemand drückt.\n\n**👋 Hyper-Human & Tactile Aesthetics**\nGegenbewegung zur KI-Perfektion: Hand-gezeichnet, Film-Texturen, Imperfektionen als Qualitätsmerkmal. Menschen wollen spüren, dass Arbeit von Menschen kommt.\n\n**📍 Local & Cultural Specificity**\nSchluss mit universellen Kampagnen. Regionale Creator, lokale Craftsmanship, Cultural Specificity wins.\n\n**🔊 Multi-Sensory Branding**\n3D Motion + Sonic Branding als Standard. Marken bauen akustische und haptische Identitäten auf.\n\n**📊 Personalization at Scale**\n92% der Unternehmen nutzen AI-driven Personalization — wer's nicht macht, verliert.\n\n---\n\nBesonders spannend für dich als Creative Technologist: die Spannung zwischen **AI-Effizienz** und **Human Authenticity**. Da liegt gerade die interessante Arbeit.\n\nSources:\n- [Adobe: Four creative trends defining marketing 2026](https://blog.adobe.com/en/publish/2025/12/09/four-creative-trends-define-marketing-2026)\n- [Vistar Media: 5 creative trends redefining advertising 2026](https://www.vistarmedia.com/blog/5-creative-trends-redefining-advertising-in-2026)\n- [Marketing Week: Key trends shaping technology 2026](https://www.marketingweek.com/trends-shaping-technology-2026/)",
+      "source": "telegram",
+      "time": "2026-03-20T13:56:08.272Z"
+    },
+    {
+      "id": "m-1774014988898",
+      "from": "user",
+      "text": "was findest du am besten davon?",
+      "source": "dashboard",
+      "time": "2026-03-20T13:56:28.890Z"
+    },
+    {
+      "id": "m-1774014988927",
+      "from": "agent",
+      "text": "Ich verstehe dich noch nicht ganz. Versuch:\n• \"Notiz: Einkaufsliste\"\n• \"Task: Bug fixen\"\n• \"Termin: Meeting am 21.03. um 14:00\"\n• \"Was steht an?\"",
+      "source": "dashboard",
+      "time": "2026-03-20T13:56:28.927Z"
+    },
+    {
+      "id": "m-1774015007763",
+      "from": "agent",
+      "text": "Ehrlich gesagt: **Agentic AI** ist das spannendste für mich.\n\nNicht weil es der hype-iest ist, sondern weil's die Arbeitsweise fundamental verändert. Du designst nicht mehr einzelne Outputs — du designst **Systeme**, die selbst entscheiden und handeln.\n\nFür dich als Creative Technologist ist das eigentlich der Sweet Spot: du verstehst sowohl die kreative Seite als auch die technische — genau das braucht man, um sinnvolle Agentic Workflows zu bauen, die nicht Müll produzieren.\n\nWas interessiert dich daran am meisten?",
+      "source": "telegram",
+      "time": "2026-03-20T13:56:47.756Z"
+    },
+    {
+      "id": "m-1774015462645",
+      "from": "user",
+      "text": "wie geht es dir",
+      "source": "dashboard",
+      "time": "2026-03-20T14:04:22.637Z"
+    },
+    {
+      "id": "m-1774015462667",
+      "from": "agent",
+      "text": "Ich verstehe dich noch nicht ganz. Versuch:\n• \"Notiz: Einkaufsliste\"\n• \"Task: Bug fixen\"\n• \"Termin: Meeting am 21.03. um 14:00\"\n• \"Was steht an?\"",
+      "source": "dashboard",
+      "time": "2026-03-20T14:04:22.667Z"
+    },
+    {
+      "id": "m-1774015469955",
+      "from": "user",
+      "text": "test",
+      "source": "dashboard",
+      "time": "2026-03-20T14:04:29.952Z"
+    },
+    {
+      "id": "m-1774015476183",
+      "from": "agent",
+      "text": "Gut, danke! Bin bereit für alles was kommt. 😄\n\nUnd dir? Schon im Wochenendmodus oder noch am Arbeiten?",
+      "source": "telegram",
+      "time": "2026-03-20T14:04:36.173Z"
+    },
+    {
+      "id": "m-1774015484540",
+      "from": "user",
+      "text": "wie heisse ich",
+      "source": "dashboard",
+      "time": "2026-03-20T14:04:44.532Z"
+    },
+    {
+      "id": "m-1774015492762",
+      "from": "agent",
+      "text": "Hey! Alles klar. 👋",
+      "source": "telegram",
+      "time": "2026-03-20T14:04:52.753Z"
+    },
+    {
+      "id": "m-1774015505991",
+      "from": "agent",
+      "text": "Du heißt Christof! 😄",
+      "source": "telegram",
+      "time": "2026-03-20T14:05:05.980Z"
+    },
+    {
+      "id": "m-1774015521887",
+      "from": "user",
+      "text": "was haben wir gerade gesucht",
+      "source": "dashboard",
+      "time": "2026-03-20T14:05:21.877Z"
+    },
+    {
+      "id": "m-1774015536873",
+      "from": "agent",
+      "text": "Creative Technology Trends 2026 — die wichtigsten waren:\n\n- Agentic AI\n- Human/Tactile Aesthetics\n- Local & Cultural Specificity\n- Multi-Sensory Branding\n- Personalization at Scale",
+      "source": "telegram",
+      "time": "2026-03-20T14:05:36.861Z"
+    },
+    {
+      "id": "m-1774015613380",
+      "from": "user",
+      "text": "wie wiet ist der mond weg?",
+      "source": "telegram",
+      "time": "2026-03-20T14:06:53.364Z"
+    },
+    {
+      "id": "m-1774015613389",
+      "from": "agent",
+      "text": "Ca. **384.400 km** im Durchschnitt.\n\nVariiert zwischen ~356.500 km (Perigäum) und ~406.700 km (Apogäum) — der Mond hat keine kreisförmige Umlaufbahn.",
+      "source": "telegram",
+      "time": "2026-03-20T14:06:53.364Z"
+    },
+    {
+      "id": "m-1774015714948",
+      "from": "user",
+      "text": "und wie wiet die sonne",
+      "source": "dashboard",
+      "time": "2026-03-20T14:08:34.939Z"
+    },
+    {
+      "id": "m-1774015730312",
+      "from": "agent",
+      "text": "Ca. **150 Millionen km** im Durchschnitt — auch als 1 Astronomische Einheit (AU) bekannt.\n\nLicht braucht dafür ~8 Minuten.",
+      "source": "telegram",
+      "time": "2026-03-20T14:08:50.302Z"
+    },
+    {
+      "id": "m-1774016102153",
+      "from": "user",
+      "text": "hsallo",
+      "source": "dashboard",
+      "time": "2026-03-20T14:15:02.145Z"
+    },
+    {
+      "id": "m-1774016114158",
+      "from": "agent",
+      "text": "Hey! 👋",
+      "source": "telegram",
+      "time": "2026-03-20T14:15:14.106Z"
+    }
+  ]
+}

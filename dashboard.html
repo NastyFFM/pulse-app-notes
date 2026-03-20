@@ -1267,8 +1267,8 @@ function render() {
 function renderAppGrid() {
   const apps = state.apps.filter(a => a.installed).sort((a, b) => (a.position || 0) - (b.position || 0));
   const grid = document.getElementById('appGrid');
-  // Show first 8 pinned apps on home screen
-  const shown = apps.slice(0, 8);
+  // Show first 9 pinned apps on home screen (including Settings)
+  const shown = apps.slice(0, 9);
   grid.innerHTML = shown.map(app =>
     '<div class="app-item" onclick="openApp(state.apps.find(a=>a.id===\'' + app.id + '\'))">' +
     '<div class="app-icon" style="background:' + app.color + '">' + app.icon + '</div>' +
@@ -1321,8 +1321,6 @@ function renderTopbarTabs() {
 
 function showHome() {
   activeTabWinId = null;
-  openWindows.filter(w => !w.closed).forEach(w => { w.el.style.display = 'none'; });
-  document.getElementById('homeScreen').style.display = '';
   renderTopbarTabs();
 }
 
@@ -1331,7 +1329,6 @@ function focusTab(winId) {
   if (!win || win.closed) return;
   if (win.minimized) { win.minimized = false; win.el.classList.remove('minimized'); }
   win.el.style.display = '';
-  document.getElementById('homeScreen').style.display = 'none';
   if (window.innerWidth <= 768) {
     openWindows.filter(w => !w.closed && w.winId !== winId).forEach(w => { w.el.style.display = 'none'; });
   }
@@ -1395,7 +1392,6 @@ function openApp(app, opts) {
 
   openWindows.push({ winId, appId: app.id, matchKey, el: w, minimized: false, maximized: false, closed: false, savedRect: null, contextId });
   addFeed(app.name + ' geoeffnet', 'mutation');
-  document.getElementById('homeScreen').style.display = 'none';
   activeTabWinId = winId;
   renderTopbarTabs();
 }
@@ -2125,31 +2121,60 @@ function updateGreeting() {
   document.getElementById('greetingSub').textContent = sub;
 }
 
-// ── System Chat ──
+// ── System Chat (ClaudeOS Bridge) ──
 let systemChatOpen = false;
+let chatHistoryLoaded = false;
+const renderedMsgIds = new Set();
+
 function toggleSystemChat() {
   systemChatOpen = !systemChatOpen;
   document.getElementById('systemChat').classList.toggle('open', systemChatOpen);
   if (systemChatOpen) {
+    if (!chatHistoryLoaded) loadChatHistory();
     const msgs = document.getElementById('systemChatMessages');
     msgs.scrollTop = msgs.scrollHeight;
     document.getElementById('systemChatInput')?.focus();
   }
 }
 
-function renderSystemChatMessage(msg) {
+async function loadChatHistory() {
+  chatHistoryLoaded = true;
+  try {
+    const res = await fetch('/api/chat-history');
+    const data = await res.json();
+    if (data.messages && data.messages.length > 0) {
+      const msgs = document.getElementById('systemChatMessages');
+      msgs.innerHTML = '';
+      data.messages.forEach(m => renderChatMsg(m));
+    }
+  } catch {}
+}
+
+function renderChatMsg(msg) {
+  if (renderedMsgIds.has(msg.id)) return;
+  renderedMsgIds.add(msg.id);
   const msgs = document.getElementById('systemChatMessages');
   if (!msgs) return;
   if (msgs.querySelector('.chat-empty')) msgs.innerHTML = '';
-  const isSelf = msg.peerId === 'self';
+  const isUser = msg.from === 'user';
+  const sourceIcon = msg.source === 'telegram' ? '\u2708' : '\u25b8';
+  const fromLabel = isUser ? (userProfile?.name || 'Du') : 'ClaudeOS';
   const div = document.createElement('div');
-  div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;' + (isSelf ? 'flex-direction:row-reverse;' : '');
-  div.innerHTML = '<span style="font-size:14px;flex-shrink:0;width:20px;text-align:center;">' + (msg.avatar || '>') + '</span>' +
-    '<div style="max-width:200px;padding:6px 10px;border-radius:8px;font-size:11px;' + (isSelf ? 'background:var(--teal);color:var(--bg);' : 'background:var(--bg-card-hover);color:var(--text);') + '">' +
-    '<div style="font-size:9px;opacity:0.6;margin-bottom:2px;">' + (msg.from || '?') + '</div>' +
-    '<div>' + (msg.text || '') + '</div></div>';
+  div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;' + (isUser ? 'flex-direction:row-reverse;' : '');
+  div.innerHTML = '<span style="font-size:14px;flex-shrink:0;width:20px;text-align:center;">' + sourceIcon + '</span>' +
+    '<div style="max-width:220px;padding:6px 10px;border-radius:8px;font-size:11px;' + (isUser ? 'background:var(--teal);color:var(--bg);' : 'background:var(--bg-card-hover);color:var(--text);') + '">' +
+    '<div style="font-size:9px;opacity:0.6;margin-bottom:2px;">' + fromLabel + ' <span style="opacity:0.5;">' + (msg.source || '') + '</span></div>' +
+    '<div style="white-space:pre-wrap;word-break:break-word;">' + escapeHtml(msg.text || '') + '</div></div>';
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
+}
+
+function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Legacy compat
+function renderSystemChatMessage(msg) {
+  const isUser = msg.peerId === 'self';
+  renderChatMsg({ id: 'local-' + Date.now() + Math.random(), from: isUser ? 'user' : 'agent', text: msg.text, source: 'dashboard' });
 }
 
 function sendSystemChat() {
@@ -2158,44 +2183,42 @@ function sendSystemChat() {
   if (!text) return;
   input.value = '';
 
-  // WebRTC sendChat renders the message itself, so only render locally if no WebRTC
-  if (window.PulseOS?.sendChat) {
-    window.PulseOS.sendChat(text);
-  } else {
-    renderSystemChatMessage({ peerId: 'self', from: userProfile?.name || 'Du', text, avatar: userProfile?.avatar || '>' });
-  }
-  // Also send to server agent
+  // Send to ClaudeOS via outbox (or fallback to smart handler)
   sendToAgent(text);
 }
 
 async function sendToAgent(text) {
   try {
-    const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, source: 'dashboard' }) });
-    const data = await res.json();
-    if (data.reply) {
-      renderSystemChatMessage({ peerId: 'agent', from: 'Agent', text: data.reply, avatar: '*' });
-    } else if (data.queued) {
-      // Poll for response
-      pollAgentReply(data.id);
-    }
+    // Send to ClaudeOS outbox — message appears in history via SSE
+    // ClaudeOS picks it up, processes with Claude, mirrors response back
+    const outRes = await fetch('/api/chat-outbox', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, source: 'dashboard' }) });
+    const outData = await outRes.json();
+    if (!outData.ok) throw new Error('outbox failed');
+    // Response will arrive via SSE from ClaudeOS — no need to poll
   } catch(e) {
-    renderSystemChatMessage({ peerId: 'agent', from: 'Agent', text: 'Offline — kein Agent verbunden.', avatar: '*' });
+    renderChatMsg({ id: 'err-' + Date.now(), from: 'agent', text: 'Offline — kein Agent verbunden.', source: 'system' });
   }
 }
 
-async function pollAgentReply(msgId) {
-  for (let i = 0; i < 30; i++) {
-    await new Promise(r => setTimeout(r, 2000));
+// SSE: Live chat messages from ClaudeOS/Telegram
+function initChatSSE() {
+  const es = new EventSource('/sse/dashboard');
+  es.onmessage = (ev) => {
     try {
-      const res = await fetch('/api/chat/reply/' + msgId);
-      const data = await res.json();
-      if (data.reply) {
-        renderSystemChatMessage({ peerId: 'agent', from: 'Agent', text: data.reply, avatar: '*' });
-        return;
+      const data = JSON.parse(ev.data);
+      if (data.type === 'chat-message' && data.message) {
+        renderChatMsg(data.message);
+        // Flash chat icon if panel closed
+        if (!systemChatOpen) {
+          const btn = document.querySelector('[onclick*="toggleSystemChat"]');
+          if (btn) { btn.style.background = 'var(--teal)'; setTimeout(() => { btn.style.background = ''; }, 2000); }
+        }
       }
-    } catch { break; }
-  }
+    } catch {}
+  };
+  es.onerror = () => { setTimeout(initChatSSE, 5000); };
 }
+initChatSSE();
 
 // ── Morning Briefing ──
 function checkMorningBriefing() {
@@ -2300,6 +2323,12 @@ window.addEventListener('message', e => {
     addFeed(e.data.message, 'info');
     const ab = document.getElementById('agentText');
     if (ab) ab.textContent = e.data.message;
+  }
+  if (e.data && e.data.type === 'start-tutorial') {
+    const settingsWin = openWindows.find(w => w.appId === 'settings');
+    if (settingsWin) closeWin(settingsWin.winId);
+    showHome();
+    setTimeout(() => startTutorial(), 300);
   }
   if (e.data && e.data.type === 'open-app' && e.data.appId) {
     const app = state?.apps?.find(a => a.id === e.data.appId);

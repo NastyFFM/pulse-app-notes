@@ -399,7 +399,7 @@ function renderNodes() {
       const connected = graph.edges.some(e => e.fromNode === n.id && e.fromPort === p);
       return '<div class="gnode-port-row output">' +
         '<span>' + esc(p) + '</span>' +
-        '<div class="gnode-port' + (connected ? ' connected' : '') + '" data-node="' + n.id + '" data-port="' + p + '" data-dir="output"></div>' +
+        '<div class="gnode-port output' + (connected ? ' connected' : '') + '" data-node="' + n.id + '" data-port="' + p + '" data-dir="output"></div>' +
       '</div>';
     }).join('');
     return '<div class="gnode' + sel + '" id="' + n.id + '" style="left:' + n.x + 'px;top:' + n.y + 'px" data-id="' + n.id + '">' +

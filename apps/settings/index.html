@@ -109,6 +109,11 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
       <div class="info-row"><span class="info-label">Datenformat</span><span class="info-value">JSON</span></div>
       <div class="info-row"><span class="info-label">Build Tools</span><span class="info-value">Keine</span></div>
     </div>
+    <div class="card">
+      <div class="card-title">Tutorial</div>
+      <div style="font-size:12px;color:var(--dim);margin-bottom:10px">Interaktive Einfuehrung in PulseOS starten</div>
+      <button class="btn primary" onclick="restartTutorial()">Tutorial neu starten</button>
+    </div>
   </div>
 
   <!-- Shortcuts -->
@@ -154,6 +159,15 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
 
 <script>
 let profile = { name: 'Benutzer', role: 'Admin', email: '' };
+
+function restartTutorial() {
+  try {
+    localStorage.removeItem('pulse-tutorial-done');
+    window.parent.postMessage({ type: 'start-tutorial' }, '*');
+  } catch(e) {
+    alert('Tutorial kann nur vom Dashboard gestartet werden');
+  }
+}
 
 async function loadProfile() {
   try {
