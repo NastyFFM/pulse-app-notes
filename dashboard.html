@@ -33,6 +33,64 @@
   --agent-bar-h: 32px;
 }
 
+/* ── Theme: Light ── */
+html[data-theme="light"] {
+  --bg: #f0f0f4;
+  --bg-surface: rgba(240, 240, 244, 0.95);
+  --bg-card: rgba(0, 0, 0, 0.04);
+  --bg-card-hover: rgba(0, 0, 0, 0.07);
+  --amber: #d4890a; --teal: #0d9488; --lila: #7c3aed;
+  --red: #dc2626; --green: #16a34a;
+  --text: rgba(0, 0, 0, 0.85);
+  --text-dim: rgba(0, 0, 0, 0.45);
+  --text-muted: rgba(0, 0, 0, 0.2);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.15);
+}
+
+/* ── Theme: Midnight ── */
+html[data-theme="midnight"] {
+  --bg: #0a1628;
+  --bg-surface: rgba(10, 22, 40, 0.95);
+  --bg-card: rgba(100, 160, 255, 0.05);
+  --bg-card-hover: rgba(100, 160, 255, 0.09);
+  --teal: #38bdf8; --lila: #818cf8;
+  --text: rgba(200, 220, 255, 0.9);
+  --text-dim: rgba(200, 220, 255, 0.45);
+  --text-muted: rgba(200, 220, 255, 0.2);
+  --border: rgba(100, 160, 255, 0.08);
+  --border-hover: rgba(100, 160, 255, 0.15);
+}
+
+/* ── Theme: Terminal ── */
+html[data-theme="terminal"] {
+  --bg: #0a0a0a;
+  --bg-surface: rgba(10, 10, 10, 0.95);
+  --bg-card: rgba(0, 255, 65, 0.04);
+  --bg-card-hover: rgba(0, 255, 65, 0.08);
+  --amber: #00ff41; --teal: #00ff41; --lila: #00cc33;
+  --red: #ff3333; --green: #00ff41;
+  --text: rgba(0, 255, 65, 0.9);
+  --text-dim: rgba(0, 255, 65, 0.5);
+  --text-muted: rgba(0, 255, 65, 0.2);
+  --border: rgba(0, 255, 65, 0.1);
+  --border-hover: rgba(0, 255, 65, 0.2);
+}
+
+/* ── Theme: Warm ── */
+html[data-theme="warm"] {
+  --bg: #1a1410;
+  --bg-surface: rgba(26, 20, 16, 0.95);
+  --bg-card: rgba(255, 180, 100, 0.04);
+  --bg-card-hover: rgba(255, 180, 100, 0.07);
+  --teal: #e0976e; --lila: #c084fc;
+  --text: rgba(255, 235, 210, 0.88);
+  --text-dim: rgba(255, 235, 210, 0.45);
+  --text-muted: rgba(255, 235, 210, 0.2);
+  --border: rgba(255, 180, 100, 0.08);
+  --border-hover: rgba(255, 180, 100, 0.15);
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -214,7 +272,7 @@ body {
   align-items: center;
   height: var(--agent-bar-h);
   padding: 0 16px;
-  background: rgba(13, 13, 20, 0.8);
+  background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
   font-size: 11px;
   color: var(--text-dim);
@@ -589,7 +647,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 400;
-  background: rgba(13, 13, 20, 0.88);
+  background: var(--bg-surface);
   backdrop-filter: blur(40px);
   display: none;
   flex-direction: column;
@@ -897,7 +955,7 @@ body {
 /* ═══ Profile Modal ═══ */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(13, 13, 20, 0.92);
+  background: var(--bg-surface);
   z-index: 9999;
   display: flex; align-items: center; justify-content: center;
   backdrop-filter: blur(8px);
@@ -1037,6 +1095,7 @@ body.mode-builder .home-screen { max-width: 600px; }
 
     <button class="topbar-btn" id="tunnelBtn" onclick="toggleTunnel()" title="Share">Share</button>
     <button class="topbar-btn" id="fsBtn" onclick="toggleFullscreen()" title="Fullscreen">F</button>
+    <button class="topbar-btn" id="themeBtn" onclick="cycleTheme()" title="Theme wechseln">◑</button>
 
     <span class="topbar-clock" id="clock"></span>
     <div class="topbar-sync" id="syncDot"></div>
@@ -1180,6 +1239,22 @@ function setMode(mode) {
     if (app) openApp(app);
   }
 }
+
+// ── Themes ──
+const THEMES = ['dark', 'light', 'midnight', 'terminal', 'warm'];
+function setTheme(theme) {
+  if (!THEMES.includes(theme)) theme = 'dark';
+  if (theme === 'dark') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('pulseTheme', theme);
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.title = 'Theme: ' + theme + ' (Cmd+T)';
+}
+function cycleTheme() {
+  const cur = localStorage.getItem('pulseTheme') || 'dark';
+  setTheme(THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length]);
+}
+setTheme(localStorage.getItem('pulseTheme') || 'dark');
 
 // ── SSE ──
 let sse = null;
@@ -1576,6 +1651,7 @@ document.addEventListener('keydown', e => {
   if (isMeta && e.key === ' ') { e.preventDefault(); toggleLauncher(); return; }
   if (isMeta && e.key === 'k') { e.preventDefault(); toggleSystemChat(); return; }
   if (isMeta && e.key === 'g') { e.preventDefault(); const app = state?.apps?.find(a => a.id === 'projects'); if (app) openApp(app); return; }
+  if (isMeta && e.key === 't') { e.preventDefault(); cycleTheme(); return; }
   if (isMeta && e.key === 'w') {
     e.preventDefault();
     if (activeTabWinId) closeWin(activeTabWinId);
@@ -1616,13 +1692,14 @@ function showShortcutOverlay() {
   if (!el) {
     el = document.createElement('div');
     el.id = 'shortcutOverlay';
-    el.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:80000;background:rgba(17,17,24,.95);border:1px solid var(--teal);border-radius:8px;padding:14px 20px;display:flex;gap:20px;font:11px var(--font);color:rgba(255,255,255,.7);backdrop-filter:blur(8px);transition:opacity .15s;';
+    el.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:80000;background:var(--bg-surface);border:1px solid var(--teal);border-radius:8px;padding:14px 20px;display:flex;gap:20px;font:11px var(--font);color:var(--text-dim);backdrop-filter:blur(8px);transition:opacity .15s;';
     el.innerHTML =
       '<div><span style="color:var(--teal);font-weight:600;">Space</span> Launcher</div>' +
       '<div><span style="color:var(--teal);font-weight:600;">Tab</span> Fenster</div>' +
       '<div><span style="color:var(--teal);font-weight:600;">W</span> Schliessen</div>' +
       '<div><span style="color:var(--teal);font-weight:600;">K</span> Chat</div>' +
-      '<div><span style="color:var(--teal);font-weight:600;">G</span> Projects</div>';
+      '<div><span style="color:var(--teal);font-weight:600;">G</span> Projects</div>' +
+      '<div><span style="color:var(--teal);font-weight:600;">T</span> Theme</div>';
     document.body.appendChild(el);
   }
   el.style.opacity = '1';
@@ -2033,7 +2110,7 @@ function showTutorialStep() {
         '<button onclick="skipTutorial()" style="background:none;border:none;color:rgba(255,255,255,.25);padding:4px 0;font:10px var(--font);cursor:pointer;">Tutorial ueberspringen</button>' +
         '<div style="display:flex;gap:8px;">' +
           (tutorialIdx > 0 ? '<button onclick="prevTutorialStep()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);padding:5px 14px;border-radius:5px;font:11px var(--font);cursor:pointer;">Zurueck</button>' : '') +
-          '<button onclick="nextTutorialStep()" style="background:var(--teal,#4ecdc4);color:#0d0d14;border:none;padding:5px 16px;border-radius:5px;font:600 11px var(--font);cursor:pointer;">' + (isLast ? 'Los geht\'s!' : 'Weiter') + '</button>' +
+          '<button onclick="nextTutorialStep()" style="background:var(--teal,#4ecdc4);color:var(--bg);border:none;padding:5px 16px;border-radius:5px;font:600 11px var(--font);cursor:pointer;">' + (isLast ? 'Los geht\'s!' : 'Weiter') + '</button>' +
         '</div>' +
       '</div>' +
     '</div>';
