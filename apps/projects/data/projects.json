@@ -1,1 +1,18 @@
-{"projects":[]}
+{
+  "projects": [
+    {
+      "id": "proj-1773962275066",
+      "name": "o8ug",
+      "description": "",
+      "color": "#4ecdc4",
+      "created": "2026-03-19T23:17:55.066Z"
+    },
+    {
+      "id": "proj-1773957854340",
+      "name": "adsdf",
+      "description": "",
+      "color": "#4ecdc4",
+      "created": "2026-03-19T22:04:14.340Z"
+    }
+  ]
+}

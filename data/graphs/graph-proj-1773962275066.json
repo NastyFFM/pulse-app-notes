@@ -1,0 +1,46 @@
+{
+  "id": "proj-1773962275066",
+  "projectId": "proj-1773962275066",
+  "name": "o8ug",
+  "nodes": [
+    {
+      "id": "node-weather-1774005646482",
+      "appId": "weather",
+      "name": "Weather",
+      "type": "processor",
+      "x": 53,
+      "y": 29,
+      "inputs": [
+        "data"
+      ],
+      "outputs": [
+        "data"
+      ]
+    },
+    {
+      "id": "node-notes-1774005648602",
+      "appId": "notes",
+      "name": "Notes",
+      "type": "processor",
+      "x": 262,
+      "y": 42,
+      "inputs": [
+        "data"
+      ],
+      "outputs": [
+        "data"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1774006299532",
+      "from": "node-weather-1774005646482",
+      "to": "node-notes-1774005648602",
+      "fromOutput": "data",
+      "toInput": "data"
+    }
+  ],
+  "updated": "2026-03-20T11:31:54.180Z",
+  "updatedAt": "2026-03-20T11:31:54.183Z"
+}

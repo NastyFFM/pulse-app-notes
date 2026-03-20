@@ -1,1 +1,25 @@
-{"notes":[]}
+{
+  "notes": [
+    {
+      "id": "note-1774010648580",
+      "title": "Meeting-Ergebnisse mit Team besprechen",
+      "content": "",
+      "created": "2026-03-20T12:44:08.580Z",
+      "updated": "2026-03-20T12:44:08.580Z"
+    },
+    {
+      "id": "note-1774010571371",
+      "title": "Idee fuer neues Feature - Dark Mode Toggle",
+      "content": "",
+      "created": "2026-03-20T12:42:51.370Z",
+      "updated": "2026-03-20T12:42:51.370Z"
+    },
+    {
+      "id": "note-1774005541953",
+      "title": "Das ist ein Test.",
+      "content": "",
+      "created": "2026-03-20T11:19:01.953Z",
+      "updated": "2026-03-20T11:19:06.397Z"
+    }
+  ]
+}
