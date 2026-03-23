@@ -2263,14 +2263,17 @@ function renderChatMsg(msg) {
   if (!msgs) return;
   if (msgs.querySelector('.chat-empty')) msgs.innerHTML = '';
   const isUser = msg.from === 'user';
+  const txt = msg.text || '';
+  const isProactive = !isUser && /^[\u2600-\u26FF\u{1F300}-\u{1F9FF}]/u.test(txt);
   const sourceIcon = msg.source === 'telegram' ? '\u2708' : '\u25b8';
   const fromLabel = isUser ? (userProfile?.name || 'Du') : (msg.source === 'pulseos' ? 'PulseOS' : 'ClaudeOS');
   const div = document.createElement('div');
   div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;' + (isUser ? 'flex-direction:row-reverse;' : '');
+  const bgStyle = isUser ? 'background:var(--teal);color:var(--bg);' : isProactive ? 'background:linear-gradient(135deg, var(--bg-card-hover), rgba(245,166,35,0.15));color:var(--text);border:1px solid rgba(245,166,35,0.3);' : 'background:var(--bg-card-hover);color:var(--text);';
   div.innerHTML = '<span style="font-size:14px;flex-shrink:0;width:20px;text-align:center;">' + sourceIcon + '</span>' +
-    '<div style="max-width:220px;padding:6px 10px;border-radius:8px;font-size:11px;' + (isUser ? 'background:var(--teal);color:var(--bg);' : 'background:var(--bg-card-hover);color:var(--text);') + '">' +
+    '<div style="max-width:220px;padding:6px 10px;border-radius:8px;font-size:11px;' + bgStyle + '">' +
     '<div style="font-size:9px;opacity:0.6;margin-bottom:2px;">' + fromLabel + ' <span style="opacity:0.5;">' + (msg.source || '') + '</span></div>' +
-    '<div style="white-space:pre-wrap;word-break:break-word;">' + escapeHtml(msg.text || '') + '</div></div>';
+    '<div style="white-space:pre-wrap;word-break:break-word;">' + escapeHtml(txt) + '</div></div>';
   // Insert before typing indicator so it always stays at the bottom
   const typing = document.getElementById('typingIndicator');
   if (typing) msgs.insertBefore(div, typing);
