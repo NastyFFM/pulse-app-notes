@@ -1,0 +1,10 @@
+{
+  "name": "Podcast",
+  "icon": "🎙",
+  "color": "#1a1a3a",
+  "description": "Podcasts suchen und hören",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}

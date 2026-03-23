@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanban</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d14;--surface:#111118;--text:rgba(255,255,255,.85);--dim:rgba(255,255,255,.4);--muted:rgba(255,255,255,.12);--border:rgba(255,255,255,.06);--font:'IBM Plex Mono',monospace;--col-todo:#4ecdc4;--col-doing:#f5a623;--col-done:#4ade80;--col-blocked:#ef4444}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:12px/1.5 var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.header{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.header-title{font:600 13px var(--font);color:var(--text)}
+.board-select{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text);font:11px var(--font);padding:3px 8px;border-radius:4px;outline:none;cursor:pointer;flex:1;max-width:200px}
+.btn{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--dim);padding:3px 10px;border-radius:4px;font:10px var(--font);cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.btn.primary{background:var(--col-todo);color:#0d0d14;border-color:var(--col-todo)}
+.btn.primary:hover{opacity:.9}
+.btn.danger:hover{color:var(--col-blocked);border-color:rgba(239,68,68,.3)}
+
+.board{flex:1;display:flex;gap:10px;padding:10px;overflow-x:auto;overflow-y:hidden}
+.column{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:6px;display:flex;flex-direction:column;min-width:220px;max-width:280px;flex:1}
+.col-header{padding:8px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-shrink:0}
+.col-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.col-name{font:600 10px var(--font);text-transform:uppercase;letter-spacing:.08em;flex:1}
+.col-count{font-size:9px;color:var(--dim);background:rgba(255,255,255,.06);padding:1px 6px;border-radius:8px}
+.col-add{background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;line-height:1;padding:0 2px}
+.col-add:hover{color:var(--text)}
+
+.cards{flex:1;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:5px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:8px 10px;cursor:pointer;transition:all .15s;position:relative}
+.card:hover{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.03)}
+.card.dragging{opacity:.4}
+.card-title{font:500 11px var(--font);color:var(--text);margin-bottom:4px;word-break:break-word}
+.card-desc{font-size:10px;color:var(--dim);margin-bottom:6px;word-break:break-word;white-space:pre-wrap}
+.card-footer{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.card-tag{font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,.06);color:var(--dim)}
+.card-prio{font-size:9px;padding:1px 6px;border-radius:8px}
+.prio-high{background:rgba(239,68,68,.15);color:#ef4444}
+.prio-med{background:rgba(245,166,35,.15);color:#f5a623}
+.prio-low{background:rgba(74,222,128,.1);color:#4ade80}
+.card-del{position:absolute;top:4px;right:6px;background:none;border:none;color:rgba(255,255,255,.15);cursor:pointer;font-size:11px;opacity:0;transition:.1s}
+.card:hover .card-del{opacity:1}
+.card-del:hover{color:#ef4444}
+
+.col-drop-zone{min-height:40px;border:1px dashed transparent;border-radius:4px;transition:.15s}
+.col-drop-zone.over{border-color:rgba(78,205,196,.3);background:rgba(78,205,196,.04)}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
+.overlay.hidden{display:none}
+.modal{background:#15151e;border:1px solid var(--border);border-radius:8px;padding:16px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px}
+.modal h3{font:600 13px var(--font);color:var(--text)}
+.modal label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px}
+.modal input,.modal textarea,.modal select{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text);font:12px var(--font);padding:5px 8px;border-radius:4px;outline:none}
+.modal input:focus,.modal textarea:focus,.modal select:focus{border-color:rgba(78,205,196,.4)}
+.modal textarea{resize:vertical;min-height:60px}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end}
+
+/* Board mgmt modal */
+.board-modal{max-width:320px}
+
+.empty-col{text-align:center;padding:12px 8px;font-size:10px;color:rgba(255,255,255,.15)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="header-title">▦ Kanban</span>
+  <select class="board-select" id="boardSelect" onchange="switchBoard()"></select>
+  <button class="btn primary" onclick="openCardModal(null)">+ Karte</button>
+  <button class="btn" onclick="openBoardModal()">Boards</button>
+</div>
+
+<div class="board" id="board"></div>
+
+<!-- Card Modal -->
+<div class="overlay hidden" id="cardOverlay" onclick="closeCardModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="cardModalTitle">Neue Karte</h3>
+    <div>
+      <label>Titel</label>
+      <input id="cardTitle" placeholder="Was ist zu tun?">
+    </div>
+    <div>
+      <label>Beschreibung (optional)</label>
+      <textarea id="cardDesc" placeholder="Details..."></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1">
+        <label>Spalte</label>
+        <select id="cardColumn"></select>
+      </div>
+      <div style="flex:1">
+        <label>Priorität</label>
+        <select id="cardPrio">
+          <option value="">—</option>
+          <option value="high">🔴 Hoch</option>
+          <option value="med">🟡 Mittel</option>
+          <option value="low">🟢 Niedrig</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label>Tag (optional)</label>
+      <input id="cardTag" placeholder="z.B. Design, Dev, Marketing">
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeCardModal()">Abbrechen</button>
+      <button class="btn primary" onclick="saveCard()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Board Modal -->
+<div class="overlay hidden" id="boardOverlay" onclick="closeBoardModal(event)">
+  <div class="modal board-modal" onclick="event.stopPropagation()">
+    <h3>Boards verwalten</h3>
+    <div id="boardList" style="display:flex;flex-direction:column;gap:4px"></div>
+    <hr style="border-color:var(--border)">
+    <div>
+      <label>Neues Board</label>
+      <input id="newBoardName" placeholder="Board-Name" onkeydown="if(event.key==='Enter')addBoard()">
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeBoardModal()">Schließen</button>
+      <button class="btn primary" onclick="addBoard()">Board anlegen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/app/kanban/api/kanban';
+const NOTIFY = '/api/notify-change';
+
+const DEFAULT_COLUMNS = [
+  { id: 'todo',    name: 'To Do',      color: '#4ecdc4' },
+  { id: 'doing',   name: 'In Arbeit',  color: '#f5a623' },
+  { id: 'review',  name: 'Review',     color: '#a855f7' },
+  { id: 'done',    name: 'Erledigt',   color: '#4ade80' }
+];
+
+let data = { boards: [], currentBoard: null };
+let editingCardId = null;
+let dragCardId = null;
+let dragFromCol = null;
+
+async function load() {
+  try {
+    const r = await fetch(API);
+    data = await r.json();
+  } catch {
+    data = { boards: [], currentBoard: null };
+  }
+  if (!data.boards || !data.boards.length) {
+    data.boards = [{
+      id: 'board-' + Date.now(),
+      name: 'Mein Board',
+      columns: JSON.parse(JSON.stringify(DEFAULT_COLUMNS)),
+      cards: []
+    }];
+    data.currentBoard = data.boards[0].id;
+    await persist();
+  }
+  if (!data.currentBoard || !data.boards.find(b => b.id === data.currentBoard)) {
+    data.currentBoard = data.boards[0].id;
+  }
+  render();
+}
+
+async function persist() {
+  await fetch(API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+  await fetch(NOTIFY, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ appId: 'kanban', file: 'kanban.json' }) });
+}
+
+function currentBoard() {
+  return data.boards.find(b => b.id === data.currentBoard);
+}
+
+function render() {
+  renderBoardSelect();
+  renderBoard();
+}
+
+function renderBoardSelect() {
+  const sel = document.getElementById('boardSelect');
+  sel.innerHTML = data.boards.map(b => `<option value="${b.id}"${b.id===data.currentBoard?' selected':''}>${b.name}</option>`).join('');
+}
+
+function renderBoard() {
+  const board = currentBoard();
+  if (!board) return;
+  const el = document.getElementById('board');
+  el.innerHTML = '';
+  board.columns.forEach(col => {
+    const cards = (board.cards || []).filter(c => c.column === col.id);
+    const div = document.createElement('div');
+    div.className = 'column';
+    div.innerHTML = `
+      <div class="col-header">
+        <div class="col-dot" style="background:${col.color}"></div>
+        <span class="col-name">${col.name}</span>
+        <span class="col-count">${cards.length}</span>
+        <button class="col-add" onclick="openCardModal('${col.id}')" title="Karte hinzufügen">+</button>
+      </div>
+      <div class="cards" id="col-${col.id}" data-col="${col.id}"
+        ondragover="onDragOver(event,'${col.id}')"
+        ondrop="onDrop(event,'${col.id}')"
+        ondragleave="onDragLeave(event,'${col.id}')">
+        ${cards.length ? cards.map(c => renderCard(c)).join('') : '<div class="empty-col">Leer</div>'}
+        <div class="col-drop-zone" id="dz-${col.id}"></div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function renderCard(c) {
+  const prioClass = c.priority === 'high' ? 'prio-high' : c.priority === 'med' ? 'prio-med' : c.priority === 'low' ? 'prio-low' : '';
+  const prioLabel = c.priority === 'high' ? '🔴 Hoch' : c.priority === 'med' ? '🟡 Mittel' : c.priority === 'low' ? '🟢 Niedrig' : '';
+  return `<div class="card" id="card-${c.id}" draggable="true"
+    ondragstart="onDragStart(event,'${c.id}','${c.column}')"
+    ondragend="onDragEnd(event)"
+    onclick="openCardModal(null,'${c.id}')">
+    <button class="card-del" onclick="event.stopPropagation();deleteCard('${c.id}')" title="Löschen">✕</button>
+    <div class="card-title">${escHtml(c.title)}</div>
+    ${c.description ? `<div class="card-desc">${escHtml(c.description)}</div>` : ''}
+    <div class="card-footer">
+      ${c.priority ? `<span class="card-prio ${prioClass}">${prioLabel}</span>` : ''}
+      ${c.tag ? `<span class="card-tag">${escHtml(c.tag)}</span>` : ''}
+    </div>
+  </div>`;
+}
+
+// Drag & Drop
+function onDragStart(e, cardId, colId) {
+  dragCardId = cardId;
+  dragFromCol = colId;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => { const el = document.getElementById('card-' + cardId); if (el) el.classList.add('dragging'); }, 0);
+}
+function onDragEnd(e) {
+  if (dragCardId) { const el = document.getElementById('card-' + dragCardId); if (el) el.classList.remove('dragging'); }
+  document.querySelectorAll('.col-drop-zone').forEach(z => z.classList.remove('over'));
+}
+function onDragOver(e, colId) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.getElementById('dz-' + colId)?.classList.add('over');
+}
+function onDragLeave(e, colId) {
+  document.getElementById('dz-' + colId)?.classList.remove('over');
+}
+async function onDrop(e, colId) {
+  e.preventDefault();
+  document.getElementById('dz-' + colId)?.classList.remove('over');
+  if (!dragCardId || dragFromCol === colId) return;
+  const board = currentBoard();
+  const card = board.cards.find(c => c.id === dragCardId);
+  if (card) { card.column = colId; await persist(); renderBoard(); }
+  dragCardId = null; dragFromCol = null;
+}
+
+// Card Modal
+function openCardModal(colId, cardId) {
+  const board = currentBoard();
+  editingCardId = cardId || null;
+  const modal = document.getElementById('cardOverlay');
+  const titleEl = document.getElementById('cardModalTitle');
+  const colSel = document.getElementById('cardColumn');
+  colSel.innerHTML = board.columns.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  if (cardId) {
+    const card = board.cards.find(c => c.id === cardId);
+    if (!card) return;
+    titleEl.textContent = 'Karte bearbeiten';
+    document.getElementById('cardTitle').value = card.title;
+    document.getElementById('cardDesc').value = card.description || '';
+    document.getElementById('cardPrio').value = card.priority || '';
+    document.getElementById('cardTag').value = card.tag || '';
+    colSel.value = card.column;
+  } else {
+    titleEl.textContent = 'Neue Karte';
+    document.getElementById('cardTitle').value = '';
+    document.getElementById('cardDesc').value = '';
+    document.getElementById('cardPrio').value = '';
+    document.getElementById('cardTag').value = '';
+    if (colId) colSel.value = colId;
+  }
+  modal.classList.remove('hidden');
+  document.getElementById('cardTitle').focus();
+}
+function closeCardModal(e) {
+  if (e && e.target !== document.getElementById('cardOverlay')) return;
+  document.getElementById('cardOverlay').classList.add('hidden');
+  editingCardId = null;
+}
+async function saveCard() {
+  const title = document.getElementById('cardTitle').value.trim();
+  if (!title) { document.getElementById('cardTitle').focus(); return; }
+  const board = currentBoard();
+  if (editingCardId) {
+    const card = board.cards.find(c => c.id === editingCardId);
+    if (card) {
+      card.title = title;
+      card.description = document.getElementById('cardDesc').value.trim();
+      card.priority = document.getElementById('cardPrio').value;
+      card.tag = document.getElementById('cardTag').value.trim();
+      card.column = document.getElementById('cardColumn').value;
+    }
+  } else {
+    board.cards = board.cards || [];
+    board.cards.push({
+      id: 'card-' + Date.now(),
+      title,
+      description: document.getElementById('cardDesc').value.trim(),
+      priority: document.getElementById('cardPrio').value,
+      tag: document.getElementById('cardTag').value.trim(),
+      column: document.getElementById('cardColumn').value,
+      created: new Date().toISOString()
+    });
+  }
+  await persist();
+  renderBoard();
+  document.getElementById('cardOverlay').classList.add('hidden');
+  editingCardId = null;
+}
+async function deleteCard(cardId) {
+  const board = currentBoard();
+  board.cards = board.cards.filter(c => c.id !== cardId);
+  await persist();
+  renderBoard();
+}
+
+// Board Modal
+function openBoardModal() {
+  renderBoardList();
+  document.getElementById('boardOverlay').classList.remove('hidden');
+  document.getElementById('newBoardName').focus();
+}
+function closeBoardModal(e) {
+  if (e && e.target !== document.getElementById('boardOverlay')) return;
+  document.getElementById('boardOverlay').classList.add('hidden');
+}
+function renderBoardList() {
+  const list = document.getElementById('boardList');
+  list.innerHTML = data.boards.map(b => `
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="flex:1;font-size:11px;color:${b.id===data.currentBoard?'var(--col-todo)':'var(--text)'}">${escHtml(b.name)}</span>
+      ${data.boards.length > 1 ? `<button class="btn danger" onclick="deleteBoard('${b.id}')" style="padding:2px 6px;font-size:9px">✕</button>` : ''}
+    </div>`).join('');
+}
+async function addBoard() {
+  const name = document.getElementById('newBoardName').value.trim();
+  if (!name) return;
+  const board = {
+    id: 'board-' + Date.now(),
+    name,
+    columns: JSON.parse(JSON.stringify(DEFAULT_COLUMNS)),
+    cards: []
+  };
+  data.boards.push(board);
+  data.currentBoard = board.id;
+  document.getElementById('newBoardName').value = '';
+  await persist();
+  render();
+  renderBoardList();
+}
+async function deleteBoard(id) {
+  if (data.boards.length <= 1) return;
+  data.boards = data.boards.filter(b => b.id !== id);
+  if (data.currentBoard === id) data.currentBoard = data.boards[0].id;
+  await persist();
+  render();
+  renderBoardList();
+}
+async function switchBoard() {
+  data.currentBoard = document.getElementById('boardSelect').value;
+  await persist();
+  renderBoard();
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.getElementById('cardOverlay').classList.add('hidden');
+    document.getElementById('boardOverlay').classList.add('hidden');
+  }
+  if ((e.key === 'Enter') && !e.shiftKey && document.activeElement === document.getElementById('cardTitle')) {
+    saveCard();
+  }
+});
+
+// Live updates
+if (window.PulseOS && window.PulseOS.onDataChanged) {
+  window.PulseOS.onDataChanged(() => load());
+}
+
+load();
+</script>
+</body>
+</html>

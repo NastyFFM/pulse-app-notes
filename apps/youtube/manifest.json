@@ -1,0 +1,10 @@
+{
+  "name": "YouTube",
+  "icon": "▶",
+  "color": "#ff0000",
+  "description": "YouTube Videos ansehen",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}

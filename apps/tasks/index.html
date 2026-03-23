@@ -171,6 +171,10 @@ function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 
 loadTasks();
 document.getElementById('addInput').focus();
+
+if (window.PulseOS && window.PulseOS.onDataChanged) {
+  window.PulseOS.onDataChanged(function() { loadTasks(); });
+}
 </script>
 </body>
 </html>

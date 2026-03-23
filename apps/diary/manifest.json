@@ -1,0 +1,10 @@
+{
+  "name": "Diary",
+  "icon": "📓",
+  "color": "#1a2a1a",
+  "description": "Tagesrückblick und persönliches Tagebuch",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}

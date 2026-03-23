@@ -1,0 +1,10 @@
+{
+  "name": "Pong",
+  "icon": "🏓",
+  "color": "#0a0a14",
+  "description": "Klassisches Pong-Spiel",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}

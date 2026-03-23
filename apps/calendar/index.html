@@ -201,6 +201,10 @@ async function saveData() {
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 init();
+
+if (window.PulseOS && window.PulseOS.onDataChanged) {
+  window.PulseOS.onDataChanged(function() { loadEvents(); });
+}
 </script>
 </body>
 </html>

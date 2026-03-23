@@ -55,6 +55,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
   </div>
   <div class="nav-list">
     <div class="nav-item active" onclick="showSection('profile')">Profil</div>
+    <div class="nav-item" onclick="showSection('themes')">Themes</div>
     <div class="nav-item" onclick="showSection('system')">System</div>
     <div class="nav-item" onclick="showSection('shortcuts')">Shortcuts</div>
     <div class="nav-item" onclick="showSection('about')">About</div>
@@ -88,6 +89,37 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
           <button class="btn" onclick="toggleEdit()">Abbrechen</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Themes -->
+  <div class="section" id="sec-themes">
+    <div class="section-title">Themes</div>
+    <div class="section-desc">Erscheinungsbild von PulseOS anpassen</div>
+    <div class="card">
+      <div class="card-title">Theme auswählen</div>
+      <div style="margin-bottom:12px">
+        <select id="themeSelect" onchange="applyTheme(this.value)" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font:12px var(--font);padding:7px 10px;border-radius:4px;outline:none;cursor:pointer">
+          <option value="dark">Dark (Standard)</option>
+          <option value="light">Light</option>
+          <option value="midnight">Midnight (Blau)</option>
+          <option value="terminal">Terminal (Grün)</option>
+          <option value="warm">Warm</option>
+          <option value="highcontrast">High Contrast ⚡</option>
+        </select>
+      </div>
+      <div id="themePreview" style="border-radius:4px;padding:10px;border:1px solid var(--border);font-size:11px;color:var(--dim)">
+        Wähle ein Theme um eine Vorschau zu sehen
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Theme-Übersicht</div>
+      <div class="info-row"><span class="info-label">Dark</span><span class="info-value" style="color:#a855f7">Standard, dunkel-violett</span></div>
+      <div class="info-row"><span class="info-label">Light</span><span class="info-value" style="color:#0d9488">Hell, für Tageslicht</span></div>
+      <div class="info-row"><span class="info-label">Midnight</span><span class="info-value" style="color:#38bdf8">Tiefes Blau</span></div>
+      <div class="info-row"><span class="info-label">Terminal</span><span class="info-value" style="color:#00ff41">Retro Grün auf Schwarz</span></div>
+      <div class="info-row"><span class="info-label">Warm</span><span class="info-value" style="color:#e0976e">Warme Töne</span></div>
+      <div class="info-row"><span class="info-label">High Contrast ⚡</span><span class="info-value" style="color:#ffffff">Maximal lesbar, barrierearm</span></div>
     </div>
   </div>
 
@@ -222,8 +254,34 @@ async function saveProfile() {
   document.getElementById('profileForm').classList.remove('active');
 }
 
+// ── Theme ──
+const THEME_DESCS = {
+  dark: 'Dunkel-Violett — der klassische PulseOS-Look',
+  light: 'Hell — gut für helle Umgebungen',
+  midnight: 'Tiefes Blau — entspannt die Augen nachts',
+  terminal: 'Retro-Grün auf Schwarz — Hacker-Ästhetik',
+  warm: 'Warme Braun-Töne — gemütlich',
+  highcontrast: '⚡ Maximaler Kontrast — schwarz/weiß/neon, barrierefrei'
+};
+
+function applyTheme(theme) {
+  window.parent.postMessage({ type: 'set-theme', theme }, '*');
+  localStorage.setItem('pulseTheme', theme);
+  const prev = document.getElementById('themePreview');
+  if (prev) prev.textContent = THEME_DESCS[theme] || theme;
+}
+
+function initThemeSelect() {
+  const cur = localStorage.getItem('pulseTheme') || 'dark';
+  const sel = document.getElementById('themeSelect');
+  if (sel) sel.value = cur;
+  const prev = document.getElementById('themePreview');
+  if (prev) prev.textContent = THEME_DESCS[cur] || cur;
+}
+
 loadProfile();
 loadAppCount();
+initThemeSelect();
 </script>
 </body>
 </html>

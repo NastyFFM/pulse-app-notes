@@ -154,6 +154,11 @@ async function saveNotes() {
 function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 loadNotes();
+
+// Auto-reload when data changes externally (e.g. ClaudeOS creates a note)
+if (window.PulseOS && window.PulseOS.onDataChanged) {
+  window.PulseOS.onDataChanged(function() { loadNotes(); });
+}
 </script>
 </body>
 </html>

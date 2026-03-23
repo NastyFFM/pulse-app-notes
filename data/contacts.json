@@ -2,18 +2,43 @@
   "version": 1,
   "contacts": [
     {
+      "id": "chris",
       "name": "Chris",
       "handle": "nastycoder",
       "avatar": "🧑‍💻",
+      "color": "#4ecdc4",
+      "type": "user",
       "bio": "Building PulseOS",
+      "status": "online",
       "githubPages": "https://nastycoder.github.io",
       "links": [],
       "roomId": "pulse-5093113b",
       "createdAt": "2026-03-18T22:44:20.728Z",
       "updatedAt": "2026-03-18T22:44:20.728Z",
-      "firstSeen": "2026-03-18T23:42:29.291Z",
-      "lastSeen": "2026-03-20T14:04:25.675Z"
+      "lastSeen": "2026-03-23T21:16:33.306Z"
+    },
+    {
+      "id": "pulseos",
+      "name": "PulseOS",
+      "handle": "pulseos-agent",
+      "avatar": "P",
+      "color": "#f5a623",
+      "type": "agent",
+      "bio": "PulseOS Claude Code Agent - Terminal & Code",
+      "endpoint": "local-cli",
+      "status": "online"
+    },
+    {
+      "id": "claudeos",
+      "name": "ClaudeOS",
+      "handle": "claudeos-relay",
+      "avatar": "O",
+      "color": "#a855f7",
+      "type": "agent",
+      "bio": "Telegram Relay Agent - Memory & Always-On",
+      "endpoint": "chat-outbox",
+      "status": "online"
     }
   ],
-  "updatedAt": "2026-03-20T14:04:25.675Z"
+  "updatedAt": "2026-03-23T21:16:33.306Z"
 }

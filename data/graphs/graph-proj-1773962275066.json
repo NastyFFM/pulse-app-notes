@@ -8,8 +8,8 @@
       "appId": "weather",
       "name": "Weather",
       "type": "processor",
-      "x": 53,
-      "y": 29,
+      "x": 144,
+      "y": 111,
       "inputs": [
         "data"
       ],
@@ -22,8 +22,22 @@
       "appId": "notes",
       "name": "Notes",
       "type": "processor",
-      "x": 262,
-      "y": 42,
+      "x": 478,
+      "y": 220,
+      "inputs": [
+        "data"
+      ],
+      "outputs": [
+        "data"
+      ]
+    },
+    {
+      "id": "node-calendar-1774291867460",
+      "appId": "calendar",
+      "name": "Calendar",
+      "type": "processor",
+      "x": 32,
+      "y": 326,
       "inputs": [
         "data"
       ],
@@ -39,8 +53,15 @@
       "to": "node-notes-1774005648602",
       "fromOutput": "data",
       "toInput": "data"
+    },
+    {
+      "id": "edge-1774291876085",
+      "from": "node-calendar-1774291867460",
+      "to": "node-notes-1774005648602",
+      "fromOutput": "data",
+      "toInput": "data"
     }
   ],
-  "updated": "2026-03-20T11:31:54.180Z",
-  "updatedAt": "2026-03-20T11:31:54.183Z"
+  "updated": "2026-03-23T18:51:20.157Z",
+  "updatedAt": "2026-03-23T18:51:20.161Z"
 }

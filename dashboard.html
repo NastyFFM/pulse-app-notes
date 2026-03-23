@@ -77,6 +77,21 @@ html[data-theme="terminal"] {
   --border-hover: rgba(0, 255, 65, 0.2);
 }
 
+/* ── Theme: High Contrast ── */
+html[data-theme="highcontrast"] {
+  --bg: #000000;
+  --bg-surface: rgba(0, 0, 0, 0.98);
+  --bg-card: rgba(255, 255, 255, 0.08);
+  --bg-card-hover: rgba(255, 255, 255, 0.14);
+  --amber: #ffdd00; --teal: #00ffff; --lila: #ff88ff;
+  --red: #ff4444; --green: #44ff44;
+  --text: rgba(255, 255, 255, 1);
+  --text-dim: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --border: rgba(255, 255, 255, 0.2);
+  --border-hover: rgba(255, 255, 255, 0.4);
+}
+
 /* ── Theme: Warm ── */
 html[data-theme="warm"] {
   --bg: #1a1410;
@@ -1241,7 +1256,7 @@ function setMode(mode) {
 }
 
 // ── Themes ──
-const THEMES = ['dark', 'light', 'midnight', 'terminal', 'warm'];
+const THEMES = ['dark', 'light', 'midnight', 'terminal', 'warm', 'highcontrast'];
 function setTheme(theme) {
   if (!THEMES.includes(theme)) theme = 'dark';
   if (theme === 'dark') document.documentElement.removeAttribute('data-theme');
@@ -1268,6 +1283,12 @@ function connectSSE() {
       if (msg.type === 'tunnel') {
         handleTunnelSSE(msg);
         return;
+      }
+      if (msg.type === 'app-data-changed' && msg.appId) {
+        // Forward to open app iframes so they auto-reload
+        openWindows.filter(w => w.appId === msg.appId && !w.closed).forEach(w => {
+          try { w.el.querySelector('iframe').contentWindow.postMessage({ type: 'data-changed', appId: msg.appId, file: msg.file }, '*'); } catch {}
+        });
       }
     } catch {}
     addFeed('SSE Update', 'sse');
@@ -2202,6 +2223,7 @@ function updateGreeting() {
 let systemChatOpen = false;
 let chatHistoryLoaded = false;
 const renderedMsgIds = new Set();
+let activeChatTarget = 'group'; // 'group', 'claudeos', 'pulseos'
 
 function toggleSystemChat() {
   systemChatOpen = !systemChatOpen;
@@ -2235,7 +2257,7 @@ function renderChatMsg(msg) {
   if (msgs.querySelector('.chat-empty')) msgs.innerHTML = '';
   const isUser = msg.from === 'user';
   const sourceIcon = msg.source === 'telegram' ? '\u2708' : '\u25b8';
-  const fromLabel = isUser ? (userProfile?.name || 'Du') : 'ClaudeOS';
+  const fromLabel = isUser ? (userProfile?.name || 'Du') : (msg.source === 'pulseos' ? 'PulseOS' : 'ClaudeOS');
   const div = document.createElement('div');
   div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;' + (isUser ? 'flex-direction:row-reverse;' : '');
   div.innerHTML = '<span style="font-size:14px;flex-shrink:0;width:20px;text-align:center;">' + sourceIcon + '</span>' +
@@ -2265,14 +2287,25 @@ function sendSystemChat() {
 }
 
 async function sendToAgent(text) {
-  try {
-    // Send to ClaudeOS outbox — message appears in history via SSE
-    // ClaudeOS picks it up, processes with Claude, mirrors response back
-    const outRes = await fetch('/api/chat-outbox', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, source: 'dashboard' }) });
-    const outData = await outRes.json();
-    if (!outData.ok) throw new Error('outbox failed');
-    // Response will arrive via SSE from ClaudeOS — no need to poll
-  } catch(e) {
+  const targets = activeChatTarget === 'group' ? ['claudeos', 'pulseos'] : [activeChatTarget];
+  let anyOk = false;
+
+  for (const target of targets) {
+    try {
+      if (target === 'claudeos') {
+        const r = await fetch('/api/chat-outbox', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, source: 'dashboard' }) });
+        const d = await r.json();
+        if (d.ok) anyOk = true;
+      } else if (target === 'pulseos') {
+        const skipMirror = targets.length > 1; // group: outbox already mirrors
+        const r = await fetch('/api/pulseos-chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, source: 'dashboard', skipMirror }) });
+        const d = await r.json();
+        if (d.ok) anyOk = true;
+      }
+    } catch(e) {}
+  }
+
+  if (!anyOk) {
     renderChatMsg({ id: 'err-' + Date.now(), from: 'agent', text: 'Offline — kein Agent verbunden.', source: 'system' });
   }
 }
@@ -2353,18 +2386,34 @@ function renderContacts() {
     list.innerHTML = '<div class="contacts-empty">Noch keine Kontakte.</div>';
     return;
   }
-  const peers = window.PulseOS?.getPeers?.() || {};
-  const onlineHandles = new Set(Object.values(peers).filter(p => p.online).map(p => p.handle || p.name));
-  list.innerHTML = contactsCache.map(c => {
-    const isOnline = onlineHandles.has(c.handle) || onlineHandles.has(c.name);
-    const lastSeen = c.lastSeen ? getRelativeTime(new Date(c.lastSeen)) : '';
-    return '<div class="contact-item">' +
-      '<div class="contact-avatar">' + (c.avatar || '>') + '</div>' +
+  // Group chat option at top
+  let html = '<div class="contact-item' + (activeChatTarget === 'group' ? ' active' : '') + '" onclick="setChatTarget(\'group\')" style="cursor:pointer;">' +
+    '<div class="contact-avatar" style="background:var(--teal);color:var(--bg);">G</div>' +
+    '<div class="contact-info"><div class="contact-name">Gruppenchat</div>' +
+    '<div class="contact-handle">Chris + PulseOS + ClaudeOS</div></div>' +
+    '<div class="contact-status online"></div></div>';
+  // Individual contacts
+  html += contactsCache.filter(c => c.type === 'agent').map(c => {
+    const isActive = activeChatTarget === c.id;
+    return '<div class="contact-item' + (isActive ? ' active' : '') + '" onclick="setChatTarget(\'' + c.id + '\')" style="cursor:pointer;">' +
+      '<div class="contact-avatar" style="background:' + (c.color || 'var(--teal)') + ';color:var(--bg);">' + (c.avatar || '>') + '</div>' +
       '<div class="contact-info"><div class="contact-name">' + esc(c.name || '?') + '</div>' +
-      '<div class="contact-handle">@' + esc(c.handle || '?') + (lastSeen ? ' · ' + lastSeen : '') + '</div>' +
-      (c.githubPages ? '<a class="contact-ghlink" href="' + esc(c.githubPages) + '" target="_blank" onclick="event.stopPropagation()">' + esc(c.githubPages.replace('https://', '')) + '</a>' : '') +
-      '</div><div class="contact-status ' + (isOnline ? 'online' : 'offline') + '"></div></div>';
+      '<div class="contact-handle">' + esc(c.bio || '') + '</div></div>' +
+      '<div class="contact-status online"></div></div>';
   }).join('');
+  list.innerHTML = html;
+}
+
+function setChatTarget(target) {
+  activeChatTarget = target;
+  const headerTitle = document.querySelector('.chat-header-title');
+  if (headerTitle) {
+    if (target === 'group') headerTitle.textContent = 'Gruppenchat';
+    else if (target === 'claudeos') headerTitle.textContent = 'ClaudeOS';
+    else if (target === 'pulseos') headerTitle.textContent = 'PulseOS';
+  }
+  renderContacts();
+  switchSysChatTab('chat');
 }
 
 // ── Peers ──
@@ -2401,6 +2450,7 @@ window.addEventListener('message', e => {
     const ab = document.getElementById('agentText');
     if (ab) ab.textContent = e.data.message;
   }
+  if (e.data && e.data.type === 'set-theme' && e.data.theme) setTheme(e.data.theme);
   if (e.data && e.data.type === 'start-tutorial') {
     const settingsWin = openWindows.find(w => w.appId === 'settings');
     if (settingsWin) closeWin(settingsWin.winId);

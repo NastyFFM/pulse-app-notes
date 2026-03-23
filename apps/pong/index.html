@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Pong</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a14;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'IBM Plex Mono',monospace;color:rgba(255,255,255,.85);overflow:hidden;user-select:none;touch-action:none}
+canvas{border:1px solid rgba(255,255,255,.08);border-radius:4px;display:block;touch-action:none}
+.hud{display:flex;align-items:center;gap:40px;margin-bottom:12px;font-size:13px;color:rgba(255,255,255,.4)}
+.score{font-size:28px;font-weight:700;color:rgba(255,255,255,.9);min-width:40px;text-align:center}
+.label{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);text-align:center}
+.msg{margin-top:12px;font-size:11px;color:rgba(255,255,255,.3);text-align:center;height:16px}
+.controls{margin-top:8px;font-size:9px;color:rgba(255,255,255,.2);text-align:center}
+</style>
+</head>
+<body>
+
+<div class="hud">
+  <div>
+    <div class="label">Du</div>
+    <div class="score" id="scoreLeft">0</div>
+  </div>
+  <div style="color:rgba(255,255,255,.15);font-size:18px">:</div>
+  <div>
+    <div class="label">KI</div>
+    <div class="score" id="scoreRight">0</div>
+  </div>
+</div>
+
+<canvas id="c"></canvas>
+<div class="msg" id="msg">Tippe zum Starten</div>
+<div class="controls">Finger ziehen zum Bewegen · Tippen zum Starten</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const msgEl = document.getElementById('msg');
+const scoreLeft = document.getElementById('scoreLeft');
+const scoreRight = document.getElementById('scoreRight');
+
+// Responsive canvas size
+const isMobile = window.innerWidth < 500;
+const W = isMobile ? Math.min(window.innerWidth - 16, 380) : 600;
+const H = isMobile ? Math.round(W * 0.65) : 380;
+const PAD_W = 10, PAD_H = isMobile ? 55 : 70, BALL_SIZE = isMobile ? 7 : 8;
+canvas.width = W; canvas.height = H;
+canvas.style.width = W + 'px';
+canvas.style.height = H + 'px';
+
+let state = 'idle'; // idle, playing, paused
+let scores = [0, 0];
+let keys = {};
+
+// Game objects
+let ball, padL, padR;
+
+function reset() {
+  ball = { x: W/2, y: H/2, vx: (Math.random() > 0.5 ? 1 : -1) * 4.5, vy: (Math.random() * 3 - 1.5) };
+  padL = { y: H/2 - PAD_H/2, vy: 0 };
+  padR = { y: H/2 - PAD_H/2, vy: 0 };
+}
+
+function clampPad(p) {
+  p.y = Math.max(0, Math.min(H - PAD_H, p.y));
+}
+
+// AI difficulty
+const AI_SPEED = 3.5;
+
+let mouseY = H / 2;
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleY = H / rect.height;
+  mouseY = (e.clientY - rect.top) * scaleY;
+});
+
+// Touch controls
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  startGame();
+  const rect = canvas.getBoundingClientRect();
+  const scaleY = H / rect.height;
+  mouseY = (e.touches[0].clientY - rect.top) * scaleY;
+}, { passive: false });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const scaleY = H / rect.height;
+  mouseY = (e.touches[0].clientY - rect.top) * scaleY;
+}, { passive: false });
+
+function update() {
+  if (state !== 'playing') return;
+
+  // Player left pad — keyboard
+  if (keys['w'] || keys['arrowup'])   padL.y -= 6;
+  if (keys['s'] || keys['arrowdown']) padL.y += 6;
+  // Mouse also controls left pad
+  const targetL = mouseY - PAD_H / 2;
+  padL.y += (targetL - padL.y) * 0.18;
+  clampPad(padL);
+
+  // AI right pad
+  const centerR = padR.y + PAD_H / 2;
+  if (ball.vx > 0) {
+    // ball coming toward AI
+    if (centerR < ball.y - 5) padR.y += AI_SPEED;
+    else if (centerR > ball.y + 5) padR.y -= AI_SPEED;
+  } else {
+    // ball going away — drift to center
+    if (centerR < H/2 - 10) padR.y += AI_SPEED * 0.4;
+    else if (centerR > H/2 + 10) padR.y -= AI_SPEED * 0.4;
+  }
+  clampPad(padR);
+
+  // Ball movement
+  ball.x += ball.vx;
+  ball.y += ball.vy;
+
+  // Top/bottom bounce
+  if (ball.y <= 0) { ball.y = 0; ball.vy = Math.abs(ball.vy); }
+  if (ball.y >= H - BALL_SIZE) { ball.y = H - BALL_SIZE; ball.vy = -Math.abs(ball.vy); }
+
+  // Left pad collision
+  if (ball.x <= PAD_W + BALL_SIZE && ball.x >= PAD_W - 4 &&
+      ball.y + BALL_SIZE >= padL.y && ball.y <= padL.y + PAD_H) {
+    ball.x = PAD_W + BALL_SIZE;
+    const rel = (ball.y + BALL_SIZE/2 - (padL.y + PAD_H/2)) / (PAD_H/2);
+    ball.vx = Math.abs(ball.vx) * 1.05;
+    ball.vy = rel * 5;
+    if (ball.vx > 10) ball.vx = 10;
+  }
+
+  // Right pad collision
+  if (ball.x + BALL_SIZE >= W - PAD_W && ball.x + BALL_SIZE <= W - PAD_W + 4 &&
+      ball.y + BALL_SIZE >= padR.y && ball.y <= padR.y + PAD_H) {
+    ball.x = W - PAD_W - BALL_SIZE;
+    const rel = (ball.y + BALL_SIZE/2 - (padR.y + PAD_H/2)) / (PAD_H/2);
+    ball.vx = -Math.abs(ball.vx) * 1.05;
+    ball.vy = rel * 5;
+    if (ball.vx < -10) ball.vx = -10;
+  }
+
+  // Score
+  if (ball.x < 0) {
+    scores[1]++;
+    scoreRight.textContent = scores[1];
+    msgEl.textContent = 'KI punktet! Tippen zum Weiter';
+    state = 'idle';
+    reset();
+    return;
+  }
+  if (ball.x > W) {
+    scores[0]++;
+    scoreLeft.textContent = scores[0];
+    msgEl.textContent = 'Du punktest! 🎉 Tippen zum Weiter';
+    state = 'idle';
+    reset();
+    return;
+  }
+}
+
+function draw() {
+  ctx.fillStyle = '#0a0a14';
+  ctx.fillRect(0, 0, W, H);
+
+  // Center line
+  ctx.strokeStyle = 'rgba(255,255,255,.06)';
+  ctx.setLineDash([8, 8]);
+  ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Pads
+  const pad_color = 'rgba(78,205,196,.9)';
+  ctx.fillStyle = pad_color;
+  ctx.beginPath();
+  roundRect(ctx, PAD_W - PAD_W/2, padL.y, PAD_W, PAD_H, 3);
+  ctx.fill();
+  ctx.beginPath();
+  roundRect(ctx, W - PAD_W - PAD_W/2, padR.y, PAD_W, PAD_H, 3);
+  ctx.fill();
+
+  // Ball
+  if (state === 'playing') {
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(255,255,255,.6)';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    roundRect(ctx, ball.x, ball.y, BALL_SIZE, BALL_SIZE, 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  // Idle overlay
+  if (state === 'idle') {
+    ctx.fillStyle = 'rgba(10,10,20,.4)';
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function startGame() {
+  if (state === 'idle') {
+    state = 'playing';
+    msgEl.textContent = '';
+  }
+}
+
+document.addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
+  if (e.key === ' ') { e.preventDefault(); startGame(); }
+});
+document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+canvas.addEventListener('click', startGame);
+
+reset();
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>

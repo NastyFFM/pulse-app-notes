@@ -64,6 +64,11 @@ function appHtmlRes(res, file, appId) {
           if (e.data && e.data.type === 'pulse') callback(e.data);
         });
       },
+      onDataChanged: function(callback) {
+        window.addEventListener('message', function(e) {
+          if (e.data && e.data.type === 'data-changed' && e.data.appId === '${appId}') callback(e.data);
+        });
+      },
       alert: function(msg) {
         try { window.parent.postMessage({ type: 'app-alert', appId: '${appId}', message: String(msg).slice(0, 300) }, '*'); } catch(e) {}
       },
@@ -1604,6 +1609,192 @@ const server = http.createServer(async (req, res) => {
       fs.writeFileSync(outFile, JSON.stringify({ messages: [] }, null, 2));
     }
     return jsonRes(res, { messages });
+  }
+
+  // ── PulseOS Agent Chat (local Claude Code agent) ──
+  if (url === '/api/pulseos-chat' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { message, source, skipMirror } = JSON.parse(b);
+        if (!message) { res.writeHead(400); return res.end(JSON.stringify({ error: 'message required' })); }
+        const qFile = path.join(ROOT, 'data', 'pulseos-queue.json');
+        const q = JSON.parse(safeReadJSON(qFile, { messages: [] }));
+        if (!q.messages) q.messages = [];
+        const msg = { id: 'pq-' + Date.now(), message, source: source || 'dashboard', time: new Date().toISOString() };
+        q.messages.push(msg);
+        fs.writeFileSync(qFile, JSON.stringify(q, null, 2));
+        // Mirror to chat history (skip in group mode — outbox already mirrors)
+        if (!skipMirror) {
+          const histFile = path.join(ROOT, 'data', 'chat-history.json');
+          const hist = JSON.parse(safeReadJSON(histFile, '{"messages":[]}'));
+          if (!hist.messages) hist.messages = [];
+          const histMsg = { id: 'm-' + Date.now(), from: 'user', text: message, source: 'dashboard', time: msg.time };
+          hist.messages.push(histMsg);
+          if (hist.messages.length > 200) hist.messages = hist.messages.slice(-200);
+          fs.writeFileSync(histFile, JSON.stringify(hist, null, 2));
+          broadcast('dashboard', { type: 'chat-message', message: histMsg });
+        }
+        jsonRes(res, { ok: true, id: msg.id });
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+    });
+  }
+
+  if (url === '/api/pulseos-respond' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { text } = JSON.parse(b);
+        if (!text) { res.writeHead(400); return res.end(JSON.stringify({ error: 'text required' })); }
+        const histFile = path.join(ROOT, 'data', 'chat-history.json');
+        const hist = JSON.parse(safeReadJSON(histFile, '{"messages":[]}'));
+        if (!hist.messages) hist.messages = [];
+        const msg = { id: 'm-' + Date.now(), from: 'agent', text, source: 'pulseos', time: new Date().toISOString() };
+        hist.messages.push(msg);
+        if (hist.messages.length > 200) hist.messages = hist.messages.slice(-200);
+        fs.writeFileSync(histFile, JSON.stringify(hist, null, 2));
+        broadcast('dashboard', { type: 'chat-message', message: msg });
+        jsonRes(res, { ok: true, id: msg.id });
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+    });
+  }
+
+  if (url === '/api/pulseos-chat' && req.method === 'GET') {
+    const qFile = path.join(ROOT, 'data', 'pulseos-queue.json');
+    const q = JSON.parse(safeReadJSON(qFile, { messages: [] }));
+    const messages = q.messages || [];
+    if (messages.length > 0) {
+      fs.writeFileSync(qFile, JSON.stringify({ messages: [] }, null, 2));
+    }
+    return jsonRes(res, { messages });
+  }
+
+  // ── Agent Context (dynamische API-Doku für ClaudeOS) ──
+  if (url === '/api/agent-context' && req.method === 'GET') {
+    // Dynamisch generiert — ClaudeOS holt sich das beim Start & alle 5 Min
+    const apps = JSON.parse(safeReadJSON(path.join(ROOT, 'data', 'apps.json'), { apps: [] }));
+    const appList = (apps.apps || apps || []);
+    const appTable = appList.map(a => `| ${a.name || a.id} | ${a.id} | /app/${a.id}/api/ |`).join('\n');
+
+    // Scan welche data-files jede App hat
+    const appDataInfo = [];
+    for (const a of appList) {
+      const dataDir = path.join(ROOT, 'apps', a.id, 'data');
+      try {
+        const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
+        if (files.length > 0) {
+          appDataInfo.push(`### ${a.name || a.id} (${a.id})\n` + files.map(f => {
+            const name = f.replace('.json', '');
+            return `- GET \`/app/${a.id}/api/${name}\` → lesen\n- PUT \`/app/${a.id}/api/${name}\` → schreiben`;
+          }).join('\n'));
+        }
+      } catch {}
+    }
+
+    const graphFiles = [];
+    try {
+      const gDir = path.join(ROOT, 'data', 'graphs');
+      fs.readdirSync(gDir).filter(f => f.endsWith('.json')).forEach(f => {
+        try {
+          const g = JSON.parse(fs.readFileSync(path.join(gDir, f), 'utf8'));
+          graphFiles.push(`- **${g.name || g.projectId || f}**: ${(g.nodes||[]).length} Nodes, ${(g.edges||[]).length} Edges`);
+        } catch {}
+      });
+    } catch {}
+
+    // Letzte Änderungen scannen (mtime der App-Daten, letzte 60 Min)
+    const recentChanges = [];
+    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+    for (const a of appList) {
+      const dataDir = path.join(ROOT, 'apps', a.id, 'data');
+      try {
+        fs.readdirSync(dataDir).filter(f => f.endsWith('.json')).forEach(f => {
+          try {
+            const stat = fs.statSync(path.join(dataDir, f));
+            if (stat.mtimeMs > oneHourAgo) {
+              const ago = Math.round((Date.now() - stat.mtimeMs) / 60000);
+              recentChanges.push({ app: a.name || a.id, file: f, ago });
+            }
+          } catch {}
+        });
+      } catch {}
+    }
+    recentChanges.sort((a, b) => a.ago - b.ago);
+    const recentText = recentChanges.length > 0
+      ? recentChanges.map(c => `- **${c.app}** ${c.file} (vor ${c.ago} Min)`).join('\n')
+      : 'Keine Änderungen in der letzten Stunde';
+
+    const context = `# PulseOS Agent-Kontext
+
+Du bist mit PulseOS verbunden (http://localhost:3000). Du kannst Apps steuern und Daten lesen/schreiben.
+
+## Installierte Apps
+
+| Name | ID | API-Basis |
+|------|-----|-----------|
+${appTable}
+
+## App-Daten APIs
+
+Muster: \`GET /app/{id}/api/{name}\` lesen, \`PUT /app/{id}/api/{name}\` schreiben (JSON body).
+Nach dem Schreiben: \`POST /api/notify-change\` mit \`{"appId":"...","file":"...json"}\` damit die App live aktualisiert.
+
+${appDataInfo.join('\n\n')}
+
+## System-APIs
+
+- \`GET /api/apps\` — App-Liste
+- \`GET /api/app-registry\` — Apps mit Manifests
+- \`GET /api/graphs\` — Aktive Graphen
+- \`POST /api/chat-mirror\` — Nachricht ans Dashboard senden: \`{"from":"agent","text":"...","source":"telegram"}\`
+- \`POST /api/notify-change\` — SSE-Event an App: \`{"appId":"...","file":"...json"}\`
+- \`GET /api/chat-history\` — Chat-Verlauf
+- \`GET /api/pulseos-chat\` — PulseOS-Agent Chat-Queue abholen (pickup & clear)
+- \`POST /api/pulseos-respond\` — PulseOS-Agent Antwort senden: \`{"text":"..."}\`
+
+## Aktive Graphen
+
+${graphFiles.length > 0 ? graphFiles.join('\n') : 'Keine aktiven Graphen'}
+
+## Letzte Aktivität (User-Änderungen in Apps)
+
+${recentText}
+
+Wenn der User fragt "was habe ich gerade gemacht?" — lies die oben genannten Dateien via GET API um Details zu sehen.
+
+## Beispiel: Notiz erstellen
+
+\`\`\`bash
+# 1. Aktuelle Notizen lesen
+curl http://localhost:3000/app/notes/api/notes
+# 2. Neue Notiz hinzufügen (vorhandene + neue)
+curl -X PUT http://localhost:3000/app/notes/api/notes -H 'Content-Type: application/json' -d '{"notes":[...]}'
+# 3. App benachrichtigen
+curl -X POST http://localhost:3000/api/notify-change -H 'Content-Type: application/json' -d '{"appId":"notes","file":"notes.json"}'
+\`\`\`
+
+## Share / Tunnel
+
+PulseOS hat einen eingebauten Cloudflare Tunnel. Der User kann darüber sein Dashboard öffentlich teilen.
+
+\`\`\`bash
+# Tunnel-Status prüfen (gibt URL zurück wenn aktiv)
+curl http://localhost:3000/api/tunnel
+
+# Tunnel starten
+curl -X POST http://localhost:3000/api/tunnel -H 'Content-Type: application/json' -d '{"action":"start"}'
+
+# Tunnel stoppen
+curl -X POST http://localhost:3000/api/tunnel -H 'Content-Type: application/json' -d '{"action":"stop"}'
+\`\`\`
+
+Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \`url\` vorhanden ist, gib die URL zurück. Wenn nicht aktiv, starte den Tunnel.
+
+## Regeln
+1. Kurz antworten — Telegram-Format
+2. Lies immer erst Daten bevor du schreibst
+3. Nach PUT immer notify-change senden
+4. Memory-Tags nutzen: [REMEMBER: ...], [GOAL: ... | DEADLINE: ...], [DONE: ...]
+`;
+    return jsonRes(res, { context, generated: new Date().toISOString() });
   }
 
   // ── AI Endpoint (SDK) ──
@@ -3505,6 +3696,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
       if (req.method === 'PUT') return readBody(req, b => {
         fs.writeFileSync(file, JSON.stringify(JSON.parse(b), null, 2));
         broadcast(appId, { type: 'change', file: apiMatch[1] + '.json', time: Date.now() });
+        broadcast('dashboard', { type: 'app-data-changed', appId: appId, file: apiMatch[1] + '.json', time: Date.now() });
         vikingImportApp(appId);
         emitEvent({ type: 'data:changed', source: `app:${appId}`, data: { appId, file: apiMatch[1] + '.json' } });
         jsonRes(res, { ok: true });
@@ -5568,6 +5760,74 @@ Regeln:
       });
       return;
     }
+  }
+
+  // ── Podcast RSS proxy ──
+  if (url === '/api/podcast/rss' && req.method === 'GET') {
+    const feedUrl = new URLSearchParams(req.url.split('?')[1] || '').get('url') || '';
+    if (!feedUrl) return jsonRes(res, { error: 'no url' });
+    const mod = feedUrl.startsWith('https') ? require('https') : require('http');
+    mod.get(feedUrl, { headers: { 'User-Agent': 'PulseOS/1.0 Podcast App' } }, r => {
+      let body = '';
+      r.on('data', d => body += d);
+      r.on('end', () => {
+        try {
+          const items = [];
+          const itemMatches = body.matchAll(/<item>([\s\S]*?)<\/item>/g);
+          for (const m of itemMatches) {
+            const block = m[1];
+            const getTag = (tag) => { const rx = block.match(new RegExp('<' + tag + '[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></' + tag + '>|<' + tag + '[^>]*>([^<]*)</' + tag + '>')); return rx ? (rx[1] || rx[2] || '').trim() : ''; };
+            const enclosure = block.match(/<enclosure[^>]+url="([^"]+)"/);
+            const duration = block.match(/<itunes:duration>([^<]+)<\/itunes:duration>/);
+            const pubDate = block.match(/<pubDate>([^<]+)<\/pubDate>/);
+            if (enclosure) items.push({
+              title: getTag('title'),
+              description: getTag('description').replace(/<[^>]+>/g, '').slice(0, 200),
+              audio: enclosure[1],
+              duration: duration ? duration[1] : '',
+              date: pubDate ? pubDate[1].slice(0, 16) : ''
+            });
+            if (items.length >= 30) break;
+          }
+          jsonRes(res, { items });
+        } catch(e) { jsonRes(res, { items: [], error: e.message }); }
+      });
+    }).on('error', e => jsonRes(res, { items: [], error: e.message }));
+    return;
+  }
+
+  // ── YouTube search proxy ──
+  if (url === '/api/youtube/search' && req.method === 'GET') {
+    const q = new URLSearchParams(req.url.split('?')[1] || '').get('q') || '';
+    if (!q) return jsonRes(res, { error: 'no query' });
+    const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}&sp=EgIQAQ%3D%3D`;
+    const https = require('https');
+    const options = { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Accept-Language': 'de,en;q=0.9' } };
+    https.get(ytUrl, options, r => {
+      let body = '';
+      r.on('data', d => body += d);
+      r.on('end', () => {
+        try {
+          const match = body.match(/var ytInitialData = ({.+?});<\/script>/s);
+          if (!match) return jsonRes(res, { results: [] });
+          const data = JSON.parse(match[1]);
+          const contents = data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents || [];
+          const results = contents
+            .filter(c => c.videoRenderer)
+            .map(c => {
+              const v = c.videoRenderer;
+              const thumb = v.thumbnail?.thumbnails?.slice(-1)[0]?.url || '';
+              const duration = v.lengthText?.simpleText || '';
+              const channel = v.ownerText?.runs?.[0]?.text || '';
+              return { videoId: v.videoId, title: v.title?.runs?.[0]?.text || '', thumbnail: thumb, duration, channel };
+            })
+            .filter(v => v.videoId)
+            .slice(0, 20);
+          jsonRes(res, { results });
+        } catch(e) { jsonRes(res, { results: [], error: e.message }); }
+      });
+    }).on('error', e => jsonRes(res, { results: [], error: e.message }));
+    return;
   }
 
   if (url === '/api/tunnel') {

@@ -1,0 +1,10 @@
+{
+  "name": "Todo",
+  "icon": "✓",
+  "color": "#0d1a0d",
+  "description": "Einfache Todo-Liste zum Abhaken",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}

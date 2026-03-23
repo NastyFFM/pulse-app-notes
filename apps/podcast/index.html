@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Podcast</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d14;--surface:#111118;--text:rgba(255,255,255,.85);--dim:rgba(255,255,255,.4);--muted:rgba(255,255,255,.15);--acc:#a855f7;--border:rgba(255,255,255,.06);--font:'IBM Plex Mono',monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+.toolbar{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.toolbar-title{font-size:11px;font-weight:700;color:var(--acc);letter-spacing:.05em;white-space:nowrap}
+.search-input{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text);font:12px var(--font);padding:5px 10px;border-radius:4px;outline:none}
+.search-input:focus{border-color:rgba(168,85,247,.4)}
+.search-input::placeholder{color:var(--muted)}
+.btn{background:var(--acc);color:#fff;border:none;padding:5px 12px;border-radius:4px;font:600 11px var(--font);cursor:pointer}
+.btn:hover{opacity:.85}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-back{background:rgba(255,255,255,.06);color:var(--dim);border:1px solid var(--border);padding:5px 10px;border-radius:4px;font:10px var(--font);cursor:pointer}
+.btn-back:hover{color:var(--text)}
+
+.content{flex:1;display:flex;overflow:hidden}
+
+.sidebar{width:240px;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:6px 12px;border-bottom:1px solid var(--border);font-size:9px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between;align-items:center}
+.list{flex:1;overflow-y:auto;padding:4px 0}
+.list-item{padding:8px 12px;cursor:pointer;border-left:2px solid transparent;display:flex;gap:8px;align-items:flex-start;transition:all .1s}
+.list-item:hover{background:rgba(255,255,255,.03)}
+.list-item.active{background:rgba(168,85,247,.05);border-left-color:var(--acc)}
+.item-art{width:36px;height:36px;border-radius:4px;object-fit:cover;background:#1a1a2a;flex-shrink:0}
+.item-art-placeholder{width:36px;height:36px;border-radius:4px;background:#1a1a2a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.item-info{flex:1;min-width:0}
+.item-title{font-size:10px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.3}
+.item-sub{font-size:9px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{padding:16px 12px;font-size:10px;color:var(--muted);text-align:center}
+.loading{padding:16px 12px;font-size:10px;color:var(--dim);text-align:center}
+
+/* Main panel */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.main-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.podcast-art{width:48px;height:48px;border-radius:6px;object-fit:cover;background:#1a1a2a}
+.podcast-art-placeholder{width:48px;height:48px;border-radius:6px;background:#1a1a2a;display:flex;align-items:center;justify-content:center;font-size:24px}
+.podcast-info{flex:1}
+.podcast-name{font-size:13px;font-weight:600;color:var(--text)}
+.podcast-author{font-size:10px;color:var(--dim);margin-top:2px}
+.episodes{flex:1;overflow-y:auto}
+.episode-item{padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;display:flex;gap:10px;align-items:flex-start}
+.episode-item:hover{background:rgba(255,255,255,.02)}
+.episode-item.playing{background:rgba(168,85,247,.05)}
+.episode-num{font-size:9px;color:var(--muted);margin-top:2px;min-width:20px;text-align:right}
+.episode-content{flex:1;min-width:0}
+.episode-title{font-size:11px;color:var(--text);margin-bottom:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.episode-meta{font-size:9px;color:var(--muted)}
+.play-icon{font-size:14px;color:var(--acc);flex-shrink:0;margin-top:1px}
+
+/* Player bar */
+.player-bar{border-top:1px solid var(--border);background:var(--surface);padding:0;flex-shrink:0}
+.player-bar audio{width:100%;height:36px;display:block;filter:invert(1) hue-rotate(270deg) brightness(.7)}
+.now-playing-title{padding:4px 12px 0;font-size:9px;color:var(--acc);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.placeholder-main{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--muted)}
+.placeholder-main .icon{font-size:40px;opacity:.2}
+
+/* Mobile: stack sidebar and main */
+@media(max-width:600px){
+  .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border)}
+  .content{flex-direction:column}
+  .main{min-height:0}
+  .content.show-main .sidebar{display:none}
+  .content.show-main .main{flex:1}
+  .content:not(.show-main) .main{display:none}
+  .sidebar{max-height:50vh}
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="toolbar-title">🎙 Podcast</span>
+  <input class="search-input" id="searchInput" placeholder="Podcast suchen..." onkeydown="if(event.key==='Enter')search()">
+  <button class="btn" id="searchBtn" onclick="search()">Suchen</button>
+  <button class="btn-back" id="backBtn" onclick="showPodcasts()" style="display:none">← Podcasts</button>
+</div>
+
+<div class="content">
+  <div class="sidebar">
+    <div class="sidebar-header" id="sidebarHeader">Podcasts</div>
+    <div class="list" id="listPanel">
+      <div class="empty">Suchbegriff eingeben</div>
+    </div>
+  </div>
+
+  <div class="main" id="mainPanel">
+    <div class="placeholder-main">
+      <div class="icon">🎙</div>
+      <p>Podcast aus der Liste wählen</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let podcasts = [];
+let episodes = [];
+let currentPodcast = null;
+let currentEpIdx = null;
+
+// ── Search ──
+async function search() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  const btn = document.getElementById('searchBtn');
+  const list = document.getElementById('listPanel');
+  btn.disabled = true;
+  list.innerHTML = '<div class="loading">Suche...</div>';
+  document.getElementById('sidebarHeader').textContent = 'Podcasts';
+  document.getElementById('backBtn').style.display = 'none';
+  try {
+    const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=podcast&limit=25&country=de`);
+    const data = await r.json();
+    podcasts = data.results || [];
+    renderPodcasts();
+  } catch(e) {
+    list.innerHTML = '<div class="empty">Suche fehlgeschlagen</div>';
+  }
+  btn.disabled = false;
+}
+
+function renderPodcasts() {
+  const list = document.getElementById('listPanel');
+  document.getElementById('sidebarHeader').textContent = podcasts.length + ' Podcasts';
+  if (!podcasts.length) { list.innerHTML = '<div class="empty">Keine Ergebnisse</div>'; return; }
+  list.innerHTML = podcasts.map((p, i) => `
+    <div class="list-item" id="pod-${i}" onclick="loadPodcast(${i})">
+      ${p.artworkUrl60 ? `<img class="item-art" src="${p.artworkUrl60}" loading="lazy">` : '<div class="item-art-placeholder">🎙</div>'}
+      <div class="item-info">
+        <div class="item-title">${escHtml(p.collectionName || 'Unbekannt')}</div>
+        <div class="item-sub">${escHtml(p.artistName || '')} · ${p.trackCount || '?'} Eps</div>
+      </div>
+    </div>`).join('');
+}
+
+function showPodcasts() {
+  renderPodcasts();
+  document.getElementById('mainPanel').innerHTML = `<div class="placeholder-main"><div class="icon">🎙</div><p>Podcast aus der Liste wählen</p></div>`;
+  document.getElementById('backBtn').style.display = 'none';
+  currentPodcast = null;
+  document.querySelector('.content').classList.remove('show-main');
+}
+
+// ── Load podcast episodes ──
+async function loadPodcast(idx) {
+  document.querySelectorAll('.list-item').forEach(el => el.classList.remove('active'));
+  const item = document.getElementById('pod-' + idx);
+  if (item) item.classList.add('active');
+
+  currentPodcast = podcasts[idx];
+  const feedUrl = currentPodcast.feedUrl;
+  const main = document.getElementById('mainPanel');
+  const art = currentPodcast.artworkUrl100 || currentPodcast.artworkUrl60 || '';
+
+  main.innerHTML = `
+    <div class="main-header">
+      ${art ? `<img class="podcast-art" src="${art}">` : '<div class="podcast-art-placeholder">🎙</div>'}
+      <div class="podcast-info">
+        <div class="podcast-name">${escHtml(currentPodcast.collectionName || '')}</div>
+        <div class="podcast-author">${escHtml(currentPodcast.artistName || '')} · ${currentPodcast.trackCount || '?'} Episoden</div>
+      </div>
+    </div>
+    <div class="episodes" id="episodeList"><div class="loading">Episoden laden...</div></div>
+    <div class="player-bar" id="playerBar" style="display:none">
+      <div class="now-playing-title" id="nowPlayingTitle"></div>
+      <audio id="audioPlayer" controls preload="none"></audio>
+    </div>`;
+
+  document.getElementById('backBtn').style.display = '';
+  document.getElementById('sidebarHeader').textContent = 'Episoden';
+  document.querySelector('.content').classList.add('show-main');
+
+  if (!feedUrl) {
+    document.getElementById('episodeList').innerHTML = '<div class="empty">Kein RSS-Feed verfügbar</div>';
+    return;
+  }
+  try {
+    const r = await fetch(`/api/podcast/rss?url=${encodeURIComponent(feedUrl)}`);
+    const data = await r.json();
+    episodes = data.items || [];
+    renderEpisodes();
+  } catch(e) {
+    document.getElementById('episodeList').innerHTML = '<div class="empty">Episoden konnten nicht geladen werden</div>';
+  }
+
+  // Update sidebar to show episode titles when in episode view
+  const list = document.getElementById('listPanel');
+  list.innerHTML = podcasts.map((p, i) => `
+    <div class="list-item${i === idx ? ' active' : ''}" id="pod-${i}" onclick="loadPodcast(${i})">
+      ${p.artworkUrl60 ? `<img class="item-art" src="${p.artworkUrl60}" loading="lazy">` : '<div class="item-art-placeholder">🎙</div>'}
+      <div class="item-info">
+        <div class="item-title">${escHtml(p.collectionName || 'Unbekannt')}</div>
+        <div class="item-sub">${escHtml(p.artistName || '')}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderEpisodes() {
+  const el = document.getElementById('episodeList');
+  if (!episodes.length) { el.innerHTML = '<div class="empty">Keine Episoden gefunden</div>'; return; }
+  el.innerHTML = episodes.map((ep, i) => `
+    <div class="episode-item" id="ep-${i}" onclick="playEpisode(${i})">
+      <span class="play-icon">▶</span>
+      <div class="episode-content">
+        <div class="episode-title">${escHtml(ep.title || 'Episode ' + (i+1))}</div>
+        <div class="episode-meta">${ep.date ? ep.date + ' · ' : ''}${ep.duration || ''}</div>
+      </div>
+    </div>`).join('');
+}
+
+function playEpisode(idx) {
+  const ep = episodes[idx];
+  if (!ep) return;
+  document.querySelectorAll('.episode-item').forEach(el => el.classList.remove('playing'));
+  const item = document.getElementById('ep-' + idx);
+  if (item) { item.classList.add('playing'); item.scrollIntoView({ block: 'nearest' }); }
+
+  const bar = document.getElementById('playerBar');
+  const audio = document.getElementById('audioPlayer');
+  const title = document.getElementById('nowPlayingTitle');
+  if (!bar || !audio) return;
+  bar.style.display = 'block';
+  title.textContent = '▶ ' + (ep.title || 'Episode');
+  audio.src = ep.audio;
+  audio.play().catch(() => {});
+  currentEpIdx = idx;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

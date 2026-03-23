@@ -1,0 +1,10 @@
+{
+  "name": "Block Blast",
+  "icon": "⬛",
+  "color": "#0a0d1a",
+  "description": "Block Blast Puzzle-Spiel",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}

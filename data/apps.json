@@ -1,14 +1,151 @@
 {
-  "meta": { "title": "PulseOS" },
+  "meta": {
+    "title": "PulseOS"
+  },
   "apps": [
-    { "id": "notes", "name": "Notes", "icon": "N", "color": "#2a1f3d", "description": "Notizen erstellen und bearbeiten", "installed": true, "position": 0 },
-    { "id": "tasks", "name": "Tasks", "icon": "T", "color": "#1a2e1a", "description": "Aufgaben und Todos verwalten", "installed": true, "position": 1 },
-    { "id": "calendar", "name": "Calendar", "icon": "C", "color": "#1a1a3d", "description": "Termine und Events", "installed": true, "position": 2 },
-    { "id": "projects", "name": "Projects", "icon": "P", "color": "#2a1a2a", "description": "Projekt-Manager", "installed": true, "position": 3 },
-    { "id": "terminal", "name": "Terminal", "icon": ">_", "color": "#1a1a2e", "description": "System-Terminal", "installed": true, "position": 4 },
-    { "id": "files", "name": "Files", "icon": "F", "color": "#2a2a1a", "description": "Datei-Browser", "installed": true, "position": 5 },
-    { "id": "weather", "name": "Weather", "icon": "W", "color": "#1a2a3d", "description": "Wetter-Anzeige", "installed": true, "position": 6 },
-    { "id": "music", "name": "Music", "icon": "M", "color": "#3d1a2a", "description": "Internet-Radio", "installed": true, "position": 7 },
-    { "id": "settings", "name": "Settings", "icon": "S", "color": "#1a2a2a", "description": "System-Einstellungen", "installed": true, "position": 8 }
+    {
+      "id": "notes",
+      "name": "Notes",
+      "icon": "N",
+      "color": "#2a1f3d",
+      "description": "Notizen erstellen und bearbeiten",
+      "installed": true,
+      "position": 0
+    },
+    {
+      "id": "tasks",
+      "name": "Tasks",
+      "icon": "T",
+      "color": "#1a2e1a",
+      "description": "Aufgaben und Todos verwalten",
+      "installed": true,
+      "position": 1
+    },
+    {
+      "id": "calendar",
+      "name": "Calendar",
+      "icon": "C",
+      "color": "#1a1a3d",
+      "description": "Termine und Events",
+      "installed": true,
+      "position": 2
+    },
+    {
+      "id": "projects",
+      "name": "Projects",
+      "icon": "P",
+      "color": "#2a1a2a",
+      "description": "Projekt-Manager",
+      "installed": true,
+      "position": 3
+    },
+    {
+      "id": "terminal",
+      "name": "Terminal",
+      "icon": ">_",
+      "color": "#1a1a2e",
+      "description": "System-Terminal",
+      "installed": true,
+      "position": 4
+    },
+    {
+      "id": "files",
+      "name": "Files",
+      "icon": "F",
+      "color": "#2a2a1a",
+      "description": "Datei-Browser",
+      "installed": true,
+      "position": 5
+    },
+    {
+      "id": "weather",
+      "name": "Weather",
+      "icon": "W",
+      "color": "#1a2a3d",
+      "description": "Wetter-Anzeige",
+      "installed": true,
+      "position": 6
+    },
+    {
+      "id": "music",
+      "name": "Music",
+      "icon": "M",
+      "color": "#3d1a2a",
+      "description": "Internet-Radio",
+      "installed": true,
+      "position": 7
+    },
+    {
+      "id": "settings",
+      "name": "Settings",
+      "icon": "S",
+      "color": "#1a2a2a",
+      "description": "System-Einstellungen",
+      "installed": true,
+      "position": 8
+    },
+    {
+      "id": "youtube",
+      "name": "YouTube",
+      "icon": "▶",
+      "color": "#3d0000",
+      "description": "YouTube Videos ansehen",
+      "installed": true,
+      "position": 9
+    },
+    {
+      "id": "podcast",
+      "name": "Podcast",
+      "icon": "🎙",
+      "color": "#1a1a3a",
+      "description": "Podcasts suchen und hören",
+      "installed": true,
+      "position": 10
+    },
+    {
+      "id": "diary",
+      "name": "Diary",
+      "icon": "📓",
+      "color": "#1a2a1a",
+      "description": "Tagesrückblick und persönliches Tagebuch",
+      "installed": true,
+      "position": 11
+    },
+    {
+      "id": "kanban",
+      "name": "Kanban",
+      "icon": "▦",
+      "color": "#0d1a2a",
+      "description": "Kanban Board für Projekte und Tasks",
+      "installed": true,
+      "position": 12
+    },
+    {
+      "id": "pong",
+      "name": "Pong",
+      "icon": "🏓",
+      "color": "#0a0a14",
+      "description": "Klassisches Pong-Spiel",
+      "installed": true,
+      "position": 13
+    },
+    {
+      "id": "blockblast",
+      "name": "Block Blast",
+      "icon": "⬛",
+      "color": "#0a0d1a",
+      "description": "Block Blast Puzzle-Spiel",
+      "installed": true,
+      "position": 14
+    },
+    {
+      "id": "todo",
+      "name": "Todo",
+      "icon": "✓",
+      "color": "#0d1a0d",
+      "description": "Einfache Todo-Liste zum Abhaken",
+      "installed": true,
+      "position": 15
+    }
   ]
 }
