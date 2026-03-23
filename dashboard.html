@@ -903,6 +903,11 @@ body {
   font-size: 11px;
   padding: 24px 0;
 }
+.typing-dots { display: flex; gap: 3px; }
+.typing-dots span { font-size: 8px; opacity: 0.3; animation: typingPulse 1.4s infinite; color: var(--teal); }
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingPulse { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
 
 .chat-input-row {
   padding: 8px 12px;
@@ -2252,6 +2257,8 @@ async function loadChatHistory() {
 function renderChatMsg(msg) {
   if (renderedMsgIds.has(msg.id)) return;
   renderedMsgIds.add(msg.id);
+  // Hide typing indicator when agent responds
+  if (msg.from !== 'user') hideTypingIndicator();
   const msgs = document.getElementById('systemChatMessages');
   if (!msgs) return;
   if (msgs.querySelector('.chat-empty')) msgs.innerHTML = '';
@@ -2264,7 +2271,10 @@ function renderChatMsg(msg) {
     '<div style="max-width:220px;padding:6px 10px;border-radius:8px;font-size:11px;' + (isUser ? 'background:var(--teal);color:var(--bg);' : 'background:var(--bg-card-hover);color:var(--text);') + '">' +
     '<div style="font-size:9px;opacity:0.6;margin-bottom:2px;">' + fromLabel + ' <span style="opacity:0.5;">' + (msg.source || '') + '</span></div>' +
     '<div style="white-space:pre-wrap;word-break:break-word;">' + escapeHtml(msg.text || '') + '</div></div>';
-  msgs.appendChild(div);
+  // Insert before typing indicator so it always stays at the bottom
+  const typing = document.getElementById('typingIndicator');
+  if (typing) msgs.insertBefore(div, typing);
+  else msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
 }
 
@@ -2286,9 +2296,29 @@ function sendSystemChat() {
   sendToAgent(text);
 }
 
+function showTypingIndicator() {
+  const msgs = document.getElementById('systemChatMessages');
+  if (!msgs || document.getElementById('typingIndicator')) return;
+  const div = document.createElement('div');
+  div.id = 'typingIndicator';
+  div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;';
+  div.innerHTML = '<span style="font-size:14px;flex-shrink:0;width:20px;text-align:center;">▸</span>' +
+    '<div style="max-width:220px;padding:6px 10px;border-radius:8px;font-size:11px;background:var(--bg-card-hover);color:var(--text);">' +
+    '<div style="font-size:9px;opacity:0.6;margin-bottom:2px;">KI denkt nach...</div>' +
+    '<div class="typing-dots"><span>●</span><span>●</span><span>●</span></div></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function hideTypingIndicator() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
 async function sendToAgent(text) {
   const targets = activeChatTarget === 'group' ? ['claudeos', 'pulseos'] : [activeChatTarget];
   let anyOk = false;
+  showTypingIndicator();
 
   for (const target of targets) {
     try {
@@ -2306,6 +2336,7 @@ async function sendToAgent(text) {
   }
 
   if (!anyOk) {
+    hideTypingIndicator();
     renderChatMsg({ id: 'err-' + Date.now(), from: 'agent', text: 'Offline — kein Agent verbunden.', source: 'system' });
   }
 }
