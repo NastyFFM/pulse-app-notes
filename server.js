@@ -7,6 +7,10 @@ const { spawn } = require('child_process');
 const PORT = 3000;
 const ROOT = __dirname;
 
+// --- Agent Context Cache ---
+const agentContextCache = { data: null, time: 0 };
+function invalidateAgentContextCache() { agentContextCache.data = null; agentContextCache.time = 0; }
+
 // --- Data file initialization ---
 const MODIFY_QUEUE_FILE = path.join(ROOT, 'data', 'modify-queue.json');
 let terminalSessionActive = false;
@@ -1669,6 +1673,10 @@ const server = http.createServer(async (req, res) => {
 
   // ── Agent Context (dynamische API-Doku für ClaudeOS) ──
   if (url === '/api/agent-context' && req.method === 'GET') {
+    // Cache: Antwort wird im Speicher gehalten und nur bei Änderungen invalidiert
+    if (agentContextCache.data && (Date.now() - agentContextCache.time < 60000)) {
+      return jsonRes(res, agentContextCache.data);
+    }
     // Dynamisch generiert — ClaudeOS holt sich das beim Start & alle 5 Min
     const apps = JSON.parse(safeReadJSON(path.join(ROOT, 'data', 'apps.json'), { apps: [] }));
     const appList = (apps.apps || apps || []);
@@ -1794,7 +1802,10 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
 3. Nach PUT immer notify-change senden
 4. Memory-Tags nutzen: [REMEMBER: ...], [GOAL: ... | DEADLINE: ...], [DONE: ...]
 `;
-    return jsonRes(res, { context, generated: new Date().toISOString() });
+    const responseData = { context, generated: new Date().toISOString() };
+    agentContextCache.data = responseData;
+    agentContextCache.time = Date.now();
+    return jsonRes(res, responseData);
   }
 
   // ── AI Endpoint (SDK) ──
@@ -3697,6 +3708,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
         fs.writeFileSync(file, JSON.stringify(JSON.parse(b), null, 2));
         broadcast(appId, { type: 'change', file: apiMatch[1] + '.json', time: Date.now() });
         broadcast('dashboard', { type: 'app-data-changed', appId: appId, file: apiMatch[1] + '.json', time: Date.now() });
+        invalidateAgentContextCache();
         vikingImportApp(appId);
         emitEvent({ type: 'data:changed', source: `app:${appId}`, data: { appId, file: apiMatch[1] + '.json' } });
         jsonRes(res, { ok: true });
@@ -5616,6 +5628,7 @@ Regeln:
         if (!appId) return jsonRes(res, { ok: false, error: 'appId required' });
         const filename = file || 'data.json';
         broadcast(appId, { type: 'change', file: filename, time: Date.now() });
+        invalidateAgentContextCache();
         vikingImportApp(appId);
         emitEvent({ type: 'data:changed', source: `notify:${appId}`, data: { appId, file: filename } });
         console.log(`[notify] Broadcast change for ${appId}/${filename}`);
