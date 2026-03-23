@@ -1579,6 +1579,19 @@ const server = http.createServer(async (req, res) => {
     return jsonRes(res, { messages });
   }
 
+  // ── Agent Alerts ──
+  if (url === '/api/agent-alert' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { text, type, source } = JSON.parse(b);
+        if (!text) { res.writeHead(400); return res.end(JSON.stringify({ error: 'text required' })); }
+        const alert = { id: 'a-' + Date.now(), text, type: type || 'info', source: source || 'system', time: new Date().toISOString() };
+        broadcast('dashboard', { type: 'agent-alert', alert });
+        jsonRes(res, { ok: true, id: alert.id });
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+    });
+  }
+
   if (url === '/api/chat-outbox' && req.method === 'POST') {
     return readBody(req, b => {
       try {

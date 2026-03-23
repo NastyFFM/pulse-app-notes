@@ -304,6 +304,17 @@ body {
   background: var(--teal);
   flex-shrink: 0;
   opacity: 0.5;
+  transition: all 0.3s;
+}
+.agent-bar.has-alert .agent-dot {
+  opacity: 1;
+  background: #f5a623;
+  box-shadow: 0 0 6px #f5a623;
+  animation: agentPulse 1.5s ease-in-out infinite;
+}
+@keyframes agentPulse {
+  0%, 100% { box-shadow: 0 0 4px #f5a623; }
+  50% { box-shadow: 0 0 12px #f5a623, 0 0 20px rgba(245,166,35,0.3); }
 }
 
 .agent-label {
@@ -2238,6 +2249,9 @@ function toggleSystemChat() {
     const msgs = document.getElementById('systemChatMessages');
     msgs.scrollTop = msgs.scrollHeight;
     document.getElementById('systemChatInput')?.focus();
+    // Clear alert state when chat is opened
+    document.getElementById('agentBar')?.classList.remove('has-alert');
+    if (agentAlertTimeout) { clearTimeout(agentAlertTimeout); agentAlertTimeout = null; }
   }
 }
 
@@ -2352,11 +2366,13 @@ function initChatSSE() {
       const data = JSON.parse(ev.data);
       if (data.type === 'chat-message' && data.message) {
         renderChatMsg(data.message);
-        // Flash chat icon if panel closed
+        // Flash agent-bar and show alert text if panel closed
         if (!systemChatOpen) {
-          const btn = document.querySelector('[onclick*="toggleSystemChat"]');
-          if (btn) { btn.style.background = 'var(--teal)'; setTimeout(() => { btn.style.background = ''; }, 2000); }
+          showAgentAlert(data.message.text || 'Neue Nachricht');
         }
+      }
+      if (data.type === 'agent-alert' && data.alert) {
+        showAgentAlert(data.alert.text);
       }
     } catch {}
   };
@@ -2391,6 +2407,23 @@ function checkMorningBriefing() {
   }).catch(() => {});
 }
 setTimeout(checkMorningBriefing, 2000);
+
+let agentAlertTimeout = null;
+function showAgentAlert(text) {
+  const bar = document.getElementById('agentBar');
+  const agentText = document.getElementById('agentText');
+  if (!bar || !agentText) return;
+  // Truncate long alerts
+  const short = text.length > 60 ? text.substring(0, 57) + '...' : text;
+  agentText.textContent = short;
+  bar.classList.add('has-alert');
+  // Clear previous timeout
+  if (agentAlertTimeout) clearTimeout(agentAlertTimeout);
+  // Remove pulsing after 15s, keep text
+  agentAlertTimeout = setTimeout(() => {
+    bar.classList.remove('has-alert');
+  }, 15000);
+}
 
 function switchSysChatTab(tab) {
   document.getElementById('sysChatView').style.display = tab === 'chat' ? 'flex' : 'none';
