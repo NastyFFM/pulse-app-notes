@@ -746,7 +746,22 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  position: relative;
 }
+.graph-run-btn {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: var(--teal); border: none; color: var(--bg); width: 24px; height: 24px;
+  border-radius: 50%; cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center;
+  opacity: 0.7; transition: opacity 0.15s;
+}
+.graph-run-btn:hover { opacity: 1; }
+.graph-del-btn {
+  position: absolute; right: 8px; top: 4px;
+  background: none; border: none; color: var(--text-dim); font-size: 10px; cursor: pointer;
+  opacity: 0; transition: opacity 0.15s; padding: 2px 4px;
+}
+.graph-card:hover .graph-del-btn { opacity: 0.6; }
+.graph-del-btn:hover { opacity: 1; color: var(--red, #ef4444); }
 .graph-nodes { display: flex; gap: 4px; align-items: center; }
 .graph-node {
   width: 26px; height: 26px;
@@ -1328,6 +1343,7 @@ body.mode-builder .home-screen { max-width: 600px; }
   <div class="section" id="graphSection" style="display:none;">
     <div class="section-title">
       Graphen
+      <span onclick="createNewGraph()" style="font-size:11px;color:var(--teal);cursor:pointer;margin-left:8px;font-weight:600;" title="Neuen Graph erstellen">+ Neu</span>
       <span class="collapse-btn" onclick="this.closest('.section').style.display='none'">x</span>
     </div>
     <div class="graph-grid" id="activeGraphs"></div>
@@ -2467,8 +2483,74 @@ async function submitOnboarding() {
   const res = await fetch('/api/profile');
   userProfile = await res.json();
   updateProfileDisplay();
+  // Show interests selection instead of closing
+  showInterestsSelection();
+}
+
+function showInterestsSelection() {
+  const overlay = document.getElementById('onboardingOverlay');
+  if (!overlay) return;
+  const box = overlay.querySelector('.modal-box');
+  box.innerHTML =
+    '<h2 style="font-size:18px;margin-bottom:4px;">Was interessiert dich?</h2>' +
+    '<p style="font-size:11px;color:var(--text-dim);margin-bottom:16px;">PulseOS richtet automatisch nützliche Automatisierungen für dich ein.</p>' +
+    '<div id="interestGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left;">' +
+      interestOption('productivity', '⚡', 'Produktivität', 'Morning Briefing: Wetter + Termine + Tasks als tägliche Zusammenfassung') +
+      interestOption('news', '📰', 'News & Trends', 'News Tracker: Themen beobachten, neue Artikel automatisch als Notiz') +
+      interestOption('health', '💪', 'Gesundheit', 'Habit Review: Täglicher Gewohnheits-Check + Wochenrückblick') +
+      interestOption('dev', '💻', 'Entwicklung', 'Dev Dashboard: Projekt-Status aus Tasks + Terminal') +
+    '</div>' +
+    '<div class="btn-row" style="margin-top:16px;">' +
+      '<button style="background:none;border:1px solid var(--border);color:var(--text-dim);padding:8px 16px;border-radius:6px;cursor:pointer;font:12px var(--font);" onclick="skipInterests()">Überspringen</button>' +
+      '<button class="btn-primary" onclick="setupInterests()">Einrichten</button>' +
+    '</div>';
+}
+
+function interestOption(id, icon, title, desc) {
+  return '<label style="display:flex;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all 0.15s;" ' +
+    'onmouseenter="this.style.borderColor=\'var(--teal)\'" onmouseleave="this.style.borderColor=this.querySelector(\'input\').checked?\'var(--teal)\':\'var(--border)\'">' +
+    '<input type="checkbox" value="' + id + '" style="accent-color:var(--teal);margin-top:2px;" onchange="this.parentElement.style.borderColor=this.checked?\'var(--teal)\':\'var(--border)\'">' +
+    '<div><div style="font-size:13px;font-weight:600;">' + icon + ' ' + title + '</div>' +
+    '<div style="font-size:10px;color:var(--text-dim);margin-top:2px;">' + desc + '</div></div></label>';
+}
+
+async function setupInterests() {
+  const checks = document.querySelectorAll('#interestGrid input:checked');
+  const interests = Array.from(checks).map(c => c.value);
+  if (interests.length === 0) { skipInterests(); return; }
+
+  // Show loading
+  const btn = document.querySelector('.btn-primary');
+  btn.textContent = 'Wird eingerichtet...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/onboarding/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ interests })
+    });
+    const data = await res.json();
+    document.getElementById('onboardingOverlay')?.remove();
+    // Reload dashboard to show new graphs
+    load();
+    // Show confirmation in chat
+    if (data.graphs && data.graphs.length > 0) {
+      const names = data.graphs.map(g => g.name).join(', ');
+      showAgentAlert('Eingerichtet: ' + names);
+    }
+  } catch {
+    btn.textContent = 'Fehler — nochmal';
+    btn.disabled = false;
+  }
+
+  if (!localStorage.getItem('pulse-tutorial-done')) {
+    setTimeout(() => startTutorial(), 1000);
+  }
+}
+
+function skipInterests() {
   document.getElementById('onboardingOverlay')?.remove();
-  // Start tutorial after onboarding
   if (!localStorage.getItem('pulse-tutorial-done')) {
     setTimeout(() => startTutorial(), 600);
   }
@@ -3319,7 +3401,7 @@ async function renderActiveGraphs() {
     const regApps = regRes.apps || [];
     if (graphs.length === 0) { section.style.display = 'none'; return; }
     section.style.display = '';
-    el.innerHTML = graphs.slice(0, 3).map(g => {
+    el.innerHTML = graphs.map(g => {
       const nodes = (g.nodes || []).slice(0, 4);
       const nodesHtml = nodes.map((n, i) => {
         const app = regApps.find(a => a.id === n.appId);
@@ -3328,11 +3410,71 @@ async function renderActiveGraphs() {
           '<div class="graph-node" title="' + (app?.manifest?.name || n.appId) + '">' + icon + '</div>';
       }).join('');
       const label = g.name || g.projectId;
-      return '<div class="graph-card"><div class="graph-nodes">' + nodesHtml + '</div>' +
+      const hasAction = !!g.action;
+      const playBtn = hasAction ? '<button class="graph-run-btn" onclick="event.stopPropagation();runGraph(\'' + g.projectId + '\')" title="Graph ausführen">▶</button>' : '';
+      const delBtn = '<button class="graph-del-btn" onclick="event.stopPropagation();deleteGraph(\'' + g.projectId + '\')" title="Graph löschen">x</button>';
+      return '<div class="graph-card" onclick="openGraphEditor(\'' + g.projectId + '\')" style="cursor:pointer;"><div class="graph-nodes">' + nodesHtml + '</div>' +
         '<div class="graph-info"><div class="graph-name">' + label + '</div>' +
-        '<div class="graph-status">' + nodes.length + ' Nodes · ' + (g.edges || []).length + ' Edges</div></div></div>';
+        '<div class="graph-status">' + nodes.length + ' Nodes · ' + (g.edges || []).length + ' Edges</div></div>' + playBtn + delBtn + '</div>';
     }).join('');
   } catch { section.style.display = 'none'; }
+}
+
+function openGraphEditor(projectId) {
+  // Open Projects app with this graph
+  openApp('projects');
+  // After a short delay, send a message to the iframe to open the graph
+  setTimeout(() => {
+    const win = openWindows.find(w => w.appId === 'projects' && !w.closed);
+    if (win) {
+      const iframe = win.el.querySelector('iframe');
+      if (iframe) iframe.contentWindow.postMessage({ type: 'open-graph', projectId }, '*');
+    }
+  }, 500);
+}
+
+async function deleteGraph(graphId) {
+  if (!confirm('Graph "' + graphId + '" wirklich löschen?')) return;
+  try {
+    await fetch('/api/graphs/' + graphId, { method: 'DELETE' });
+    renderActiveGraphs();
+  } catch (e) {
+    showAgentAlert('Fehler: ' + e.message);
+  }
+}
+
+async function createNewGraph() {
+  const name = prompt('Name für den neuen Graph:');
+  if (!name) return;
+  const id = 'graph-' + Date.now();
+  try {
+    await fetch('/api/graphs/' + id, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, projectId: id, name, description: '', nodes: [], edges: [], created: new Date().toISOString(), updated: new Date().toISOString() })
+    });
+    renderActiveGraphs();
+    setTimeout(() => openGraphEditor(id), 300);
+  } catch (e) {
+    showAgentAlert('Fehler: ' + e.message);
+  }
+}
+
+async function runGraph(graphId) {
+  const btn = document.querySelector('.graph-run-btn[onclick*="' + graphId + '"]');
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  try {
+    const r = await fetch('/api/graph-run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ graphId }) });
+    const data = await r.json();
+    if (data.ok && data.summary) {
+      showAgentAlert(data.summary.split('\n')[0]);
+    } else if (!data.ok) {
+      showAgentAlert('Graph-Fehler: ' + (data.error || 'unbekannt'));
+    }
+  } catch (e) {
+    showAgentAlert('Graph-Fehler: ' + e.message);
+  }
+  if (btn) { btn.textContent = '▶'; btn.disabled = false; }
 }
 
 function getRelativeTime(date) {

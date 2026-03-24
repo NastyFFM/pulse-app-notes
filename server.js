@@ -2575,6 +2575,18 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
     });
   }
 
+  // DELETE /api/graphs/:projectId — delete entire graph
+  if (graphMatch && req.method === 'DELETE') {
+    const projectId = graphMatch[1];
+    const gPath = path.join(GRAPHS_DIR, `graph-${projectId}.json`);
+    try {
+      if (fs.existsSync(gPath)) fs.unlinkSync(gPath);
+      return jsonRes(res, { ok: true, deleted: projectId });
+    } catch (e) {
+      return jsonRes(res, { ok: false, error: e.message }, 500);
+    }
+  }
+
   // POST /api/graphs/:projectId/connect — add edge
   if (graphConnectMatch && req.method === 'POST') {
     const projectId = graphConnectMatch[1];
@@ -6428,6 +6440,194 @@ function copyInstall(repo, btn) {
     } catch (e) {
       return jsonRes(res, { error: e.message });
     }
+  }
+
+  // ── Onboarding Setup: create graphs from interest templates ──
+  if (url === '/api/onboarding/setup' && req.method === 'POST') {
+    return readBody(req, b => { try {
+      const { interests } = JSON.parse(b);
+      const createdGraphs = [];
+      const now = new Date().toISOString();
+
+      const graphTemplates = {
+        productivity: {
+          id: 'morning-briefing',
+          name: 'Morning Briefing',
+          description: 'Tägliche Zusammenfassung: Wetter + Termine + Tasks',
+          nodes: [
+            { id: 'n-weather', appId: 'weather', name: 'Weather', type: 'producer', x: 80, y: 100, outputs: ['weather-data'] },
+            { id: 'n-calendar', appId: 'calendar', name: 'Calendar', type: 'producer', x: 80, y: 250, outputs: ['today-events'] },
+            { id: 'n-tasks', appId: 'tasks', name: 'Tasks', type: 'producer', x: 80, y: 400, outputs: ['open-tasks'] },
+            { id: 'n-briefing', appId: '_briefing', name: 'Briefing', type: 'processor', x: 400, y: 250, inputs: ['weather-data', 'today-events', 'open-tasks'], outputs: ['summary'] }
+          ],
+          edges: [
+            { id: 'e1', from: 'n-weather', to: 'n-briefing', fromOutput: 'weather-data', toInput: 'weather-data' },
+            { id: 'e2', from: 'n-calendar', to: 'n-briefing', fromOutput: 'today-events', toInput: 'today-events' },
+            { id: 'e3', from: 'n-tasks', to: 'n-briefing', fromOutput: 'open-tasks', toInput: 'open-tasks' }
+          ],
+          action: 'briefing'
+        },
+        news: {
+          id: 'news-tracker',
+          name: 'News Tracker',
+          description: 'Beobachtet Themen und speichert neue Artikel als Notiz',
+          nodes: [
+            { id: 'n-news', appId: 'news', name: 'News', type: 'producer', x: 100, y: 150, outputs: ['new-articles'] },
+            { id: 'n-notes', appId: 'notes', name: 'Notes', type: 'consumer', x: 400, y: 150, inputs: ['new-articles'] }
+          ],
+          edges: [
+            { id: 'e1', from: 'n-news', to: 'n-notes', fromOutput: 'new-articles', toInput: 'new-articles' }
+          ],
+          action: 'news-check'
+        },
+        health: {
+          id: 'habit-review',
+          name: 'Habit Review',
+          description: 'Täglicher Gewohnheits-Check mit Kalender-Eintrag',
+          nodes: [
+            { id: 'n-habits', appId: 'habit-tracker', name: 'Habits', type: 'producer', x: 100, y: 150, outputs: ['habit-status'] },
+            { id: 'n-calendar', appId: 'calendar', name: 'Calendar', type: 'consumer', x: 400, y: 150, inputs: ['habit-status'] }
+          ],
+          edges: [
+            { id: 'e1', from: 'n-habits', to: 'n-calendar', fromOutput: 'habit-status', toInput: 'habit-status' }
+          ],
+          action: 'habit-review'
+        },
+        dev: {
+          id: 'dev-dashboard',
+          name: 'Dev Dashboard',
+          description: 'Projekt-Status aus Tasks und Terminal',
+          nodes: [
+            { id: 'n-tasks', appId: 'tasks', name: 'Tasks', type: 'producer', x: 100, y: 150, outputs: ['open-tasks'] },
+            { id: 'n-notes', appId: 'notes', name: 'Notes', type: 'consumer', x: 400, y: 150, inputs: ['open-tasks'] }
+          ],
+          edges: [
+            { id: 'e1', from: 'n-tasks', to: 'n-notes', fromOutput: 'open-tasks', toInput: 'open-tasks' }
+          ],
+          action: 'dev-status'
+        }
+      };
+
+      for (const interest of interests) {
+        const template = graphTemplates[interest];
+        if (!template) continue;
+        const graphId = template.id;
+        const graph = {
+          id: graphId,
+          projectId: graphId,
+          name: template.name,
+          description: template.description,
+          nodes: template.nodes,
+          edges: template.edges,
+          action: template.action,
+          created: now,
+          updated: now
+        };
+        const gPath = path.join(GRAPHS_DIR, `graph-${graphId}.json`);
+        fs.writeFileSync(gPath, JSON.stringify(graph, null, 2));
+        createdGraphs.push({ id: graphId, name: template.name });
+      }
+
+      return jsonRes(res, { ok: true, graphs: createdGraphs });
+    } catch (e) { return jsonRes(res, { ok: false, error: e.message }, 500); } });
+  }
+
+  // ── Graph Run Action: server-side graph execution (no iframe needed) ──
+  if (url === '/api/graph-run' && req.method === 'POST') {
+    return readBody(req, b => { try {
+      const { graphId, action } = JSON.parse(b);
+      const graph = loadGraph(graphId);
+      if (!graph) return jsonRes(res, { error: 'Graph not found' }, 404);
+
+      const results = {};
+
+      // Read data from all producer apps
+      for (const node of graph.nodes) {
+        if (node.type !== 'producer' || node.appId.startsWith('_')) continue;
+        const dataDir = path.join(ROOT, 'apps', node.appId, 'data');
+        if (!fs.existsSync(dataDir)) {
+          // Try userdata
+          const udDir = path.join(ROOT, 'userdata', 'apps', node.appId, 'data');
+          if (fs.existsSync(udDir)) {
+            const files = fs.readdirSync(udDir).filter(f => f.endsWith('.json'));
+            for (const f of files) {
+              try { results[node.appId] = JSON.parse(fs.readFileSync(path.join(udDir, f), 'utf8')); } catch {}
+            }
+          }
+          continue;
+        }
+        const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
+        for (const f of files) {
+          try { results[node.appId] = JSON.parse(fs.readFileSync(path.join(dataDir, f), 'utf8')); } catch {}
+        }
+      }
+
+      // Execute action based on graph type
+      let summary = '';
+      const graphAction = action || graph.action;
+
+      if (graphAction === 'briefing') {
+        // Morning Briefing: combine weather + calendar + tasks
+        const weather = results.weather || {};
+        const calendar = results.calendar || {};
+        const tasks = results.tasks || {};
+
+        const weatherText = weather.cities ? weather.cities.map(c => `${c.city}: ${c.temp}°C ${c.condition || ''}`).join(', ') : 'Keine Wetterdaten';
+
+        const today = new Date().toISOString().split('T')[0];
+        const todayEvents = (calendar.events || []).filter(e => e.date === today);
+        const eventsText = todayEvents.length > 0 ? todayEvents.map(e => `${e.time || ''} ${e.title}`).join(', ') : 'Keine Termine heute';
+
+        const openTasks = (tasks.tasks || []).filter(t => !t.done);
+        const tasksText = openTasks.length > 0 ? `${openTasks.length} offene Tasks: ${openTasks.slice(0, 3).map(t => t.text).join(', ')}` : 'Keine offenen Tasks';
+
+        summary = `☀️ Morning Briefing\n\n🌤 Wetter: ${weatherText}\n📅 Termine: ${eventsText}\n✅ Tasks: ${tasksText}`;
+
+        // Send as chat message
+        const chatPath = path.join(ROOT, 'data', 'chat-history.json');
+        let chatData = { messages: [] };
+        try { chatData = JSON.parse(fs.readFileSync(chatPath, 'utf8')); } catch {}
+        chatData.messages.push({
+          id: 'm-' + Date.now(),
+          from: 'agent',
+          text: summary,
+          source: 'pulseos',
+          time: new Date().toISOString()
+        });
+        fs.writeFileSync(chatPath, JSON.stringify(chatData, null, 2));
+        broadcast('dashboard', { type: 'chat-message', from: 'agent', text: summary, source: 'pulseos', time: new Date().toISOString() });
+      }
+
+      if (graphAction === 'habit-review') {
+        const habitsPath = path.join(ROOT, 'userdata', 'apps', 'habit-tracker', 'data', 'habits.json');
+        let habits = { habits: [] };
+        try { habits = JSON.parse(fs.readFileSync(habitsPath, 'utf8')); } catch {}
+
+        const today = new Date().toISOString().split('T')[0];
+        const completed = habits.habits.filter(h => h.dates && h.dates.includes(today));
+        summary = `💪 Habit Review: ${completed.length}/${habits.habits.length} Gewohnheiten heute erledigt`;
+
+        // Add calendar event
+        const calPath = path.join(ROOT, 'apps', 'calendar', 'data', 'calendar.json');
+        let calData = { events: [] };
+        try { calData = JSON.parse(fs.readFileSync(calPath, 'utf8')); } catch {}
+        calData.events.push({ id: 'habit-' + Date.now(), title: summary, date: today, time: '21:00', type: 'habit-review' });
+        fs.writeFileSync(calPath, JSON.stringify(calData, null, 2));
+        broadcast('calendar', { type: 'data-changed', appId: 'calendar', file: 'calendar.json' });
+        broadcast('dashboard', { type: 'chat-message', from: 'agent', text: summary, source: 'pulseos', time: new Date().toISOString() });
+      }
+
+      if (graphAction === 'dev-status') {
+        const tasks = results.tasks || {};
+        const openTasks = (tasks.tasks || []).filter(t => !t.done);
+        const doneTasks = (tasks.tasks || []).filter(t => t.done);
+        summary = `💻 Dev Status: ${doneTasks.length} erledigt, ${openTasks.length} offen`;
+        broadcast('dashboard', { type: 'chat-message', from: 'agent', text: summary, source: 'pulseos', time: new Date().toISOString() });
+      }
+
+      broadcast('dashboard', { type: 'graph-executed', graphId, action: graphAction, time: Date.now() });
+      return jsonRes(res, { ok: true, action: graphAction, summary, data: results });
+    } catch (e) { return jsonRes(res, { ok: false, error: e.message }, 500); } });
   }
 
   // ── Profile Publish (push to GitHub Pages via gh CLI) ──
