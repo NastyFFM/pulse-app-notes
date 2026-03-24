@@ -1579,6 +1579,46 @@ const server = http.createServer(async (req, res) => {
     return jsonRes(res, { messages });
   }
 
+  // ── Activity Summary ──
+  if (url === '/api/activity-summary' && req.method === 'GET') {
+    const daysParam = parseInt(new URL(req.url, 'http://localhost').searchParams.get('days') || '7');
+    const days = Math.min(daysParam, 30);
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const appsFile = path.join(ROOT, 'data', 'apps.json');
+    const appList = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+    const apps = appList.apps || appList || [];
+    const activity = [];
+    for (const a of apps) {
+      const dataDir = path.join(ROOT, 'apps', a.id || a, 'data');
+      try {
+        const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
+        let lastModified = 0;
+        let modifiedFiles = [];
+        files.forEach(f => {
+          try {
+            const stat = fs.statSync(path.join(dataDir, f));
+            if (stat.mtimeMs > cutoff) {
+              modifiedFiles.push({ file: f, modified: new Date(stat.mtimeMs).toISOString() });
+            }
+            if (stat.mtimeMs > lastModified) lastModified = stat.mtimeMs;
+          } catch {}
+        });
+        if (lastModified > 0) {
+          activity.push({
+            appId: a.id || a,
+            name: a.name || a.id || a,
+            lastModified: new Date(lastModified).toISOString(),
+            daysAgo: Math.round((Date.now() - lastModified) / 86400000),
+            recentFiles: modifiedFiles,
+            stale: (Date.now() - lastModified) > 3 * 24 * 60 * 60 * 1000
+          });
+        }
+      } catch {}
+    }
+    activity.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+    return jsonRes(res, { days, activity, staleApps: activity.filter(a => a.stale).map(a => a.name) });
+  }
+
   // ── Agent Alerts ──
   if (url === '/api/agent-alert' && req.method === 'POST') {
     return readBody(req, b => {
@@ -1768,6 +1808,7 @@ ${appDataInfo.join('\n\n')}
 - \`POST /api/chat-mirror\` — Nachricht ans Dashboard senden: \`{"from":"agent","text":"...","source":"telegram"}\`
 - \`POST /api/notify-change\` — SSE-Event an App: \`{"appId":"...","file":"...json"}\`
 - \`GET /api/chat-history\` — Chat-Verlauf
+- \`GET /api/activity-summary?days=7\` — Aktivität pro App (letzte N Tage), inkl. stale-Apps
 - \`GET /api/pulseos-chat\` — PulseOS-Agent Chat-Queue abholen (pickup & clear)
 - \`POST /api/pulseos-respond\` — PulseOS-Agent Antwort senden: \`{"text":"..."}\`
 

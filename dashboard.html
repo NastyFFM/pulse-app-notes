@@ -2233,6 +2233,33 @@ function updateGreeting() {
   else { greeting = 'Guten Abend'; sub = 'Noch etwas erledigen?'; }
   document.getElementById('greetingText').textContent = greeting + (name ? ', ' + name : '');
   document.getElementById('greetingSub').textContent = sub;
+  // Load quick stats
+  loadQuickStats();
+}
+
+async function loadQuickStats() {
+  try {
+    const [actRes, tasksRes] = await Promise.all([
+      fetch('/api/activity-summary?days=7'),
+      fetch('/app/tasks/api/tasks').catch(() => null)
+    ]);
+    const act = await actRes.json();
+    const parts = [];
+    if (act.activity?.length > 0) parts.push(act.activity.length + ' aktive Apps');
+    if (act.staleApps?.length > 0) parts.push(act.staleApps.length + ' inaktiv');
+    if (tasksRes) {
+      try {
+        const td = await tasksRes.json();
+        const tasks = td.tasks || [];
+        const open = tasks.filter(t => !t.done && !t.completed).length;
+        if (open > 0) parts.push(open + ' offene Tasks');
+      } catch {}
+    }
+    const claudeOnline = agentPresence['claudeos']?.online;
+    if (claudeOnline) parts.push('ClaudeOS online');
+    const sub = document.getElementById('greetingSub');
+    if (sub && parts.length > 0) sub.textContent = parts.join(' · ');
+  } catch {}
 }
 
 // ── System Chat (ClaudeOS Bridge) ──
