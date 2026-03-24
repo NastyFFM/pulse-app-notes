@@ -4,8 +4,8 @@
   "color": "#1a2a3d",
   "description": "Wetter-Anzeige",
   "nodeType": null,
-  "inputs": [],
-  "outputs": [],
+  "inputs": [{"id":"data","desc":"Beliebige Daten empfangen"}],
+  "outputs": [{"id":"cities","desc":"Alle Städte mit aktuellem Wetter"},{"id":"forecast","desc":"Wettervorhersage"}],
   "pulseSubscriptions": [],
   "visibility": "public",
   "allowedUsers": []

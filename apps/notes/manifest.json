@@ -4,8 +4,8 @@
   "color": "#2a1f3d",
   "description": "Notizen erstellen und bearbeiten",
   "nodeType": null,
-  "inputs": [],
-  "outputs": [],
+  "inputs": [{"id":"data","desc":"Beliebige Daten empfangen"}],
+  "outputs": [{"id":"notes","desc":"Alle Notizen"},{"id":"recent-notes","desc":"Notizen der letzten 7 Tage"}],
   "pulseSubscriptions": [],
   "visibility": "public",
   "allowedUsers": []

@@ -97,6 +97,8 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
 .gnode:hover .gnode-delete{opacity:1}
 .gnode-delete:hover{color:var(--red);background:rgba(239,68,68,.1)}
 .gnode-ports{padding:6px 0}
+.gnode-config{padding:4px 12px 6px;border-top:1px solid var(--border)}
+.gnode-target-select{background:var(--bg);border:1px solid var(--border);color:var(--text);font:10px var(--font);padding:2px 6px;border-radius:3px;width:100%}
 .gnode-port-row{display:flex;align-items:center;padding:3px 12px;font-size:10px;color:var(--dim);gap:6px}
 .gnode-port-row.output{justify-content:flex-end}
 .gnode-port{width:10px;height:10px;border-radius:50%;border:2px solid var(--border);background:var(--bg);cursor:crosshair;transition:all .15s;flex-shrink:0}
@@ -181,7 +183,11 @@ async function loadApps() {
       const d = await r.json();
       availableApps = (d.apps || []).map(a => {
         const m = a.manifest || {};
-        return { id: a.id, name: m.name || a.id, icon: m.icon || '#', color: m.color || '#4ecdc4' };
+        return {
+          id: a.id, name: m.name || a.id, icon: m.icon || '#', color: m.color || '#4ecdc4',
+          inputs: (m.inputs || []).map(i => typeof i === 'string' ? i : i.id),
+          outputs: (m.outputs || []).map(o => typeof o === 'string' ? o : o.id)
+        };
       });
     }
   } catch {}
@@ -275,7 +281,7 @@ async function initGraphEditor() {
 }
 
 const SYSTEM_NODES = [
-  { id: '_chat', name: 'Chat', icon: '💬', type: 'consumer', inputs: ['data'], outputs: [] },
+  { id: '_chat', name: 'Chat', icon: '💬', type: 'consumer', inputs: ['data'], outputs: [], config: { target: 'pulseos' } },
   { id: '_notification', name: 'Notification', icon: '🔔', type: 'consumer', inputs: ['data'], outputs: [] }
 ];
 
@@ -308,7 +314,8 @@ async function loadGraph() {
           x: n.x || 100,
           y: n.y || 100,
           inputs: n.inputs || ['data'],
-          outputs: n.outputs || ['data']
+          outputs: n.outputs || ['data'],
+          config: n.config || {}
         })),
         edges: (d.edges || []).map(e => {
           // Handle both old format (from/to as strings) and new format (from/to as objects)
@@ -349,13 +356,24 @@ function addNodeForApp(appId) {
     type: sysNode ? sysNode.type : 'processor',
     x: 80 + col * 200,
     y: 60 + row * 160,
-    inputs: sysNode ? sysNode.inputs : ['data'],
-    outputs: sysNode ? sysNode.outputs : ['data']
+    inputs: sysNode ? sysNode.inputs : (app.inputs && app.inputs.length > 0 ? app.inputs : ['data']),
+    outputs: sysNode ? sysNode.outputs : (app.outputs && app.outputs.length > 0 ? app.outputs : ['data']),
+    config: sysNode && sysNode.config ? { ...sysNode.config } : {}
   };
   graph.nodes.push(node);
   renderGraph();
   updateStatus('Node hinzugefuegt');
   autoSave();
+}
+
+function setChatTarget(select) {
+  const nodeId = select.dataset.node;
+  const node = graph.nodes.find(n => n.id === nodeId);
+  if (node) {
+    if (!node.config) node.config = {};
+    node.config.target = select.value;
+    autoSave();
+  }
 }
 
 function removeNode(nodeId) {
@@ -412,6 +430,11 @@ function renderNodes() {
         '<span class="gnode-delete" onclick="event.stopPropagation();removeNode(\'' + n.id + '\')" title="Entfernen">x</span>' +
       '</div>' +
       '<div class="gnode-ports">' + inputs + outputs + '</div>' +
+      (n.appId === '_chat' ? '<div class="gnode-config"><select class="gnode-target-select" data-node="' + n.id + '" onchange="setChatTarget(this)">' +
+        '<option value="pulseos"' + ((n.config?.target || 'pulseos') === 'pulseos' ? ' selected' : '') + '>PulseOS</option>' +
+        '<option value="claudeos"' + (n.config?.target === 'claudeos' ? ' selected' : '') + '>ClaudeOS</option>' +
+        '<option value="both"' + (n.config?.target === 'both' ? ' selected' : '') + '>Beide</option>' +
+      '</select></div>' : '') +
     '</div>';
   }).join('');
 }
@@ -622,7 +645,8 @@ async function saveGraph() {
       x: Math.round(n.x),
       y: Math.round(n.y),
       inputs: n.inputs,
-      outputs: n.outputs
+      outputs: n.outputs,
+      config: n.config || {}
     })),
     edges: graph.edges.map(e => ({
       id: e.id,

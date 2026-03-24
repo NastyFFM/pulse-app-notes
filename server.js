@@ -862,6 +862,114 @@ function saveGraph(projectId, graph) {
   fs.writeFileSync(path.join(GRAPHS_DIR, `graph-${projectId}.json`), JSON.stringify(graph, null, 2));
 }
 
+function resolveOutput(appId, outputId) {
+  let data = null;
+  for (const base of [path.join(ROOT, 'apps'), path.join(ROOT, 'userdata', 'apps')]) {
+    const dataDir = path.join(base, appId, 'data');
+    if (!fs.existsSync(dataDir)) continue;
+    const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
+    for (const f of files) { try { data = JSON.parse(fs.readFileSync(path.join(dataDir, f), 'utf8')); } catch {} }
+    break;
+  }
+  if (!data) return null;
+  const today = new Date().toISOString().split('T')[0];
+  const resolvers = {
+    'weather': { 'cities': () => data.cities || [], 'forecast': () => data.forecast || data.cities || [] },
+    'calendar': { 'today-events': () => (data.events || []).filter(e => e.date === today), 'all-events': () => data.events || [] },
+    'tasks': { 'open-tasks': () => (data.tasks || []).filter(t => !t.done && t.status !== 'done'), 'all-tasks': () => data.tasks || [] },
+    'notes': { 'notes': () => data.notes || [], 'recent-notes': () => { const w = Date.now() - 7*86400000; return (data.notes||[]).filter(n => new Date(n.created||0).getTime() > w); } },
+    'habit-tracker': { 'habits': () => data.habits || [], 'today-status': () => { const h = data.habits||[]; return { total: h.length, done: h.filter(x => (x.done||x.dates||[]).includes(today)).length }; } }
+  };
+  if (resolvers[appId] && resolvers[appId][outputId]) return resolvers[appId][outputId]();
+  if (data[outputId] !== undefined) return data[outputId];
+  return data;
+}
+
+function sendGraphResultToChat(text, target) {
+  const chatPath = path.join(ROOT, 'data', 'chat-history.json');
+  let chatData = { messages: [] };
+  try { chatData = JSON.parse(fs.readFileSync(chatPath, 'utf8')); } catch {}
+  const msg = { id: 'm-' + Date.now() + '-' + Math.random().toString(36).slice(2,6), from: 'agent', text, source: target === 'claudeos' ? 'telegram' : 'pulseos', time: new Date().toISOString() };
+  chatData.messages.push(msg);
+  if (chatData.messages.length > 200) chatData.messages = chatData.messages.slice(-200);
+  fs.writeFileSync(chatPath, JSON.stringify(chatData, null, 2));
+  broadcast('dashboard', { type: 'chat-message', message: msg });
+  if (target === 'claudeos' || target === 'both') {
+    const outFile = path.join(ROOT, 'data', 'chat-outbox.json');
+    let out = { messages: [] };
+    try { out = JSON.parse(fs.readFileSync(outFile, 'utf8')); } catch {}
+    out.messages.push({ id: 'out-' + Date.now(), message: text, source: 'graph-run', time: new Date().toISOString() });
+    fs.writeFileSync(outFile, JSON.stringify(out, null, 2));
+  }
+}
+
+function executeGraph(graphId) {
+  const graph = loadGraph(graphId);
+  if (!graph) return { ok: false, error: 'Graph not found' };
+
+  // Collect data following edges to _chat and _notification nodes
+  const systemNodes = graph.nodes.filter(n => n.appId.startsWith('_'));
+  const collected = {};
+
+  for (const consumer of systemNodes) {
+    const inEdges = graph.edges.filter(e => (e.to === consumer.id || e.toNode === consumer.id));
+    for (const edge of inEdges) {
+      const fromNodeId = edge.from || edge.fromNode;
+      const fromNode = graph.nodes.find(n => n.id === fromNodeId);
+      if (!fromNode) continue;
+      const outputId = edge.fromOutput || edge.fromPort || 'data';
+      const resolved = resolveOutput(fromNode.appId, outputId);
+      if (resolved !== null) {
+        if (!collected[consumer.id]) collected[consumer.id] = [];
+        collected[consumer.id].push({ appId: fromNode.appId, appName: fromNode.name, outputId, data: resolved });
+      }
+    }
+  }
+
+  // Build summaries and route
+  const summaries = [];
+  for (const node of systemNodes) {
+    const items = collected[node.id] || [];
+    if (items.length === 0) continue;
+    const parts = items.map(item => {
+      if (Array.isArray(item.data)) {
+        if (item.data.length === 0) return item.appName + ': Keine Daten';
+        const preview = item.data.slice(0, 3).map(d => d.title || d.name || d.city || d.text || JSON.stringify(d).slice(0,50)).join(', ');
+        return item.appName + ' (' + item.outputId + '): ' + item.data.length + ' — ' + preview;
+      }
+      if (typeof item.data === 'object') return item.appName + ' (' + item.outputId + '): ' + JSON.stringify(item.data).slice(0,100);
+      return item.appName + ': ' + String(item.data);
+    });
+    const summary = '📋 ' + (graph.name || graphId) + '\n\n' + parts.join('\n');
+    summaries.push(summary);
+
+    if (node.appId === '_chat') {
+      const target = node.config?.target || 'pulseos';
+      sendGraphResultToChat(summary, target);
+    }
+    if (node.appId === '_notification') {
+      broadcast('dashboard', { type: 'agent-alert', text: summary.split('\n')[0], time: Date.now() });
+    }
+  }
+
+  // Also route to non-system consumer nodes
+  for (const node of graph.nodes) {
+    if (node.appId.startsWith('_') || node.type === 'producer') continue;
+    const inEdges = graph.edges.filter(e => (e.to === node.id || e.toNode === node.id));
+    for (const edge of inEdges) {
+      const fromNode = graph.nodes.find(n => n.id === (edge.from || edge.fromNode));
+      if (fromNode) {
+        const outputId = edge.fromOutput || edge.fromPort || 'data';
+        const data = resolveOutput(fromNode.appId, outputId);
+        if (data) broadcast(node.appId, { type: 'app-input', appId: node.appId, inputName: edge.toInput || edge.toPort || 'data', data });
+      }
+    }
+  }
+
+  broadcast('dashboard', { type: 'graph-executed', graphId, time: Date.now() });
+  return { ok: true, summary: summaries.join('\n---\n'), graphId };
+}
+
 async function routeOutput(projectId, fromAppId, outputName, data) {
   const graph = loadGraph(projectId);
   if (!graph) return;
@@ -2636,47 +2744,9 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
     });
   }
 
-  // POST /api/graphs/:projectId/run — execute graph server-side (redirect to /api/graph-run)
+  // POST /api/graphs/:projectId/run — execute graph server-side
   if (graphRunMatch && req.method === 'POST') {
-    const projectId = graphRunMatch[1];
-    // Internally call graph-run logic
-    const fakeBody = JSON.stringify({ graphId: projectId });
-    const fakeReq = { method: 'POST', on: (ev, cb) => { if (ev === 'data') cb(fakeBody); if (ev === 'end') cb(); } };
-    // Re-use readBody pattern
-    return readBody(req, () => {
-      const graph = loadGraph(projectId);
-      if (!graph) return jsonRes(res, { error: 'Graph not found' }, 404);
-      // Inline graph-run logic
-      const results = {};
-      for (const node of graph.nodes) {
-        if (node.appId.startsWith('_')) continue;
-        for (const base of [path.join(ROOT, 'apps'), path.join(ROOT, 'userdata', 'apps')]) {
-          const dataDir = path.join(base, node.appId, 'data');
-          if (!fs.existsSync(dataDir)) continue;
-          const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
-          for (const f of files) { try { results[node.appId] = JSON.parse(fs.readFileSync(path.join(dataDir, f), 'utf8')); } catch {} }
-          break;
-        }
-      }
-      const parts = [];
-      const today = new Date().toISOString().split('T')[0];
-      if (results.weather) { const c = results.weather.cities || []; parts.push('🌤 Wetter: ' + (c.length > 0 ? c.map(x => x.city + ': ' + x.temp + '°C').join(', ') : 'Keine Daten')); }
-      if (results.calendar) { const ev = (results.calendar.events || []).filter(e => e.date === today); parts.push('📅 Termine: ' + (ev.length > 0 ? ev.map(e => (e.time || '') + ' ' + e.title).join(', ') : 'Keine heute')); }
-      if (results.tasks) { const o = (results.tasks.tasks || []).filter(t => !t.done && t.status !== 'done'); parts.push('✅ Tasks: ' + (o.length > 0 ? o.length + ' offen' : 'Alles erledigt')); }
-      if (results['habit-tracker']) { const h = results['habit-tracker'].habits || []; const done = h.filter(x => x.dates && x.dates.includes(today)); parts.push('💪 Habits: ' + done.length + '/' + h.length); }
-      for (const [k, v] of Object.entries(results)) { if (['weather','calendar','tasks','habit-tracker'].includes(k)) continue; parts.push('📊 ' + k); }
-      const summary = '📋 ' + (graph.name || 'Graph') + '\n\n' + parts.join('\n');
-      const hasChatNode = graph.nodes.some(n => n.appId === '_chat');
-      if (hasChatNode) {
-        const chatPath = path.join(ROOT, 'data', 'chat-history.json');
-        let chatData = { messages: [] }; try { chatData = JSON.parse(fs.readFileSync(chatPath, 'utf8')); } catch {}
-        chatData.messages.push({ id: 'm-' + Date.now(), from: 'agent', text: summary, source: 'pulseos', time: new Date().toISOString() });
-        fs.writeFileSync(chatPath, JSON.stringify(chatData, null, 2));
-        broadcast('dashboard', { type: 'chat-message', from: 'agent', text: summary, source: 'pulseos', time: new Date().toISOString() });
-      }
-      broadcast('dashboard', { type: 'graph-executed', graphId: projectId, time: Date.now() });
-      return jsonRes(res, { ok: true, summary, data: results });
-    });
+    return readBody(req, () => jsonRes(res, executeGraph(graphRunMatch[1])));
   }
 
   // POST /api/graphs/:projectId/output — app reports output for routing
@@ -6564,99 +6634,11 @@ function copyInstall(repo, btn) {
     } catch (e) { return jsonRes(res, { ok: false, error: e.message }, 500); } });
   }
 
-  // ── Graph Run Action: server-side graph execution (no iframe needed) ──
+  // ── Graph Run Action: server-side graph execution ──
   if (url === '/api/graph-run' && req.method === 'POST') {
     return readBody(req, b => { try {
-      const { graphId, action } = JSON.parse(b);
-      const graph = loadGraph(graphId);
-      if (!graph) return jsonRes(res, { error: 'Graph not found' }, 404);
-
-      const results = {};
-
-      // Read data from ALL non-system nodes
-      for (const node of graph.nodes) {
-        if (node.appId.startsWith('_')) continue; // skip system nodes (_chat, _notification)
-        // Try apps/ first, then userdata/apps/
-        for (const base of [path.join(ROOT, 'apps'), path.join(ROOT, 'userdata', 'apps')]) {
-          const dataDir = path.join(base, node.appId, 'data');
-          if (!fs.existsSync(dataDir)) continue;
-          const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
-          for (const f of files) {
-            try { results[node.appId] = JSON.parse(fs.readFileSync(path.join(dataDir, f), 'utf8')); } catch {}
-          }
-          break; // found data, don't check second path
-        }
-      }
-
-      // Build summary from all collected data
-      let summary = '';
-      const parts = [];
-      const today = new Date().toISOString().split('T')[0];
-
-      if (results.weather) {
-        const cities = results.weather.cities || [];
-        parts.push('🌤 Wetter: ' + (cities.length > 0 ? cities.map(c => `${c.city}: ${c.temp}°C ${c.condition || ''}`).join(', ') : 'Keine Daten'));
-      }
-      if (results.calendar) {
-        const todayEvents = (results.calendar.events || []).filter(e => e.date === today);
-        parts.push('📅 Termine: ' + (todayEvents.length > 0 ? todayEvents.map(e => `${e.time || ''} ${e.title}`).join(', ') : 'Keine Termine heute'));
-      }
-      if (results.tasks) {
-        const open = (results.tasks.tasks || []).filter(t => !t.done && t.status !== 'done');
-        parts.push('✅ Tasks: ' + (open.length > 0 ? `${open.length} offen: ${open.slice(0, 3).map(t => t.text || t.title).join(', ')}` : 'Alles erledigt'));
-      }
-      if (results['habit-tracker']) {
-        const habits = results['habit-tracker'].habits || [];
-        const completed = habits.filter(h => h.dates && h.dates.includes(today));
-        parts.push('💪 Habits: ' + completed.length + '/' + habits.length + ' heute erledigt');
-      }
-      if (results.notes) {
-        const notes = results.notes.notes || [];
-        parts.push('📝 Notizen: ' + notes.length + ' gespeichert');
-      }
-
-      // Add any other app data as generic entry
-      for (const [appId, data] of Object.entries(results)) {
-        if (['weather', 'calendar', 'tasks', 'habit-tracker', 'notes'].includes(appId)) continue;
-        const count = Array.isArray(data) ? data.length : (data && typeof data === 'object' ? Object.keys(data).length : 0);
-        parts.push('📊 ' + appId + ': ' + count + ' Einträge');
-      }
-
-      summary = '📋 ' + (graph.name || 'Graph') + '\n\n' + parts.join('\n');
-
-      // Check if graph has a _chat node → send to chat
-      const hasChatNode = graph.nodes.some(n => n.appId === '_chat');
-      const hasNotifNode = graph.nodes.some(n => n.appId === '_notification');
-
-      if (hasChatNode) {
-        const chatPath = path.join(ROOT, 'data', 'chat-history.json');
-        let chatData = { messages: [] };
-        try { chatData = JSON.parse(fs.readFileSync(chatPath, 'utf8')); } catch {}
-        chatData.messages.push({ id: 'm-' + Date.now(), from: 'agent', text: summary, source: 'pulseos', time: new Date().toISOString() });
-        fs.writeFileSync(chatPath, JSON.stringify(chatData, null, 2));
-        broadcast('dashboard', { type: 'chat-message', from: 'agent', text: summary, source: 'pulseos', time: new Date().toISOString() });
-      }
-
-      if (hasNotifNode || !hasChatNode) {
-        // Always broadcast as notification if no chat node
-        broadcast('dashboard', { type: 'agent-alert', text: summary.split('\n')[0], time: Date.now() });
-      }
-
-      // Route data to consumer app nodes (non-system)
-      for (const node of graph.nodes) {
-        if (node.appId.startsWith('_') || node.type === 'producer') continue;
-        // Find edges pointing to this node
-        const inEdges = graph.edges.filter(e => (e.to === node.id || e.toNode === node.id));
-        for (const edge of inEdges) {
-          const fromNode = graph.nodes.find(n => n.id === (edge.from || edge.fromNode));
-          if (fromNode && results[fromNode.appId]) {
-            broadcast(node.appId, { type: 'app-input', appId: node.appId, inputName: edge.toPort || edge.toInput || 'data', data: results[fromNode.appId] });
-          }
-        }
-      }
-
-      broadcast('dashboard', { type: 'graph-executed', graphId, time: Date.now() });
-      return jsonRes(res, { ok: true, summary, data: results });
+      const { graphId } = JSON.parse(b);
+      return jsonRes(res, executeGraph(graphId));
     } catch (e) { return jsonRes(res, { ok: false, error: e.message }, 500); } });
   }
 

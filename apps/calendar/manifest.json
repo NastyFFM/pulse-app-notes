@@ -4,8 +4,8 @@
   "color": "#1a1a3d",
   "description": "Termine und Events",
   "nodeType": null,
-  "inputs": [],
-  "outputs": [],
+  "inputs": [{"id":"data","desc":"Beliebige Daten empfangen"}],
+  "outputs": [{"id":"today-events","desc":"Termine für heute"},{"id":"all-events","desc":"Alle Termine"}],
   "pulseSubscriptions": [],
   "visibility": "public",
   "allowedUsers": []

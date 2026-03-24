@@ -4,8 +4,8 @@
   "color": "#1a2e1a",
   "description": "Aufgaben und Todos verwalten",
   "nodeType": null,
-  "inputs": [],
-  "outputs": [],
+  "inputs": [{"id":"data","desc":"Beliebige Daten empfangen"}],
+  "outputs": [{"id":"open-tasks","desc":"Offene Aufgaben"},{"id":"all-tasks","desc":"Alle Aufgaben"}],
   "pulseSubscriptions": [],
   "visibility": "private",
   "allowedUsers": []
