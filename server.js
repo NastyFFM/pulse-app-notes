@@ -1630,7 +1630,7 @@ const server = http.createServer(async (req, res) => {
 
   // ── App Install ──
   if (url === '/api/apps/install' && req.method === 'POST') {
-    return readBody(req, b => {
+    return readBody(req, async b => {
       try {
         const { url: repoUrl, id } = JSON.parse(b);
         if (!repoUrl) { res.writeHead(400); return res.end(JSON.stringify({ error: 'url required' })); }
@@ -1644,17 +1644,45 @@ const server = http.createServer(async (req, res) => {
           return jsonRes(res, { ok: false, error: 'App already exists: ' + appId });
         }
 
-        // Clone repo
-        const gitUrl = repoUrl.startsWith('http') ? repoUrl : `https://github.com/${repoUrl}`;
-        const { execSync } = require('child_process');
-        try {
-          execSync(`git clone --depth 1 ${gitUrl} ${appDir}`, { timeout: 30000 });
-        } catch (e) {
-          return jsonRes(res, { ok: false, error: 'Git clone failed: ' + (e.message || '').substring(0, 100) });
+        // Download repo as ZIP from GitHub API (no git credentials needed)
+        const repoPath = repoUrl.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/$/, '');
+        const zipUrl = `https://api.github.com/repos/${repoPath}/zipball/main`;
+        const downloadZip = () => new Promise((resolve, reject) => {
+          const follow = (url, redirects) => {
+            if (redirects > 5) return reject(new Error('Too many redirects'));
+            const mod = url.startsWith('https') ? require('https') : require('http');
+            mod.get(url, { headers: { 'User-Agent': 'PulseOS/1.0', 'Accept': 'application/vnd.github+json' } }, resp => {
+              if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) return follow(resp.headers.location, (redirects || 0) + 1);
+              if (resp.statusCode !== 200) return reject(new Error('GitHub API error: ' + resp.statusCode));
+              const chunks = []; resp.on('data', c => chunks.push(c)); resp.on('end', () => resolve(Buffer.concat(chunks)));
+            }).on('error', reject);
+          };
+          follow(zipUrl, 0);
+        });
+
+        let zipBuf;
+        try { zipBuf = await downloadZip(); } catch (e) {
+          return jsonRes(res, { ok: false, error: 'Download failed: ' + (e.message || '').substring(0, 100) });
         }
 
-        // Remove .git dir (we don't need git history)
-        try { execSync(`rm -rf ${path.join(appDir, '.git')}`); } catch {}
+        // Extract ZIP (use built-in zlib + manual zip parsing)
+        const { execSync } = require('child_process');
+        const tmpZip = path.join(require('os').tmpdir(), 'pulse-install-' + Date.now() + '.zip');
+        fs.writeFileSync(tmpZip, zipBuf);
+        fs.mkdirSync(appDir, { recursive: true });
+        try {
+          execSync(`unzip -o -j "${tmpZip}" -d "${appDir}"`, { timeout: 15000 });
+        } catch {
+          // unzip -j flattens; try with directory structure
+          const tmpExtract = tmpZip + '-extract';
+          execSync(`unzip -o "${tmpZip}" -d "${tmpExtract}"`, { timeout: 15000 });
+          // GitHub ZIP has a top-level dir like "user-repo-hash/", move contents up
+          const entries = fs.readdirSync(tmpExtract);
+          const topDir = entries.length === 1 ? path.join(tmpExtract, entries[0]) : tmpExtract;
+          execSync(`cp -r "${topDir}/"* "${appDir}/"`, { timeout: 10000 });
+          try { execSync(`rm -rf "${tmpExtract}"`); } catch {}
+        }
+        try { fs.unlinkSync(tmpZip); } catch {}
 
         // Read manifest if exists
         let manifest = { name: appId, icon: appId[0].toUpperCase(), color: '#333', description: '' };
@@ -1680,7 +1708,7 @@ const server = http.createServer(async (req, res) => {
           color: manifest.color || '#333',
           description: manifest.description || '',
           installed: true,
-          source: gitUrl,
+          source: `https://github.com/${repoPath}`,
           installedAt: new Date().toISOString(),
           position: apps.length
         });
