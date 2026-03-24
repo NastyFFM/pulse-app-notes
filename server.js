@@ -2636,22 +2636,47 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
     });
   }
 
-  // POST /api/graphs/:projectId/run — trigger all producers
+  // POST /api/graphs/:projectId/run — execute graph server-side (redirect to /api/graph-run)
   if (graphRunMatch && req.method === 'POST') {
     const projectId = graphRunMatch[1];
-    const graph = loadGraph(projectId);
-    if (!graph) return jsonRes(res, { error: 'Graph not found' }, 404);
-    const producers = graph.nodes.filter(n => n.nodeType === 'producer');
-    const results = [];
-    for (const p of producers) {
-      try {
-        await sendInputToApp(p.appId, '__pulse', { type: 'manual', projectId, timestamp: Date.now() });
-        results.push({ appId: p.appId, status: 'pulsed' });
-      } catch (err) {
-        results.push({ appId: p.appId, status: 'error', error: err.message });
+    // Internally call graph-run logic
+    const fakeBody = JSON.stringify({ graphId: projectId });
+    const fakeReq = { method: 'POST', on: (ev, cb) => { if (ev === 'data') cb(fakeBody); if (ev === 'end') cb(); } };
+    // Re-use readBody pattern
+    return readBody(req, () => {
+      const graph = loadGraph(projectId);
+      if (!graph) return jsonRes(res, { error: 'Graph not found' }, 404);
+      // Inline graph-run logic
+      const results = {};
+      for (const node of graph.nodes) {
+        if (node.appId.startsWith('_')) continue;
+        for (const base of [path.join(ROOT, 'apps'), path.join(ROOT, 'userdata', 'apps')]) {
+          const dataDir = path.join(base, node.appId, 'data');
+          if (!fs.existsSync(dataDir)) continue;
+          const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
+          for (const f of files) { try { results[node.appId] = JSON.parse(fs.readFileSync(path.join(dataDir, f), 'utf8')); } catch {} }
+          break;
+        }
       }
-    }
-    return jsonRes(res, { ok: true, projectId, triggered: results });
+      const parts = [];
+      const today = new Date().toISOString().split('T')[0];
+      if (results.weather) { const c = results.weather.cities || []; parts.push('🌤 Wetter: ' + (c.length > 0 ? c.map(x => x.city + ': ' + x.temp + '°C').join(', ') : 'Keine Daten')); }
+      if (results.calendar) { const ev = (results.calendar.events || []).filter(e => e.date === today); parts.push('📅 Termine: ' + (ev.length > 0 ? ev.map(e => (e.time || '') + ' ' + e.title).join(', ') : 'Keine heute')); }
+      if (results.tasks) { const o = (results.tasks.tasks || []).filter(t => !t.done && t.status !== 'done'); parts.push('✅ Tasks: ' + (o.length > 0 ? o.length + ' offen' : 'Alles erledigt')); }
+      if (results['habit-tracker']) { const h = results['habit-tracker'].habits || []; const done = h.filter(x => x.dates && x.dates.includes(today)); parts.push('💪 Habits: ' + done.length + '/' + h.length); }
+      for (const [k, v] of Object.entries(results)) { if (['weather','calendar','tasks','habit-tracker'].includes(k)) continue; parts.push('📊 ' + k); }
+      const summary = '📋 ' + (graph.name || 'Graph') + '\n\n' + parts.join('\n');
+      const hasChatNode = graph.nodes.some(n => n.appId === '_chat');
+      if (hasChatNode) {
+        const chatPath = path.join(ROOT, 'data', 'chat-history.json');
+        let chatData = { messages: [] }; try { chatData = JSON.parse(fs.readFileSync(chatPath, 'utf8')); } catch {}
+        chatData.messages.push({ id: 'm-' + Date.now(), from: 'agent', text: summary, source: 'pulseos', time: new Date().toISOString() });
+        fs.writeFileSync(chatPath, JSON.stringify(chatData, null, 2));
+        broadcast('dashboard', { type: 'chat-message', from: 'agent', text: summary, source: 'pulseos', time: new Date().toISOString() });
+      }
+      broadcast('dashboard', { type: 'graph-executed', graphId: projectId, time: Date.now() });
+      return jsonRes(res, { ok: true, summary, data: results });
+    });
   }
 
   // POST /api/graphs/:projectId/output — app reports output for routing
@@ -6455,56 +6480,54 @@ function copyInstall(repo, btn) {
           name: 'Morning Briefing',
           description: 'Tägliche Zusammenfassung: Wetter + Termine + Tasks',
           nodes: [
-            { id: 'n-weather', appId: 'weather', name: 'Weather', type: 'producer', x: 80, y: 100, outputs: ['weather-data'] },
-            { id: 'n-calendar', appId: 'calendar', name: 'Calendar', type: 'producer', x: 80, y: 250, outputs: ['today-events'] },
-            { id: 'n-tasks', appId: 'tasks', name: 'Tasks', type: 'producer', x: 80, y: 400, outputs: ['open-tasks'] },
-            { id: 'n-briefing', appId: '_briefing', name: 'Briefing', type: 'processor', x: 400, y: 250, inputs: ['weather-data', 'today-events', 'open-tasks'], outputs: ['summary'] }
+            { id: 'n-weather', appId: 'weather', name: 'Weather', type: 'producer', x: 80, y: 100, inputs: ['data'], outputs: ['data'] },
+            { id: 'n-calendar', appId: 'calendar', name: 'Calendar', type: 'producer', x: 80, y: 250, inputs: ['data'], outputs: ['data'] },
+            { id: 'n-tasks', appId: 'tasks', name: 'Tasks', type: 'producer', x: 80, y: 400, inputs: ['data'], outputs: ['data'] },
+            { id: 'n-chat', appId: '_chat', name: 'Chat', type: 'consumer', x: 400, y: 250, inputs: ['data'], outputs: [] }
           ],
           edges: [
-            { id: 'e1', from: 'n-weather', to: 'n-briefing', fromOutput: 'weather-data', toInput: 'weather-data' },
-            { id: 'e2', from: 'n-calendar', to: 'n-briefing', fromOutput: 'today-events', toInput: 'today-events' },
-            { id: 'e3', from: 'n-tasks', to: 'n-briefing', fromOutput: 'open-tasks', toInput: 'open-tasks' }
-          ],
-          action: 'briefing'
+            { id: 'e1', from: 'n-weather', to: 'n-chat', fromOutput: 'data', toInput: 'data' },
+            { id: 'e2', from: 'n-calendar', to: 'n-chat', fromOutput: 'data', toInput: 'data' },
+            { id: 'e3', from: 'n-tasks', to: 'n-chat', fromOutput: 'data', toInput: 'data' }
+          ]
         },
         news: {
           id: 'news-tracker',
           name: 'News Tracker',
           description: 'Beobachtet Themen und speichert neue Artikel als Notiz',
           nodes: [
-            { id: 'n-news', appId: 'news', name: 'News', type: 'producer', x: 100, y: 150, outputs: ['new-articles'] },
-            { id: 'n-notes', appId: 'notes', name: 'Notes', type: 'consumer', x: 400, y: 150, inputs: ['new-articles'] }
+            { id: 'n-news', appId: 'news', name: 'News', type: 'producer', x: 100, y: 150, inputs: ['data'], outputs: ['data'] },
+            { id: 'n-notes', appId: 'notes', name: 'Notes', type: 'consumer', x: 400, y: 150, inputs: ['data'], outputs: ['data'] }
           ],
           edges: [
-            { id: 'e1', from: 'n-news', to: 'n-notes', fromOutput: 'new-articles', toInput: 'new-articles' }
-          ],
-          action: 'news-check'
+            { id: 'e1', from: 'n-news', to: 'n-notes', fromOutput: 'data', toInput: 'data' }
+          ]
         },
         health: {
           id: 'habit-review',
           name: 'Habit Review',
           description: 'Täglicher Gewohnheits-Check mit Kalender-Eintrag',
           nodes: [
-            { id: 'n-habits', appId: 'habit-tracker', name: 'Habits', type: 'producer', x: 100, y: 150, outputs: ['habit-status'] },
-            { id: 'n-calendar', appId: 'calendar', name: 'Calendar', type: 'consumer', x: 400, y: 150, inputs: ['habit-status'] }
+            { id: 'n-habits', appId: 'habit-tracker', name: 'Habits', type: 'producer', x: 100, y: 150, inputs: ['data'], outputs: ['data'] },
+            { id: 'n-calendar', appId: 'calendar', name: 'Calendar', type: 'consumer', x: 400, y: 100, inputs: ['data'], outputs: ['data'] },
+            { id: 'n-chat', appId: '_chat', name: 'Chat', type: 'consumer', x: 400, y: 250, inputs: ['data'], outputs: [] }
           ],
           edges: [
-            { id: 'e1', from: 'n-habits', to: 'n-calendar', fromOutput: 'habit-status', toInput: 'habit-status' }
-          ],
-          action: 'habit-review'
+            { id: 'e1', from: 'n-habits', to: 'n-calendar', fromOutput: 'data', toInput: 'data' },
+            { id: 'e2', from: 'n-habits', to: 'n-chat', fromOutput: 'data', toInput: 'data' }
+          ]
         },
         dev: {
           id: 'dev-dashboard',
           name: 'Dev Dashboard',
           description: 'Projekt-Status aus Tasks und Terminal',
           nodes: [
-            { id: 'n-tasks', appId: 'tasks', name: 'Tasks', type: 'producer', x: 100, y: 150, outputs: ['open-tasks'] },
-            { id: 'n-notes', appId: 'notes', name: 'Notes', type: 'consumer', x: 400, y: 150, inputs: ['open-tasks'] }
+            { id: 'n-tasks', appId: 'tasks', name: 'Tasks', type: 'producer', x: 100, y: 150, inputs: ['data'], outputs: ['data'] },
+            { id: 'n-chat', appId: '_chat', name: 'Chat', type: 'consumer', x: 400, y: 150, inputs: ['data'], outputs: [] }
           ],
           edges: [
-            { id: 'e1', from: 'n-tasks', to: 'n-notes', fromOutput: 'open-tasks', toInput: 'open-tasks' }
-          ],
-          action: 'dev-status'
+            { id: 'e1', from: 'n-tasks', to: 'n-chat', fromOutput: 'data', toInput: 'data' }
+          ]
         }
       };
 
@@ -6526,6 +6549,15 @@ function copyInstall(repo, btn) {
         const gPath = path.join(GRAPHS_DIR, `graph-${graphId}.json`);
         fs.writeFileSync(gPath, JSON.stringify(graph, null, 2));
         createdGraphs.push({ id: graphId, name: template.name });
+
+        // Also register as project so Projects app can see it
+        const projPath = path.join(ROOT, 'apps', 'projects', 'data', 'projects.json');
+        let projData = { projects: [] };
+        try { projData = JSON.parse(fs.readFileSync(projPath, 'utf8')); } catch {}
+        if (!projData.projects.find(p => p.id === graphId)) {
+          projData.projects.push({ id: graphId, name: template.name, description: template.description, color: '#4ecdc4', created: now });
+          fs.writeFileSync(projPath, JSON.stringify(projData, null, 2));
+        }
       }
 
       return jsonRes(res, { ok: true, graphs: createdGraphs });
@@ -6541,92 +6573,90 @@ function copyInstall(repo, btn) {
 
       const results = {};
 
-      // Read data from all producer apps
+      // Read data from ALL non-system nodes
       for (const node of graph.nodes) {
-        if (node.type !== 'producer' || node.appId.startsWith('_')) continue;
-        const dataDir = path.join(ROOT, 'apps', node.appId, 'data');
-        if (!fs.existsSync(dataDir)) {
-          // Try userdata
-          const udDir = path.join(ROOT, 'userdata', 'apps', node.appId, 'data');
-          if (fs.existsSync(udDir)) {
-            const files = fs.readdirSync(udDir).filter(f => f.endsWith('.json'));
-            for (const f of files) {
-              try { results[node.appId] = JSON.parse(fs.readFileSync(path.join(udDir, f), 'utf8')); } catch {}
-            }
+        if (node.appId.startsWith('_')) continue; // skip system nodes (_chat, _notification)
+        // Try apps/ first, then userdata/apps/
+        for (const base of [path.join(ROOT, 'apps'), path.join(ROOT, 'userdata', 'apps')]) {
+          const dataDir = path.join(base, node.appId, 'data');
+          if (!fs.existsSync(dataDir)) continue;
+          const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
+          for (const f of files) {
+            try { results[node.appId] = JSON.parse(fs.readFileSync(path.join(dataDir, f), 'utf8')); } catch {}
           }
-          continue;
-        }
-        const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
-        for (const f of files) {
-          try { results[node.appId] = JSON.parse(fs.readFileSync(path.join(dataDir, f), 'utf8')); } catch {}
+          break; // found data, don't check second path
         }
       }
 
-      // Execute action based on graph type
+      // Build summary from all collected data
       let summary = '';
-      const graphAction = action || graph.action;
+      const parts = [];
+      const today = new Date().toISOString().split('T')[0];
 
-      if (graphAction === 'briefing') {
-        // Morning Briefing: combine weather + calendar + tasks
-        const weather = results.weather || {};
-        const calendar = results.calendar || {};
-        const tasks = results.tasks || {};
+      if (results.weather) {
+        const cities = results.weather.cities || [];
+        parts.push('🌤 Wetter: ' + (cities.length > 0 ? cities.map(c => `${c.city}: ${c.temp}°C ${c.condition || ''}`).join(', ') : 'Keine Daten'));
+      }
+      if (results.calendar) {
+        const todayEvents = (results.calendar.events || []).filter(e => e.date === today);
+        parts.push('📅 Termine: ' + (todayEvents.length > 0 ? todayEvents.map(e => `${e.time || ''} ${e.title}`).join(', ') : 'Keine Termine heute'));
+      }
+      if (results.tasks) {
+        const open = (results.tasks.tasks || []).filter(t => !t.done && t.status !== 'done');
+        parts.push('✅ Tasks: ' + (open.length > 0 ? `${open.length} offen: ${open.slice(0, 3).map(t => t.text || t.title).join(', ')}` : 'Alles erledigt'));
+      }
+      if (results['habit-tracker']) {
+        const habits = results['habit-tracker'].habits || [];
+        const completed = habits.filter(h => h.dates && h.dates.includes(today));
+        parts.push('💪 Habits: ' + completed.length + '/' + habits.length + ' heute erledigt');
+      }
+      if (results.notes) {
+        const notes = results.notes.notes || [];
+        parts.push('📝 Notizen: ' + notes.length + ' gespeichert');
+      }
 
-        const weatherText = weather.cities ? weather.cities.map(c => `${c.city}: ${c.temp}°C ${c.condition || ''}`).join(', ') : 'Keine Wetterdaten';
+      // Add any other app data as generic entry
+      for (const [appId, data] of Object.entries(results)) {
+        if (['weather', 'calendar', 'tasks', 'habit-tracker', 'notes'].includes(appId)) continue;
+        const count = Array.isArray(data) ? data.length : (data && typeof data === 'object' ? Object.keys(data).length : 0);
+        parts.push('📊 ' + appId + ': ' + count + ' Einträge');
+      }
 
-        const today = new Date().toISOString().split('T')[0];
-        const todayEvents = (calendar.events || []).filter(e => e.date === today);
-        const eventsText = todayEvents.length > 0 ? todayEvents.map(e => `${e.time || ''} ${e.title}`).join(', ') : 'Keine Termine heute';
+      summary = '📋 ' + (graph.name || 'Graph') + '\n\n' + parts.join('\n');
 
-        const openTasks = (tasks.tasks || []).filter(t => !t.done);
-        const tasksText = openTasks.length > 0 ? `${openTasks.length} offene Tasks: ${openTasks.slice(0, 3).map(t => t.text).join(', ')}` : 'Keine offenen Tasks';
+      // Check if graph has a _chat node → send to chat
+      const hasChatNode = graph.nodes.some(n => n.appId === '_chat');
+      const hasNotifNode = graph.nodes.some(n => n.appId === '_notification');
 
-        summary = `☀️ Morning Briefing\n\n🌤 Wetter: ${weatherText}\n📅 Termine: ${eventsText}\n✅ Tasks: ${tasksText}`;
-
-        // Send as chat message
+      if (hasChatNode) {
         const chatPath = path.join(ROOT, 'data', 'chat-history.json');
         let chatData = { messages: [] };
         try { chatData = JSON.parse(fs.readFileSync(chatPath, 'utf8')); } catch {}
-        chatData.messages.push({
-          id: 'm-' + Date.now(),
-          from: 'agent',
-          text: summary,
-          source: 'pulseos',
-          time: new Date().toISOString()
-        });
+        chatData.messages.push({ id: 'm-' + Date.now(), from: 'agent', text: summary, source: 'pulseos', time: new Date().toISOString() });
         fs.writeFileSync(chatPath, JSON.stringify(chatData, null, 2));
         broadcast('dashboard', { type: 'chat-message', from: 'agent', text: summary, source: 'pulseos', time: new Date().toISOString() });
       }
 
-      if (graphAction === 'habit-review') {
-        const habitsPath = path.join(ROOT, 'userdata', 'apps', 'habit-tracker', 'data', 'habits.json');
-        let habits = { habits: [] };
-        try { habits = JSON.parse(fs.readFileSync(habitsPath, 'utf8')); } catch {}
-
-        const today = new Date().toISOString().split('T')[0];
-        const completed = habits.habits.filter(h => h.dates && h.dates.includes(today));
-        summary = `💪 Habit Review: ${completed.length}/${habits.habits.length} Gewohnheiten heute erledigt`;
-
-        // Add calendar event
-        const calPath = path.join(ROOT, 'apps', 'calendar', 'data', 'calendar.json');
-        let calData = { events: [] };
-        try { calData = JSON.parse(fs.readFileSync(calPath, 'utf8')); } catch {}
-        calData.events.push({ id: 'habit-' + Date.now(), title: summary, date: today, time: '21:00', type: 'habit-review' });
-        fs.writeFileSync(calPath, JSON.stringify(calData, null, 2));
-        broadcast('calendar', { type: 'data-changed', appId: 'calendar', file: 'calendar.json' });
-        broadcast('dashboard', { type: 'chat-message', from: 'agent', text: summary, source: 'pulseos', time: new Date().toISOString() });
+      if (hasNotifNode || !hasChatNode) {
+        // Always broadcast as notification if no chat node
+        broadcast('dashboard', { type: 'agent-alert', text: summary.split('\n')[0], time: Date.now() });
       }
 
-      if (graphAction === 'dev-status') {
-        const tasks = results.tasks || {};
-        const openTasks = (tasks.tasks || []).filter(t => !t.done);
-        const doneTasks = (tasks.tasks || []).filter(t => t.done);
-        summary = `💻 Dev Status: ${doneTasks.length} erledigt, ${openTasks.length} offen`;
-        broadcast('dashboard', { type: 'chat-message', from: 'agent', text: summary, source: 'pulseos', time: new Date().toISOString() });
+      // Route data to consumer app nodes (non-system)
+      for (const node of graph.nodes) {
+        if (node.appId.startsWith('_') || node.type === 'producer') continue;
+        // Find edges pointing to this node
+        const inEdges = graph.edges.filter(e => (e.to === node.id || e.toNode === node.id));
+        for (const edge of inEdges) {
+          const fromNode = graph.nodes.find(n => n.id === (edge.from || edge.fromNode));
+          if (fromNode && results[fromNode.appId]) {
+            broadcast(node.appId, { type: 'app-input', appId: node.appId, inputName: edge.toPort || edge.toInput || 'data', data: results[fromNode.appId] });
+          }
+        }
       }
 
-      broadcast('dashboard', { type: 'graph-executed', graphId, action: graphAction, time: Date.now() });
-      return jsonRes(res, { ok: true, action: graphAction, summary, data: results });
+      broadcast('dashboard', { type: 'graph-executed', graphId, time: Date.now() });
+      return jsonRes(res, { ok: true, summary, data: results });
     } catch (e) { return jsonRes(res, { ok: false, error: e.message }, 500); } });
   }
 

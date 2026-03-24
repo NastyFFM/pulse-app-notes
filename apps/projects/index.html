@@ -274,13 +274,17 @@ async function initGraphEditor() {
   bindCanvasEvents();
 }
 
+const SYSTEM_NODES = [
+  { id: '_chat', name: 'Chat', icon: '💬', type: 'consumer', inputs: ['data'], outputs: [] },
+  { id: '_notification', name: 'Notification', icon: '🔔', type: 'consumer', inputs: ['data'], outputs: [] }
+];
+
 function populateAddNodeSelect() {
   const sel = document.getElementById('addNodeSelect');
   if (!sel) return;
-  sel.innerHTML = '<option value="">+ App hinzufuegen</option>';
-  for (const app of availableApps) {
-    sel.innerHTML += '<option value="' + app.id + '">' + app.icon + ' ' + esc(app.name) + '</option>';
-  }
+  sel.innerHTML = '<option value="">+ Node hinzufuegen</option>' +
+    '<optgroup label="System">' + SYSTEM_NODES.map(s => '<option value="' + s.id + '">' + s.icon + ' ' + esc(s.name) + '</option>').join('') + '</optgroup>' +
+    '<optgroup label="Apps">' + availableApps.map(a => '<option value="' + a.id + '">' + a.icon + ' ' + esc(a.name) + '</option>').join('') + '</optgroup>';
   sel.onchange = function() {
     if (this.value) {
       addNodeForApp(this.value);
@@ -326,17 +330,15 @@ async function loadGraph() {
 }
 
 function addNodeForApp(appId) {
-  const app = availableApps.find(a => a.id === appId);
+  // Check system nodes first
+  const sysNode = SYSTEM_NODES.find(s => s.id === appId);
+  const app = sysNode || availableApps.find(a => a.id === appId);
   if (!app) return;
-  // Check if already exists
-  if (graph.nodes.find(n => n.appId === appId)) {
+  // System nodes can be added multiple times, apps only once
+  if (!sysNode && graph.nodes.find(n => n.appId === appId)) {
     updateStatus('App bereits im Graph');
     return;
   }
-  const wrap = document.getElementById('graphCanvas');
-  const w = wrap ? wrap.offsetWidth : 600;
-  const h = wrap ? wrap.offsetHeight : 400;
-  // Place node in a reasonable position
   const existingCount = graph.nodes.length;
   const col = existingCount % 3;
   const row = Math.floor(existingCount / 3);
@@ -344,11 +346,11 @@ function addNodeForApp(appId) {
     id: 'node-' + appId + '-' + Date.now(),
     appId: appId,
     name: app.name,
-    type: 'processor',
+    type: sysNode ? sysNode.type : 'processor',
     x: 80 + col * 200,
     y: 60 + row * 160,
-    inputs: ['data'],
-    outputs: ['data']
+    inputs: sysNode ? sysNode.inputs : ['data'],
+    outputs: sysNode ? sysNode.outputs : ['data']
   };
   graph.nodes.push(node);
   renderGraph();
@@ -721,6 +723,23 @@ function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 
 initColors();
 loadApps().then(() => loadProjects());
+
+// Listen for open-graph messages from dashboard
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'open-graph' && e.data.projectId) {
+    // Wait for projects to be loaded, then select the graph
+    const trySelect = () => {
+      const p = projects.find(x => x.id === e.data.projectId);
+      if (p) {
+        selectProject(p.id);
+        activeTab = 'graph';
+        renderDetail(p);
+      }
+    };
+    if (projects.length > 0) trySelect();
+    else setTimeout(trySelect, 500);
+  }
+});
 </script>
 </body>
 </html>

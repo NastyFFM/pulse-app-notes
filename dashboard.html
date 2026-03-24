@@ -1921,7 +1921,7 @@ function openApp(app, opts) {
       try { iframe.contentWindow.postMessage({ type: 'set-theme', theme }, '*'); } catch {}
     });
   }
-  addFeed(app.name + ' geoeffnet', 'mutation');
+  addFeed((app.name || app.id || 'App') + ' geoeffnet', 'mutation');
   activeTabWinId = winId;
   renderTopbarTabs(); renderDock();
 }
@@ -3410,8 +3410,7 @@ async function renderActiveGraphs() {
           '<div class="graph-node" title="' + (app?.manifest?.name || n.appId) + '">' + icon + '</div>';
       }).join('');
       const label = g.name || g.projectId;
-      const hasAction = !!g.action;
-      const playBtn = hasAction ? '<button class="graph-run-btn" onclick="event.stopPropagation();runGraph(\'' + g.projectId + '\')" title="Graph ausführen">▶</button>' : '';
+      const playBtn = '<button class="graph-run-btn" onclick="event.stopPropagation();runGraph(\'' + g.projectId + '\')" title="Graph ausführen">▶</button>';
       const delBtn = '<button class="graph-del-btn" onclick="event.stopPropagation();deleteGraph(\'' + g.projectId + '\')" title="Graph löschen">x</button>';
       return '<div class="graph-card" onclick="openGraphEditor(\'' + g.projectId + '\')" style="cursor:pointer;"><div class="graph-nodes">' + nodesHtml + '</div>' +
         '<div class="graph-info"><div class="graph-name">' + label + '</div>' +
@@ -3421,8 +3420,10 @@ async function renderActiveGraphs() {
 }
 
 function openGraphEditor(projectId) {
-  // Open Projects app with this graph
-  openApp('projects');
+  // Find projects app from state
+  const app = state?.apps?.find(a => a.id === 'projects');
+  if (!app) { showAgentAlert('Projects App nicht gefunden'); return; }
+  openApp(app);
   // After a short delay, send a message to the iframe to open the graph
   setTimeout(() => {
     const win = openWindows.find(w => w.appId === 'projects' && !w.closed);
@@ -3448,11 +3449,19 @@ async function createNewGraph() {
   if (!name) return;
   const id = 'graph-' + Date.now();
   try {
+    const now = new Date().toISOString();
+    // Create graph
     await fetch('/api/graphs/' + id, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, projectId: id, name, description: '', nodes: [], edges: [], created: new Date().toISOString(), updated: new Date().toISOString() })
+      body: JSON.stringify({ id, projectId: id, name, description: '', nodes: [], edges: [], created: now, updated: now })
     });
+    // Also create project entry
+    const projRes = await fetch('/app/projects/api/projects');
+    const projData = await projRes.json();
+    projData.projects = projData.projects || [];
+    projData.projects.push({ id, name, description: '', color: '#4ecdc4', created: now });
+    await fetch('/app/projects/api/projects', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(projData) });
     renderActiveGraphs();
     setTimeout(() => openGraphEditor(id), 300);
   } catch (e) {
