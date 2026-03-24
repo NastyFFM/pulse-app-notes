@@ -1,7 +1,4 @@
 {
-  "meta": {
-    "title": "PulseOS"
-  },
   "apps": [
     {
       "id": "notes",
@@ -10,7 +7,9 @@
       "color": "#2a1f3d",
       "description": "Notizen erstellen und bearbeiten",
       "installed": true,
-      "position": 0
+      "position": 0,
+      "visibility": "public",
+      "allowedUsers": []
     },
     {
       "id": "tasks",
@@ -19,7 +18,9 @@
       "color": "#1a2e1a",
       "description": "Aufgaben und Todos verwalten",
       "installed": true,
-      "position": 1
+      "position": 1,
+      "visibility": "public",
+      "allowedUsers": []
     },
     {
       "id": "calendar",
@@ -28,7 +29,9 @@
       "color": "#1a1a3d",
       "description": "Termine und Events",
       "installed": true,
-      "position": 2
+      "position": 2,
+      "visibility": "public",
+      "allowedUsers": []
     },
     {
       "id": "projects",
@@ -37,7 +40,9 @@
       "color": "#2a1a2a",
       "description": "Projekt-Manager",
       "installed": true,
-      "position": 3
+      "position": 3,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "terminal",
@@ -46,7 +51,9 @@
       "color": "#1a1a2e",
       "description": "System-Terminal",
       "installed": true,
-      "position": 4
+      "position": 4,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "files",
@@ -55,7 +62,9 @@
       "color": "#2a2a1a",
       "description": "Datei-Browser",
       "installed": true,
-      "position": 5
+      "position": 5,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "weather",
@@ -64,7 +73,9 @@
       "color": "#1a2a3d",
       "description": "Wetter-Anzeige",
       "installed": true,
-      "position": 6
+      "position": 6,
+      "visibility": "public",
+      "allowedUsers": []
     },
     {
       "id": "music",
@@ -73,7 +84,9 @@
       "color": "#3d1a2a",
       "description": "Internet-Radio",
       "installed": true,
-      "position": 7
+      "position": 7,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "settings",
@@ -82,70 +95,145 @@
       "color": "#1a2a2a",
       "description": "System-Einstellungen",
       "installed": true,
-      "position": 8
+      "position": 8,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "youtube",
       "name": "YouTube",
-      "icon": "\u25b6",
+      "icon": "▶",
       "color": "#3d0000",
       "description": "YouTube Videos ansehen",
       "installed": true,
-      "position": 9
+      "position": 9,
+      "visibility": "unlisted",
+      "allowedUsers": []
     },
     {
       "id": "podcast",
       "name": "Podcast",
-      "icon": "\ud83c\udf99",
+      "icon": "🎙",
       "color": "#1a1a3a",
-      "description": "Podcasts suchen und h\u00f6ren",
+      "description": "Podcasts suchen und hören",
       "installed": true,
-      "position": 10
+      "position": 10,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "diary",
       "name": "Diary",
-      "icon": "\ud83d\udcd3",
+      "icon": "📓",
       "color": "#1a2a1a",
-      "description": "Tagesr\u00fcckblick und pers\u00f6nliches Tagebuch",
+      "description": "Tagesrückblick und persönliches Tagebuch",
       "installed": true,
-      "position": 11
+      "position": 11,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "kanban",
       "name": "Kanban",
-      "icon": "\u25a6",
+      "icon": "▦",
       "color": "#0d1a2a",
-      "description": "Kanban Board f\u00fcr Projekte und Tasks",
+      "description": "Kanban Board für Projekte und Tasks",
       "installed": true,
-      "position": 12
+      "position": 12,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "pong",
       "name": "Pong",
-      "icon": "\ud83c\udfd3",
+      "icon": "🏓",
       "color": "#0a0a14",
       "description": "Klassisches Pong-Spiel",
       "installed": true,
-      "position": 13
+      "position": 13,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "blockblast",
       "name": "Block Blast",
-      "icon": "\u2b1b",
+      "icon": "⬛",
       "color": "#0a0d1a",
       "description": "Block Blast Puzzle-Spiel",
       "installed": true,
-      "position": 14
+      "position": 14,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "todo",
       "name": "Todo",
-      "icon": "\u2713",
+      "icon": "✓",
       "color": "#0d1a0d",
       "description": "Einfache Todo-Liste zum Abhaken",
       "installed": true,
-      "position": 15
+      "position": 15,
+      "visibility": "private",
+      "allowedUsers": []
+    },
+    {
+      "id": "habit-tracker",
+      "name": "Habit Tracker",
+      "icon": "H",
+      "color": "#59df34",
+      "description": "Gewohnheiten tracken mit Streak-Grid",
+      "installed": true,
+      "created": true,
+      "position": 16,
+      "visibility": "public",
+      "allowedUsers": []
+    },
+    {
+      "id": "countdown",
+      "name": "Countdown",
+      "icon": "C",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 17,
+      "visibility": "private",
+      "allowedUsers": []
+    },
+    {
+      "id": "demo",
+      "name": "Würfel",
+      "icon": "🎲",
+      "color": "#e74c3c",
+      "description": "Virtueller Würfel — tippe zum Würfeln",
+      "installed": true,
+      "source": "https://github.com/NastyFFM/pulse-app-demo",
+      "installedAt": "2026-03-24T03:02:54.707Z",
+      "position": 18,
+      "visibility": "invite",
+      "allowedUsers": []
+    },
+    {
+      "id": "demo",
+      "name": "Würfel",
+      "icon": "🎲",
+      "color": "#e74c3c",
+      "description": "Virtueller Würfel — tippe zum Würfeln",
+      "installed": true,
+      "source": "https://github.com/NastyFFM/pulse-app-demo",
+      "installedAt": "2026-03-24T03:11:33.751Z",
+      "position": 19
+    },
+    {
+      "id": "clock",
+      "name": "Analog Clock",
+      "icon": "🕐",
+      "color": "#1a2a3d",
+      "description": "Analoge Uhr mit digitalem Display",
+      "installed": true,
+      "source": "https://github.com/NastyFFM/pulse-app-clock",
+      "installedAt": "2026-03-24T04:05:18.136Z",
+      "position": 20
     }
   ]
 }

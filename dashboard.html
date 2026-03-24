@@ -2942,6 +2942,48 @@ setInterval(() => loadContexts().then(() => renderRecentContexts()), 30000);
 setTimeout(updateGreeting, 200);
 setInterval(updateGreeting, 60000);
 setInterval(renderDashboardStats, 60000);
+
+// Toast notification
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;top:50px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:8px;font-size:13px;font-weight:500;z-index:99999;animation:fadeIn .3s;box-shadow:0 4px 20px rgba(0,0,0,.4);';
+  t.style.background = type === 'error' ? '#e74c3c' : type === 'success' ? 'var(--teal)' : 'var(--bg-surface)';
+  t.style.color = type === 'error' || type === 'success' ? '#fff' : 'var(--text)';
+  t.style.border = '1px solid ' + (type === 'error' ? '#c0392b' : type === 'success' ? '#3db89a' : 'var(--border)');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, 3500);
+}
+
+// Auto-install from ?install= URL parameter (from profile page Install buttons)
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const installRepo = params.get('install');
+  if (installRepo) {
+    // Clean URL
+    history.replaceState(null, '', '/');
+    // Wait for dashboard to load, then install
+    setTimeout(async () => {
+      showToast('Installiere ' + installRepo + '...', 'info');
+      try {
+        const r = await fetch('/api/apps/install', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: installRepo }) });
+        const d = await r.json();
+        if (d.ok) {
+          showToast(d.name + ' installiert!', 'success');
+          addFeed('Installiert: ' + d.name, 'install');
+          await load();
+          render();
+          openApp({ id: d.id, name: d.name });
+        } else {
+          showToast(d.error || 'Installation fehlgeschlagen', 'error');
+          addFeed('Install-Fehler: ' + (d.error || 'Unbekannt'), 'error');
+        }
+      } catch (e) {
+        showToast('Netzwerkfehler: ' + e.message, 'error');
+      }
+    }, 1500);
+  }
+})();
 </script>
 
 <!-- ═══ WebRTC Bridge Host ═══ -->

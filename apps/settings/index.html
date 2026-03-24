@@ -75,7 +75,6 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
         <div class="info-row"><span class="info-label">Handle</span><span class="info-value" id="profileHandle">--</span></div>
         <div class="info-row"><span class="info-label">Bio</span><span class="info-value" id="profileBio">--</span></div>
         <div class="info-row"><span class="info-label">Rolle</span><span class="info-value" id="profileRole">--</span></div>
-        <div class="info-row"><span class="info-label">E-Mail</span><span class="info-value" id="profileEmail">--</span></div>
         <div class="info-row"><span class="info-label">GitHub</span><span class="info-value" id="profileGithub">--</span></div>
         <div class="info-row"><span class="info-label">Twitter/X</span><span class="info-value" id="profileTwitter">--</span></div>
         <div class="info-row"><span class="info-label">Website</span><span class="info-value" id="profileWebsite">--</span></div>
@@ -92,9 +91,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
         <input type="text" id="editBio" placeholder="Kurzbeschreibung">
         <label>Rolle</label>
         <input type="text" id="editRole">
-        <label>E-Mail</label>
-        <input type="email" id="editEmail">
-        <label>GitHub Username</label>
+<label>GitHub Username</label>
         <input type="text" id="editGithub" placeholder="z.B. NastyFFM">
         <label>Twitter/X</label>
         <input type="text" id="editTwitter" placeholder="@handle">
@@ -244,7 +241,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
 </div>
 
 <script>
-let profile = { name: 'Benutzer', role: 'Admin', email: '' };
+let profile = { name: 'Benutzer', role: 'Admin' };
 
 function restartTutorial() {
   try {
@@ -268,7 +265,6 @@ function renderProfile() {
   document.getElementById('profileHandle').textContent = profile.handle || '--';
   document.getElementById('profileBio').textContent = profile.bio || '--';
   document.getElementById('profileRole').textContent = profile.role || '--';
-  document.getElementById('profileEmail').textContent = profile.email || '--';
   document.getElementById('profileGithub').textContent = profile.github || '--';
   document.getElementById('profileTwitter').textContent = profile.twitter || '--';
   document.getElementById('profileWebsite').textContent = profile.website || '--';
@@ -301,7 +297,6 @@ function toggleEdit() {
     document.getElementById('editHandle').value = profile.handle || '';
     document.getElementById('editBio').value = profile.bio || '';
     document.getElementById('editRole').value = profile.role || '';
-    document.getElementById('editEmail').value = profile.email || '';
     document.getElementById('editGithub').value = profile.github || '';
     document.getElementById('editTwitter').value = profile.twitter || '';
     document.getElementById('editWebsite').value = profile.website || '';
@@ -313,7 +308,6 @@ async function saveProfile() {
   profile.handle = document.getElementById('editHandle').value;
   profile.bio = document.getElementById('editBio').value;
   profile.role = document.getElementById('editRole').value;
-  profile.email = document.getElementById('editEmail').value;
   profile.github = document.getElementById('editGithub').value;
   profile.twitter = document.getElementById('editTwitter').value;
   profile.website = document.getElementById('editWebsite').value;

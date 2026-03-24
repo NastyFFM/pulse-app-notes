@@ -6133,7 +6133,7 @@ Regeln:
         const icon = a.icon || a.name[0];
         const color = a.color || '#1a1a2e';
         const ghUser = profile.github || 'user';
-        return `<div class="app-card"><div class="app-icon" style="background:${color}">${icon}</div><div class="app-info"><div class="app-name">${a.name}</div><div class="app-desc">${a.description || ''}</div></div><button class="install-btn" onclick="copyInstall('${ghUser}/pulse-app-${a.id}')">Install</button></div>`;
+        return `<div class="app-card"><div class="app-icon" style="background:${color}">${icon}</div><div class="app-info"><div class="app-name">${a.name}</div><div class="app-desc">${a.description || ''}</div></div><button class="install-btn" onclick="copyInstall('${ghUser}/pulse-app-${a.id}', this)">Install</button></div>`;
       }).join('');
       const socialArr = [];
       if (profile.github) socialArr.push({ label: 'GitHub', url: `https://github.com/${profile.github}` });
@@ -6193,12 +6193,12 @@ ${publicApps.length > 0 ? `<div class="section-title">Public Apps</div><div clas
 </div>
 <div class="toast" id="toast">Install-ID kopiert! Füge sie in deinem PulseOS Launcher ein.</div>
 <script>
-function copyInstall(repo) {
-  navigator.clipboard.writeText(repo).then(() => {
-    const t = document.getElementById('toast');
-    t.style.display = 'block';
-    setTimeout(() => t.style.display = 'none', 3000);
-  }).catch(() => prompt('Install-ID kopieren:', repo));
+function copyInstall(repo, btn) {
+  var w = window.open('http://localhost:3000/?install=' + encodeURIComponent(repo), '_blank');
+  if (!w) {
+    try { navigator.clipboard.writeText(repo); } catch(e) {}
+    alert('Install-ID: ' + repo + '\\n\\nÖffne dein PulseOS Dashboard und füge im App Launcher unter \"+ App installieren\" ein: ' + repo);
+  }
 }
 </script>
 </body></html>`;
@@ -6209,18 +6209,13 @@ function copyInstall(repo) {
     }
   }
 
-  // ── Profile Publish (push to GitHub Pages) ──
+  // ── Profile Publish (push to GitHub Pages via gh CLI) ──
   if (url === '/api/profile/publish' && req.method === 'POST') {
     const profilePath = path.join(__dirname, 'data', 'profile.json');
     try {
       const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
-      if (!profile.githubToken) {
-        return jsonRes(res, { ok: false, error: 'Kein GitHub Token. Bitte in Settings hinterlegen.' }, 400);
-      }
-      const handle = profile.handle || 'pulse-user';
-      const repoName = handle + '.github.io';
-      const token = profile.githubToken;
-      const headers = { 'Authorization': 'token ' + token, 'User-Agent': 'PulseOS/1.0', 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+      const ghUser = profile.github;
+      if (!ghUser) return jsonRes(res, { ok: false, error: 'Kein GitHub-Username. Bitte in Settings unter Profil eintragen.' }, 400);
 
       // Generate export data
       const exportRes = await new Promise((resolve, reject) => {
@@ -6231,45 +6226,66 @@ function copyInstall(repo) {
       });
       if (!exportRes.files) return jsonRes(res, { ok: false, error: 'Export failed' }, 500);
 
-      // Check if repo exists, create if not
-      const ghApi = (path, method, body) => new Promise((resolve, reject) => {
-        const opts = { hostname: 'api.github.com', path, method: method || 'GET', headers };
-        const req2 = require('https').request(opts, resp => {
-          let d = ''; resp.on('data', c => d += c); resp.on('end', () => resolve({ status: resp.statusCode, data: d ? JSON.parse(d) : {} }));
-        });
-        req2.on('error', reject);
-        if (body) req2.write(JSON.stringify(body));
-        req2.end();
-      });
+      const repoName = ghUser + '.github.io';
+      const tmpDir = path.join(require('os').tmpdir(), 'pulseos-profile-' + Date.now());
+      const { execSync } = require('child_process');
 
-      // Get authenticated user
-      const userResp = await ghApi('/user');
-      const ghUser = userResp.data.login;
-      if (!ghUser) return jsonRes(res, { ok: false, error: 'GitHub Token ungültig' }, 401);
-
-      // Check/create repo
-      const repoResp = await ghApi('/repos/' + ghUser + '/' + repoName);
-      if (repoResp.status === 404) {
-        await ghApi('/user/repos', 'POST', { name: repoName, description: 'PulseOS Profile — ' + (profile.name || handle), homepage: 'https://' + ghUser + '.github.io', auto_init: true, private: false });
-        // Wait for repo creation
-        await new Promise(r => setTimeout(r, 2000));
+      // Clone or create repo
+      try {
+        execSync(`git clone --depth 1 https://github.com/${ghUser}/${repoName}.git "${tmpDir}"`, { timeout: 15000, stdio: 'pipe' });
+      } catch {
+        // Repo doesn't exist — create it via gh CLI
+        try {
+          execSync(`gh repo create ${repoName} --public --description "PulseOS Profile" --clone`, { cwd: require('os').tmpdir(), timeout: 15000, stdio: 'pipe' });
+          fs.renameSync(path.join(require('os').tmpdir(), repoName), tmpDir);
+        } catch (e2) {
+          return jsonRes(res, { ok: false, error: 'Konnte Repo nicht erstellen: ' + e2.message }, 500);
+        }
       }
 
-      // Push files using Contents API
-      const pushFile = async (filePath, content) => {
-        const encoded = Buffer.from(content).toString('base64');
-        // Check if file exists to get sha
-        const existing = await ghApi('/repos/' + ghUser + '/' + repoName + '/contents/' + filePath);
-        const body = { message: 'Update PulseOS profile', content: encoded, branch: 'main' };
-        if (existing.status === 200 && existing.data.sha) body.sha = existing.data.sha;
-        return ghApi('/repos/' + ghUser + '/' + repoName + '/contents/' + filePath, 'PUT', body);
-      };
+      // Write files
+      fs.writeFileSync(path.join(tmpDir, 'index.html'), exportRes.files['index.html']);
+      fs.writeFileSync(path.join(tmpDir, 'pulse-profile.json'), exportRes.files['pulse-profile.json']);
 
-      const r1 = await pushFile('index.html', exportRes.files['index.html']);
-      const r2 = await pushFile('pulse-profile.json', exportRes.files['pulse-profile.json']);
+      // Also publish public app HTML files
+      const appsDir = path.join(tmpDir, 'apps');
+      if (!fs.existsSync(appsDir)) fs.mkdirSync(appsDir);
+      const apps = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'apps.json'), 'utf8'));
+      (apps.apps || []).filter(a => a.visibility === 'public').forEach(a => {
+        const srcHtml = path.join(__dirname, 'apps', a.id, 'index.html') ;
+        const usrHtml = path.join(__dirname, 'userdata', 'apps', a.id, 'index.html');
+        const src = fs.existsSync(usrHtml) ? usrHtml : fs.existsSync(srcHtml) ? srcHtml : null;
+        if (src) {
+          const appDir = path.join(appsDir, a.id);
+          if (!fs.existsSync(appDir)) fs.mkdirSync(appDir, { recursive: true });
+          fs.writeFileSync(path.join(appDir, 'index.html'), fs.readFileSync(src, 'utf8'));
+          // Copy data dir if exists
+          const dataDir = path.join(path.dirname(src), 'data');
+          if (fs.existsSync(dataDir)) {
+            const tgtData = path.join(appDir, 'data');
+            if (!fs.existsSync(tgtData)) fs.mkdirSync(tgtData);
+            fs.readdirSync(dataDir).forEach(f => {
+              if (f.endsWith('.json')) fs.writeFileSync(path.join(tgtData, f), fs.readFileSync(path.join(dataDir, f), 'utf8'));
+            });
+          }
+        }
+      });
+
+      // Commit and push
+      try {
+        execSync('git add -A', { cwd: tmpDir, stdio: 'pipe' });
+        execSync('git commit -m "Update PulseOS profile" --allow-empty', { cwd: tmpDir, stdio: 'pipe' });
+        execSync('git push', { cwd: tmpDir, timeout: 20000, stdio: 'pipe' });
+      } catch (e3) {
+        // Cleanup
+        try { execSync(`rm -rf "${tmpDir}"`, { stdio: 'pipe' }); } catch {}
+        return jsonRes(res, { ok: false, error: 'Push fehlgeschlagen: ' + e3.message }, 500);
+      }
+
+      // Cleanup tmp
+      try { execSync(`rm -rf "${tmpDir}"`, { stdio: 'pipe' }); } catch {}
 
       const pagesUrl = 'https://' + ghUser + '.github.io';
-      // Save last publish time
       profile.lastPublished = new Date().toISOString();
       profile.pagesUrl = pagesUrl;
       fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2));
