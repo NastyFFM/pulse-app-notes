@@ -30,7 +30,7 @@
   --radius: 8px;
   --radius-lg: 12px;
   --topbar-h: 40px;
-  --agent-bar-h: 32px;
+  --dock-h: 60px;
 }
 
 /* ── Theme: Light ── */
@@ -118,7 +118,7 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: none;
-  padding-bottom: var(--agent-bar-h);
+  padding-bottom: var(--dock-h);
   user-select: none;
   -webkit-font-smoothing: antialiased;
 }
@@ -282,29 +282,115 @@ body {
 .topbar-sync.syncing { background: var(--amber); animation: breathe 1s infinite; }
 .topbar-sync.error { background: var(--red); }
 
-/* ── Agent-Bar ── */
-.agent-bar {
-  display: flex;
-  align-items: center;
-  height: var(--agent-bar-h);
-  padding: 0 16px;
-  background: var(--bg-surface);
-  border-top: 1px solid var(--border);
-  font-size: 11px;
-  color: var(--text-dim);
-  gap: 8px;
-  flex-shrink: 0;
-  cursor: pointer;
-  transition: background 0.2s;
+/* ── Dock ── */
+.dock {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 900;
+  left: 50%;
+  transform: translateX(-50%);
+  height: var(--dock-h);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  background: rgba(var(--bg-surface-rgb, 20,20,30), 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  z-index: 901;
+  transition: transform 0.3s ease, opacity 0.2s;
+  max-width: calc(100vw - 24px);
+  overflow: hidden;
 }
-.agent-bar:hover { background: rgba(78, 205, 196, 0.03); }
+.dock-fixed { flex-shrink: 0; padding: 6px 8px; display: flex; align-items: center; }
+.dock-scroll {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.dock-scroll::-webkit-scrollbar { display: none; }
+.dock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 10px;
+  transition: background 0.15s, transform 0.15s, width 0.25s ease, min-width 0.25s ease, padding 0.25s ease, opacity 0.25s ease;
+  position: relative;
+  min-width: 40px;
+}
+.dock-item.closing {
+  min-width: 0;
+  width: 0;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+.dock-item:hover { background: rgba(78,205,196,0.08); transform: scale(1.1); }
+.dock-item:active { transform: scale(0.95); }
+.dock-icon {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+.dock-label {
+  font-size: 8px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 44px;
+  text-align: center;
+}
+.dock-dot {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+.dock-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+.dock-item.active .dock-icon { box-shadow: 0 0 8px rgba(78,205,196,0.4); }
+.dock-item.all-apps .dock-icon {
+  background: rgba(78,205,196,0.15);
+  border: 1px dashed var(--teal);
+  font-size: 18px;
+}
 
-.agent-dot {
+/* ── Agent Status (in Topbar) ── */
+.agent-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+.agent-status:hover { background: var(--bg-card-hover); }
+.agent-status .agent-dot {
   width: 6px; height: 6px;
   border-radius: 50%;
   background: var(--teal);
@@ -312,20 +398,13 @@ body {
   opacity: 0.5;
   transition: all 0.3s;
 }
-.agent-bar.has-alert {
-  background: rgba(245, 166, 35, 0.08);
-  border-top-color: rgba(245, 166, 35, 0.3);
-}
-.agent-bar.has-alert .agent-dot {
+.agent-status.has-alert .agent-dot {
   opacity: 1;
   background: #f5a623;
   box-shadow: 0 0 6px #f5a623;
   animation: agentPulse 1.5s ease-in-out infinite;
 }
-.agent-bar.has-alert .agent-text {
-  color: var(--amber);
-  font-weight: 600;
-}
+.agent-status.has-alert .agent-text { color: var(--amber); font-weight: 600; }
 @keyframes agentPulse {
   0%, 100% { box-shadow: 0 0 4px #f5a623; }
   50% { box-shadow: 0 0 12px #f5a623, 0 0 20px rgba(245,166,35,0.3); }
@@ -706,7 +785,7 @@ body {
 .launcher-overlay {
   position: fixed;
   inset: 0;
-  bottom: var(--agent-bar-h);
+  bottom: 0;
   z-index: 400;
   background: var(--bg-surface);
   backdrop-filter: blur(40px);
@@ -878,18 +957,26 @@ body {
 /* ═══ System Chat Panel ═══ */
 .chat-panel {
   position: fixed;
-  top: calc(var(--topbar-h) + 8px);
-  right: 16px;
-  width: 320px;
-  max-height: calc(100vh - var(--topbar-h) - var(--agent-bar-h) - 24px);
-  background: var(--bg-surface);
-  backdrop-filter: blur(20px);
+  bottom: calc(var(--dock-h) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(400px, calc(100vw - 24px));
+  height: min(500px, 60vh);
+  background: rgba(var(--bg-surface-rgb, 20,20,30), 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--border-hover);
   border-radius: var(--radius-lg);
-  z-index: 250;
+  z-index: 950;
   display: none;
   flex-direction: column;
   overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  animation: chatSlideUp 0.2s ease-out;
+}
+@keyframes chatSlideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 .chat-panel.open { display: flex; }
 
@@ -1112,13 +1199,13 @@ body {
     border-radius: 0 !important;
     left: 0 !important; top: var(--topbar-h) !important;
     width: 100vw !important;
-    height: calc(100vh - var(--topbar-h) - var(--agent-bar-h)) !important;
+    height: calc(100dvh - var(--topbar-h) - var(--dock-h)) !important;
     min-width: auto !important; min-height: auto !important;
     border: none !important;
   }
   .win-titlebar { display: none !important; }
   .app-window iframe { border-radius: 0 !important; }
-  .chat-panel { width: calc(100vw - 16px); right: 8px; }
+  .chat-panel { width: calc(100vw - 16px); height: 55vh; }
   .mode-group { display: none; }
 }
 
@@ -1143,14 +1230,19 @@ body.mode-builder .home-screen { max-width: 600px; }
 <div class="topbar">
   <div class="topbar-left">
     <div class="pulse-dot" id="pulseDot" title="System Pulse"></div>
-    <span class="topbar-brand" id="topbarBrand" onclick="showProfileEdit()">PulseOS</span>
+    <span class="topbar-brand" id="topbarBrand" onclick="showHome()">PulseOS</span>
   </div>
 
-  <div class="topbar-tabs" id="topbarTabs">
+  <div class="topbar-tabs" id="topbarTabs" style="display:none;">
     <div class="tab active" onclick="showHome()" title="Home"><span class="tab-icon">~</span></div>
   </div>
 
   <div class="topbar-right">
+    <div class="agent-status" id="agentStatus" onclick="toggleSystemChat()" title="Agent Status">
+      <div class="agent-dot"></div>
+      <span class="agent-text" id="agentText">bereit</span>
+    </div>
+
     <div class="topbar-peers" id="topbarPeers"></div>
 
     <div class="mode-group">
@@ -1168,14 +1260,10 @@ body.mode-builder .home-screen { max-width: 600px; }
   </div>
 </div>
 
-<!-- ═══ Agent-Bar ═══ -->
-<div class="agent-bar" id="agentBar" onclick="toggleSystemChat()">
-  <div class="agent-dot"></div>
-  <span class="agent-label">Agent</span>
-  <span class="agent-text" id="agentText">bereit</span>
-  <span class="agent-time" id="agentTime"></span>
-  <span class="agent-badge" id="agentBadge" style="display:none"></span>
-</div>
+<!-- ═══ Dock ═══ -->
+<div class="dock" id="dock"></div>
+
+<!-- Agent-Bar removed — status moved to topbar -->
 
 <!-- ═══ Home Screen ═══ -->
 <div class="home-screen" id="homeScreen">
@@ -1271,7 +1359,7 @@ body.mode-builder .home-screen { max-width: 600px; }
 <!-- ═══ App Launcher Overlay ═══ -->
 <div class="launcher-overlay" id="launcher">
   <div class="launcher-header">
-    <input class="launcher-search" id="launcherSearch" placeholder="App suchen..." oninput="filterApps(this.value)" autofocus>
+    <input class="launcher-search" id="launcherSearch" placeholder="App suchen..." oninput="filterApps(this.value)">
     <button class="launcher-close" onclick="toggleLauncher()">x</button>
   </div>
   <div class="launcher-grid" id="launcherGrid"></div>
@@ -1453,7 +1541,7 @@ function render() {
   if (!state) return;
   renderLauncher();
   renderAppGrid();
-  renderTopbarTabs();
+  renderTopbarTabs(); renderDock();
 }
 
 function renderAppGrid() {
@@ -1593,7 +1681,7 @@ function renderTopbarTabs() {
 
 function showHome() {
   activeTabWinId = null;
-  renderTopbarTabs();
+  renderTopbarTabs(); renderDock();
 }
 
 function focusTab(winId) {
@@ -1606,10 +1694,130 @@ function focusTab(winId) {
   }
   focusWindow(winId);
   activeTabWinId = winId;
-  renderTopbarTabs();
+  renderTopbarTabs(); renderDock();
 }
 
-function renderDockWindows() { renderTopbarTabs(); }
+function renderDockWindows() { renderTopbarTabs(); renderDock(); }
+
+// ── Bottom Dock ──
+const DOCK_FAVORITES = JSON.parse(localStorage.getItem('dockFavorites') || '["notes","tasks","calendar","terminal","settings"]');
+
+function renderDock() {
+  const dock = document.getElementById('dock');
+  if (!dock || !state || !state.apps) return;
+  // Preserve scroll position
+  const scrollArea = dock.querySelector('.dock-scroll');
+  const savedScroll = scrollArea ? scrollArea.scrollLeft : 0;
+  const active = openWindows.filter(w => !w.closed);
+  const activeIds = active.map(w => w.appId);
+
+  // Scrollable: Favorites + open apps
+  let html = '<div class="dock-scroll">';
+
+  // Favorite apps
+  DOCK_FAVORITES.forEach(id => {
+    const app = state.apps.find(a => a.id === id);
+    if (!app) return;
+    const isOpen = activeIds.includes(id);
+    const isActive = active.find(w => w.appId === id && w.winId === activeTabWinId);
+    html += '<div class="dock-item' + (isActive ? ' active' : '') + '" data-app-id="' + id + '" onclick="dockClick(\'' + id + '\')" title="' + (app.name || id) + '">' +
+      '<div class="dock-icon" style="background:' + (app.color || '#1a2a3a') + '">' + (app.icon || id[0].toUpperCase()) + '</div>' +
+      '<span class="dock-label">' + (app.name || id) + '</span>' +
+      (isOpen ? '<div class="dock-dot"></div>' : '') +
+    '</div>';
+  });
+
+  // Open apps not in favorites
+  const extraOpen = active.filter(w => !DOCK_FAVORITES.includes(w.appId));
+  if (extraOpen.length > 0) {
+    html += '<div class="dock-divider"></div>';
+    extraOpen.forEach(w => {
+      const app = state.apps.find(a => a.id === w.appId);
+      if (!app) return;
+      const isActive = w.winId === activeTabWinId;
+      html += '<div class="dock-item' + (isActive ? ' active' : '') + '" data-app-id="' + w.appId + '" onclick="focusTab(\'' + w.winId + '\')" title="' + (app.name || w.appId) + '">' +
+        '<div class="dock-icon" style="background:' + (app.color || '#1a2a3a') + '">' + (app.icon || w.appId[0].toUpperCase()) + '</div>' +
+        '<span class="dock-label">' + (app.name || w.appId) + '</span>' +
+        '<div class="dock-dot"></div>' +
+      '</div>';
+    });
+  }
+
+  html += '</div>';
+
+  // Fixed right: Chat + Apps launcher
+  const chatOpen = document.getElementById('systemChat')?.classList.contains('open');
+  const unread = parseInt(document.getElementById('chatBadge')?.textContent || '0') || 0;
+  html += '<div class="dock-fixed" style="gap:2px;display:flex;">' +
+    '<div class="dock-item' + (chatOpen ? ' active' : '') + '" onclick="toggleSystemChat()" title="Chat">' +
+    '<div class="dock-icon" style="background:rgba(168,85,247,0.25);position:relative;">💬' +
+    (unread > 0 ? '<span id="chatBadge" style="position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:8px;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;">' + unread + '</span>' : '') +
+    '</div>' +
+    '<span class="dock-label">Chat</span>' +
+    '</div>' +
+    '<div class="dock-item all-apps" onclick="toggleLauncher()" title="Alle Apps">' +
+    '<div class="dock-icon">⊞</div>' +
+    '<span class="dock-label">Apps</span>' +
+    '</div></div>';
+
+  const prevCount = dock.querySelectorAll('.dock-item[data-app-id]').length;
+  dock.innerHTML = html;
+  const newScrollArea = dock.querySelector('.dock-scroll');
+  if (newScrollArea) {
+    const newCount = dock.querySelectorAll('.dock-item[data-app-id]').length;
+    if (newCount > prevCount) {
+      // New app opened — scroll to end
+      newScrollArea.scrollLeft = newScrollArea.scrollWidth;
+    } else if (savedScroll > 0) {
+      newScrollArea.scrollLeft = savedScroll;
+    }
+  }
+}
+
+function dockClick(appId) {
+  const win = openWindows.find(w => w.appId === appId && !w.closed);
+  if (win) {
+    if (win.winId === activeTabWinId) {
+      showHome();
+    } else {
+      focusTab(win.winId);
+    }
+  } else {
+    const app = state.apps.find(a => a.id === appId);
+    if (app) openApp(app);
+  }
+}
+
+function dockClose(appId, e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const win = openWindows.find(w => w.appId === appId && !w.closed);
+  if (win) closeWin(win.winId);
+}
+
+// Right-click on dock items to close
+document.getElementById('dock').addEventListener('contextmenu', e => {
+  const item = e.target.closest('.dock-item[data-app-id]');
+  if (!item) return;
+  dockClose(item.dataset.appId, e);
+});
+
+// Long-press on dock items to close app (touch)
+let dockLPTimer = null;
+document.getElementById('dock').addEventListener('touchstart', e => {
+  const item = e.target.closest('.dock-item[data-app-id]');
+  if (!item) return;
+  const appId = item.dataset.appId;
+  dockLPTimer = setTimeout(() => {
+    const win = openWindows.find(w => w.appId === appId && !w.closed);
+    if (win) {
+      navigator.vibrate && navigator.vibrate(50);
+      closeWin(win.winId);
+    }
+  }, 500);
+}, { passive: true });
+document.getElementById('dock').addEventListener('touchend', () => clearTimeout(dockLPTimer), { passive: true });
+document.getElementById('dock').addEventListener('touchmove', () => clearTimeout(dockLPTimer), { passive: true });
 
 // ── Window Manager ──
 function openApp(app, opts) {
@@ -1666,7 +1874,7 @@ function openApp(app, opts) {
   openWindows.push({ winId, appId: app.id, matchKey, el: w, minimized: false, maximized: false, closed: false, savedRect: null, contextId });
   addFeed(app.name + ' geoeffnet', 'mutation');
   activeTabWinId = winId;
-  renderTopbarTabs();
+  renderTopbarTabs(); renderDock();
 }
 
 function focusWindow(winId) {
@@ -1736,7 +1944,7 @@ async function restoreVersion(appId, winId, timestamp) {
 function minimizeWin(winId) {
   const win = openWindows.find(w => w.winId === winId);
   if (win) { win.minimized = true; win.el.classList.add('minimized'); }
-  renderTopbarTabs();
+  renderTopbarTabs(); renderDock();
 }
 
 function maximizeWin(winId) {
@@ -1760,6 +1968,11 @@ function closeWin(winId) {
   if (!win) return;
   win.el.classList.add('closing');
   win.closed = true;
+  // Animate dock item removal
+  const dockItem = document.querySelector('.dock-item[data-app-id="' + win.appId + '"]');
+  if (dockItem && !DOCK_FAVORITES.includes(win.appId)) {
+    dockItem.classList.add('closing');
+  }
   setTimeout(() => {
     win.el.remove();
     openWindows = openWindows.filter(w => w.winId !== winId);
@@ -1769,7 +1982,8 @@ function closeWin(winId) {
       else showHome();
     }
     renderTopbarTabs();
-  }, 150);
+    renderDock();
+  }, 250);
 }
 
 // ── Drag & Resize ──
@@ -1919,7 +2133,6 @@ function toggleLauncher() {
     const search = document.getElementById('launcherSearch');
     search.value = '';
     filterApps('');
-    setTimeout(() => search.focus(), 50);
   }
 }
 
@@ -2239,9 +2452,9 @@ const tutorialSteps = [
   },
   {
     chapter: 'Das System',
-    target: '.agent-bar',
-    title: 'Die Agent-Bar',
-    text: 'Dein KI-Agent lebt hier. Er beobachtet Events, erkennt Muster und gibt dir proaktive Hinweise.\n\nKlicke auf die Bar oder druecke Cmd+K um den Chat zu oeffnen.',
+    target: '.agent-status',
+    title: 'Agent Status',
+    text: 'Dein KI-Agent Status ist hier oben. Klicke darauf oder druecke das Chat-Icon im Dock um den Chat zu oeffnen.',
     pos: 'below'
   },
   {
@@ -2574,7 +2787,7 @@ function toggleSystemChat() {
     msgs.scrollTop = msgs.scrollHeight;
     document.getElementById('systemChatInput')?.focus();
     // Clear alert state and badge when chat is opened
-    document.getElementById('agentBar')?.classList.remove('has-alert');
+    document.getElementById('agentStatus')?.classList.remove('has-alert');
     if (agentAlertTimeout) { clearTimeout(agentAlertTimeout); agentAlertTimeout = null; }
     unreadAgentCount = 0;
     updateAgentBadge();
@@ -2583,6 +2796,7 @@ function toggleSystemChat() {
 
 async function loadChatHistory() {
   chatHistoryLoaded = true;
+  chatHistoryRendering = true;
   try {
     const res = await fetch('/api/chat-history');
     const data = await res.json();
@@ -2592,9 +2806,11 @@ async function loadChatHistory() {
       data.messages.forEach(m => renderChatMsg(m));
     }
   } catch {}
+  chatHistoryRendering = false;
 }
 
 let lastSentText = '', lastSentTime = 0;
+let chatHistoryRendering = false;
 function renderChatMsg(msg) {
   if (renderedMsgIds.has(msg.id)) return;
   renderedMsgIds.add(msg.id);
@@ -2609,16 +2825,18 @@ function renderChatMsg(msg) {
   if (msgs.querySelector('.chat-empty')) msgs.innerHTML = '';
   const isUser = msg.from === 'user';
   let txt = msg.text || '';
-  // Parse and execute ACTION tags from PulseOS agent
+  // Parse and execute ACTION tags from PulseOS agent (only for new msgs, not history)
   if (!isUser && txt.includes('[ACTION:')) {
     const actionMatch = txt.match(/\[ACTION:open:([a-zA-Z0-9_-]+)\]/g);
     if (actionMatch) {
-      actionMatch.forEach(tag => {
-        const appId = tag.match(/\[ACTION:open:([a-zA-Z0-9_-]+)\]/)[1];
-        const app = (state && state.apps || []).find(a => a.id === appId);
-        if (app) openApp(app);
-        else console.warn('[ACTION] App not found:', appId);
-      });
+      if (!chatHistoryRendering) {
+        actionMatch.forEach(tag => {
+          const appId = tag.match(/\[ACTION:open:([a-zA-Z0-9_-]+)\]/)[1];
+          const app = (state && state.apps || []).find(a => a.id === appId);
+          if (app) openApp(app);
+          else console.warn('[ACTION] App not found:', appId);
+        });
+      }
       txt = txt.replace(/\[ACTION:open:[a-zA-Z0-9_-]+\]/g, '').trim();
     }
     if (!txt) txt = 'Erledigt ✓';
@@ -2793,7 +3011,7 @@ async function loadMemoryUI() {
 
 let agentAlertTimeout = null;
 function showAgentAlert(text) {
-  const bar = document.getElementById('agentBar');
+  const bar = document.getElementById('agentStatus');
   const agentText = document.getElementById('agentText');
   if (!bar || !agentText) return;
   // Truncate long alerts
@@ -2835,7 +3053,7 @@ async function refreshAgentPresence() {
     const agentText = document.getElementById('agentText');
     if (dot) {
       const claudeOnline = agentPresence['claudeos']?.online;
-      if (!document.getElementById('agentBar').classList.contains('has-alert')) {
+      if (!document.getElementById('agentStatus').classList.contains('has-alert')) {
         dot.style.background = claudeOnline ? 'var(--teal)' : '#666';
         dot.style.opacity = claudeOnline ? '1' : '0.4';
         if (agentText && unreadAgentCount === 0) {
