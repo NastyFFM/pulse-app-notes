@@ -135,7 +135,7 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-# PulseOS runtime data
+# PulseOS runtime data (system)
 data/viking/
 data/agents.json
 data/state.json
@@ -144,3 +144,18 @@ data/event-log.json
 data/scheduled-tasks.json
 .DS_Store
 *.backup-*
+
+# PulseOS user data (personal — survives git pull)
+data/profile.json
+data/contacts.json
+data/chat-history.json
+data/chat-queue.json
+data/chat-outbox.json
+data/pulseos-queue.json
+data/app-registry.json
+data/bridge-room.json
+data/agent-memory.json
+data/graphs/
+
+# User apps (created/installed by user)
+userdata/

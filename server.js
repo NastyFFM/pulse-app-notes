@@ -6,6 +6,44 @@ const { spawn } = require('child_process');
 
 const PORT = 3000;
 const ROOT = __dirname;
+const USERDATA = path.join(ROOT, 'userdata');
+
+// Ensure userdata directories exist
+['apps', 'data', 'graphs'].forEach(d => {
+  const p = path.join(USERDATA, d);
+  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+});
+
+// Resolve app path: userdata/apps/ first (user apps), then apps/ (system apps)
+function resolveAppDir(appId) {
+  const userApp = path.join(USERDATA, 'apps', appId);
+  if (fs.existsSync(userApp)) return userApp;
+  return path.join(ROOT, 'apps', appId);
+}
+
+// Check if an app is a user app
+function isUserApp(appId) {
+  return fs.existsSync(path.join(USERDATA, 'apps', appId));
+}
+
+// List all apps from both directories (user apps override system apps)
+function listAllAppDirs() {
+  const systemApps = fs.existsSync(path.join(ROOT, 'apps'))
+    ? fs.readdirSync(path.join(ROOT, 'apps')).filter(f => fs.statSync(path.join(ROOT, 'apps', f)).isDirectory())
+    : [];
+  const userApps = fs.existsSync(path.join(USERDATA, 'apps'))
+    ? fs.readdirSync(path.join(USERDATA, 'apps')).filter(f => fs.statSync(path.join(USERDATA, 'apps', f)).isDirectory())
+    : [];
+  const all = new Set([...userApps, ...systemApps]);
+  return [...all];
+}
+
+// Resolve data file path: userdata/data/ for runtime, data/ for system config
+function resolveDataFile(filename) {
+  const userData = path.join(USERDATA, 'data', filename);
+  if (fs.existsSync(userData)) return userData;
+  return path.join(ROOT, 'data', filename);
+}
 
 // --- Agent Context Cache ---
 const agentContextCache = { data: null, time: 0 };
@@ -247,8 +285,8 @@ function getModifierOverlay(appId) {
 
 // --- Version History ---
 function saveVersion(appId) {
-  const htmlFile = path.join(ROOT, 'apps', appId, 'index.html');
-  const versionsDir = path.join(ROOT, 'apps', appId, 'versions');
+  const htmlFile = path.join(resolveAppDir(appId), 'index.html');
+  const versionsDir = path.join(resolveAppDir(appId), 'versions');
   if (!fs.existsSync(htmlFile)) return null;
   if (!fs.existsSync(versionsDir)) fs.mkdirSync(versionsDir, { recursive: true });
   const ts = Date.now();
@@ -259,7 +297,7 @@ function saveVersion(appId) {
 }
 
 function listVersions(appId) {
-  const versionsDir = path.join(ROOT, 'apps', appId, 'versions');
+  const versionsDir = path.join(resolveAppDir(appId), 'versions');
   if (!fs.existsSync(versionsDir)) return [];
   return fs.readdirSync(versionsDir)
     .filter(f => f.startsWith('v-') && f.endsWith('.html'))
@@ -272,7 +310,7 @@ function listVersions(appId) {
 
 // --- Model Selection Heuristic ---
 function selectModel(request) {
-  const configFile = path.join(ROOT, 'apps', 'orchestrator', 'data', 'config.json');
+  const configFile = path.join(resolveAppDir('orchestrator'), 'data', 'config.json');
   try {
     const config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
     const text = request.toLowerCase();
@@ -384,7 +422,7 @@ setInterval(() => {
             const responseText = output.trim() || '⚠️ Konnte keine Antwort generieren.';
             console.log(`[fallback] claude -p finished (code=${code}, ${output.length} bytes) for ${msg.msgId}: "${responseText.slice(0, 80)}"`);
             try {
-              const chatFile = path.join(ROOT, 'apps', 'chat', 'data', 'chat.json');
+              const chatFile = path.join(resolveAppDir('chat'), 'data', 'chat.json');
               const data = JSON.parse(safeReadJSON(chatFile, { activeChat: 'chat-1', chats: [] }));
               const chat = data.chats.find(c => c.id === msg.chatId);
               if (chat) {
@@ -458,7 +496,7 @@ setInterval(() => {
         item.pickedUpBy = 'fallback';
         changed = true;
 
-        const htmlFile = item.htmlFile || path.join(ROOT, 'apps', item.appId, 'index.html');
+        const htmlFile = item.htmlFile || path.join(resolveAppDir(item.appId), 'index.html');
         let htmlContent = '';
         try { htmlContent = fs.readFileSync(htmlFile, 'utf8'); } catch {}
 
@@ -628,7 +666,7 @@ const vanillaStates = new Map();    // appId → { data, lastUpdated }
 
 function loadManifest(appId) {
   // Try local apps/ first, then ~/pulse-workspace/
-  const localPath = path.join(ROOT, 'apps', appId, 'manifest.json');
+  const localPath = path.join(resolveAppDir(appId), 'manifest.json');
   if (fs.existsSync(localPath)) {
     return JSON.parse(fs.readFileSync(localPath, 'utf8'));
   }
@@ -679,7 +717,7 @@ function startNodeApp(appId) {
 
     const appDir = manifest.workspacePath
       ? manifest.workspacePath.replace(/^~/, require('os').homedir())
-      : path.join(ROOT, 'apps', appId);
+      : resolveAppDir(appId);
 
     if (!fs.existsSync(appDir)) return reject(new Error(`App directory not found: ${appDir}`));
 
@@ -760,7 +798,7 @@ function proxyToNodeApp(appId, method, proxyPath, body) {
 // Vanilla app state (in-memory + file persistence)
 function getVanillaState(appId) {
   if (vanillaStates.has(appId)) return vanillaStates.get(appId);
-  const stateFile = path.join(ROOT, 'apps', appId, 'state.json');
+  const stateFile = path.join(resolveAppDir(appId), 'state.json');
   try {
     const data = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
     vanillaStates.set(appId, data);
@@ -777,7 +815,7 @@ function setVanillaState(appId, updates) {
   Object.assign(current.data, updates);
   current.lastUpdated = Date.now();
   vanillaStates.set(appId, current);
-  const stateFile = path.join(ROOT, 'apps', appId, 'state.json');
+  const stateFile = path.join(resolveAppDir(appId), 'state.json');
   try { fs.writeFileSync(stateFile, JSON.stringify(current, null, 2)); } catch {}
   broadcast(appId, { type: 'state-update', state: current, time: Date.now() });
 }
@@ -973,7 +1011,7 @@ function ensureWatcher(scope) {
   if (watchers.has(scope)) return;
   const watchPath = scope === 'dashboard'
     ? path.join(ROOT, 'data')
-    : path.join(ROOT, 'apps', scope, 'data');
+    : path.join(resolveAppDir(scope), 'data');
   try {
     if (!fs.existsSync(watchPath)) fs.mkdirSync(watchPath, { recursive: true });
     fs.watch(watchPath, { recursive: false }, (evt, filename) => {
@@ -1386,7 +1424,7 @@ const server = http.createServer(async (req, res) => {
       // Enrich apps with visibility from manifests
       (data.apps || []).forEach(a => {
         try {
-          const m = JSON.parse(fs.readFileSync(path.join(ROOT, 'apps', a.id, 'manifest.json'), 'utf8'));
+          const m = JSON.parse(fs.readFileSync(path.join(resolveAppDir(a.id), 'manifest.json'), 'utf8'));
           a.visibility = m.visibility || 'private';
           a.allowedUsers = m.allowedUsers || [];
         } catch { a.visibility = a.visibility || 'private'; a.allowedUsers = a.allowedUsers || []; }
@@ -1410,7 +1448,7 @@ const server = http.createServer(async (req, res) => {
     const noteMatch = message.match(/(?:notiz|note|schreib auf|merk dir|merke)[:\s]+(.+)/i);
     if (noteMatch) {
       const title = noteMatch[1].trim();
-      const notesFile = path.join(ROOT, 'apps', 'notes', 'data', 'notes.json');
+      const notesFile = path.join(resolveAppDir('notes'), 'data', 'notes.json');
       const data = JSON.parse(safeReadJSON(notesFile, '{"notes":[]}'));
       if (!data.notes) data.notes = [];
       data.notes.unshift({ id: 'note-' + Date.now(), title, content: '', created: now.toISOString(), updated: now.toISOString() });
@@ -1423,7 +1461,7 @@ const server = http.createServer(async (req, res) => {
     const taskMatch = message.match(/(?:task|aufgabe|todo|erledige|mach)[:\s]+(.+)/i);
     if (taskMatch) {
       const title = taskMatch[1].trim();
-      const tasksFile = path.join(ROOT, 'apps', 'tasks', 'data', 'tasks.json');
+      const tasksFile = path.join(resolveAppDir('tasks'), 'data', 'tasks.json');
       const data = JSON.parse(safeReadJSON(tasksFile, '{"tasks":[]}'));
       if (!data.tasks) data.tasks = [];
       data.tasks.unshift({ id: 'task-' + Date.now(), title, status: 'open', priority: 'normal', created: now.toISOString() });
@@ -1446,7 +1484,7 @@ const server = http.createServer(async (req, res) => {
       }
       if (timeMatch) eventTime = timeMatch[1].replace('.', ':');
       const cleanTitle = title.replace(/\s*(?:um|at)\s+\d{1,2}[:.]\d{2}/i, '').replace(/\s*(?:am|on)\s+\d{1,2}\.\d{1,2}\.?(?:\d{2,4})?/i, '').trim();
-      const calFile = path.join(ROOT, 'apps', 'calendar', 'data', 'calendar.json');
+      const calFile = path.join(resolveAppDir('calendar'), 'data', 'calendar.json');
       const data = JSON.parse(safeReadJSON(calFile, '{"events":[]}'));
       if (!data.events) data.events = [];
       data.events.push({ id: 'ev-' + Date.now(), date: eventDate, title: cleanTitle || title, time: eventTime, created: now.toISOString() });
@@ -1459,22 +1497,22 @@ const server = http.createServer(async (req, res) => {
     if (msg.match(/(?:was steht an|briefing|uebersicht|status|was gibt.*heute|was.*los)/)) {
       const parts = [];
       try {
-        const notes = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'notes', 'data', 'notes.json'), '{"notes":[]}'));
+        const notes = JSON.parse(safeReadJSON(path.join(resolveAppDir('notes'), 'data', 'notes.json'), '{"notes":[]}'));
         if (notes.notes && notes.notes.length > 0) parts.push(notes.notes.length + ' Notizen');
       } catch {}
       try {
-        const tasks = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'tasks', 'data', 'tasks.json'), '{"tasks":[]}'));
+        const tasks = JSON.parse(safeReadJSON(path.join(resolveAppDir('tasks'), 'data', 'tasks.json'), '{"tasks":[]}'));
         const open = (tasks.tasks || []).filter(t => t.status !== 'done');
         if (open.length > 0) parts.push(open.length + ' offene Tasks');
       } catch {}
       try {
-        const cal = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'calendar', 'data', 'calendar.json'), '{"events":[]}'));
+        const cal = JSON.parse(safeReadJSON(path.join(resolveAppDir('calendar'), 'data', 'calendar.json'), '{"events":[]}'));
         const todayEvents = (cal.events || []).filter(e => e.date === today);
         if (todayEvents.length > 0) parts.push(todayEvents.length + ' Termine heute: ' + todayEvents.map(e => e.title + (e.time ? ' (' + e.time + ')' : '')).join(', '));
         else parts.push('Keine Termine heute');
       } catch {}
       try {
-        const weather = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'weather', 'data', 'weather.json'), '{}'));
+        const weather = JSON.parse(safeReadJSON(path.join(resolveAppDir('weather'), 'data', 'weather.json'), '{}'));
         if (weather.current) parts.push('Wetter: ' + (weather.current.temp || '?') + '°C, ' + (weather.current.condition || '?'));
       } catch {}
       return parts.length > 0 ? 'Dein Briefing:\n' + parts.map(p => '• ' + p).join('\n') : 'Alles ruhig — keine offenen Eintraege.';
@@ -1483,7 +1521,7 @@ const server = http.createServer(async (req, res) => {
     // ── List notes ──
     if (msg.match(/(?:zeig.*notiz|meine notiz|alle notiz|notes)/)) {
       try {
-        const notes = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'notes', 'data', 'notes.json'), '{"notes":[]}'));
+        const notes = JSON.parse(safeReadJSON(path.join(resolveAppDir('notes'), 'data', 'notes.json'), '{"notes":[]}'));
         if (!notes.notes || notes.notes.length === 0) return 'Keine Notizen vorhanden.';
         return 'Deine Notizen:\n' + notes.notes.slice(0, 5).map(n => '• ' + n.title).join('\n');
       } catch { return 'Fehler beim Lesen der Notizen.'; }
@@ -1492,7 +1530,7 @@ const server = http.createServer(async (req, res) => {
     // ── List tasks ──
     if (msg.match(/(?:zeig.*task|meine task|offene task|todos|aufgaben)/)) {
       try {
-        const tasks = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'tasks', 'data', 'tasks.json'), '{"tasks":[]}'));
+        const tasks = JSON.parse(safeReadJSON(path.join(resolveAppDir('tasks'), 'data', 'tasks.json'), '{"tasks":[]}'));
         const open = (tasks.tasks || []).filter(t => t.status !== 'done');
         if (open.length === 0) return 'Keine offenen Tasks!';
         return 'Offene Tasks:\n' + open.slice(0, 5).map(t => '• ' + t.title + (t.priority === 'high' ? ' [!]' : '')).join('\n');
@@ -1502,7 +1540,7 @@ const server = http.createServer(async (req, res) => {
     // ── Weather ──
     if (msg.match(/(?:wetter|weather|temperatur|regen|sonne)/)) {
       try {
-        const weather = JSON.parse(safeReadJSON(path.join(ROOT, 'apps', 'weather', 'data', 'weather.json'), '{}'));
+        const weather = JSON.parse(safeReadJSON(path.join(resolveAppDir('weather'), 'data', 'weather.json'), '{}'));
         if (weather.current) return 'Aktuelles Wetter: ' + (weather.current.temp || '?') + '°C, ' + (weather.current.condition || '?') + (weather.current.humidity ? ', Feuchtigkeit: ' + weather.current.humidity + '%' : '');
         return 'Keine Wetterdaten vorhanden. Oeffne die Weather-App fuer aktuelle Daten.';
       } catch { return 'Keine Wetterdaten verfuegbar.'; }
@@ -1599,9 +1637,10 @@ const server = http.createServer(async (req, res) => {
 
         // Derive app ID from repo URL or explicit id
         const appId = id || repoUrl.split('/').pop().replace(/\.git$/, '').replace(/^pulse-app-/, '').toLowerCase();
-        const appDir = path.join(ROOT, 'apps', appId);
+        // Installed apps always go to userdata/apps/
+        const appDir = path.join(USERDATA, 'apps', appId);
 
-        if (fs.existsSync(appDir)) {
+        if (fs.existsSync(appDir) || fs.existsSync(path.join(ROOT, 'apps', appId))) {
           return jsonRes(res, { ok: false, error: 'App already exists: ' + appId });
         }
 
@@ -1664,8 +1703,11 @@ const server = http.createServer(async (req, res) => {
         const { name, description, icon, color } = JSON.parse(b);
         if (!name) { res.writeHead(400); return res.end(JSON.stringify({ error: 'name required' })); }
         const appId = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-        const appDir = path.join(ROOT, 'apps', appId);
-        if (fs.existsSync(appDir)) return jsonRes(res, { ok: false, error: 'App exists: ' + appId });
+        // Check both dirs for existing app
+        if (fs.existsSync(path.join(ROOT, 'apps', appId)) || fs.existsSync(path.join(USERDATA, 'apps', appId)))
+          return jsonRes(res, { ok: false, error: 'App exists: ' + appId });
+        // New apps always go to userdata/apps/
+        const appDir = path.join(USERDATA, 'apps', appId);
 
         fs.mkdirSync(appDir, { recursive: true });
         fs.mkdirSync(path.join(appDir, 'data'), { recursive: true });
@@ -1731,7 +1773,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
   // Uninstall app
   if (url.startsWith('/api/apps/') && url.endsWith('/uninstall') && req.method === 'POST') {
     const appId = url.split('/')[3];
-    const appDir = path.join(ROOT, 'apps', appId);
+    const appDir = resolveAppDir(appId);
     if (!fs.existsSync(appDir)) {
       return jsonRes(res, { ok: false, error: 'App not found' });
     }
@@ -1762,7 +1804,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
           res.writeHead(400); return res.end(JSON.stringify({ error: 'Invalid visibility. Use: private, unlisted, public, invite' }));
         }
         // Update manifest.json
-        const manifestPath = path.join(ROOT, 'apps', appId, 'manifest.json');
+        const manifestPath = path.join(resolveAppDir(appId), 'manifest.json');
         let manifest = {};
         try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch {}
         manifest.visibility = visibility;
@@ -1811,7 +1853,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
     const apps = appList.apps || appList || [];
     const activity = [];
     for (const a of apps) {
-      const dataDir = path.join(ROOT, 'apps', a.id || a, 'data');
+      const dataDir = path.join(resolveAppDir(a.id || a), 'data');
       try {
         const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
         let lastModified = 0;
@@ -1960,7 +2002,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
     // Scan welche data-files jede App hat
     const appDataInfo = [];
     for (const a of appList) {
-      const dataDir = path.join(ROOT, 'apps', a.id, 'data');
+      const dataDir = path.join(resolveAppDir(a.id), 'data');
       try {
         const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
         if (files.length > 0) {
@@ -1987,7 +2029,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
     const recentChanges = [];
     const oneHourAgo = Date.now() - 60 * 60 * 1000;
     for (const a of appList) {
-      const dataDir = path.join(ROOT, 'apps', a.id, 'data');
+      const dataDir = path.join(resolveAppDir(a.id), 'data');
       try {
         fs.readdirSync(dataDir).filter(f => f.endsWith('.json')).forEach(f => {
           try {
@@ -2396,7 +2438,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
   const appStatusMatch = url.match(/^\/api\/app-status\/([a-z0-9-]+)$/);
   if (appStatusMatch && req.method === 'GET') {
     const appId = appStatusMatch[1];
-    const appDir = path.join(ROOT, 'apps', appId);
+    const appDir = resolveAppDir(appId);
     const dataDir = path.join(appDir, 'data');
     const appsFile = path.join(ROOT, 'data', 'apps.json');
     const appsData = safeReadJSON(appsFile, { apps: [] });
@@ -2510,7 +2552,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
         if (!chatId || !msgId || !text) return jsonRes(res, { ok: false, error: 'chatId, msgId, text required' });
 
         // Write response to chat.json
-        const chatFile = path.join(ROOT, 'apps', 'chat', 'data', 'chat.json');
+        const chatFile = path.join(resolveAppDir('chat'), 'data', 'chat.json');
         const data = JSON.parse(safeReadJSON(chatFile, { activeChat: 'chat-1', chats: [] }));
         const chat = data.chats.find(c => c.id === chatId);
         if (!chat) return jsonRes(res, { ok: false, error: 'Chat not found' });
@@ -2553,7 +2595,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
         const { prompt, style } = JSON.parse(b);
         if (!prompt) return jsonRes(res, { ok: false, error: 'Prompt erforderlich' });
 
-        const queueDir = path.join(ROOT, 'apps', 'imagegen', 'data', 'queue');
+        const queueDir = path.join(resolveAppDir('imagegen'), 'data', 'queue');
         if (!fs.existsSync(queueDir)) fs.mkdirSync(queueDir, { recursive: true });
 
         const ts = Date.now();
@@ -2573,7 +2615,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
   // Image generator status check
   if (url.startsWith('/api/imagegen-status/') && req.method === 'GET') {
     const requestId = url.split('/').pop();
-    const queueDir = path.join(ROOT, 'apps', 'imagegen', 'data', 'queue');
+    const queueDir = path.join(resolveAppDir('imagegen'), 'data', 'queue');
     const requestFile = path.join(queueDir, `${requestId}.json`);
     if (fs.existsSync(requestFile)) {
       try {
@@ -2587,7 +2629,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
   // Serve image files from app data directories
   const imgFileMatch = url.match(/^\/app\/([a-z0-9-]+)\/data\/(.+\.(png|jpg|jpeg|gif|webp))$/);
   if (imgFileMatch && req.method === 'GET') {
-    const imgFile = path.join(ROOT, 'apps', imgFileMatch[1], 'data', imgFileMatch[2]);
+    const imgFile = path.join(resolveAppDir(imgFileMatch[1]), 'data', imgFileMatch[2]);
     if (fs.existsSync(imgFile)) {
       const ext = imgFileMatch[3];
       const mimeTypes = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp' };
@@ -2607,7 +2649,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
       try {
         const { appId, request, model } = JSON.parse(b);
         if (!appId || !request) return jsonRes(res, { ok: false, error: 'appId und request erforderlich' });
-        const htmlFile = path.join(ROOT, 'apps', appId, 'index.html');
+        const htmlFile = path.join(resolveAppDir(appId), 'index.html');
         if (!fs.existsSync(htmlFile)) return jsonRes(res, { ok: false, error: `App "${appId}" nicht gefunden` });
         // Enrich with app context so the agent knows WHICH app
         let appName = appId, appDesc = '';
@@ -2647,7 +2689,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
       try {
         const { appId, request } = JSON.parse(b);
         if (!appId || !request) return jsonRes(res, { ok: false, error: 'appId und request erforderlich' });
-        const htmlFile = path.join(ROOT, 'apps', appId, 'index.html');
+        const htmlFile = path.join(resolveAppDir(appId), 'index.html');
         if (!fs.existsSync(htmlFile)) return jsonRes(res, { ok: false, error: `App "${appId}" nicht gefunden` });
         let appName = appId, appDesc = '';
         try {
@@ -2793,8 +2835,8 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
       try {
         const { timestamp } = JSON.parse(b);
         const appId = restoreMatch[1];
-        const versionFile = path.join(ROOT, 'apps', appId, 'versions', `v-${timestamp}.html`);
-        const htmlFile = path.join(ROOT, 'apps', appId, 'index.html');
+        const versionFile = path.join(resolveAppDir(appId), 'versions', `v-${timestamp}.html`);
+        const htmlFile = path.join(resolveAppDir(appId), 'index.html');
         if (!fs.existsSync(versionFile)) return jsonRes(res, { ok: false, error: 'Version nicht gefunden' });
         // Save current as version before restoring
         saveVersion(appId);
@@ -3521,7 +3563,7 @@ window.__CONFIG = ${config};
         const initialData = spec.data || {};
         const instructions = spec.instructions || '';
 
-        const appDir = path.join(ROOT, 'apps', agentId);
+        const appDir = resolveAppDir(agentId);
         const dataDir = path.join(appDir, 'data');
 
         // 1. Create app directory + data dir
@@ -3712,7 +3754,7 @@ Nutze Viking fuer Langzeit-Erinnerungen und Wissensaufbau.
       const agentsData = readAgents();
 
       const contexts = appsData.apps.map(app => {
-        const appJsonPath = path.join(ROOT, 'apps', app.id, 'app.json');
+        const appJsonPath = path.join(resolveAppDir(app.id), 'app.json');
         let appMeta = {};
         try { appMeta = JSON.parse(fs.readFileSync(appJsonPath, 'utf8')); } catch {}
         const agent = agentsData.agents.find(a => a.id === 'agent-' + app.id || a.contextApp === app.id);
@@ -3722,9 +3764,9 @@ Nutze Viking fuer Langzeit-Erinnerungen und Wissensaufbau.
           icon: app.icon,
           description: app.description,
           agentManaged: appMeta.agentManaged || false,
-          hasData: fs.existsSync(path.join(ROOT, 'apps', app.id, 'data')),
+          hasData: fs.existsSync(path.join(resolveAppDir(app.id), 'data')),
           hasSkill: fs.existsSync(path.join(ROOT, '.claude', 'skills', app.id, 'SKILL.md')),
-          hasSchema: fs.existsSync(path.join(ROOT, 'apps', app.id, 'data', 'schema.json')),
+          hasSchema: fs.existsSync(path.join(resolveAppDir(app.id), 'data', 'schema.json')),
           agentStatus: agent ? agent.status : null,
           appUrl: `/app/${app.id}/`
         };
@@ -3740,7 +3782,7 @@ Nutze Viking fuer Langzeit-Erinnerungen und Wissensaufbau.
     return readBody(req, b => {
       try {
         const { appId, fields, instructions } = JSON.parse(b);
-        const appDir = path.join(ROOT, 'apps', appId);
+        const appDir = resolveAppDir(appId);
         if (!fs.existsSync(appDir)) return jsonRes(res, { ok: false, error: 'App not found' });
 
         // Read app.json for metadata
@@ -3893,7 +3935,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
   const appMatch = url.match(/^\/app\/([a-z0-9-]+)(\/.*)?$/);
   if (appMatch) {
     const [, appId, rest] = appMatch;
-    const appDir = path.join(ROOT, 'apps', appId);
+    const appDir = resolveAppDir(appId);
 
     if (!rest) { res.writeHead(302, { Location: `/app/${appId}/` }); return res.end(); }
     if (req.method === 'GET' && rest === '/') return appHtmlRes(res, path.join(appDir, 'index.html'), appId);
@@ -4303,7 +4345,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
 
   // Legacy project templates (backwards compatibility)
   if (url === '/api/project-templates') {
-    const tplFile = path.join(ROOT, 'apps', 'projects', 'data', 'templates.json');
+    const tplFile = path.join(resolveAppDir('projects'), 'data', 'templates.json');
     if (req.method === 'GET') return jsonRes(res, safeReadJSON(tplFile, { templates: [] }));
   }
   if (url === '/api/project-save-as-template' && req.method === 'POST') {
@@ -4346,7 +4388,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
         catch { data = { templates: [] }; }
         const allTemplates = [...(data.templates || []), ...getBuiltinContextTemplates()];
         // Also check legacy templates
-        const legacyFile = path.join(ROOT, 'apps', 'projects', 'data', 'templates.json');
+        const legacyFile = path.join(resolveAppDir('projects'), 'data', 'templates.json');
         let legacyData;
         try { legacyData = JSON.parse(safeReadJSON(legacyFile, '{"templates":[]}')); } catch { legacyData = { templates: [] }; }
         const combined = [...allTemplates, ...(legacyData.templates || [])];
@@ -4385,7 +4427,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
         if (!projectId || !text) return jsonRes(res, { ok: false, error: 'projectId and text required' });
 
         // Read current project state
-        const projFile = path.join(ROOT, 'apps', 'projects', 'data', 'projects.json');
+        const projFile = path.join(resolveAppDir('projects'), 'data', 'projects.json');
         const projData = JSON.parse(safeReadJSON(projFile, { projects: [] }));
         const project = projData.projects.find(p => p.id === projectId);
         if (!project) return jsonRes(res, { ok: false, error: 'Project not found' });
@@ -5319,11 +5361,11 @@ Regeln:
                     const appId = action.appId.replace(/[^a-z0-9-]/g, '').slice(0, 30);
                     const appsFile = path.join(ROOT, 'data', 'apps.json');
                     const appsData = JSON.parse(fs.readFileSync(appsFile, 'utf8'));
-                    const exists = appsData.apps.some(a => a.id === appId) || fs.existsSync(path.join(ROOT, 'apps', appId));
+                    const exists = appsData.apps.some(a => a.id === appId) || fs.existsSync(resolveAppDir(appId));
 
                     if (!exists && action.html.length < 102400) {
-                      // 1. Create app directory + HTML
-                      const appDir = path.join(ROOT, 'apps', appId);
+                      // 1. Create app directory + HTML (user apps go to userdata/)
+                      const appDir = path.join(USERDATA, 'apps', appId);
                       fs.mkdirSync(appDir, { recursive: true });
                       fs.mkdirSync(path.join(appDir, 'data'), { recursive: true });
                       fs.writeFileSync(path.join(appDir, 'index.html'), action.html);
@@ -5529,7 +5571,7 @@ Regeln:
         const { projectId } = JSON.parse(b);
         if (!projectId) return jsonRes(res, { ok: false, error: 'projectId required' });
 
-        const projFile = path.join(ROOT, 'apps', 'projects', 'data', 'projects.json');
+        const projFile = path.join(resolveAppDir('projects'), 'data', 'projects.json');
         const projData = JSON.parse(safeReadJSON(projFile, { projects: [] }));
         const project = projData.projects.find(p => p.id === projectId);
         if (!project) return jsonRes(res, { ok: false, error: 'Project not found' });
@@ -6029,7 +6071,7 @@ Regeln:
       const enrichedApps = (appsData.apps || []).map(a => {
         let vis = 'private', allowed = [];
         try {
-          const m = JSON.parse(fs.readFileSync(path.join(ROOT, 'apps', a.id, 'manifest.json'), 'utf8'));
+          const m = JSON.parse(fs.readFileSync(path.join(resolveAppDir(a.id), 'manifest.json'), 'utf8'));
           vis = m.visibility || 'private';
           allowed = m.allowedUsers || [];
         } catch {}

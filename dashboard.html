@@ -118,6 +118,7 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: none;
+  padding-bottom: var(--agent-bar-h);
   user-select: none;
   -webkit-font-smoothing: antialiased;
 }
@@ -288,13 +289,18 @@ body {
   height: var(--agent-bar-h);
   padding: 0 16px;
   background: var(--bg-surface);
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   font-size: 11px;
   color: var(--text-dim);
   gap: 8px;
   flex-shrink: 0;
   cursor: pointer;
   transition: background 0.2s;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
 }
 .agent-bar:hover { background: rgba(78, 205, 196, 0.03); }
 
@@ -306,11 +312,19 @@ body {
   opacity: 0.5;
   transition: all 0.3s;
 }
+.agent-bar.has-alert {
+  background: rgba(245, 166, 35, 0.08);
+  border-top-color: rgba(245, 166, 35, 0.3);
+}
 .agent-bar.has-alert .agent-dot {
   opacity: 1;
   background: #f5a623;
   box-shadow: 0 0 6px #f5a623;
   animation: agentPulse 1.5s ease-in-out infinite;
+}
+.agent-bar.has-alert .agent-text {
+  color: var(--amber);
+  font-weight: 600;
 }
 @keyframes agentPulse {
   0%, 100% { box-shadow: 0 0 4px #f5a623; }
@@ -672,6 +686,7 @@ body {
 .launcher-overlay {
   position: fixed;
   inset: 0;
+  bottom: var(--agent-bar-h);
   z-index: 400;
   background: var(--bg-surface);
   backdrop-filter: blur(40px);
@@ -843,7 +858,7 @@ body {
 /* ═══ System Chat Panel ═══ */
 .chat-panel {
   position: fixed;
-  top: calc(var(--topbar-h) + var(--agent-bar-h) + 8px);
+  top: calc(var(--topbar-h) + 8px);
   right: 16px;
   width: 320px;
   max-height: calc(100vh - var(--topbar-h) - var(--agent-bar-h) - 24px);
@@ -1075,7 +1090,7 @@ body {
   .launcher-app .icon { width: 46px; height: 46px; font-size: 20px; }
   .app-window {
     border-radius: 0 !important;
-    left: 0 !important; top: calc(var(--topbar-h) + var(--agent-bar-h)) !important;
+    left: 0 !important; top: var(--topbar-h) !important;
     width: 100vw !important;
     height: calc(100vh - var(--topbar-h) - var(--agent-bar-h)) !important;
     min-width: auto !important; min-height: auto !important;
@@ -1240,8 +1255,8 @@ body.mode-builder .home-screen { max-width: 600px; }
   </div>
   <div class="launcher-grid" id="launcherGrid"></div>
   <div style="padding:8px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;">
-    <button onclick="showInstallDialog()" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;">+ App installieren</button>
-    <button onclick="showCreateDialog()" style="background:var(--teal);border:none;color:var(--bg);padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">+ Neue App</button>
+    <button onclick="showInstallDialog()" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:6px;font-size:11px;cursor:pointer;">+ App installieren</button>
+    <button onclick="showCreateDialog()" style="background:var(--teal);border:none;color:var(--bg);padding:6px 14px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">+ Neue App</button>
   </div>
 </div>
 
@@ -1313,9 +1328,16 @@ function connectSSE() {
         openWindows.filter(w => w.appId === msg.appId && !w.closed).forEach(w => {
           try { w.el.querySelector('iframe').contentWindow.postMessage({ type: 'data-changed', appId: msg.appId, file: msg.file }, '*'); } catch {}
         });
+        // Find app name for friendly feed message
+        const appName = (state.apps || []).find(a => a.id === msg.appId)?.name || msg.appId;
+        addFeed(appName + ' aktualisiert', 'sse');
+        loadQuickStats();
+      } else if (msg.type === 'tunnel') {
+        // handled above
+      } else {
+        addFeed('SSE Update', 'sse');
       }
     } catch {}
-    addFeed('SSE Update', 'sse');
     load();
   };
   sse.onerror = () => { setSyncStatus('error'); setTimeout(connectSSE, 5000); };
@@ -1336,10 +1358,16 @@ function connectPulseSSE() {
       void dot.offsetWidth;
       dot.classList.add('flash');
       setTimeout(() => dot.classList.remove('flash'), 500);
-      // Update agent bar
-      const source = evt.source || evt.type || '';
+      // Update agent bar with friendly text
+      const evtType = evt.type || 'event';
       const detail = evt.data ? (evt.data.appId || evt.data.from || '') : '';
-      document.getElementById('agentText').textContent = (evt.type || 'event') + (detail ? ' · ' + detail : '');
+      const friendlyMap = {
+        'data:changed': detail ? (detail + ' aktualisiert') : 'Daten aktualisiert',
+        'webrtc:message': 'WebRTC Verbindung',
+        'agent:heartbeat': 'Agent aktiv',
+        'event': 'System Event'
+      };
+      document.getElementById('agentText').textContent = friendlyMap[evtType] || (evtType + (detail ? ' · ' + detail : ''));
       document.getElementById('agentTime').textContent = 'jetzt';
       lastPulseTime = Date.now();
       // Add to feed
@@ -2384,6 +2412,8 @@ function toggleSystemChat() {
   systemChatOpen = !systemChatOpen;
   document.getElementById('systemChat').classList.toggle('open', systemChatOpen);
   if (systemChatOpen) {
+    // Always open on chat tab
+    switchSysChatTab('chat');
     if (!chatHistoryLoaded) loadChatHistory();
     const msgs = document.getElementById('systemChatMessages');
     msgs.scrollTop = msgs.scrollHeight;
