@@ -1349,14 +1349,23 @@ function connectSSE() {
         openWindows.filter(w => w.appId === msg.appId && !w.closed).forEach(w => {
           try { w.el.querySelector('iframe').contentWindow.postMessage({ type: 'data-changed', appId: msg.appId, file: msg.file }, '*'); } catch {}
         });
-        // Find app name for friendly feed message
         const appName = (state.apps || []).find(a => a.id === msg.appId)?.name || msg.appId;
         addFeed(appName + ' aktualisiert', 'sse');
         loadQuickStats();
-      } else if (msg.type === 'tunnel') {
-        // handled above
-      } else {
-        addFeed('SSE Update', 'sse');
+      } else if (msg.type === 'chat-message' && msg.message) {
+        renderChatMsg(msg.message);
+        if (!systemChatOpen) {
+          showAgentAlert(msg.message.text || 'Neue Nachricht');
+          notifyNewMessage(msg.message.text || 'Neue Nachricht', msg.message.from === 'agent' ? 'ClaudeOS' : msg.message.from);
+        }
+      } else if (msg.type === 'agent-alert' && msg.alert) {
+        showAgentAlert(msg.alert.text);
+        notifyNewMessage(msg.alert.text, 'ClaudeOS');
+      } else if (msg.type === 'app-installed' || msg.type === 'app-uninstalled' || msg.type === 'app-updated') {
+        addFeed(msg.type.replace('app-', 'App ') + ': ' + (msg.appId || ''), 'install');
+        load();
+      } else if (msg.type === 'profile-published') {
+        addFeed('Profil publiziert', 'sse');
       }
     } catch {}
     load();
@@ -2685,27 +2694,7 @@ async function processRetryQueue() {
 setInterval(processRetryQueue, 15000); // Check every 15s with presence refresh
 
 // SSE: Live chat messages from ClaudeOS/Telegram
-function initChatSSE() {
-  const es = new EventSource('/sse/dashboard');
-  es.onmessage = (ev) => {
-    try {
-      const data = JSON.parse(ev.data);
-      if (data.type === 'chat-message' && data.message) {
-        renderChatMsg(data.message);
-        // Flash agent-bar, show alert, badge, and browser notification if panel closed
-        if (!systemChatOpen) {
-          showAgentAlert(data.message.text || 'Neue Nachricht');
-          notifyNewMessage(data.message.text || 'Neue Nachricht', data.message.from === 'agent' ? 'ClaudeOS' : data.message.from);
-        }
-      }
-      if (data.type === 'agent-alert' && data.alert) {
-        showAgentAlert(data.alert.text);
-      }
-    } catch {}
-  };
-  es.onerror = () => { setTimeout(initChatSSE, 5000); };
-}
-initChatSSE();
+// Chat SSE now handled in connectSSE() — single SSE connection for all events
 
 // ── Morning Briefing ──
 function checkMorningBriefing() {
