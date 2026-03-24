@@ -61,7 +61,16 @@ if (!fs.existsSync(AGENTS_FILE)) fs.writeFileSync(AGENTS_FILE, JSON.stringify({ 
 function jsonRes(res, data, status = 200) { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(typeof data === 'string' ? data : JSON.stringify(data)); }
 function htmlRes(res, file) { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache, no-store, must-revalidate' }); res.end(fs.readFileSync(file)); }
 function readBody(req, cb) { let b = ''; req.on('data', c => b += c); req.on('end', () => cb(b)); }
-function safeReadJSON(file, fallback) { try { return fs.readFileSync(file, 'utf8'); } catch { return JSON.stringify(fallback); } }
+// Returns parsed JSON object (not string). Fallback can be string or object.
+function safeReadJSON(file, fallback) {
+  try {
+    const raw = fs.readFileSync(file, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    if (typeof fallback === 'string') { try { return JSON.parse(fallback); } catch { return {}; } }
+    return fallback || {};
+  }
+}
 
 // --- App HTML with injected modifier overlay ---
 function appHtmlRes(res, file, appId) {
@@ -371,7 +380,7 @@ setInterval(() => {
   // --- Chat queue watchdog ---
   const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
   try {
-    const queue = JSON.parse(safeReadJSON(queueFile, { pending: [] }));
+    const queue = safeReadJSON(queueFile, { pending: [] });
     if (queue.pending.length > 0) {
       const now = Date.now();
       const alive = isOrchestratorAlive();
@@ -423,7 +432,7 @@ setInterval(() => {
             console.log(`[fallback] claude -p finished (code=${code}, ${output.length} bytes) for ${msg.msgId}: "${responseText.slice(0, 80)}"`);
             try {
               const chatFile = path.join(resolveAppDir('chat'), 'data', 'chat.json');
-              const data = JSON.parse(safeReadJSON(chatFile, { activeChat: 'chat-1', chats: [] }));
+              const data = safeReadJSON(chatFile, { activeChat: 'chat-1', chats: [] });
               const chat = data.chats.find(c => c.id === msg.chatId);
               if (chat) {
                 const userMsg = chat.messages.find(m => m.id === msg.msgId);
@@ -1081,7 +1090,7 @@ if (!fs.existsSync(ACTION_CHAINS_FILE)) {
 // Event log (ring buffer, max 500 entries)
 function logEvent(event) {
   try {
-    const log = JSON.parse(safeReadJSON(EVENT_LOG_FILE, { events: [] }));
+    const log = safeReadJSON(EVENT_LOG_FILE, { events: [] });
     log.events.push({ ...event, timestamp: new Date().toISOString() });
     if (log.events.length > 500) log.events = log.events.slice(-500);
     fs.writeFileSync(EVENT_LOG_FILE, JSON.stringify(log, null, 2));
@@ -1420,7 +1429,7 @@ const server = http.createServer(async (req, res) => {
   if (url === '/api/apps') {
     const file = path.join(ROOT, 'data', 'apps.json');
     if (req.method === 'GET') {
-      const data = JSON.parse(safeReadJSON(file, '{"meta":{},"apps":[]}'));
+      const data = safeReadJSON(file, '{"meta":{},"apps":[]}');
       // Enrich apps with visibility from manifests
       (data.apps || []).forEach(a => {
         try {
@@ -1449,7 +1458,7 @@ const server = http.createServer(async (req, res) => {
     if (noteMatch) {
       const title = noteMatch[1].trim();
       const notesFile = path.join(resolveAppDir('notes'), 'data', 'notes.json');
-      const data = JSON.parse(safeReadJSON(notesFile, '{"notes":[]}'));
+      const data = safeReadJSON(notesFile, '{"notes":[]}');
       if (!data.notes) data.notes = [];
       data.notes.unshift({ id: 'note-' + Date.now(), title, content: '', created: now.toISOString(), updated: now.toISOString() });
       fs.writeFileSync(notesFile, JSON.stringify(data, null, 2));
@@ -1462,7 +1471,7 @@ const server = http.createServer(async (req, res) => {
     if (taskMatch) {
       const title = taskMatch[1].trim();
       const tasksFile = path.join(resolveAppDir('tasks'), 'data', 'tasks.json');
-      const data = JSON.parse(safeReadJSON(tasksFile, '{"tasks":[]}'));
+      const data = safeReadJSON(tasksFile, '{"tasks":[]}');
       if (!data.tasks) data.tasks = [];
       data.tasks.unshift({ id: 'task-' + Date.now(), title, status: 'open', priority: 'normal', created: now.toISOString() });
       fs.writeFileSync(tasksFile, JSON.stringify(data, null, 2));
@@ -1485,7 +1494,7 @@ const server = http.createServer(async (req, res) => {
       if (timeMatch) eventTime = timeMatch[1].replace('.', ':');
       const cleanTitle = title.replace(/\s*(?:um|at)\s+\d{1,2}[:.]\d{2}/i, '').replace(/\s*(?:am|on)\s+\d{1,2}\.\d{1,2}\.?(?:\d{2,4})?/i, '').trim();
       const calFile = path.join(resolveAppDir('calendar'), 'data', 'calendar.json');
-      const data = JSON.parse(safeReadJSON(calFile, '{"events":[]}'));
+      const data = safeReadJSON(calFile, '{"events":[]}');
       if (!data.events) data.events = [];
       data.events.push({ id: 'ev-' + Date.now(), date: eventDate, title: cleanTitle || title, time: eventTime, created: now.toISOString() });
       fs.writeFileSync(calFile, JSON.stringify(data, null, 2));
@@ -1497,22 +1506,22 @@ const server = http.createServer(async (req, res) => {
     if (msg.match(/(?:was steht an|briefing|uebersicht|status|was gibt.*heute|was.*los)/)) {
       const parts = [];
       try {
-        const notes = JSON.parse(safeReadJSON(path.join(resolveAppDir('notes'), 'data', 'notes.json'), '{"notes":[]}'));
+        const notes = safeReadJSON(path.join(resolveAppDir('notes'), 'data', 'notes.json'), '{"notes":[]}');
         if (notes.notes && notes.notes.length > 0) parts.push(notes.notes.length + ' Notizen');
       } catch {}
       try {
-        const tasks = JSON.parse(safeReadJSON(path.join(resolveAppDir('tasks'), 'data', 'tasks.json'), '{"tasks":[]}'));
+        const tasks = safeReadJSON(path.join(resolveAppDir('tasks'), 'data', 'tasks.json'), '{"tasks":[]}');
         const open = (tasks.tasks || []).filter(t => t.status !== 'done');
         if (open.length > 0) parts.push(open.length + ' offene Tasks');
       } catch {}
       try {
-        const cal = JSON.parse(safeReadJSON(path.join(resolveAppDir('calendar'), 'data', 'calendar.json'), '{"events":[]}'));
+        const cal = safeReadJSON(path.join(resolveAppDir('calendar'), 'data', 'calendar.json'), '{"events":[]}');
         const todayEvents = (cal.events || []).filter(e => e.date === today);
         if (todayEvents.length > 0) parts.push(todayEvents.length + ' Termine heute: ' + todayEvents.map(e => e.title + (e.time ? ' (' + e.time + ')' : '')).join(', '));
         else parts.push('Keine Termine heute');
       } catch {}
       try {
-        const weather = JSON.parse(safeReadJSON(path.join(resolveAppDir('weather'), 'data', 'weather.json'), '{}'));
+        const weather = safeReadJSON(path.join(resolveAppDir('weather'), 'data', 'weather.json'), '{}');
         if (weather.current) parts.push('Wetter: ' + (weather.current.temp || '?') + '°C, ' + (weather.current.condition || '?'));
       } catch {}
       return parts.length > 0 ? 'Dein Briefing:\n' + parts.map(p => '• ' + p).join('\n') : 'Alles ruhig — keine offenen Eintraege.';
@@ -1521,7 +1530,7 @@ const server = http.createServer(async (req, res) => {
     // ── List notes ──
     if (msg.match(/(?:zeig.*notiz|meine notiz|alle notiz|notes)/)) {
       try {
-        const notes = JSON.parse(safeReadJSON(path.join(resolveAppDir('notes'), 'data', 'notes.json'), '{"notes":[]}'));
+        const notes = safeReadJSON(path.join(resolveAppDir('notes'), 'data', 'notes.json'), '{"notes":[]}');
         if (!notes.notes || notes.notes.length === 0) return 'Keine Notizen vorhanden.';
         return 'Deine Notizen:\n' + notes.notes.slice(0, 5).map(n => '• ' + n.title).join('\n');
       } catch { return 'Fehler beim Lesen der Notizen.'; }
@@ -1530,7 +1539,7 @@ const server = http.createServer(async (req, res) => {
     // ── List tasks ──
     if (msg.match(/(?:zeig.*task|meine task|offene task|todos|aufgaben)/)) {
       try {
-        const tasks = JSON.parse(safeReadJSON(path.join(resolveAppDir('tasks'), 'data', 'tasks.json'), '{"tasks":[]}'));
+        const tasks = safeReadJSON(path.join(resolveAppDir('tasks'), 'data', 'tasks.json'), '{"tasks":[]}');
         const open = (tasks.tasks || []).filter(t => t.status !== 'done');
         if (open.length === 0) return 'Keine offenen Tasks!';
         return 'Offene Tasks:\n' + open.slice(0, 5).map(t => '• ' + t.title + (t.priority === 'high' ? ' [!]' : '')).join('\n');
@@ -1540,7 +1549,7 @@ const server = http.createServer(async (req, res) => {
     // ── Weather ──
     if (msg.match(/(?:wetter|weather|temperatur|regen|sonne)/)) {
       try {
-        const weather = JSON.parse(safeReadJSON(path.join(resolveAppDir('weather'), 'data', 'weather.json'), '{}'));
+        const weather = safeReadJSON(path.join(resolveAppDir('weather'), 'data', 'weather.json'), '{}');
         if (weather.current) return 'Aktuelles Wetter: ' + (weather.current.temp || '?') + '°C, ' + (weather.current.condition || '?') + (weather.current.humidity ? ', Feuchtigkeit: ' + weather.current.humidity + '%' : '');
         return 'Keine Wetterdaten vorhanden. Oeffne die Weather-App fuer aktuelle Daten.';
       } catch { return 'Keine Wetterdaten verfuegbar.'; }
@@ -1567,12 +1576,12 @@ const server = http.createServer(async (req, res) => {
       try {
         const { message, source } = JSON.parse(b);
         // Check if external chat agent is alive
-        const agents = JSON.parse(safeReadJSON(path.join(ROOT, 'data', 'agents.json'), { agents: [] }));
+        const agents = safeReadJSON(path.join(ROOT, 'data', 'agents.json'), { agents: [] });
         const chatAgent = (agents.agents || []).find(a => a.type === 'chat' && a.status === 'alive');
         if (chatAgent) {
           // Queue for external agent
           const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
-          const queue = JSON.parse(safeReadJSON(queueFile, { pending: [] }));
+          const queue = safeReadJSON(queueFile, { pending: [] });
           if (!queue.pending) queue.pending = [];
           const msg = { id: 'chat-' + Date.now(), message, source: source || 'dashboard', status: 'queued', created: new Date().toISOString() };
           queue.pending.push(msg);
@@ -1590,7 +1599,7 @@ const server = http.createServer(async (req, res) => {
   if (url.startsWith('/api/chat/reply/') && req.method === 'GET') {
     const msgId = url.split('/').pop();
     const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
-    const queue = JSON.parse(safeReadJSON(queueFile, { pending: [] }));
+    const queue = safeReadJSON(queueFile, { pending: [] });
     const msg = (queue.pending || []).find(m => m.id === msgId);
     if (msg && msg.reply) {
       jsonRes(res, { reply: msg.reply });
@@ -1607,7 +1616,7 @@ const server = http.createServer(async (req, res) => {
         const { from, text, source, time } = JSON.parse(b);
         if (!text) { res.writeHead(400); return res.end(JSON.stringify({ error: 'text required' })); }
         const histFile = path.join(ROOT, 'data', 'chat-history.json');
-        const hist = JSON.parse(safeReadJSON(histFile, '{"messages":[]}'));
+        const hist = safeReadJSON(histFile, '{"messages":[]}');
         if (!hist.messages) hist.messages = [];
         const msg = { id: 'm-' + Date.now(), from: from || 'agent', text, source: source || 'telegram', time: time || new Date().toISOString() };
         hist.messages.push(msg);
@@ -1623,7 +1632,7 @@ const server = http.createServer(async (req, res) => {
 
   if (url === '/api/chat-history' && req.method === 'GET') {
     const histFile = path.join(ROOT, 'data', 'chat-history.json');
-    const hist = JSON.parse(safeReadJSON(histFile, '{"messages":[]}'));
+    const hist = safeReadJSON(histFile, '{"messages":[]}');
     const messages = (hist.messages || []).slice(-50);
     return jsonRes(res, { messages });
   }
@@ -1699,7 +1708,7 @@ const server = http.createServer(async (req, res) => {
 
         // Register in apps.json
         const appsFile = path.join(ROOT, 'data', 'apps.json');
-        const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+        const appsData = safeReadJSON(appsFile, '{"apps":[]}');
         const apps = appsData.apps || appsData || [];
         apps.push({
           id: appId,
@@ -1733,7 +1742,7 @@ const server = http.createServer(async (req, res) => {
 
         // Only allow uninstalling user apps (userdata/apps/) and created/installed apps
         const appsFile = path.join(ROOT, 'data', 'apps.json');
-        const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+        const appsData = safeReadJSON(appsFile, '{"apps":[]}');
         const app = (appsData.apps || []).find(a => a.id === id);
 
         // Check if it's a system app (in apps/ dir, not created/installed)
@@ -1763,7 +1772,7 @@ const server = http.createServer(async (req, res) => {
     return readBody(req, async b => {
       try {
         const { id } = JSON.parse(b);
-        const appsData = JSON.parse(safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}'));
+        const appsData = safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}');
         const app = (appsData.apps || []).find(a => a.id === id);
         if (!app || !app.source) return jsonRes(res, { hasUpdate: false, message: 'Keine Quelle' });
 
@@ -1791,7 +1800,7 @@ const server = http.createServer(async (req, res) => {
       try {
         const { id } = JSON.parse(b);
         const appsFile = path.join(ROOT, 'data', 'apps.json');
-        const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+        const appsData = safeReadJSON(appsFile, '{"apps":[]}');
         const app = (appsData.apps || []).find(a => a.id === id);
         if (!app || !app.source) return jsonRes(res, { ok: false, error: 'Keine Quelle' });
 
@@ -1915,7 +1924,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
 
         // Register
         const appsFile = path.join(ROOT, 'data', 'apps.json');
-        const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+        const appsData = safeReadJSON(appsFile, '{"apps":[]}');
         const apps = appsData.apps || [];
         apps.push({ id: appId, name, icon: appIcon, color: appColor, description: description || '', installed: true, created: true, position: apps.length });
         if (appsData.apps) appsData.apps = apps;
@@ -1936,7 +1945,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
     }
     // Only allow uninstalling apps that have a source (installed from GitHub)
     const appsFile = path.join(ROOT, 'data', 'apps.json');
-    const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+    const appsData = safeReadJSON(appsFile, '{"apps":[]}');
     const apps = appsData.apps || [];
     const app = apps.find(a => a.id === appId);
     if (!app?.source) {
@@ -1969,7 +1978,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
         fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
         // Update apps.json registry
         const appsFile = path.join(ROOT, 'data', 'apps.json');
-        const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+        const appsData = safeReadJSON(appsFile, '{"apps":[]}');
         const app = (appsData.apps || []).find(a => a.id === appId);
         if (app) {
           app.visibility = visibility;
@@ -1996,7 +2005,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
   }
   if (url === '/api/agent-memory' && req.method === 'GET') {
     const memFile = path.join(ROOT, 'data', 'agent-memory.json');
-    const mem = JSON.parse(safeReadJSON(memFile, '{"facts":[],"goals":[]}'));
+    const mem = safeReadJSON(memFile, '{"facts":[],"goals":[]}');
     return jsonRes(res, mem);
   }
 
@@ -2006,7 +2015,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
     const days = Math.min(daysParam, 30);
     const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
     const appsFile = path.join(ROOT, 'data', 'apps.json');
-    const appList = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+    const appList = safeReadJSON(appsFile, '{"apps":[]}');
     const apps = appList.apps || appList || [];
     const activity = [];
     for (const a of apps) {
@@ -2059,14 +2068,14 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
         const { message, source } = JSON.parse(b);
         if (!message) { res.writeHead(400); return res.end(JSON.stringify({ error: 'message required' })); }
         const outFile = path.join(ROOT, 'data', 'chat-outbox.json');
-        const out = JSON.parse(safeReadJSON(outFile, '{"messages":[]}'));
+        const out = safeReadJSON(outFile, '{"messages":[]}');
         if (!out.messages) out.messages = [];
         const msg = { id: 'out-' + Date.now(), message, source: source || 'dashboard', time: new Date().toISOString() };
         out.messages.push(msg);
         fs.writeFileSync(outFile, JSON.stringify(out, null, 2));
         // Also mirror to history so user sees their own message
         const histFile = path.join(ROOT, 'data', 'chat-history.json');
-        const hist = JSON.parse(safeReadJSON(histFile, '{"messages":[]}'));
+        const hist = safeReadJSON(histFile, '{"messages":[]}');
         if (!hist.messages) hist.messages = [];
         const histMsg = { id: 'm-' + Date.now(), from: 'user', text: message, source: 'dashboard', time: msg.time };
         hist.messages.push(histMsg);
@@ -2080,7 +2089,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
 
   if (url === '/api/chat-outbox' && req.method === 'GET') {
     const outFile = path.join(ROOT, 'data', 'chat-outbox.json');
-    const out = JSON.parse(safeReadJSON(outFile, '{"messages":[]}'));
+    const out = safeReadJSON(outFile, '{"messages":[]}');
     const messages = out.messages || [];
     // Clear after pickup
     if (messages.length > 0) {
@@ -2099,7 +2108,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
         // Mirror to chat history
         if (!skipMirror) {
           const histFile = path.join(ROOT, 'data', 'chat-history.json');
-          const hist = JSON.parse(safeReadJSON(histFile, '{"messages":[]}'));
+          const hist = safeReadJSON(histFile, '{"messages":[]}');
           if (!hist.messages) hist.messages = [];
           const histMsg = { id: 'm-' + Date.now(), from: 'user', text: message, source: 'dashboard', time: new Date().toISOString() };
           hist.messages.push(histMsg);
@@ -2126,7 +2135,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
           const responseText = output.trim() || 'Keine Antwort erhalten.';
           // Save response to chat history
           const histFile2 = path.join(ROOT, 'data', 'chat-history.json');
-          const hist2 = JSON.parse(safeReadJSON(histFile2, '{"messages":[]}'));
+          const hist2 = safeReadJSON(histFile2, '{"messages":[]}');
           if (!hist2.messages) hist2.messages = [];
           const respMsg = { id: 'm-' + Date.now(), from: 'agent', text: responseText, source: 'pulseos', time: new Date().toISOString() };
           hist2.messages.push(respMsg);
@@ -2151,7 +2160,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
         const { text } = JSON.parse(b);
         if (!text) { res.writeHead(400); return res.end(JSON.stringify({ error: 'text required' })); }
         const histFile = path.join(ROOT, 'data', 'chat-history.json');
-        const hist = JSON.parse(safeReadJSON(histFile, '{"messages":[]}'));
+        const hist = safeReadJSON(histFile, '{"messages":[]}');
         if (!hist.messages) hist.messages = [];
         const msg = { id: 'm-' + Date.now(), from: 'agent', text, source: 'pulseos', time: new Date().toISOString() };
         hist.messages.push(msg);
@@ -2165,7 +2174,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
 
   if (url === '/api/pulseos-chat' && req.method === 'GET') {
     const qFile = path.join(ROOT, 'data', 'pulseos-queue.json');
-    const q = JSON.parse(safeReadJSON(qFile, { messages: [] }));
+    const q = safeReadJSON(qFile, { messages: [] });
     const messages = q.messages || [];
     if (messages.length > 0) {
       fs.writeFileSync(qFile, JSON.stringify({ messages: [] }, null, 2));
@@ -2180,7 +2189,7 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
       return jsonRes(res, agentContextCache.data);
     }
     // Dynamisch generiert — ClaudeOS holt sich das beim Start & alle 5 Min
-    const apps = JSON.parse(safeReadJSON(path.join(ROOT, 'data', 'apps.json'), { apps: [] }));
+    const apps = safeReadJSON(path.join(ROOT, 'data', 'apps.json'), { apps: [] });
     const appList = (apps.apps || apps || []);
     const appTable = appList.map(a => `| ${a.name || a.id} | ${a.id} | /app/${a.id}/api/ |`).join('\n');
 
@@ -2318,7 +2327,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
         const { appId, task, data } = JSON.parse(b);
         // Queue for chat agent if available
         const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
-        const queue = JSON.parse(safeReadJSON(queueFile, { pending: [] }));
+        const queue = safeReadJSON(queueFile, { pending: [] });
         if (!queue.pending) queue.pending = [];
         const msg = { id: 'ai-' + Date.now(), appId, task, data, status: 'queued', created: new Date().toISOString() };
         queue.pending.push(msg);
@@ -2651,7 +2660,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
     const file = path.join(ROOT, 'data', 'changelog.json');
     if (req.method === 'GET') return jsonRes(res, safeReadJSON(file, { entries: [] }));
     if (req.method === 'POST') return readBody(req, b => {
-      const log = JSON.parse(safeReadJSON(file, { entries: [] }));
+      const log = safeReadJSON(file, { entries: [] });
       const entries = JSON.parse(b);
       log.entries.push(...(Array.isArray(entries) ? entries : [entries]));
       if (log.entries.length > 200) log.entries = log.entries.slice(-200);
@@ -2672,7 +2681,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
   // Chat pending messages — orchestrator polls this
   if (url === '/api/chat-pending' && req.method === 'GET') {
     const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
-    const queue = JSON.parse(safeReadJSON(queueFile, { pending: [] }));
+    const queue = safeReadJSON(queueFile, { pending: [] });
     return jsonRes(res, queue);
   }
 
@@ -2692,7 +2701,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
     orchestratorLastPoll = Date.now();
     const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
     // Check if there's already something pending (not yet picked up)
-    const queue = JSON.parse(safeReadJSON(queueFile, { pending: [] }));
+    const queue = safeReadJSON(queueFile, { pending: [] });
     const ready = queue.pending.find(m => m.status !== 'in_progress');
     if (ready) {
       // Mark as in_progress so watchdog won't timeout on it
@@ -2738,7 +2747,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
 
         // Write response to chat.json
         const chatFile = path.join(resolveAppDir('chat'), 'data', 'chat.json');
-        const data = JSON.parse(safeReadJSON(chatFile, { activeChat: 'chat-1', chats: [] }));
+        const data = safeReadJSON(chatFile, { activeChat: 'chat-1', chats: [] });
         const chat = data.chats.find(c => c.id === chatId);
         if (!chat) return jsonRes(res, { ok: false, error: 'Chat not found' });
 
@@ -2758,7 +2767,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
 
         // Remove from queue
         const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
-        const queue = JSON.parse(safeReadJSON(queueFile, { pending: [] }));
+        const queue = safeReadJSON(queueFile, { pending: [] });
         queue.pending = queue.pending.filter(p => p.msgId !== msgId);
         fs.writeFileSync(queueFile, JSON.stringify(queue, null, 2));
 
@@ -3630,7 +3639,7 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
       if (ctxMatch2) {
         const logFile = path.join(ROOT, 'data', 'contexts', ctxMatch2[1], '_changelog.json');
         try {
-          const log = JSON.parse(safeReadJSON(logFile, { entries: [] }));
+          const log = safeReadJSON(logFile, { entries: [] });
           log.entries.push({
             ts: new Date().toISOString(),
             source: qsParsed.searchParams.get('agent') || 'user',
@@ -3701,7 +3710,7 @@ window.__CONFIG = ${config};
       const newChain = JSON.parse(b);
       if (!newChain.id) newChain.id = 'chain-' + Date.now();
       newChain.enabled = newChain.enabled !== false;
-      const data = JSON.parse(safeReadJSON(ACTION_CHAINS_FILE, { chains: [] }));
+      const data = safeReadJSON(ACTION_CHAINS_FILE, { chains: [] });
       data.chains.push(newChain);
       fs.writeFileSync(ACTION_CHAINS_FILE, JSON.stringify(data, null, 2));
       jsonRes(res, { ok: true, id: newChain.id });
@@ -3871,7 +3880,7 @@ Nutze Viking fuer Langzeit-Erinnerungen und Wissensaufbau.
         // 7. Register in apps.json
         try {
           const appsFile = path.join(ROOT, 'data', 'apps.json');
-          const appsData = JSON.parse(safeReadJSON(appsFile, { meta: {}, apps: [] }));
+          const appsData = safeReadJSON(appsFile, { meta: {}, apps: [] });
           if (!appsData.apps.find(a => a.id === agentId)) {
             appsData.apps.push({
               id: agentId,
@@ -3935,7 +3944,7 @@ Nutze Viking fuer Langzeit-Erinnerungen und Wissensaufbau.
   if (url === '/api/agent-contexts' && req.method === 'GET') {
     try {
       const appsFile = path.join(ROOT, 'data', 'apps.json');
-      const appsData = JSON.parse(safeReadJSON(appsFile, { meta: {}, apps: [] }));
+      const appsData = safeReadJSON(appsFile, { meta: {}, apps: [] });
       const agentsData = readAgents();
 
       const contexts = appsData.apps.map(app => {
@@ -4352,7 +4361,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
         };
 
         let data;
-        try { data = JSON.parse(safeReadJSON(CTX_TPL_FILE, '{"templates":[]}')); }
+        try { data = safeReadJSON(CTX_TPL_FILE, '{"templates":[]}'); }
         catch { data = { templates: [] }; }
         data.templates.push(tpl);
         fs.writeFileSync(CTX_TPL_FILE, JSON.stringify(data, null, 2));
@@ -4368,7 +4377,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
         const { templateId, parentId } = JSON.parse(b);
         // Load templates (user + builtin)
         let data;
-        try { data = JSON.parse(safeReadJSON(CTX_TPL_FILE, '{"templates":[]}')); }
+        try { data = safeReadJSON(CTX_TPL_FILE, '{"templates":[]}'); }
         catch { data = { templates: [] }; }
         const allTemplates = [...(data.templates || []), ...getBuiltinContextTemplates()];
         const tpl = allTemplates.find(t => t.id === templateId);
@@ -4420,7 +4429,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
   if (url === '/api/widget-templates') {
     if (req.method === 'GET') {
       let data;
-      try { data = JSON.parse(safeReadJSON(WIDGET_TPL_FILE, '{"templates":[]}')); }
+      try { data = safeReadJSON(WIDGET_TPL_FILE, '{"templates":[]}'); }
       catch { data = { templates: [] }; }
       return jsonRes(res, data);
     }
@@ -4444,7 +4453,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
         };
 
         let data;
-        try { data = JSON.parse(safeReadJSON(WIDGET_TPL_FILE, '{"templates":[]}')); }
+        try { data = safeReadJSON(WIDGET_TPL_FILE, '{"templates":[]}'); }
         catch { data = { templates: [] }; }
         data.templates.push(tpl);
         fs.writeFileSync(WIDGET_TPL_FILE, JSON.stringify(data, null, 2));
@@ -4459,7 +4468,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
       try {
         const { templateId, contextId } = JSON.parse(b);
         let data;
-        try { data = JSON.parse(safeReadJSON(WIDGET_TPL_FILE, '{"templates":[]}')); }
+        try { data = safeReadJSON(WIDGET_TPL_FILE, '{"templates":[]}'); }
         catch { data = { templates: [] }; }
         const tpl = (data.templates || []).find(t => t.id === templateId);
         if (!tpl) return jsonRes(res, { ok: false, error: 'Widget template not found' });
@@ -4553,7 +4562,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
             created: new Date().toISOString(), usageCount: 0, widgets, source: 'user'
           };
           let data;
-          try { data = JSON.parse(safeReadJSON(CTX_TPL_FILE, '{"templates":[]}')); }
+          try { data = safeReadJSON(CTX_TPL_FILE, '{"templates":[]}'); }
           catch { data = { templates: [] }; }
           data.templates.push(tpl);
           fs.writeFileSync(CTX_TPL_FILE, JSON.stringify(data, null, 2));
@@ -4569,13 +4578,13 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
         const { templateId } = JSON.parse(b);
         // Forward to context template system
         let data;
-        try { data = JSON.parse(safeReadJSON(CTX_TPL_FILE, '{"templates":[]}')); }
+        try { data = safeReadJSON(CTX_TPL_FILE, '{"templates":[]}'); }
         catch { data = { templates: [] }; }
         const allTemplates = [...(data.templates || []), ...getBuiltinContextTemplates()];
         // Also check legacy templates
         const legacyFile = path.join(resolveAppDir('projects'), 'data', 'templates.json');
         let legacyData;
-        try { legacyData = JSON.parse(safeReadJSON(legacyFile, '{"templates":[]}')); } catch { legacyData = { templates: [] }; }
+        try { legacyData = safeReadJSON(legacyFile, '{"templates":[]}'); } catch { legacyData = { templates: [] }; }
         const combined = [...allTemplates, ...(legacyData.templates || [])];
         const tpl = combined.find(t => t.id === templateId);
         if (!tpl) return jsonRes(res, { ok: false, error: 'Template not found' });
@@ -4613,7 +4622,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
 
         // Read current project state
         const projFile = path.join(resolveAppDir('projects'), 'data', 'projects.json');
-        const projData = JSON.parse(safeReadJSON(projFile, { projects: [] }));
+        const projData = safeReadJSON(projFile, { projects: [] });
         const project = projData.projects.find(p => p.id === projectId);
         if (!project) return jsonRes(res, { ok: false, error: 'Project not found' });
 
@@ -5757,7 +5766,7 @@ Regeln:
         if (!projectId) return jsonRes(res, { ok: false, error: 'projectId required' });
 
         const projFile = path.join(resolveAppDir('projects'), 'data', 'projects.json');
-        const projData = JSON.parse(safeReadJSON(projFile, { projects: [] }));
+        const projData = safeReadJSON(projFile, { projects: [] });
         const project = projData.projects.find(p => p.id === projectId);
         if (!project) return jsonRes(res, { ok: false, error: 'Project not found' });
 
@@ -6251,7 +6260,7 @@ Regeln:
     try {
       const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
       const appsFile = path.join(ROOT, 'data', 'apps.json');
-      const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+      const appsData = safeReadJSON(appsFile, '{"apps":[]}');
       // Read visibility from each manifest
       const enrichedApps = (appsData.apps || []).map(a => {
         let vis = 'private', allowed = [];
@@ -6884,8 +6893,32 @@ function writeSupervisorStatus() {
 setInterval(() => { supervisorCheck(); writeSupervisorStatus(); }, SUPERVISOR_CHECK_MS);
 
 // Graceful shutdown: kill managed agents
-process.on('SIGTERM', () => { Object.values(supervisorManaged).forEach(m => m.proc?.kill('SIGTERM')); setTimeout(() => process.exit(0), 2000); });
-process.on('SIGINT', () => { Object.values(supervisorManaged).forEach(m => m.proc?.kill('SIGTERM')); setTimeout(() => process.exit(0), 2000); });
+function gracefulShutdown(signal) {
+  console.log(`\n[server] ${signal} received — shutting down...`);
+  Object.values(supervisorManaged).forEach(m => { try { m.proc?.kill('SIGTERM'); } catch {} });
+  if (tunnelProcess) { try { tunnelProcess.kill('SIGTERM'); } catch {} }
+  setTimeout(() => process.exit(0), 2000);
+}
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Catch uncaught exceptions so server doesn't crash
+process.on('uncaughtException', (err) => {
+  console.error('[server] Uncaught exception (kept running):', err.message);
+  console.error(err.stack?.split('\n').slice(0, 3).join('\n'));
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[server] Unhandled rejection (kept running):', reason);
+});
+
+// Port conflict check — if port is in use, exit cleanly with message
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`[server] Port ${PORT} already in use. Run: lsof -ti :${PORT} | xargs kill -9`);
+    process.exit(1);
+  }
+  console.error('[server] Server error:', err.message);
+});
 
 // =============================================================================
 
