@@ -1724,6 +1724,135 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // Uninstall app
+  if (url === '/api/apps/uninstall' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { id } = JSON.parse(b);
+        if (!id) return jsonRes(res, { ok: false, error: 'id required' }, 400);
+
+        // Only allow uninstalling user apps (userdata/apps/) and created/installed apps
+        const appsFile = path.join(ROOT, 'data', 'apps.json');
+        const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+        const app = (appsData.apps || []).find(a => a.id === id);
+
+        // Check if it's a system app (in apps/ dir, not created/installed)
+        const isSystem = fs.existsSync(path.join(ROOT, 'apps', id)) && !isUserApp(id) && !(app && (app.created || app.source));
+        if (isSystem) return jsonRes(res, { ok: false, error: 'System-Apps können nicht deinstalliert werden' });
+
+        // Remove app directory
+        const userAppDir = path.join(USERDATA, 'apps', id);
+        if (fs.existsSync(userAppDir)) {
+          const { execSync } = require('child_process');
+          execSync(`rm -rf "${userAppDir}"`, { timeout: 5000 });
+        }
+
+        // Remove from apps.json
+        appsData.apps = (appsData.apps || []).filter(a => a.id !== id);
+        fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+
+        invalidateAgentContextCache();
+        broadcast('dashboard', { type: 'app-uninstalled', appId: id });
+        jsonRes(res, { ok: true, message: 'App deinstalliert: ' + id });
+      } catch (e) { jsonRes(res, { ok: false, error: e.message }, 500); }
+    });
+  }
+
+  // Check for app update
+  if (url === '/api/apps/check-update' && req.method === 'POST') {
+    return readBody(req, async b => {
+      try {
+        const { id } = JSON.parse(b);
+        const appsData = JSON.parse(safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}'));
+        const app = (appsData.apps || []).find(a => a.id === id);
+        if (!app || !app.source) return jsonRes(res, { hasUpdate: false, message: 'Keine Quelle' });
+
+        const repoPath = app.source.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '');
+        // Get latest commit date from GitHub API
+        const ghGet = (apiPath) => new Promise((resolve, reject) => {
+          require('https').get('https://api.github.com' + apiPath, { headers: { 'User-Agent': 'PulseOS/1.0' } }, resp => {
+            let d = ''; resp.on('data', c => d += c); resp.on('end', () => resolve({ status: resp.statusCode, data: JSON.parse(d) }));
+          }).on('error', reject);
+        });
+        const commitsResp = await ghGet('/repos/' + repoPath + '/commits?per_page=1');
+        if (commitsResp.status !== 200) return jsonRes(res, { hasUpdate: false, message: 'GitHub nicht erreichbar' });
+
+        const latestDate = commitsResp.data[0]?.commit?.committer?.date;
+        const installedDate = app.installedAt || app.updatedAt;
+        const hasUpdate = latestDate && installedDate && new Date(latestDate) > new Date(installedDate);
+        jsonRes(res, { hasUpdate, latestCommit: latestDate, installedAt: installedDate });
+      } catch (e) { jsonRes(res, { hasUpdate: false, error: e.message }); }
+    });
+  }
+
+  // Update app from source
+  if (url === '/api/apps/update' && req.method === 'POST') {
+    return readBody(req, async b => {
+      try {
+        const { id } = JSON.parse(b);
+        const appsFile = path.join(ROOT, 'data', 'apps.json');
+        const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+        const app = (appsData.apps || []).find(a => a.id === id);
+        if (!app || !app.source) return jsonRes(res, { ok: false, error: 'Keine Quelle' });
+
+        const repoPath = app.source.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '');
+        const appDir = path.join(USERDATA, 'apps', id);
+        const { execSync } = require('child_process');
+
+        // Download fresh ZIP
+        const zipUrl = `https://api.github.com/repos/${repoPath}/zipball/main`;
+        const downloadZip = () => new Promise((resolve, reject) => {
+          const follow = (url, redirects) => {
+            if (redirects > 5) return reject(new Error('Too many redirects'));
+            const mod = url.startsWith('https') ? require('https') : require('http');
+            mod.get(url, { headers: { 'User-Agent': 'PulseOS/1.0', 'Accept': 'application/vnd.github+json' } }, resp => {
+              if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) return follow(resp.headers.location, (redirects || 0) + 1);
+              if (resp.statusCode !== 200) return reject(new Error('GitHub API error: ' + resp.statusCode));
+              const chunks = []; resp.on('data', c => chunks.push(c)); resp.on('end', () => resolve(Buffer.concat(chunks)));
+            }).on('error', reject);
+          };
+          follow(zipUrl, 0);
+        });
+
+        const zipBuf = await downloadZip();
+        const tmpZip = path.join(require('os').tmpdir(), 'pulse-update-' + Date.now() + '.zip');
+        fs.writeFileSync(tmpZip, zipBuf);
+
+        // Backup data dir
+        const dataDir = path.join(appDir, 'data');
+        const hasData = fs.existsSync(dataDir);
+        const tmpData = tmpZip + '-data';
+        if (hasData) execSync(`cp -r "${dataDir}" "${tmpData}"`, { timeout: 5000 });
+
+        // Clear and re-extract
+        execSync(`rm -rf "${appDir}"`, { timeout: 5000 });
+        fs.mkdirSync(appDir, { recursive: true });
+        const tmpExtract = tmpZip + '-extract';
+        execSync(`unzip -o "${tmpZip}" -d "${tmpExtract}"`, { timeout: 15000 });
+        const entries = fs.readdirSync(tmpExtract);
+        const topDir = entries.length === 1 ? path.join(tmpExtract, entries[0]) : tmpExtract;
+        execSync(`cp -r "${topDir}/"* "${appDir}/"`, { timeout: 10000 });
+
+        // Restore data dir
+        if (hasData) {
+          if (fs.existsSync(dataDir)) execSync(`rm -rf "${dataDir}"`);
+          execSync(`mv "${tmpData}" "${dataDir}"`);
+        }
+
+        // Cleanup
+        try { execSync(`rm -rf "${tmpZip}" "${tmpExtract}"`); } catch {}
+
+        // Update timestamp
+        app.updatedAt = new Date().toISOString();
+        fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+
+        invalidateAgentContextCache();
+        broadcast('dashboard', { type: 'app-updated', appId: id });
+        jsonRes(res, { ok: true, message: 'App aktualisiert: ' + id });
+      } catch (e) { jsonRes(res, { ok: false, error: e.message }, 500); }
+    });
+  }
+
   // Create new app from template
   if (url === '/api/apps/create' && req.method === 'POST') {
     return readBody(req, b => {

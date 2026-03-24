@@ -19,7 +19,7 @@
       "description": "Aufgaben und Todos verwalten",
       "installed": true,
       "position": 1,
-      "visibility": "public",
+      "visibility": "private",
       "allowedUsers": []
     },
     {
@@ -199,30 +199,6 @@
       "position": 17,
       "visibility": "private",
       "allowedUsers": []
-    },
-    {
-      "id": "demo",
-      "name": "Würfel",
-      "icon": "🎲",
-      "color": "#e74c3c",
-      "description": "Virtueller Würfel — tippe zum Würfeln",
-      "installed": true,
-      "source": "https://github.com/NastyFFM/pulse-app-demo",
-      "installedAt": "2026-03-24T03:02:54.707Z",
-      "position": 18,
-      "visibility": "invite",
-      "allowedUsers": []
-    },
-    {
-      "id": "demo",
-      "name": "Würfel",
-      "icon": "🎲",
-      "color": "#e74c3c",
-      "description": "Virtueller Würfel — tippe zum Würfeln",
-      "installed": true,
-      "source": "https://github.com/NastyFFM/pulse-app-demo",
-      "installedAt": "2026-03-24T03:11:33.751Z",
-      "position": 19
     },
     {
       "id": "clock",

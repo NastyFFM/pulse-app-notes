@@ -1433,9 +1433,88 @@ function renderLauncher() {
     el.className = 'launcher-app';
     el.dataset.name = app.name.toLowerCase();
     el.onclick = () => { openApp(app); toggleLauncher(); };
+    el.oncontextmenu = (e) => { e.preventDefault(); showAppContextMenu(e, app); };
     el.innerHTML = '<div class="icon" style="background:' + app.color + '">' + app.icon + '</div><div class="name">' + app.name + '</div>';
     grid.appendChild(el);
   });
+}
+
+function showAppContextMenu(e, app) {
+  // Remove existing menu
+  document.getElementById('appCtxMenu')?.remove();
+  const isSystem = !app.created && !app.source;
+  const menu = document.createElement('div');
+  menu.id = 'appCtxMenu';
+  menu.style.cssText = 'position:fixed;z-index:99999;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:4px 0;min-width:160px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:12px;';
+  menu.style.left = Math.min(e.clientX, window.innerWidth - 180) + 'px';
+  menu.style.top = Math.min(e.clientY, window.innerHeight - 120) + 'px';
+  const items = [
+    { label: 'Öffnen', action: () => { openApp(app); toggleLauncher(); } },
+    { label: 'Sichtbarkeit: ' + (app.visibility || 'private'), action: () => cycleVisibility(app) },
+  ];
+  if (app.source) {
+    items.push({ label: 'Update prüfen', action: () => checkAppUpdate(app) });
+  }
+  if (!isSystem) {
+    items.push({ label: 'Deinstallieren', action: () => uninstallApp(app), color: '#e74c3c' });
+  }
+  items.forEach(item => {
+    const btn = document.createElement('div');
+    btn.style.cssText = 'padding:6px 14px;cursor:pointer;color:' + (item.color || 'var(--text)') + ';';
+    btn.onmouseover = () => btn.style.background = 'var(--bg-card)';
+    btn.onmouseout = () => btn.style.background = 'none';
+    btn.textContent = item.label;
+    btn.onclick = () => { menu.remove(); item.action(); };
+    menu.appendChild(btn);
+  });
+  document.body.appendChild(menu);
+  const close = (ev) => { if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('click', close); } };
+  setTimeout(() => document.addEventListener('click', close), 0);
+}
+
+async function cycleVisibility(app) {
+  const levels = ['private', 'unlisted', 'public', 'invite'];
+  const cur = levels.indexOf(app.visibility || 'private');
+  const next = levels[(cur + 1) % levels.length];
+  try {
+    await fetch('/api/apps/' + app.id + '/visibility', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ visibility: next }) });
+    app.visibility = next;
+    showToast(app.name + ' → ' + next, 'success');
+  } catch (e) { showToast('Fehler: ' + e.message, 'error'); }
+}
+
+async function checkAppUpdate(app) {
+  showToast('Prüfe Update für ' + app.name + '...', 'info');
+  try {
+    const r = await fetch('/api/apps/check-update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: app.id }) });
+    const d = await r.json();
+    if (d.hasUpdate) {
+      if (confirm(app.name + ': Update verfügbar!\n\nJetzt aktualisieren?')) {
+        const r2 = await fetch('/api/apps/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: app.id }) });
+        const d2 = await r2.json();
+        if (d2.ok) { showToast(app.name + ' aktualisiert!', 'success'); await load(); render(); }
+        else showToast(d2.error || 'Update fehlgeschlagen', 'error');
+      }
+    } else {
+      showToast(app.name + ' ist aktuell', 'success');
+    }
+  } catch (e) { showToast('Fehler: ' + e.message, 'error'); }
+}
+
+async function uninstallApp(app) {
+  if (!confirm('App "' + app.name + '" wirklich deinstallieren?')) return;
+  try {
+    const r = await fetch('/api/apps/uninstall', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: app.id }) });
+    const d = await r.json();
+    if (d.ok) {
+      showToast(app.name + ' deinstalliert', 'success');
+      await load();
+      render();
+      renderLauncher();
+    } else {
+      showToast(d.error || 'Fehler', 'error');
+    }
+  } catch (e) { showToast('Fehler: ' + e.message, 'error'); }
 }
 
 function filterApps(q) {
