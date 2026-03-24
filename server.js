@@ -1381,7 +1381,18 @@ const server = http.createServer(async (req, res) => {
 
   if (url === '/api/apps') {
     const file = path.join(ROOT, 'data', 'apps.json');
-    if (req.method === 'GET') return jsonRes(res, safeReadJSON(file, { meta: {}, apps: [] }));
+    if (req.method === 'GET') {
+      const data = JSON.parse(safeReadJSON(file, '{"meta":{},"apps":[]}'));
+      // Enrich apps with visibility from manifests
+      (data.apps || []).forEach(a => {
+        try {
+          const m = JSON.parse(fs.readFileSync(path.join(ROOT, 'apps', a.id, 'manifest.json'), 'utf8'));
+          a.visibility = m.visibility || 'private';
+          a.allowedUsers = m.allowedUsers || [];
+        } catch { a.visibility = a.visibility || 'private'; a.allowedUsers = a.allowedUsers || []; }
+      });
+      return jsonRes(res, data);
+    }
     if (req.method === 'PUT') return readBody(req, b => {
       fs.writeFileSync(file, JSON.stringify(JSON.parse(b), null, 2));
       broadcast('dashboard', { type: 'change', file: 'apps.json', time: Date.now() });
@@ -1739,6 +1750,37 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
     fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
     broadcast('dashboard', { type: 'app-uninstalled', appId });
     return jsonRes(res, { ok: true, message: 'App uninstalled' });
+  }
+
+  // ── App Visibility ──
+  if (url.match(/^\/api\/apps\/[^/]+\/visibility$/) && req.method === 'PUT') {
+    const appId = url.split('/')[3];
+    return readBody(req, b => {
+      try {
+        const { visibility, allowedUsers } = JSON.parse(b);
+        if (!['private','unlisted','public','invite'].includes(visibility)) {
+          res.writeHead(400); return res.end(JSON.stringify({ error: 'Invalid visibility. Use: private, unlisted, public, invite' }));
+        }
+        // Update manifest.json
+        const manifestPath = path.join(ROOT, 'apps', appId, 'manifest.json');
+        let manifest = {};
+        try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch {}
+        manifest.visibility = visibility;
+        manifest.allowedUsers = allowedUsers || [];
+        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+        // Update apps.json registry
+        const appsFile = path.join(ROOT, 'data', 'apps.json');
+        const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+        const app = (appsData.apps || []).find(a => a.id === appId);
+        if (app) {
+          app.visibility = visibility;
+          app.allowedUsers = allowedUsers || [];
+          fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+        }
+        broadcast('dashboard', { type: 'app-visibility-changed', appId, visibility });
+        jsonRes(res, { ok: true, appId, visibility, allowedUsers: allowedUsers || [] });
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+    });
   }
 
   // ── Agent Memory ──
@@ -5983,51 +6025,166 @@ Regeln:
       const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
       const appsFile = path.join(ROOT, 'data', 'apps.json');
       const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
-      const appList = (appsData.apps || []).map(a => ({ id: a.id, name: a.name, icon: a.icon, description: a.description }));
+      // Read visibility from each manifest
+      const enrichedApps = (appsData.apps || []).map(a => {
+        let vis = 'private', allowed = [];
+        try {
+          const m = JSON.parse(fs.readFileSync(path.join(ROOT, 'apps', a.id, 'manifest.json'), 'utf8'));
+          vis = m.visibility || 'private';
+          allowed = m.allowedUsers || [];
+        } catch {}
+        return { id: a.id, name: a.name, icon: a.icon, color: a.color, description: a.description, visibility: vis, allowedUsers: allowed };
+      });
+      const publicApps = enrichedApps.filter(a => a.visibility === 'public');
+      const unlistedApps = enrichedApps.filter(a => a.visibility === 'unlisted');
+      const inviteApps = enrichedApps.filter(a => a.visibility === 'invite');
 
       // pulse-profile.json (machine-readable)
       const pulseProfile = {
-        schema: 'pulse-profile/1.0',
+        schema: 'pulse-profile/1.1',
         name: profile.name,
         handle: profile.handle,
         avatar: profile.avatar,
         bio: profile.bio,
-        apps: appList.length,
-        appList: appList.map(a => a.name),
+        links: profile.links || [],
+        apps: enrichedApps.length,
+        publicApps: publicApps.map(a => ({ id: a.id, name: a.name, icon: a.icon, description: a.description })),
+        unlistedApps: unlistedApps.map(a => ({ id: a.id, name: a.name })),
+        inviteApps: inviteApps.map(a => ({ id: a.id, name: a.name, allowedUsers: a.allowedUsers })),
         roomId: profile.roomId,
         updated: new Date().toISOString()
       };
 
-      // Static HTML profile page
+      // Static HTML profile page — shows only public apps
+      const appCards = publicApps.map(a => {
+        const icon = a.icon || a.name[0];
+        const color = a.color || '#1a1a2e';
+        return `<div class="app-card"><div class="app-icon" style="background:${color}">${icon}</div><div class="app-info"><div class="app-name">${a.name}</div><div class="app-desc">${a.description || ''}</div></div></div>`;
+      }).join('');
+      const socialLinks = (profile.links || []).map(l => `<a class="social-link" href="${l.url}" target="_blank">${l.label || l.url}</a>`).join('');
       const html = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>${profile.name || 'PulseOS'} — PulseOS Profile</title>
+<meta property="og:title" content="${profile.name || 'PulseOS User'}" />
+<meta property="og:description" content="${profile.bio || 'PulseOS Profile'}" />
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0d0d14;color:#e0e0e0;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
-.card{background:#13131f;border:1px solid #2a2a3e;border-radius:16px;padding:32px;max-width:400px;width:100%;text-align:center}
-.avatar{font-size:48px;margin-bottom:12px}
-h1{font-size:24px;margin-bottom:4px}
-.handle{color:#4ecdc4;font-size:14px;margin-bottom:12px}
-.bio{color:#888;font-size:13px;margin-bottom:20px}
-.apps{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:20px}
-.app{background:#1a1a2e;padding:4px 10px;border-radius:12px;font-size:11px;color:#aaa;border:1px solid #2a2a3e}
-.badge{background:#4ecdc4;color:#0d0d14;padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;display:inline-block;text-decoration:none}
-.footer{margin-top:16px;font-size:10px;color:#555}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0d0d14;color:#e0e0e0;min-height:100vh;padding:20px;display:flex;justify-content:center}
+.profile{max-width:500px;width:100%;padding-top:40px}
+.header{text-align:center;margin-bottom:24px}
+.avatar{font-size:56px;margin-bottom:8px}
+h1{font-size:22px;margin-bottom:2px}
+.handle{color:#4ecdc4;font-size:13px;margin-bottom:8px}
+.bio{color:#888;font-size:13px;line-height:1.5;margin-bottom:16px}
+.social-links{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:24px}
+.social-link{color:#4ecdc4;font-size:12px;text-decoration:none;background:#1a1a2e;padding:4px 12px;border-radius:12px;border:1px solid #2a2a3e}
+.social-link:hover{border-color:#4ecdc4}
+.section-title{font-size:12px;text-transform:uppercase;letter-spacing:0.1em;color:#666;margin-bottom:12px;font-weight:600}
+.app-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
+.app-card{display:flex;align-items:center;gap:12px;background:#13131f;border:1px solid #2a2a3e;border-radius:10px;padding:12px}
+.app-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0}
+.app-info{overflow:hidden}
+.app-name{font-size:13px;font-weight:600;margin-bottom:2px}
+.app-desc{font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.footer{text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #1a1a2e}
+.footer a{color:#4ecdc4;text-decoration:none;font-size:12px;font-weight:600}
+.stats{display:flex;gap:16px;justify-content:center;margin-bottom:24px}
+.stat{text-align:center}
+.stat-val{font-size:18px;font-weight:700;color:#4ecdc4}
+.stat-label{font-size:10px;color:#666;text-transform:uppercase}
 </style></head><body>
-<div class="card">
+<div class="profile">
+<div class="header">
 <div class="avatar">${profile.avatar || '>'}</div>
 <h1>${profile.name || 'Anonymous'}</h1>
 <div class="handle">@${profile.handle || 'pulse-user'}</div>
 <div class="bio">${profile.bio || ''}</div>
-<div class="apps">${appList.slice(0, 12).map(a => `<span class="app">${a.name}</span>`).join('')}</div>
-<a class="badge" href="https://github.com/NastyFFM/PulseOS">PulseOS</a>
-<div class="footer">${appList.length} Apps installed</div>
-</div></body></html>`;
+</div>
+${socialLinks ? `<div class="social-links">${socialLinks}</div>` : ''}
+<div class="stats">
+<div class="stat"><div class="stat-val">${publicApps.length}</div><div class="stat-label">Public Apps</div></div>
+<div class="stat"><div class="stat-val">${enrichedApps.length}</div><div class="stat-label">Total Apps</div></div>
+</div>
+${publicApps.length > 0 ? `<div class="section-title">Public Apps</div><div class="app-grid">${appCards}</div>` : '<div style="text-align:center;color:#555;font-size:13px;margin:20px 0;">No public apps yet</div>'}
+<div class="footer"><a href="https://github.com/NastyFFM/PulseOS">Powered by PulseOS</a></div>
+</div>
+</body></html>`;
 
       return jsonRes(res, { profile: pulseProfile, html, files: { 'pulse-profile.json': JSON.stringify(pulseProfile, null, 2), 'index.html': html } });
     } catch (e) {
       return jsonRes(res, { error: e.message });
+    }
+  }
+
+  // ── Profile Publish (push to GitHub Pages) ──
+  if (url === '/api/profile/publish' && req.method === 'POST') {
+    const profilePath = path.join(__dirname, 'data', 'profile.json');
+    try {
+      const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+      if (!profile.githubToken) {
+        return jsonRes(res, { ok: false, error: 'Kein GitHub Token. Bitte in Settings hinterlegen.' }, 400);
+      }
+      const handle = profile.handle || 'pulse-user';
+      const repoName = handle + '.github.io';
+      const token = profile.githubToken;
+      const headers = { 'Authorization': 'token ' + token, 'User-Agent': 'PulseOS/1.0', 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+
+      // Generate export data
+      const exportRes = await new Promise((resolve, reject) => {
+        const r = require('http').get('http://localhost:' + PORT + '/api/profile/export', resp => {
+          let d = ''; resp.on('data', c => d += c); resp.on('end', () => resolve(JSON.parse(d)));
+        });
+        r.on('error', reject);
+      });
+      if (!exportRes.files) return jsonRes(res, { ok: false, error: 'Export failed' }, 500);
+
+      // Check if repo exists, create if not
+      const ghApi = (path, method, body) => new Promise((resolve, reject) => {
+        const opts = { hostname: 'api.github.com', path, method: method || 'GET', headers };
+        const req2 = require('https').request(opts, resp => {
+          let d = ''; resp.on('data', c => d += c); resp.on('end', () => resolve({ status: resp.statusCode, data: d ? JSON.parse(d) : {} }));
+        });
+        req2.on('error', reject);
+        if (body) req2.write(JSON.stringify(body));
+        req2.end();
+      });
+
+      // Get authenticated user
+      const userResp = await ghApi('/user');
+      const ghUser = userResp.data.login;
+      if (!ghUser) return jsonRes(res, { ok: false, error: 'GitHub Token ungültig' }, 401);
+
+      // Check/create repo
+      const repoResp = await ghApi('/repos/' + ghUser + '/' + repoName);
+      if (repoResp.status === 404) {
+        await ghApi('/user/repos', 'POST', { name: repoName, description: 'PulseOS Profile — ' + (profile.name || handle), homepage: 'https://' + ghUser + '.github.io', auto_init: true, private: false });
+        // Wait for repo creation
+        await new Promise(r => setTimeout(r, 2000));
+      }
+
+      // Push files using Contents API
+      const pushFile = async (filePath, content) => {
+        const encoded = Buffer.from(content).toString('base64');
+        // Check if file exists to get sha
+        const existing = await ghApi('/repos/' + ghUser + '/' + repoName + '/contents/' + filePath);
+        const body = { message: 'Update PulseOS profile', content: encoded, branch: 'main' };
+        if (existing.status === 200 && existing.data.sha) body.sha = existing.data.sha;
+        return ghApi('/repos/' + ghUser + '/' + repoName + '/contents/' + filePath, 'PUT', body);
+      };
+
+      const r1 = await pushFile('index.html', exportRes.files['index.html']);
+      const r2 = await pushFile('pulse-profile.json', exportRes.files['pulse-profile.json']);
+
+      const pagesUrl = 'https://' + ghUser + '.github.io';
+      // Save last publish time
+      profile.lastPublished = new Date().toISOString();
+      profile.pagesUrl = pagesUrl;
+      fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2));
+
+      broadcast('dashboard', { type: 'profile-published', url: pagesUrl });
+      return jsonRes(res, { ok: true, url: pagesUrl, repo: ghUser + '/' + repoName, files: ['index.html', 'pulse-profile.json'] });
+    } catch (e) {
+      return jsonRes(res, { ok: false, error: e.message }, 500);
     }
   }
 

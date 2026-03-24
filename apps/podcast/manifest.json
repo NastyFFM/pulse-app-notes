@@ -6,5 +6,7 @@
   "nodeType": null,
   "inputs": [],
   "outputs": [],
-  "pulseSubscriptions": []
+  "pulseSubscriptions": [],
+  "visibility": "private",
+  "allowedUsers": []
 }
