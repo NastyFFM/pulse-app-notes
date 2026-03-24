@@ -2594,16 +2594,35 @@ async function loadChatHistory() {
   } catch {}
 }
 
+let lastSentText = '', lastSentTime = 0;
 function renderChatMsg(msg) {
   if (renderedMsgIds.has(msg.id)) return;
   renderedMsgIds.add(msg.id);
+  // Dedupe: skip SSE echo of message we already rendered locally
+  if (msg.from === 'user' && msg.text === lastSentText && Date.now() - lastSentTime < 10000 && msg.id.startsWith('m-')) {
+    return;
+  }
   // Hide typing indicator when agent responds
   if (msg.from !== 'user') hideTypingIndicator();
   const msgs = document.getElementById('systemChatMessages');
   if (!msgs) return;
   if (msgs.querySelector('.chat-empty')) msgs.innerHTML = '';
   const isUser = msg.from === 'user';
-  const txt = msg.text || '';
+  let txt = msg.text || '';
+  // Parse and execute ACTION tags from PulseOS agent
+  if (!isUser && txt.includes('[ACTION:')) {
+    const actionMatch = txt.match(/\[ACTION:open:([a-zA-Z0-9_-]+)\]/g);
+    if (actionMatch) {
+      actionMatch.forEach(tag => {
+        const appId = tag.match(/\[ACTION:open:([a-zA-Z0-9_-]+)\]/)[1];
+        const app = (state && state.apps || []).find(a => a.id === appId);
+        if (app) openApp(app);
+        else console.warn('[ACTION] App not found:', appId);
+      });
+      txt = txt.replace(/\[ACTION:open:[a-zA-Z0-9_-]+\]/g, '').trim();
+    }
+    if (!txt) txt = 'Erledigt ✓';
+  }
   const isProactive = !isUser && /^[\u2600-\u26FF\u{1F300}-\u{1F9FF}]/u.test(txt);
   const sourceIcon = msg.source === 'telegram' ? '\u2708' : '\u25b8';
   const fromLabel = isUser ? (userProfile?.name || 'Du') : (msg.source === 'pulseos' ? 'PulseOS' : 'ClaudeOS');
@@ -2661,6 +2680,10 @@ function hideTypingIndicator() {
 async function sendToAgent(text) {
   const targets = activeChatTarget === 'group' ? ['claudeos', 'pulseos'] : [activeChatTarget];
   let anyOk = false;
+  // Render user message immediately and track text to dedupe SSE echo
+  const localMsgId = 'local-' + Date.now();
+  renderChatMsg({ id: localMsgId, from: 'user', text, source: targets.includes('pulseos') ? 'pulseos' : 'dashboard' });
+  lastSentText = text; lastSentTime = Date.now();
   showTypingIndicator();
 
   for (const target of targets) {

@@ -2113,24 +2113,53 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
         const { message, source, skipMirror } = JSON.parse(b);
         if (!message) { res.writeHead(400); return res.end(JSON.stringify({ error: 'message required' })); }
 
-        // Mirror to chat history
+        // Mirror to chat history (mark as pulseos-targeted so ClaudeOS doesn't respond)
         if (!skipMirror) {
           const histFile = path.join(ROOT, 'data', 'chat-history.json');
           const hist = safeReadJSON(histFile, '{"messages":[]}');
           if (!hist.messages) hist.messages = [];
-          const histMsg = { id: 'm-' + Date.now(), from: 'user', text: message, source: 'dashboard', time: new Date().toISOString() };
+          const histMsg = { id: 'm-' + Date.now(), from: 'user', text: message, source: 'pulseos', time: new Date().toISOString() };
           hist.messages.push(histMsg);
           if (hist.messages.length > 200) hist.messages = hist.messages.slice(-200);
           fs.writeFileSync(histFile, JSON.stringify(hist, null, 2));
           broadcast('dashboard', { type: 'chat-message', message: histMsg });
         }
 
+        // Build context: chat history + app list
+        const histFile0 = path.join(ROOT, 'data', 'chat-history.json');
+        const hist0 = safeReadJSON(histFile0, '{"messages":[]}');
+        const recent = (hist0.messages || []).slice(-15).map(m => `${m.from === 'agent' ? 'PulseOS' : 'User'}: ${m.text}`).join('\n');
+
+        // Get app list for context
+        const appsFile = path.join(ROOT, 'data', 'apps.json');
+        const appsData = safeReadJSON(appsFile, '{"apps":[]}');
+        const appList = (appsData.apps || []).map(a => a.id).join(', ');
+
         // Spawn claude -p to respond (async, non-blocking)
         const { spawn: spawnProc } = require('child_process');
-        const systemPrompt = 'Du bist PulseOS, ein lokaler AI-Assistent. Du kannst Apps steuern und Daten lesen/schreiben auf localhost:3000. Antworte kurz und hilfreich auf Deutsch. API-Basis: GET/PUT /app/{id}/api/{name} fuer App-Daten.';
+        const systemPrompt = `Du bist PulseOS, der lokale AI-Assistent des PulseOS Desktop-OS.
+
+DEINE FÄHIGKEITEN:
+- Apps öffnen: Antworte mit [ACTION:open:appId] (z.B. [ACTION:open:notes])
+- Daten lesen: Nutze curl um App-Daten zu lesen (curl http://localhost:3000/app/{id}/api/{name})
+- Daten schreiben: Nutze curl -X PUT um Daten zu speichern
+- Nach dem Schreiben: curl -X POST http://localhost:3000/api/notify-change -H 'Content-Type: application/json' -d '{"appId":"...","file":"...json"}'
+
+INSTALLIERTE APPS: ${appList}
+
+REGELN:
+- Antworte kurz und hilfreich auf Deutsch
+- Wenn der User eine App öffnen will, füge [ACTION:open:appId] in deine Antwort ein
+- Wenn der User Daten lesen will, lies sie via curl und fasse zusammen
+- Wenn der User Daten ändern will, schreibe sie via curl PUT und bestätige
+- API-Muster: GET/PUT http://localhost:3000/app/{id}/api/{name}
+
+CHAT-VERLAUF:
+${recent}`;
+
         const claudePath = process.env.CLAUDE_PATH || '/Users/chris.pohl/.bun/bin/claude';
-        const claude = spawnProc(claudePath, ['-p', '--append-system-prompt', systemPrompt, message], {
-          timeout: 60000,
+        const claude = spawnProc(claudePath, ['-p', '--allowedTools', 'Bash', '--append-system-prompt', systemPrompt, message], {
+          timeout: 120000,
           env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin:/Users/chris.pohl/.bun/bin' }
         });
 
