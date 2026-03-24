@@ -1337,6 +1337,8 @@ function connectSSE() {
   if (sse) sse.close();
   sse = new EventSource('/sse/dashboard');
   sse.onmessage = e => {
+    sseLastEvent = Date.now();
+    setSyncStatus('live');
     if (e.data === 'connected') return;
     try {
       const msg = JSON.parse(e.data);
@@ -1373,8 +1375,17 @@ function connectSSE() {
     } catch {}
     load();
   };
+  sse.onopen = () => { setSyncStatus('live'); sseLastEvent = Date.now(); };
   sse.onerror = () => { setSyncStatus('error'); setTimeout(connectSSE, 5000); };
 }
+// SSE heartbeat: if no event received in 60s, reconnect
+let sseLastEvent = Date.now();
+setInterval(() => {
+  if (Date.now() - sseLastEvent > 60000 && sse) {
+    console.warn('[SSE] No events in 60s, reconnecting...');
+    connectSSE();
+  }
+}, 15000);
 
 // ── Pulse SSE ──
 let pulseSSE = null;

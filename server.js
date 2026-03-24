@@ -1015,6 +1015,14 @@ function broadcast(scope, data) {
   for (const res of set) { try { res.write(msg); } catch { set.delete(res); } }
 }
 
+// SSE heartbeat: send ping every 30s to keep connections alive
+setInterval(() => {
+  for (const [scope, set] of sseClients) {
+    const ping = `data: ${JSON.stringify({ type: 'heartbeat', time: Date.now() })}\n\n`;
+    for (const res of set) { try { res.write(ping); } catch { set.delete(res); } }
+  }
+}, 30000);
+
 const watchers = new Set();
 function ensureWatcher(scope) {
   if (watchers.has(scope)) return;
