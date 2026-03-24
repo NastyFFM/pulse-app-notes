@@ -6031,6 +6031,33 @@ h1{font-size:24px;margin-bottom:4px}
     }
   }
 
+  // PulseOS Search — find other PulseOS users via GitHub
+  if (url === '/api/pulse-search' && req.method === 'GET') {
+    const query = new URL(req.url, 'http://localhost').searchParams.get('q') || 'pulse-profile.json';
+    try {
+      const https = require('https');
+      const searchUrl = `https://api.github.com/search/code?q=${encodeURIComponent(query + ' filename:pulse-profile.json')}&per_page=10`;
+      const ghReq = https.get(searchUrl, { headers: { 'User-Agent': 'PulseOS/1.0', Accept: 'application/vnd.github.v3+json' } }, (ghRes) => {
+        let body = '';
+        ghRes.on('data', c => body += c);
+        ghRes.on('end', () => {
+          try {
+            const data = JSON.parse(body);
+            const results = (data.items || []).map(item => ({
+              repo: item.repository?.full_name,
+              owner: item.repository?.owner?.login,
+              url: item.html_url,
+              pagesUrl: item.repository?.owner?.login ? `https://${item.repository.owner.login}.github.io` : null
+            }));
+            jsonRes(res, { results, total: data.total_count || 0 });
+          } catch { jsonRes(res, { results: [], error: 'Parse error' }); }
+        });
+      });
+      ghReq.on('error', () => jsonRes(res, { results: [], error: 'GitHub API error' }));
+    } catch (e) { jsonRes(res, { results: [], error: e.message }); }
+    return;
+  }
+
   if (url === '/api/profile/onboarding') {
     if (req.method === 'GET') {
       const profilePath = path.join(__dirname, 'data', 'profile.json');
