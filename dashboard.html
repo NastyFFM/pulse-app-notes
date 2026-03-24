@@ -340,6 +340,26 @@ body {
   flex-shrink: 0;
 }
 
+.agent-badge {
+  background: #e74c3c;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  margin-left: auto;
+  animation: pulse-badge 1.5s ease-in-out infinite;
+}
+@keyframes pulse-badge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
 .agent-text {
   flex: 1;
   overflow: hidden;
@@ -1154,6 +1174,7 @@ body.mode-builder .home-screen { max-width: 600px; }
   <span class="agent-label">Agent</span>
   <span class="agent-text" id="agentText">bereit</span>
   <span class="agent-time" id="agentTime"></span>
+  <span class="agent-badge" id="agentBadge" style="display:none"></span>
 </div>
 
 <!-- ═══ Home Screen ═══ -->
@@ -2486,6 +2507,35 @@ let systemChatOpen = false;
 let chatHistoryLoaded = false;
 const renderedMsgIds = new Set();
 let activeChatTarget = 'group'; // 'group', 'claudeos', 'pulseos'
+let unreadAgentCount = 0;
+
+function updateAgentBadge() {
+  const badge = document.getElementById('agentBadge');
+  if (!badge) return;
+  if (unreadAgentCount > 0) {
+    badge.textContent = unreadAgentCount;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function notifyNewMessage(text, from) {
+  if (!systemChatOpen) {
+    unreadAgentCount++;
+    updateAgentBadge();
+  }
+  // Browser notification
+  if (Notification.permission === 'granted' && !document.hasFocus()) {
+    new Notification('PulseOS — ' + (from || 'Agent'), { body: text.substring(0, 100), icon: '/favicon.ico', tag: 'pulse-chat' });
+  }
+}
+
+// Request notification permission on first interaction
+document.addEventListener('click', function reqNotif() {
+  if (Notification.permission === 'default') Notification.requestPermission();
+  document.removeEventListener('click', reqNotif);
+}, { once: true });
 
 function toggleSystemChat() {
   systemChatOpen = !systemChatOpen;
@@ -2497,9 +2547,11 @@ function toggleSystemChat() {
     const msgs = document.getElementById('systemChatMessages');
     msgs.scrollTop = msgs.scrollHeight;
     document.getElementById('systemChatInput')?.focus();
-    // Clear alert state when chat is opened
+    // Clear alert state and badge when chat is opened
     document.getElementById('agentBar')?.classList.remove('has-alert');
     if (agentAlertTimeout) { clearTimeout(agentAlertTimeout); agentAlertTimeout = null; }
+    unreadAgentCount = 0;
+    updateAgentBadge();
   }
 }
 
@@ -2640,9 +2692,10 @@ function initChatSSE() {
       const data = JSON.parse(ev.data);
       if (data.type === 'chat-message' && data.message) {
         renderChatMsg(data.message);
-        // Flash agent-bar and show alert text if panel closed
+        // Flash agent-bar, show alert, badge, and browser notification if panel closed
         if (!systemChatOpen) {
           showAgentAlert(data.message.text || 'Neue Nachricht');
+          notifyNewMessage(data.message.text || 'Neue Nachricht', data.message.from === 'agent' ? 'ClaudeOS' : data.message.from);
         }
       }
       if (data.type === 'agent-alert' && data.alert) {
@@ -2748,13 +2801,17 @@ async function refreshAgentPresence() {
       const lastHB = a.lastHeartbeat ? new Date(a.lastHeartbeat).getTime() : 0;
       agentPresence[a.id] = { online: (now - lastHB) < 60000, lastSeen: a.lastHeartbeat };
     });
-    // Update agent-bar dot
+    // Update agent-bar dot and status text
     const dot = document.querySelector('.agent-dot');
+    const agentText = document.getElementById('agentText');
     if (dot) {
       const claudeOnline = agentPresence['claudeos']?.online;
       if (!document.getElementById('agentBar').classList.contains('has-alert')) {
         dot.style.background = claudeOnline ? 'var(--teal)' : '#666';
         dot.style.opacity = claudeOnline ? '1' : '0.4';
+        if (agentText && unreadAgentCount === 0) {
+          agentText.textContent = claudeOnline ? 'ClaudeOS online' : 'Offline';
+        }
       }
     }
     renderContacts();
