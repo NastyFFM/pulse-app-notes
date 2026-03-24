@@ -72,19 +72,34 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
       <div class="card-title">Benutzer</div>
       <div id="profileInfo">
         <div class="info-row"><span class="info-label">Name</span><span class="info-value" id="profileName">--</span></div>
+        <div class="info-row"><span class="info-label">Handle</span><span class="info-value" id="profileHandle">--</span></div>
+        <div class="info-row"><span class="info-label">Bio</span><span class="info-value" id="profileBio">--</span></div>
         <div class="info-row"><span class="info-label">Rolle</span><span class="info-value" id="profileRole">--</span></div>
         <div class="info-row"><span class="info-label">E-Mail</span><span class="info-value" id="profileEmail">--</span></div>
+        <div class="info-row"><span class="info-label">GitHub</span><span class="info-value" id="profileGithub">--</span></div>
+        <div class="info-row"><span class="info-label">Twitter/X</span><span class="info-value" id="profileTwitter">--</span></div>
+        <div class="info-row"><span class="info-label">Website</span><span class="info-value" id="profileWebsite">--</span></div>
       </div>
       <div style="margin-top:12px">
         <button class="btn" onclick="toggleEdit()">Bearbeiten</button>
       </div>
       <div class="profile-form" id="profileForm">
         <label>Name</label>
-        <input type="text" id="editName">
+        <input type="text" id="editName" placeholder="Dein Name">
+        <label>Handle</label>
+        <input type="text" id="editHandle" placeholder="z.B. chris (deine PulseOS-ID)">
+        <label>Bio</label>
+        <input type="text" id="editBio" placeholder="Kurzbeschreibung">
         <label>Rolle</label>
         <input type="text" id="editRole">
         <label>E-Mail</label>
         <input type="email" id="editEmail">
+        <label>GitHub Username</label>
+        <input type="text" id="editGithub" placeholder="z.B. NastyFFM">
+        <label>Twitter/X</label>
+        <input type="text" id="editTwitter" placeholder="@handle">
+        <label>Website</label>
+        <input type="text" id="editWebsite" placeholder="https://...">
         <div style="margin-top:12px;display:flex;gap:8px">
           <button class="btn primary" onclick="saveProfile()">Speichern</button>
           <button class="btn" onclick="toggleEdit()">Abbrechen</button>
@@ -250,8 +265,13 @@ async function loadProfile() {
 
 function renderProfile() {
   document.getElementById('profileName').textContent = profile.name || '--';
+  document.getElementById('profileHandle').textContent = profile.handle || '--';
+  document.getElementById('profileBio').textContent = profile.bio || '--';
   document.getElementById('profileRole').textContent = profile.role || '--';
   document.getElementById('profileEmail').textContent = profile.email || '--';
+  document.getElementById('profileGithub').textContent = profile.github || '--';
+  document.getElementById('profileTwitter').textContent = profile.twitter || '--';
+  document.getElementById('profileWebsite').textContent = profile.website || '--';
 }
 
 async function loadAppCount() {
@@ -278,15 +298,25 @@ function toggleEdit() {
   const active = form.classList.toggle('active');
   if (active) {
     document.getElementById('editName').value = profile.name || '';
+    document.getElementById('editHandle').value = profile.handle || '';
+    document.getElementById('editBio').value = profile.bio || '';
     document.getElementById('editRole').value = profile.role || '';
     document.getElementById('editEmail').value = profile.email || '';
+    document.getElementById('editGithub').value = profile.github || '';
+    document.getElementById('editTwitter').value = profile.twitter || '';
+    document.getElementById('editWebsite').value = profile.website || '';
   }
 }
 
 async function saveProfile() {
   profile.name = document.getElementById('editName').value;
+  profile.handle = document.getElementById('editHandle').value;
+  profile.bio = document.getElementById('editBio').value;
   profile.role = document.getElementById('editRole').value;
   profile.email = document.getElementById('editEmail').value;
+  profile.github = document.getElementById('editGithub').value;
+  profile.twitter = document.getElementById('editTwitter').value;
+  profile.website = document.getElementById('editWebsite').value;
   try {
     await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) });
   } catch (e) { console.error('Save error:', e); }

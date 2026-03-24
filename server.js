@@ -4,9 +4,9 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || '3000', 10);
 const ROOT = __dirname;
-const USERDATA = path.join(ROOT, 'userdata');
+const USERDATA = process.env.USERDATA ? path.resolve(process.env.USERDATA) : path.join(ROOT, 'userdata');
 
 // Ensure userdata directories exist
 ['apps', 'data', 'graphs'].forEach(d => {
@@ -6116,9 +6116,12 @@ Regeln:
         handle: profile.handle,
         avatar: profile.avatar,
         bio: profile.bio,
+        github: profile.github || '',
+        twitter: profile.twitter || '',
+        website: profile.website || '',
         links: profile.links || [],
         apps: enrichedApps.length,
-        publicApps: publicApps.map(a => ({ id: a.id, name: a.name, icon: a.icon, description: a.description })),
+        publicApps: publicApps.map(a => ({ id: a.id, name: a.name, icon: a.icon, description: a.description, installUrl: `${profile.github || 'user'}/pulse-app-${a.id}` })),
         unlistedApps: unlistedApps.map(a => ({ id: a.id, name: a.name })),
         inviteApps: inviteApps.map(a => ({ id: a.id, name: a.name, allowedUsers: a.allowedUsers })),
         roomId: profile.roomId,
@@ -6129,9 +6132,15 @@ Regeln:
       const appCards = publicApps.map(a => {
         const icon = a.icon || a.name[0];
         const color = a.color || '#1a1a2e';
-        return `<div class="app-card"><div class="app-icon" style="background:${color}">${icon}</div><div class="app-info"><div class="app-name">${a.name}</div><div class="app-desc">${a.description || ''}</div></div></div>`;
+        const ghUser = profile.github || 'user';
+        return `<div class="app-card"><div class="app-icon" style="background:${color}">${icon}</div><div class="app-info"><div class="app-name">${a.name}</div><div class="app-desc">${a.description || ''}</div></div><button class="install-btn" onclick="copyInstall('${ghUser}/pulse-app-${a.id}')">Install</button></div>`;
       }).join('');
-      const socialLinks = (profile.links || []).map(l => `<a class="social-link" href="${l.url}" target="_blank">${l.label || l.url}</a>`).join('');
+      const socialArr = [];
+      if (profile.github) socialArr.push({ label: 'GitHub', url: `https://github.com/${profile.github}` });
+      if (profile.twitter) socialArr.push({ label: 'Twitter/X', url: `https://x.com/${profile.twitter.replace('@','')}` });
+      if (profile.website) socialArr.push({ label: 'Website', url: profile.website.startsWith('http') ? profile.website : `https://${profile.website}` });
+      (profile.links || []).forEach(l => socialArr.push(l));
+      const socialLinks = socialArr.map(l => `<a class="social-link" href="${l.url}" target="_blank">${l.label || l.url}</a>`).join('');
       const html = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>${profile.name || 'PulseOS'} — PulseOS Profile</title>
@@ -6158,6 +6167,10 @@ h1{font-size:22px;margin-bottom:2px}
 .app-desc{font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .footer{text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #1a1a2e}
 .footer a{color:#4ecdc4;text-decoration:none;font-size:12px;font-weight:600}
+.install-btn{background:#4ecdc4;color:#0d0d14;border:none;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0}
+.install-btn:hover{opacity:.85}
+.install-btn.copied{background:#22c55e}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid #4ecdc4;color:#4ecdc4;padding:8px 20px;border-radius:8px;font-size:12px;display:none;z-index:999}
 .stats{display:flex;gap:16px;justify-content:center;margin-bottom:24px}
 .stat{text-align:center}
 .stat-val{font-size:18px;font-weight:700;color:#4ecdc4}
@@ -6178,6 +6191,16 @@ ${socialLinks ? `<div class="social-links">${socialLinks}</div>` : ''}
 ${publicApps.length > 0 ? `<div class="section-title">Public Apps</div><div class="app-grid">${appCards}</div>` : '<div style="text-align:center;color:#555;font-size:13px;margin:20px 0;">No public apps yet</div>'}
 <div class="footer"><a href="https://github.com/NastyFFM/PulseOS">Powered by PulseOS</a></div>
 </div>
+<div class="toast" id="toast">Install-ID kopiert! Füge sie in deinem PulseOS Launcher ein.</div>
+<script>
+function copyInstall(repo) {
+  navigator.clipboard.writeText(repo).then(() => {
+    const t = document.getElementById('toast');
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3000);
+  }).catch(() => prompt('Install-ID kopieren:', repo));
+}
+</script>
 </body></html>`;
 
       return jsonRes(res, { profile: pulseProfile, html, files: { 'pulse-profile.json': JSON.stringify(pulseProfile, null, 2), 'index.html': html } });
