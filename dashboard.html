@@ -1245,14 +1245,7 @@ body.mode-builder .home-screen { max-width: 600px; }
 
     <div class="topbar-peers" id="topbarPeers"></div>
 
-    <div class="mode-group">
-      <button class="mode-btn active" id="modeFlow" onclick="setMode('flow')">Flow</button>
-      <button class="mode-btn" id="modeCockpit" onclick="setMode('cockpit')">Cockpit</button>
-      <button class="mode-btn" id="modeBuilder" onclick="setMode('builder')">Builder</button>
-    </div>
-
     <button class="topbar-btn" id="tunnelBtn" onclick="toggleTunnel()" title="Share">Share</button>
-    <button class="topbar-btn" id="fsBtn" onclick="toggleFullscreen()" title="Fullscreen">F</button>
     <button class="topbar-btn" id="themeBtn" onclick="cycleTheme()" title="Theme wechseln">◑</button>
 
     <span class="topbar-clock" id="clock"></span>
@@ -1440,13 +1433,18 @@ function connectSSE() {
           try { w.el.querySelector('iframe').contentWindow.postMessage({ type: 'data-changed', appId: msg.appId, file: msg.file }, '*'); } catch {}
         });
         const appName = (state.apps || []).find(a => a.id === msg.appId)?.name || msg.appId;
-        addFeed(appName + ' aktualisiert', 'sse');
+        const fileName = (msg.file || '').replace('.json', '');
+        addFeed(appName + ': ' + (fileName || 'Daten') + ' geändert', 'sse');
         loadQuickStats();
       } else if (msg.type === 'chat-message' && msg.message) {
         renderChatMsg(msg.message);
         if (!systemChatOpen) {
           showAgentAlert(msg.message.text || 'Neue Nachricht');
           notifyNewMessage(msg.message.text || 'Neue Nachricht', msg.message.from === 'agent' ? 'ClaudeOS' : msg.message.from);
+        }
+        if (msg.message.from === 'agent') {
+          const preview = (msg.message.text || '').substring(0, 40);
+          addFeed('ClaudeOS: ' + preview + (preview.length >= 40 ? '...' : ''), 'chat');
         }
       } else if (msg.type === 'agent-alert' && msg.alert) {
         showAgentAlert(msg.alert.text);
@@ -2245,7 +2243,7 @@ function addFeed(text, type) {
   const now = new Date();
   feed.unshift({ text, type, time: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) });
   if (feed.length > 50) feed.length = 50;
-  const icon = type === 'error' ? '!' : type === 'mutation' ? '*' : type === 'sse' ? '~' : '.';
+  const icon = type === 'error' ? '!' : type === 'mutation' ? '*' : type === 'sse' ? '~' : type === 'chat' ? '>' : type === 'install' ? '+' : type === 'create' ? '+' : '.';
   addPulseEntry(icon, text, type === 'error' ? 'error' : 'success');
 }
 
