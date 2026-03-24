@@ -1,0 +1,10 @@
+{
+  "name": "Habit Tracker",
+  "icon": "H",
+  "color": "#59df34",
+  "description": "Gewohnheiten tracken mit Streak-Grid",
+  "nodeType": null,
+  "inputs": [],
+  "outputs": [],
+  "pulseSubscriptions": []
+}
