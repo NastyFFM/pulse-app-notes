@@ -1579,6 +1579,24 @@ const server = http.createServer(async (req, res) => {
     return jsonRes(res, { messages });
   }
 
+  // ── Agent Memory ──
+  if (url === '/api/agent-memory' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const memories = JSON.parse(b);
+        const memFile = path.join(ROOT, 'data', 'agent-memory.json');
+        fs.writeFileSync(memFile, JSON.stringify(memories, null, 2));
+        broadcast('dashboard', { type: 'memory-update', memories });
+        jsonRes(res, { ok: true });
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+    });
+  }
+  if (url === '/api/agent-memory' && req.method === 'GET') {
+    const memFile = path.join(ROOT, 'data', 'agent-memory.json');
+    const mem = JSON.parse(safeReadJSON(memFile, '{"facts":[],"goals":[]}'));
+    return jsonRes(res, mem);
+  }
+
   // ── Activity Summary ──
   if (url === '/api/activity-summary' && req.method === 'GET') {
     const daysParam = parseInt(new URL(req.url, 'http://localhost').searchParams.get('days') || '7');

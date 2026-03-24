@@ -1,0 +1,29 @@
+{
+  "facts": [
+    {
+      "id": 1,
+      "content": "Chris ist Fullstack-Entwickler in Frankfurt"
+    },
+    {
+      "id": 2,
+      "content": "Arbeitet an PulseOS, einem Browser-basierten Agentic OS"
+    },
+    {
+      "id": 3,
+      "content": "Bevorzugt vanilla JS, kein npm"
+    }
+  ],
+  "goals": [
+    {
+      "id": 1,
+      "content": "PulseOS v1.0 Release",
+      "deadline": "2026-04-15"
+    },
+    {
+      "id": 2,
+      "content": "Cross-Instance Graphen implementieren",
+      "deadline": null
+    }
+  ],
+  "synced": "2026-03-24T02:15:00Z"
+}

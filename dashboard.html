@@ -1211,6 +1211,7 @@ body.mode-builder .home-screen { max-width: 600px; }
   <div class="chat-tabs">
     <div class="chat-tab active" id="tabChat" onclick="switchSysChatTab('chat')">Chat</div>
     <div class="chat-tab" id="tabContacts" onclick="switchSysChatTab('contacts')">Kontakte <span id="contactCount" style="opacity:0.4;"></span></div>
+    <div class="chat-tab" id="tabMemory" onclick="switchSysChatTab('memory')">Memory</div>
   </div>
   <div id="sysChatView" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
     <div class="chat-messages" id="systemChatMessages">
@@ -1225,6 +1226,9 @@ body.mode-builder .home-screen { max-width: 600px; }
     <div class="contacts-list" id="contactsList">
       <div class="contacts-empty">Noch keine Kontakte.</div>
     </div>
+  </div>
+  <div id="sysMemoryView" style="display:none;flex-direction:column;flex:1;overflow:auto;padding:8px;gap:8px;">
+    <div id="memoryContent" style="font-size:11px;color:var(--text-dim);">Lade Memories...</div>
   </div>
 </div>
 
@@ -2435,6 +2439,33 @@ function checkMorningBriefing() {
 }
 setTimeout(checkMorningBriefing, 2000);
 
+// ── Memory UI ──
+async function loadMemoryUI() {
+  const el = document.getElementById('memoryContent');
+  if (!el) return;
+  try {
+    const r = await fetch('/api/agent-memory');
+    const mem = await r.json();
+    let html = '';
+    if (mem.goals?.length > 0) {
+      html += '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--teal);font-weight:600;margin-bottom:4px;">Goals</div>';
+      html += mem.goals.map(g => {
+        const dl = g.deadline ? ' <span style="opacity:0.5;">bis ' + new Date(g.deadline).toLocaleDateString('de-DE') + '</span>' : '';
+        return '<div style="padding:4px 8px;background:var(--bg-card);border-radius:6px;margin-bottom:3px;">&#127919; ' + esc(g.content) + dl + '</div>';
+      }).join('');
+    }
+    if (mem.facts?.length > 0) {
+      html += '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);font-weight:600;margin:8px 0 4px;">Facts</div>';
+      html += mem.facts.map(f => '<div style="padding:4px 8px;background:var(--bg-card);border-radius:6px;margin-bottom:3px;">&#128161; ' + esc(f.content) + '</div>').join('');
+    }
+    if (!html) html = '<div style="opacity:0.5;text-align:center;padding:20px;">Noch keine Memories gespeichert.</div>';
+    if (mem.synced) html += '<div style="font-size:9px;opacity:0.3;text-align:center;margin-top:8px;">Synced: ' + new Date(mem.synced).toLocaleString('de-DE') + '</div>';
+    el.innerHTML = html;
+  } catch {
+    el.innerHTML = '<div style="opacity:0.5;text-align:center;padding:20px;">Memory nicht verfuegbar.</div>';
+  }
+}
+
 let agentAlertTimeout = null;
 function showAgentAlert(text) {
   const bar = document.getElementById('agentBar');
@@ -2455,8 +2486,11 @@ function showAgentAlert(text) {
 function switchSysChatTab(tab) {
   document.getElementById('sysChatView').style.display = tab === 'chat' ? 'flex' : 'none';
   document.getElementById('sysContactsView').style.display = tab === 'contacts' ? 'flex' : 'none';
+  document.getElementById('sysMemoryView').style.display = tab === 'memory' ? 'flex' : 'none';
   document.getElementById('tabChat').classList.toggle('active', tab === 'chat');
   document.getElementById('tabContacts').classList.toggle('active', tab === 'contacts');
+  document.getElementById('tabMemory').classList.toggle('active', tab === 'memory');
+  if (tab === 'memory') loadMemoryUI();
   if (tab === 'contacts') loadContacts();
 }
 
