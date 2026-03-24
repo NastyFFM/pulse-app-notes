@@ -1485,6 +1485,7 @@ function showAppContextMenu(e, app) {
   if (app.source) {
     items.push({ label: 'Update prüfen', action: () => checkAppUpdate(app) });
   }
+  items.push({ label: 'Daten teilen', action: () => shareAppData(app.id, app.name) });
   if (!isSystem) {
     items.push({ label: 'Deinstallieren', action: () => uninstallApp(app), color: '#e74c3c' });
   }
@@ -1599,6 +1600,7 @@ function renderDockWindows() { renderTopbarTabs(); }
 // ── Window Manager ──
 function openApp(app, opts) {
   opts = opts || {};
+  if (window.setActiveAppPresence) window.setActiveAppPresence(app.id);
   const contextId = opts.contextId || null;
   const titleSuffix = opts.titleSuffix || '';
   const matchKey = contextId ? app.id + ':' + contextId : app.id;
@@ -2872,10 +2874,12 @@ function updatePeerBar() {
   const online = Object.values(peers).filter(p => p.online);
   if (online.length === 0 && unreadChatCount === 0) { bar.innerHTML = ''; return; }
   const badge = unreadChatCount > 0 ? '<span style="position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:7px;font-weight:700;min-width:12px;height:12px;border-radius:6px;display:flex;align-items:center;justify-content:center;padding:0 2px;">' + unreadChatCount + '</span>' : '';
-  bar.innerHTML = online.map(p =>
-    '<div class="topbar-peer" onclick="toggleSystemChat();unreadChatCount=0;updatePeerBar();" title="' + (p.name || '?') + '">' + badge +
-    '<span>' + (p.avatar || '>') + '</span><span class="peer-dot"></span></div>'
-  ).join('');
+  bar.innerHTML = online.map(p => {
+    const pingInfo = p.ping ? ' (' + p.ping + 'ms)' : '';
+    const appInfo = p.activeApp ? ' — ' + p.activeApp : '';
+    return '<div class="topbar-peer" onclick="toggleSystemChat();unreadChatCount=0;updatePeerBar();" title="' + (p.name || '?') + appInfo + pingInfo + '">' + badge +
+    '<span>' + (p.avatar || '>') + '</span><span class="peer-dot"></span></div>';
+  }).join('');
   if (online.length === 0 && unreadChatCount > 0) {
     bar.innerHTML = '<div class="topbar-peer" onclick="toggleSystemChat();unreadChatCount=0;updatePeerBar();">' + badge + '!</div>';
   }
@@ -3204,6 +3208,36 @@ function showToast(msg, type) {
       case 'pulse-signal':
         if (data.appId) fetch('/api/pulse/fire/' + data.appId, { method: 'POST' }).catch(() => {});
         break;
+      case 'clipboard':
+        if (data.text) {
+          const peerName = connectedPeers[senderId]?.name || 'Peer';
+          showClipboardReceived(data.text, peerName);
+        }
+        break;
+      case 'app-data-sync':
+        if (data.appId && data.data) {
+          const peerName = connectedPeers[senderId]?.name || 'Peer';
+          showAppDataReceived(data.appId, data.appName || data.appId, data.data, peerName);
+        }
+        break;
+      case 'presence':
+        if (connectedPeers[senderId]) {
+          connectedPeers[senderId].activeApp = data.activeApp || null;
+          connectedPeers[senderId].status = data.status || '';
+          connectedPeers[senderId].lastSeen = Date.now();
+          updatePeerBar();
+        }
+        break;
+      case 'pong':
+        if (data.timestamp && connectedPeers[senderId]) {
+          connectedPeers[senderId].ping = Date.now() - data.timestamp;
+          updatePeerBar();
+        }
+        break;
+    }
+    // Forward to registered app listeners
+    if (pulseEventListeners[data.type]) {
+      pulseEventListeners[data.type].forEach(cb => { try { cb(data, senderId); } catch {} });
     }
   }
 
@@ -3215,6 +3249,92 @@ function showToast(msg, type) {
     if (connectedPeers[targetId]) connectedPeers[targetId].online = false;
     updatePeerBar();
   }
+
+  // Clipboard sharing
+  function showClipboardReceived(text, fromName) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;top:60px;right:20px;background:var(--bg-surface);border:1px solid var(--teal);border-radius:10px;padding:14px;z-index:99999;max-width:320px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:12px;';
+    t.innerHTML = '<div style="font-weight:600;margin-bottom:6px;color:var(--teal);">' + fromName + ' teilt Clipboard</div>' +
+      '<div style="background:var(--bg-card);padding:8px;border-radius:6px;margin-bottom:8px;max-height:80px;overflow:auto;word-break:break-all;">' + text.substring(0, 500) + '</div>' +
+      '<div style="display:flex;gap:6px;justify-content:flex-end;">' +
+      '<button onclick="this.parentElement.parentElement.remove()" style="padding:4px 10px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;">Schließen</button>' +
+      '<button onclick="navigator.clipboard.writeText(\'' + text.replace(/'/g, "\\'").substring(0, 500) + '\');this.textContent=\'Kopiert!\';setTimeout(()=>this.parentElement.parentElement.remove(),800)" style="padding:4px 10px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">Einfügen</button></div>';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 15000);
+  }
+
+  window.shareClipboard = function() {
+    const text = prompt('Text zum Teilen:');
+    if (text) { sendToAllPeers({ type: 'clipboard', text }); showToast('Clipboard geteilt', 'success'); }
+  };
+
+  // App data sharing
+  function showAppDataReceived(appId, appName, data, fromName) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;top:60px;right:20px;background:var(--bg-surface);border:1px solid var(--teal);border-radius:10px;padding:14px;z-index:99999;max-width:320px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:12px;';
+    t.innerHTML = '<div style="font-weight:600;margin-bottom:6px;color:var(--teal);">' + fromName + ' teilt App-Daten</div>' +
+      '<div style="margin-bottom:8px;">' + appName + '</div>' +
+      '<div style="display:flex;gap:6px;justify-content:flex-end;">' +
+      '<button onclick="this.parentElement.parentElement.remove()" style="padding:4px 10px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;">Ablehnen</button>' +
+      '<button onclick="acceptAppData(\'' + appId + '\');this.parentElement.parentElement.remove()" style="padding:4px 10px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">Importieren</button></div>';
+    t._appData = data;
+    t._appId = appId;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 30000);
+  }
+
+  window.acceptAppData = async function(appId) {
+    // Find the toast with the data
+    const toasts = document.querySelectorAll('div[style*="position:fixed"][style*="top:60px"]');
+    let data = null;
+    toasts.forEach(t => { if (t._appId === appId && t._appData) data = t._appData; });
+    if (!data) return;
+    try {
+      // Find data files for this app
+      const keys = Object.keys(data);
+      for (const key of keys) {
+        await fetch('/app/' + appId + '/api/' + key, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data[key]) });
+      }
+      showToast('App-Daten importiert!', 'success');
+    } catch (e) { showToast('Import fehlgeschlagen', 'error'); }
+  };
+
+  window.shareAppData = async function(appId, appName) {
+    try {
+      // Collect all data files for this app
+      const r = await fetch('/app/' + appId + '/api/');
+      // Try common data file names
+      const dataFiles = {};
+      const names = ['notes', 'tasks', 'calendar', 'entries', 'kanban', 'todos', 'stations', 'weather'];
+      for (const name of names) {
+        try {
+          const dr = await fetch('/app/' + appId + '/api/' + name);
+          if (dr.ok) { dataFiles[name] = await dr.json(); }
+        } catch {}
+      }
+      if (Object.keys(dataFiles).length === 0) { showToast('Keine Daten zum Teilen', 'error'); return; }
+      sendToAllPeers({ type: 'app-data-sync', appId, appName: appName || appId, data: dataFiles });
+      showToast(appName + ' Daten geteilt', 'success');
+    } catch (e) { showToast('Teilen fehlgeschlagen', 'error'); }
+  };
+
+  // Presence broadcasting
+  let currentActiveApp = null;
+  window.setActiveAppPresence = function(appId) {
+    currentActiveApp = appId;
+  };
+  setInterval(() => {
+    if (Object.keys(bridgeChannels).length > 0) {
+      sendToAllPeers({ type: 'presence', activeApp: currentActiveApp, status: 'online' });
+      // Ping for latency
+      sendToAllPeers({ type: 'ping', timestamp: Date.now() });
+    }
+  }, 30000);
+
+  // Auto-connect on dashboard load
+  fetch('/api/bridge-room').then(r => r.json()).then(d => {
+    if (d.roomId) window.startBridgeHost(d.roomId);
+  }).catch(() => {});
 
   window.PulseOS = {
     send: (peerId, type, data) => peerId === '*' ? sendToAllPeers({ type, ...data, fromProfile: userProfile }) : sendBridgeMsg(peerId, { type, ...data, fromProfile: userProfile }),
