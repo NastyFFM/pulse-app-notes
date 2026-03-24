@@ -2095,24 +2095,52 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
       try {
         const { message, source, skipMirror } = JSON.parse(b);
         if (!message) { res.writeHead(400); return res.end(JSON.stringify({ error: 'message required' })); }
-        const qFile = path.join(ROOT, 'data', 'pulseos-queue.json');
-        const q = JSON.parse(safeReadJSON(qFile, { messages: [] }));
-        if (!q.messages) q.messages = [];
-        const msg = { id: 'pq-' + Date.now(), message, source: source || 'dashboard', time: new Date().toISOString() };
-        q.messages.push(msg);
-        fs.writeFileSync(qFile, JSON.stringify(q, null, 2));
-        // Mirror to chat history (skip in group mode — outbox already mirrors)
+
+        // Mirror to chat history
         if (!skipMirror) {
           const histFile = path.join(ROOT, 'data', 'chat-history.json');
           const hist = JSON.parse(safeReadJSON(histFile, '{"messages":[]}'));
           if (!hist.messages) hist.messages = [];
-          const histMsg = { id: 'm-' + Date.now(), from: 'user', text: message, source: 'dashboard', time: msg.time };
+          const histMsg = { id: 'm-' + Date.now(), from: 'user', text: message, source: 'dashboard', time: new Date().toISOString() };
           hist.messages.push(histMsg);
           if (hist.messages.length > 200) hist.messages = hist.messages.slice(-200);
           fs.writeFileSync(histFile, JSON.stringify(hist, null, 2));
           broadcast('dashboard', { type: 'chat-message', message: histMsg });
         }
-        jsonRes(res, { ok: true, id: msg.id });
+
+        // Spawn claude -p to respond (async, non-blocking)
+        const { spawn: spawnProc } = require('child_process');
+        const systemPrompt = 'Du bist PulseOS, ein lokaler AI-Assistent. Du kannst Apps steuern und Daten lesen/schreiben auf localhost:3000. Antworte kurz und hilfreich auf Deutsch. API-Basis: GET/PUT /app/{id}/api/{name} fuer App-Daten.';
+        const claudePath = process.env.CLAUDE_PATH || '/Users/chris.pohl/.bun/bin/claude';
+        const claude = spawnProc(claudePath, ['-p', '--append-system-prompt', systemPrompt, message], {
+          timeout: 60000,
+          env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin:/Users/chris.pohl/.bun/bin' }
+        });
+
+        console.log('[pulseos-chat] Spawning claude for:', message.substring(0, 50));
+        let output = '';
+        claude.stdout.on('data', d => output += d.toString());
+        claude.stderr.on('data', d => console.log('[pulseos-chat-err]', d.toString().substring(0, 100)));
+        claude.on('close', (code) => {
+          console.log('[pulseos-chat] Claude exited (code ' + code + '), output:', output.substring(0, 100));
+          const responseText = output.trim() || 'Keine Antwort erhalten.';
+          // Save response to chat history
+          const histFile2 = path.join(ROOT, 'data', 'chat-history.json');
+          const hist2 = JSON.parse(safeReadJSON(histFile2, '{"messages":[]}'));
+          if (!hist2.messages) hist2.messages = [];
+          const respMsg = { id: 'm-' + Date.now(), from: 'agent', text: responseText, source: 'pulseos', time: new Date().toISOString() };
+          hist2.messages.push(respMsg);
+          if (hist2.messages.length > 200) hist2.messages = hist2.messages.slice(-200);
+          fs.writeFileSync(histFile2, JSON.stringify(hist2, null, 2));
+          broadcast('dashboard', { type: 'chat-message', message: respMsg });
+        });
+        claude.on('error', (err) => {
+          console.error('[pulseos-chat] Spawn error:', err.message);
+          const errMsg = { id: 'm-' + Date.now(), from: 'agent', text: 'PulseOS Agent nicht verfuegbar.', source: 'pulseos', time: new Date().toISOString() };
+          broadcast('dashboard', { type: 'chat-message', message: errMsg });
+        });
+
+        jsonRes(res, { ok: true, processing: true });
       } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
     });
   }

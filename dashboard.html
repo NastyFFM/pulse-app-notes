@@ -2839,7 +2839,7 @@ function renderContacts() {
   html += contactsCache.filter(c => c.type === 'agent').map(c => {
     const isActive = activeChatTarget === c.id;
     const presence = agentPresence[c.id];
-    const isOnline = presence?.online || false;
+    const isOnline = c.id === 'pulseos' ? true : (presence?.online || false); // PulseOS is always online (it IS the server)
     const statusClass = isOnline ? 'online' : 'offline';
     const statusLabel = isOnline ? 'online' : 'offline';
     return '<div class="contact-item' + (isActive ? ' active' : '') + '" onclick="setChatTarget(\'' + c.id + '\')" style="cursor:pointer;">' +
