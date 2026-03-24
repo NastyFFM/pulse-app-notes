@@ -1579,6 +1579,97 @@ const server = http.createServer(async (req, res) => {
     return jsonRes(res, { messages });
   }
 
+  // ── App Install ──
+  if (url === '/api/apps/install' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { url: repoUrl, id } = JSON.parse(b);
+        if (!repoUrl) { res.writeHead(400); return res.end(JSON.stringify({ error: 'url required' })); }
+
+        // Derive app ID from repo URL or explicit id
+        const appId = id || repoUrl.split('/').pop().replace(/\.git$/, '').replace(/^pulse-app-/, '').toLowerCase();
+        const appDir = path.join(ROOT, 'apps', appId);
+
+        if (fs.existsSync(appDir)) {
+          return jsonRes(res, { ok: false, error: 'App already exists: ' + appId });
+        }
+
+        // Clone repo
+        const gitUrl = repoUrl.startsWith('http') ? repoUrl : `https://github.com/${repoUrl}`;
+        const { execSync } = require('child_process');
+        try {
+          execSync(`git clone --depth 1 ${gitUrl} ${appDir}`, { timeout: 30000 });
+        } catch (e) {
+          return jsonRes(res, { ok: false, error: 'Git clone failed: ' + (e.message || '').substring(0, 100) });
+        }
+
+        // Remove .git dir (we don't need git history)
+        try { execSync(`rm -rf ${path.join(appDir, '.git')}`); } catch {}
+
+        // Read manifest if exists
+        let manifest = { name: appId, icon: appId[0].toUpperCase(), color: '#333', description: '' };
+        const manifestFile = path.join(appDir, 'manifest.json');
+        if (fs.existsSync(manifestFile)) {
+          try { manifest = { ...manifest, ...JSON.parse(fs.readFileSync(manifestFile, 'utf8')) }; } catch {}
+        }
+
+        // Check for index.html
+        if (!fs.existsSync(path.join(appDir, 'index.html'))) {
+          execSync(`rm -rf ${appDir}`);
+          return jsonRes(res, { ok: false, error: 'No index.html found in repo' });
+        }
+
+        // Register in apps.json
+        const appsFile = path.join(ROOT, 'data', 'apps.json');
+        const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+        const apps = appsData.apps || appsData || [];
+        apps.push({
+          id: appId,
+          name: manifest.name || appId,
+          icon: manifest.icon || appId[0].toUpperCase(),
+          color: manifest.color || '#333',
+          description: manifest.description || '',
+          installed: true,
+          source: gitUrl,
+          installedAt: new Date().toISOString(),
+          position: apps.length
+        });
+        if (appsData.apps) appsData.apps = apps;
+        fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+
+        // Invalidate agent-context cache
+        if (typeof agentContextCache !== 'undefined') agentContextCache = null;
+
+        broadcast('dashboard', { type: 'app-installed', appId, name: manifest.name });
+        jsonRes(res, { ok: true, appId, name: manifest.name, message: 'App installed successfully' });
+      } catch (e) { res.writeHead(500); res.end(JSON.stringify({ error: e.message })); }
+    });
+  }
+
+  // Uninstall app
+  if (url.startsWith('/api/apps/') && url.endsWith('/uninstall') && req.method === 'POST') {
+    const appId = url.split('/')[3];
+    const appDir = path.join(ROOT, 'apps', appId);
+    if (!fs.existsSync(appDir)) {
+      return jsonRes(res, { ok: false, error: 'App not found' });
+    }
+    // Only allow uninstalling apps that have a source (installed from GitHub)
+    const appsFile = path.join(ROOT, 'data', 'apps.json');
+    const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+    const apps = appsData.apps || [];
+    const app = apps.find(a => a.id === appId);
+    if (!app?.source) {
+      return jsonRes(res, { ok: false, error: 'Cannot uninstall built-in app' });
+    }
+    // Remove directory and registry entry
+    const { execSync } = require('child_process');
+    try { execSync(`rm -rf ${appDir}`); } catch {}
+    appsData.apps = apps.filter(a => a.id !== appId);
+    fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+    broadcast('dashboard', { type: 'app-uninstalled', appId });
+    return jsonRes(res, { ok: true, message: 'App uninstalled' });
+  }
+
   // ── Agent Memory ──
   if (url === '/api/agent-memory' && req.method === 'POST') {
     return readBody(req, b => {
