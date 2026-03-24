@@ -1366,6 +1366,9 @@ function connectSSE() {
         load();
       } else if (msg.type === 'profile-published') {
         addFeed('Profil publiziert', 'sse');
+      } else if (msg.type === 'bridge-room-changed' && msg.roomId) {
+        window.startBridgeHost(msg.roomId);
+        addFeed('Bridge Room gewechselt', 'sse');
       }
     } catch {}
     load();
@@ -3146,10 +3149,10 @@ function showToast(msg, type) {
     bridgeSocket.on('user-left', ({ userId }) => cleanupBridgePeer(userId));
     bridgeSocket.on('offer', async ({ offer, senderId, roomId }) => {
       const pc = createBridgePeer(senderId, false);
-      try { await pc.setRemoteDescription(offer); const answer = await pc.createAnswer(); await pc.setLocalDescription(answer); bridgeSocket.emit('answer', { roomId, answer, targetId: senderId }); } catch {}
+      try { await pc.setRemoteDescription(offer); const answer = await pc.createAnswer(); await pc.setLocalDescription(answer); bridgeSocket.emit('answer', { roomId, answer, targetId: senderId }); } catch (e) { console.warn('[bridge] Offer handling failed:', e.message); cleanupBridgePeer(senderId); }
     });
-    bridgeSocket.on('answer', async ({ answer, senderId }) => { if (bridgePeers[senderId]) try { await bridgePeers[senderId].setRemoteDescription(answer); } catch {} });
-    bridgeSocket.on('ice-candidate', async ({ candidate, senderId }) => { if (bridgePeers[senderId] && candidate) try { await bridgePeers[senderId].addIceCandidate(candidate); } catch {} });
+    bridgeSocket.on('answer', async ({ answer, senderId }) => { if (bridgePeers[senderId]) try { await bridgePeers[senderId].setRemoteDescription(answer); } catch (e) { console.warn('[bridge] Answer failed:', e.message); cleanupBridgePeer(senderId); } });
+    bridgeSocket.on('ice-candidate', async ({ candidate, senderId }) => { if (bridgePeers[senderId] && candidate) try { await bridgePeers[senderId].addIceCandidate(candidate); } catch (e) { console.warn('[bridge] ICE failed:', e.message); } });
   };
 
   function createBridgePeer(targetId, isInitiator) {
@@ -3159,8 +3162,12 @@ function showToast(msg, type) {
     if (isInitiator) { const dc = pc.createDataChannel('bridge', { ordered: true }); setupBridgeChannel(dc, targetId); }
     pc.ondatachannel = e => setupBridgeChannel(e.channel, targetId);
     pc.onicecandidate = e => { if (e.candidate && bridgeSocket) bridgeSocket.emit('ice-candidate', { roomId: bridgeRoom, candidate: e.candidate, targetId }); };
-    pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' || pc.connectionState === 'closed') cleanupBridgePeer(targetId); };
-    if (isInitiator) pc.createOffer().then(offer => { pc.setLocalDescription(offer); bridgeSocket.emit('offer', { roomId: bridgeRoom, offer, targetId }); }).catch(() => {});
+    pc.onconnectionstatechange = () => {
+      console.log('[bridge] Peer', targetId, 'state:', pc.connectionState);
+      if (pc.connectionState === 'failed') { const name = connectedPeers[targetId]?.name || 'Peer'; showToast('Verbindung zu ' + name + ' verloren', 'error'); cleanupBridgePeer(targetId); }
+      else if (pc.connectionState === 'closed') cleanupBridgePeer(targetId);
+    };
+    if (isInitiator) pc.createOffer().then(offer => { pc.setLocalDescription(offer); bridgeSocket.emit('offer', { roomId: bridgeRoom, offer, targetId }); }).catch(e => { console.warn('[bridge] createOffer failed:', e.message); cleanupBridgePeer(targetId); });
     return pc;
   }
 
@@ -3242,8 +3249,16 @@ function showToast(msg, type) {
     }
   }
 
-  function sendBridgeMsg(targetId, data) { const dc = bridgeChannels[targetId]; if (dc && dc.readyState === 'open') dc.send(JSON.stringify(data)); }
-  function sendToAllPeers(data) { Object.keys(bridgeChannels).forEach(id => sendBridgeMsg(id, data)); }
+  function sendBridgeMsg(targetId, data) {
+    const dc = bridgeChannels[targetId];
+    if (dc && dc.readyState === 'open') { try { dc.send(JSON.stringify(data)); return true; } catch (e) { console.warn('[bridge] Send failed:', e.message); return false; } }
+    return false;
+  }
+  function sendToAllPeers(data) {
+    let sent = 0, failed = 0;
+    Object.keys(bridgeChannels).forEach(id => { if (sendBridgeMsg(id, data)) sent++; else failed++; });
+    return { sent, failed, total: sent + failed };
+  }
   function cleanupBridgePeer(targetId) {
     if (bridgeChannels[targetId]) { try { bridgeChannels[targetId].close(); } catch {} delete bridgeChannels[targetId]; }
     if (bridgePeers[targetId]) { try { bridgePeers[targetId].close(); } catch {} delete bridgePeers[targetId]; }
@@ -3251,37 +3266,98 @@ function showToast(msg, type) {
     updatePeerBar();
   }
 
-  // Clipboard sharing
+  // Clipboard sharing (XSS-safe DOM creation)
   function showClipboardReceived(text, fromName) {
     const t = document.createElement('div');
     t.style.cssText = 'position:fixed;top:60px;right:20px;background:var(--bg-surface);border:1px solid var(--teal);border-radius:10px;padding:14px;z-index:99999;max-width:320px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:12px;';
-    t.innerHTML = '<div style="font-weight:600;margin-bottom:6px;color:var(--teal);">' + fromName + ' teilt Clipboard</div>' +
-      '<div style="background:var(--bg-card);padding:8px;border-radius:6px;margin-bottom:8px;max-height:80px;overflow:auto;word-break:break-all;">' + text.substring(0, 500) + '</div>' +
-      '<div style="display:flex;gap:6px;justify-content:flex-end;">' +
-      '<button onclick="this.parentElement.parentElement.remove()" style="padding:4px 10px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;">Schließen</button>' +
-      '<button onclick="navigator.clipboard.writeText(\'' + text.replace(/'/g, "\\'").substring(0, 500) + '\');this.textContent=\'Kopiert!\';setTimeout(()=>this.parentElement.parentElement.remove(),800)" style="padding:4px 10px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">Einfügen</button></div>';
+    const title = document.createElement('div');
+    title.style.cssText = 'font-weight:600;margin-bottom:6px;color:var(--teal);';
+    title.textContent = fromName + ' teilt Clipboard';
+    const preview = document.createElement('div');
+    preview.style.cssText = 'background:var(--bg-card);padding:8px;border-radius:6px;margin-bottom:8px;max-height:80px;overflow:auto;word-break:break-all;';
+    preview.textContent = text.substring(0, 500);
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;';
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'Schließen';
+    closeBtn.style.cssText = 'padding:4px 10px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;';
+    closeBtn.onclick = () => t.remove();
+    const copyBtn = document.createElement('button');
+    copyBtn.textContent = 'Einfügen';
+    copyBtn.style.cssText = 'padding:4px 10px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;';
+    copyBtn.onclick = () => { navigator.clipboard.writeText(text); copyBtn.textContent = 'Kopiert!'; setTimeout(() => t.remove(), 800); };
+    btnRow.appendChild(closeBtn); btnRow.appendChild(copyBtn);
+    t.appendChild(title); t.appendChild(preview); t.appendChild(btnRow);
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 15000);
   }
 
+  // Clipboard share panel (replaces blocking prompt())
   window.shareClipboard = function() {
-    const text = prompt('Text zum Teilen:');
-    if (text) { sendToAllPeers({ type: 'clipboard', text }); showToast('Clipboard geteilt', 'success'); }
+    let panel = document.getElementById('__clipSharePanel');
+    if (panel) { panel.remove(); return; }
+    panel = document.createElement('div');
+    panel.id = '__clipSharePanel';
+    panel.style.cssText = 'position:fixed;top:60px;right:20px;background:var(--bg-surface);border:1px solid var(--teal);border-radius:10px;padding:14px;z-index:99999;width:300px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:12px;';
+    const title = document.createElement('div');
+    title.style.cssText = 'font-weight:600;margin-bottom:8px;color:var(--teal);';
+    title.textContent = 'Clipboard teilen';
+    const ta = document.createElement('textarea');
+    ta.placeholder = 'Text eingeben oder einfügen...';
+    ta.style.cssText = 'width:100%;height:60px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:8px;resize:vertical;box-sizing:border-box;margin-bottom:8px;';
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;';
+    const pasteBtn = document.createElement('button');
+    pasteBtn.textContent = 'Einfügen';
+    pasteBtn.style.cssText = 'padding:4px 10px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;';
+    pasteBtn.onclick = async () => { try { ta.value = await navigator.clipboard.readText(); } catch {} };
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Abbrechen';
+    cancelBtn.style.cssText = 'padding:4px 10px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;';
+    cancelBtn.onclick = () => panel.remove();
+    const sendBtn = document.createElement('button');
+    sendBtn.textContent = 'Senden';
+    sendBtn.style.cssText = 'padding:4px 10px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;';
+    sendBtn.onclick = () => {
+      if (!ta.value.trim()) return;
+      const result = sendToAllPeers({ type: 'clipboard', text: ta.value.trim() });
+      if (result.sent > 0) showToast('Clipboard an ' + result.sent + ' Peer(s) geteilt', 'success');
+      else showToast('Keine Peers verbunden', 'error');
+      panel.remove();
+    };
+    btnRow.appendChild(pasteBtn); btnRow.appendChild(cancelBtn); btnRow.appendChild(sendBtn);
+    panel.appendChild(title); panel.appendChild(ta); panel.appendChild(btnRow);
+    document.body.appendChild(panel);
+    ta.focus();
   };
 
   // App data sharing — store pending data in a map, not on DOM
   const pendingAppData = {};
 
+  // App data sharing (XSS-safe DOM creation)
   function showAppDataReceived(appId, appName, data, fromName) {
     const dataId = 'share-' + Date.now();
     pendingAppData[dataId] = { appId, data };
     const t = document.createElement('div');
     t.style.cssText = 'position:fixed;top:60px;right:20px;background:var(--bg-surface);border:1px solid var(--teal);border-radius:10px;padding:14px;z-index:99999;max-width:320px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:12px;';
-    t.innerHTML = '<div style="font-weight:600;margin-bottom:6px;color:var(--teal);">' + fromName + ' teilt App-Daten</div>' +
-      '<div style="margin-bottom:8px;">' + appName + ' (' + Object.keys(data).length + ' Dateien)</div>' +
-      '<div style="display:flex;gap:6px;justify-content:flex-end;">' +
-      '<button onclick="delete pendingAppData[\'' + dataId + '\'];this.parentElement.parentElement.remove()" style="padding:4px 10px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;">Ablehnen</button>' +
-      '<button onclick="acceptAppData(\'' + dataId + '\');this.parentElement.parentElement.remove()" style="padding:4px 10px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">Importieren</button></div>';
+    const title = document.createElement('div');
+    title.style.cssText = 'font-weight:600;margin-bottom:6px;color:var(--teal);';
+    title.textContent = fromName + ' teilt App-Daten';
+    const info = document.createElement('div');
+    info.style.cssText = 'margin-bottom:8px;';
+    info.textContent = appName + ' (' + Object.keys(data).length + ' Dateien)';
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;';
+    const rejectBtn = document.createElement('button');
+    rejectBtn.textContent = 'Ablehnen';
+    rejectBtn.style.cssText = 'padding:4px 10px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;';
+    rejectBtn.onclick = () => { delete pendingAppData[dataId]; t.remove(); };
+    const acceptBtn = document.createElement('button');
+    acceptBtn.textContent = 'Importieren';
+    acceptBtn.style.cssText = 'padding:4px 10px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;';
+    acceptBtn.onclick = () => { acceptAppData(dataId); t.remove(); };
+    btnRow.appendChild(rejectBtn); btnRow.appendChild(acceptBtn);
+    t.appendChild(title); t.appendChild(info); t.appendChild(btnRow);
     document.body.appendChild(t);
     setTimeout(() => { t.remove(); delete pendingAppData[dataId]; }, 30000);
   }
@@ -3291,23 +3367,33 @@ function showToast(msg, type) {
     if (!pending) { showToast('Daten nicht mehr verfügbar', 'error'); return; }
     const { appId, data } = pending;
     delete pendingAppData[dataId];
-    try {
-      const keys = Object.keys(data);
-      for (const key of keys) {
-        await fetch('/app/' + appId + '/api/' + key, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data[key]) });
-      }
+    const keys = Object.keys(data);
+    let ok = 0, fail = 0;
+    for (const key of keys) {
+      try {
+        const r = await fetch('/app/' + appId + '/api/' + key, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data[key]) });
+        if (r.ok) ok++; else fail++;
+      } catch { fail++; }
+    }
+    if (ok > 0) {
       await fetch('/api/notify-change', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ appId, file: keys[0] + '.json' }) });
-      showToast('App-Daten importiert!', 'success');
-    } catch (e) { showToast('Import fehlgeschlagen: ' + e.message, 'error'); }
+    }
+    if (fail === 0) showToast(ok + ' Dateien importiert', 'success');
+    else if (ok > 0) showToast(ok + ' importiert, ' + fail + ' fehlgeschlagen', 'error');
+    else showToast('Import komplett fehlgeschlagen', 'error');
   };
 
   window.shareAppData = async function(appId, appName) {
     try {
-      // Collect all data files for this app
-      const r = await fetch('/app/' + appId + '/api/');
-      // Try common data file names
+      // Try to get data file list from app registry, fallback to common names
       const dataFiles = {};
-      const names = ['notes', 'tasks', 'calendar', 'entries', 'kanban', 'todos', 'stations', 'weather'];
+      let names = [];
+      try {
+        const reg = await fetch('/api/app-registry').then(r => r.json());
+        const app = (reg.apps || []).find(a => a.id === appId);
+        if (app && app.dataFiles) names = app.dataFiles.map(f => f.replace('.json', ''));
+      } catch {}
+      if (names.length === 0) names = ['notes', 'tasks', 'calendar', 'entries', 'kanban', 'todos', 'stations', 'weather', appId];
       for (const name of names) {
         try {
           const dr = await fetch('/app/' + appId + '/api/' + name);
@@ -3315,9 +3401,10 @@ function showToast(msg, type) {
         } catch {}
       }
       if (Object.keys(dataFiles).length === 0) { showToast('Keine Daten zum Teilen', 'error'); return; }
-      sendToAllPeers({ type: 'app-data-sync', appId, appName: appName || appId, data: dataFiles });
-      showToast(appName + ' Daten geteilt', 'success');
-    } catch (e) { showToast('Teilen fehlgeschlagen', 'error'); }
+      const result = sendToAllPeers({ type: 'app-data-sync', appId, appName: appName || appId, data: dataFiles });
+      if (result.sent > 0) showToast(appName + ': ' + Object.keys(dataFiles).length + ' Dateien an ' + result.sent + ' Peer(s) geteilt', 'success');
+      else showToast('Keine Peers verbunden', 'error');
+    } catch (e) { showToast('Teilen fehlgeschlagen: ' + e.message, 'error'); }
   };
 
   // Presence broadcasting
