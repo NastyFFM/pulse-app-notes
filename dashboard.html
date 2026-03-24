@@ -1769,6 +1769,29 @@ function toggleLauncher() {
   }
 }
 
+// ── Profile Export ──
+async function exportProfile() {
+  try {
+    const r = await fetch('/api/profile/export');
+    const d = await r.json();
+    if (d.error) { alert('Export fehlgeschlagen: ' + d.error); return; }
+    // Download as ZIP-like: two files
+    for (const [filename, content] of Object.entries(d.files)) {
+      const blob = new Blob([content], { type: filename.endsWith('.json') ? 'application/json' : 'text/html' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+    const modal = document.getElementById('profileModal');
+    if (modal) {
+      const row = modal.querySelector('.btn-row');
+      if (row) { const msg = document.createElement('div'); msg.style.cssText = 'color:var(--green);font-size:11px;margin-top:8px;'; msg.textContent = 'pulse-profile.json + index.html heruntergeladen! Lade sie in dein GitHub Pages Repo hoch.'; row.appendChild(msg); }
+    }
+  } catch { alert('Export fehlgeschlagen'); }
+}
+
 // ── App Install ──
 function showInstallDialog() {
   let modal = document.getElementById('installModal');
@@ -2283,7 +2306,7 @@ function showProfileEdit() {
     '<label>Bio</label><textarea id="pe-bio">' + esc(p.bio) + '</textarea>' +
     '<label>GitHub Pages</label><input id="pe-ghpages" type="url" value="' + esc(p.githubPages) + '">' +
     '<label>Avatar</label><input id="pe-avatar" type="text" value="' + esc(p.avatar || '>') + '" maxlength="4" style="width:60px;text-align:center;font-size:18px;">' +
-    '<div class="btn-row"><button class="btn-secondary" onclick="document.getElementById(\'profileModal\').remove()">Abbrechen</button><button class="btn-primary" onclick="saveProfileEdit()">Speichern</button></div>' +
+    '<div class="btn-row"><button class="btn-secondary" onclick="document.getElementById(\'profileModal\').remove()">Abbrechen</button><button class="btn-secondary" onclick="exportProfile()">Export f\u00fcr GitHub Pages</button><button class="btn-primary" onclick="saveProfileEdit()">Speichern</button></div>' +
   '</div>';
   document.body.appendChild(overlay);
   document.getElementById('pe-name').focus();

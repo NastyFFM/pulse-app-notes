@@ -5976,6 +5976,61 @@ Regeln:
     }
   }
 
+  // Profile export for GitHub Pages
+  if (url === '/api/profile/export' && req.method === 'GET') {
+    const profilePath = path.join(__dirname, 'data', 'profile.json');
+    try {
+      const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+      const appsFile = path.join(ROOT, 'data', 'apps.json');
+      const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+      const appList = (appsData.apps || []).map(a => ({ id: a.id, name: a.name, icon: a.icon, description: a.description }));
+
+      // pulse-profile.json (machine-readable)
+      const pulseProfile = {
+        schema: 'pulse-profile/1.0',
+        name: profile.name,
+        handle: profile.handle,
+        avatar: profile.avatar,
+        bio: profile.bio,
+        apps: appList.length,
+        appList: appList.map(a => a.name),
+        roomId: profile.roomId,
+        updated: new Date().toISOString()
+      };
+
+      // Static HTML profile page
+      const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${profile.name || 'PulseOS'} — PulseOS Profile</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0d0d14;color:#e0e0e0;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+.card{background:#13131f;border:1px solid #2a2a3e;border-radius:16px;padding:32px;max-width:400px;width:100%;text-align:center}
+.avatar{font-size:48px;margin-bottom:12px}
+h1{font-size:24px;margin-bottom:4px}
+.handle{color:#4ecdc4;font-size:14px;margin-bottom:12px}
+.bio{color:#888;font-size:13px;margin-bottom:20px}
+.apps{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:20px}
+.app{background:#1a1a2e;padding:4px 10px;border-radius:12px;font-size:11px;color:#aaa;border:1px solid #2a2a3e}
+.badge{background:#4ecdc4;color:#0d0d14;padding:6px 16px;border-radius:8px;font-size:12px;font-weight:600;display:inline-block;text-decoration:none}
+.footer{margin-top:16px;font-size:10px;color:#555}
+</style></head><body>
+<div class="card">
+<div class="avatar">${profile.avatar || '>'}</div>
+<h1>${profile.name || 'Anonymous'}</h1>
+<div class="handle">@${profile.handle || 'pulse-user'}</div>
+<div class="bio">${profile.bio || ''}</div>
+<div class="apps">${appList.slice(0, 12).map(a => `<span class="app">${a.name}</span>`).join('')}</div>
+<a class="badge" href="https://github.com/NastyFFM/PulseOS">PulseOS</a>
+<div class="footer">${appList.length} Apps installed</div>
+</div></body></html>`;
+
+      return jsonRes(res, { profile: pulseProfile, html, files: { 'pulse-profile.json': JSON.stringify(pulseProfile, null, 2), 'index.html': html } });
+    } catch (e) {
+      return jsonRes(res, { error: e.message });
+    }
+  }
+
   if (url === '/api/profile/onboarding') {
     if (req.method === 'GET') {
       const profilePath = path.join(__dirname, 'data', 'profile.json');
