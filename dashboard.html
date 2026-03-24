@@ -2433,6 +2433,32 @@ function switchSysChatTab(tab) {
   if (tab === 'contacts') loadContacts();
 }
 
+// ── Agent Presence ──
+let agentPresence = {}; // { claudeos: { online: true, lastSeen: '...' } }
+async function refreshAgentPresence() {
+  try {
+    const r = await fetch('/api/agents');
+    const data = await r.json();
+    const now = Date.now();
+    (data.agents || []).forEach(a => {
+      const lastHB = a.lastHeartbeat ? new Date(a.lastHeartbeat).getTime() : 0;
+      agentPresence[a.id] = { online: (now - lastHB) < 60000, lastSeen: a.lastHeartbeat };
+    });
+    // Update agent-bar dot
+    const dot = document.querySelector('.agent-dot');
+    if (dot) {
+      const claudeOnline = agentPresence['claudeos']?.online;
+      if (!document.getElementById('agentBar').classList.contains('has-alert')) {
+        dot.style.background = claudeOnline ? 'var(--teal)' : '#666';
+        dot.style.opacity = claudeOnline ? '1' : '0.4';
+      }
+    }
+    renderContacts();
+  } catch {}
+}
+refreshAgentPresence();
+setInterval(refreshAgentPresence, 15000);
+
 // ── Contacts ──
 let contactsCache = [];
 async function loadContacts() {
@@ -2462,11 +2488,15 @@ function renderContacts() {
   // Individual contacts
   html += contactsCache.filter(c => c.type === 'agent').map(c => {
     const isActive = activeChatTarget === c.id;
+    const presence = agentPresence[c.id];
+    const isOnline = presence?.online || false;
+    const statusClass = isOnline ? 'online' : 'offline';
+    const statusLabel = isOnline ? 'online' : 'offline';
     return '<div class="contact-item' + (isActive ? ' active' : '') + '" onclick="setChatTarget(\'' + c.id + '\')" style="cursor:pointer;">' +
       '<div class="contact-avatar" style="background:' + (c.color || 'var(--teal)') + ';color:var(--bg);">' + (c.avatar || '>') + '</div>' +
       '<div class="contact-info"><div class="contact-name">' + esc(c.name || '?') + '</div>' +
-      '<div class="contact-handle">' + esc(c.bio || '') + '</div></div>' +
-      '<div class="contact-status online"></div></div>';
+      '<div class="contact-handle" style="color:' + (isOnline ? 'var(--teal)' : 'var(--text-dim)') + ';">' + statusLabel + '</div></div>' +
+      '<div class="contact-status ' + statusClass + '"></div></div>';
   }).join('');
   list.innerHTML = html;
 }
