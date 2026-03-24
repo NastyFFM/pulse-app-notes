@@ -1836,6 +1836,7 @@ document.addEventListener('keydown', e => {
   if (isMeta && e.key === 'k') { e.preventDefault(); toggleSystemChat(); return; }
   if (isMeta && e.key === 'g') { e.preventDefault(); const app = state?.apps?.find(a => a.id === 'projects'); if (app) openApp(app); return; }
   if (isMeta && e.key === 't') { e.preventDefault(); cycleTheme(); return; }
+  if (isMeta && e.shiftKey && e.key === 'v') { e.preventDefault(); if (window.shareClipboard) window.shareClipboard(); return; }
   if (isMeta && e.key === 'w') {
     e.preventDefault();
     if (activeTabWinId) closeWin(activeTabWinId);
@@ -3268,35 +3269,36 @@ function showToast(msg, type) {
     if (text) { sendToAllPeers({ type: 'clipboard', text }); showToast('Clipboard geteilt', 'success'); }
   };
 
-  // App data sharing
+  // App data sharing — store pending data in a map, not on DOM
+  const pendingAppData = {};
+
   function showAppDataReceived(appId, appName, data, fromName) {
+    const dataId = 'share-' + Date.now();
+    pendingAppData[dataId] = { appId, data };
     const t = document.createElement('div');
     t.style.cssText = 'position:fixed;top:60px;right:20px;background:var(--bg-surface);border:1px solid var(--teal);border-radius:10px;padding:14px;z-index:99999;max-width:320px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:12px;';
     t.innerHTML = '<div style="font-weight:600;margin-bottom:6px;color:var(--teal);">' + fromName + ' teilt App-Daten</div>' +
-      '<div style="margin-bottom:8px;">' + appName + '</div>' +
+      '<div style="margin-bottom:8px;">' + appName + ' (' + Object.keys(data).length + ' Dateien)</div>' +
       '<div style="display:flex;gap:6px;justify-content:flex-end;">' +
-      '<button onclick="this.parentElement.parentElement.remove()" style="padding:4px 10px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;">Ablehnen</button>' +
-      '<button onclick="acceptAppData(\'' + appId + '\');this.parentElement.parentElement.remove()" style="padding:4px 10px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">Importieren</button></div>';
-    t._appData = data;
-    t._appId = appId;
+      '<button onclick="delete pendingAppData[\'' + dataId + '\'];this.parentElement.parentElement.remove()" style="padding:4px 10px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;">Ablehnen</button>' +
+      '<button onclick="acceptAppData(\'' + dataId + '\');this.parentElement.parentElement.remove()" style="padding:4px 10px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">Importieren</button></div>';
     document.body.appendChild(t);
-    setTimeout(() => t.remove(), 30000);
+    setTimeout(() => { t.remove(); delete pendingAppData[dataId]; }, 30000);
   }
 
-  window.acceptAppData = async function(appId) {
-    // Find the toast with the data
-    const toasts = document.querySelectorAll('div[style*="position:fixed"][style*="top:60px"]');
-    let data = null;
-    toasts.forEach(t => { if (t._appId === appId && t._appData) data = t._appData; });
-    if (!data) return;
+  window.acceptAppData = async function(dataId) {
+    const pending = pendingAppData[dataId];
+    if (!pending) { showToast('Daten nicht mehr verfügbar', 'error'); return; }
+    const { appId, data } = pending;
+    delete pendingAppData[dataId];
     try {
-      // Find data files for this app
       const keys = Object.keys(data);
       for (const key of keys) {
         await fetch('/app/' + appId + '/api/' + key, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data[key]) });
       }
+      await fetch('/api/notify-change', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ appId, file: keys[0] + '.json' }) });
       showToast('App-Daten importiert!', 'success');
-    } catch (e) { showToast('Import fehlgeschlagen', 'error'); }
+    } catch (e) { showToast('Import fehlgeschlagen: ' + e.message, 'error'); }
   };
 
   window.shareAppData = async function(appId, appName) {
