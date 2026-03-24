@@ -1,0 +1,10 @@
+{
+  "name": "TestUser",
+  "handle": "testuser",
+  "bio": "PulseOS Tester",
+  "role": "Tester",
+  "email": "test@pulse.os",
+  "github": "",
+  "twitter": "",
+  "website": ""
+}

@@ -14,8 +14,15 @@
       "links": [],
       "roomId": "pulse-5093113b",
       "createdAt": "2026-03-18T22:44:20.728Z",
-      "updatedAt": "2026-03-18T22:44:20.728Z",
-      "lastSeen": "2026-03-23T21:16:33.306Z"
+      "updatedAt": "2026-03-24T03:13:37.311Z",
+      "lastSeen": "2026-03-24T15:23:17.007Z",
+      "role": "",
+      "email": "",
+      "github": "NastyFFM",
+      "twitter": "",
+      "website": "",
+      "lastPublished": "2026-03-24T03:42:01.850Z",
+      "pagesUrl": "https://NastyFFM.github.io"
     },
     {
       "id": "pulseos",
@@ -40,5 +47,5 @@
       "status": "online"
     }
   ],
-  "updatedAt": "2026-03-23T21:16:33.306Z"
+  "updatedAt": "2026-03-24T15:23:17.007Z"
 }

@@ -210,6 +210,52 @@
       "source": "https://github.com/NastyFFM/pulse-app-clock",
       "installedAt": "2026-03-24T04:05:18.136Z",
       "position": 20
+    },
+    {
+      "id": "asteroids",
+      "name": "Asteroids",
+      "icon": "☄️",
+      "color": "#000814",
+      "description": "Neon Asteroids mit Glow-Effekten und Partikel-Explosionen",
+      "installed": true,
+      "created": true,
+      "position": 21,
+      "visibility": "private",
+      "allowedUsers": []
+    },
+    {
+      "id": "ein-mobile-first3d-gameboy-easyjet-plausible-but-stundung-3d-graphics",
+      "name": "Ein mobile first3d Gameboy. EasyJet plausible but Stundung 3d graphics",
+      "icon": "E",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 20
+    },
+    {
+      "id": "voidrunner",
+      "name": "Void Runner",
+      "icon": "🚀",
+      "color": "#000514",
+      "description": "3D WebGL Neon Tunnel Runner mit Bloom-Effekten",
+      "installed": true,
+      "created": true,
+      "position": 22,
+      "visibility": "private",
+      "allowedUsers": []
+    },
+    {
+      "id": "neonstrike",
+      "name": "Neon Strike",
+      "icon": "⚡",
+      "color": "#00050f",
+      "description": "3D WebGL Space Shooter – auto-fire, drag to move",
+      "installed": true,
+      "created": true,
+      "position": 23,
+      "visibility": "private",
+      "allowedUsers": []
     }
   ]
 }

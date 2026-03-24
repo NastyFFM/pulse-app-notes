@@ -33,6 +33,26 @@
   --dock-h: 60px;
 }
 
+/* ── Theme-adaptive App Icons ── */
+html[data-theme="light"] .dock-icon,
+html[data-theme="light"] .launcher-app .icon,
+html[data-theme="light"] .app-grid .app-icon {
+  filter: brightness(1.6) saturate(1.8);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+html[data-theme="terminal"] .dock-icon,
+html[data-theme="terminal"] .launcher-app .icon,
+html[data-theme="terminal"] .app-grid .app-icon {
+  filter: saturate(0) brightness(0.7);
+  border: 1px solid var(--teal);
+}
+html[data-theme="highcontrast"] .dock-icon,
+html[data-theme="highcontrast"] .launcher-app .icon,
+html[data-theme="highcontrast"] .app-grid .app-icon {
+  filter: saturate(1.4) contrast(1.3);
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
 /* ── Theme: Light ── */
 html[data-theme="light"] {
   --bg: #f0f0f4;
@@ -293,7 +313,7 @@ body {
   align-items: center;
   gap: 0;
   padding: 0;
-  background: rgba(var(--bg-surface-rgb, 20,20,30), 0.85);
+  background: var(--bg-surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
@@ -343,6 +363,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   font-size: 16px; font-weight: 600;
   color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
   flex-shrink: 0;
 }
 .dock-label {
@@ -873,9 +894,9 @@ body {
 /* ═══ App Windows ═══ */
 .app-window {
   position: fixed;
-  background: #111118;
+  background: var(--bg-surface);
   border-radius: var(--radius-lg);
-  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
   border: 1px solid var(--border-hover);
   display: flex;
   flex-direction: column;
@@ -897,7 +918,8 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
-  background: rgba(0,0,0,0.4);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   cursor: grab;
   flex-shrink: 0;
@@ -926,21 +948,21 @@ body {
   font-size: 11px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,0.06);
+  background: var(--bg-card-hover);
   color: var(--text-dim);
   font-family: var(--font);
   opacity: 0;
   transition: all 0.15s;
 }
 .win-titlebar:hover .win-btn { opacity: 1; }
-.win-btn:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+.win-btn:hover { background: var(--border-hover); color: var(--text); }
 .win-btn.close:hover { background: var(--red); color: #fff; }
 
 .app-window iframe {
   flex: 1;
   border: none;
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  background: #fff;
+  background: var(--bg);
 }
 
 /* Resize handles */
@@ -962,7 +984,7 @@ body {
   transform: translateX(-50%);
   width: min(400px, calc(100vw - 24px));
   height: min(500px, 60vh);
-  background: rgba(var(--bg-surface-rgb, 20,20,30), 0.92);
+  background: var(--bg-surface);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--border-hover);
@@ -971,7 +993,7 @@ body {
   display: none;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
   animation: chatSlideUp 0.2s ease-out;
 }
 @keyframes chatSlideUp {
@@ -1053,8 +1075,8 @@ body {
   padding: 7px 10px;
   border-radius: 6px;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.04);
-  color: #fff;
+  background: var(--bg-card);
+  color: var(--text);
   font: 12px var(--font);
   outline: none;
 }
@@ -1246,6 +1268,7 @@ body.mode-builder .home-screen { max-width: 600px; }
     <div class="topbar-peers" id="topbarPeers"></div>
 
     <button class="topbar-btn" id="tunnelBtn" onclick="toggleTunnel()" title="Share">Share</button>
+    <button class="topbar-btn" id="fsBtn" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
     <button class="topbar-btn" id="themeBtn" onclick="cycleTheme()" title="Theme wechseln">◑</button>
 
     <span class="topbar-clock" id="clock"></span>
@@ -1405,6 +1428,10 @@ function setTheme(theme) {
   localStorage.setItem('pulseTheme', theme);
   const btn = document.getElementById('themeBtn');
   if (btn) btn.title = 'Theme: ' + theme + ' (Cmd+T)';
+  // Broadcast theme to all app iframes
+  openWindows.filter(w => !w.closed).forEach(w => {
+    try { w.el.querySelector('iframe').contentWindow.postMessage({ type: 'set-theme', theme }, '*'); } catch {}
+  });
 }
 function cycleTheme() {
   const cur = localStorage.getItem('pulseTheme') || 'dark';
@@ -1870,6 +1897,14 @@ function openApp(app, opts) {
   document.body.appendChild(w);
 
   openWindows.push({ winId, appId: app.id, matchKey, el: w, minimized: false, maximized: false, closed: false, savedRect: null, contextId });
+  // Send current theme to iframe when it loads
+  const iframe = w.querySelector('iframe');
+  if (iframe) {
+    iframe.addEventListener('load', () => {
+      const theme = localStorage.getItem('pulseTheme') || 'dark';
+      try { iframe.contentWindow.postMessage({ type: 'set-theme', theme }, '*'); } catch {}
+    });
+  }
   addFeed(app.name + ' geoeffnet', 'mutation');
   activeTabWinId = winId;
   renderTopbarTabs(); renderDock();

@@ -94,6 +94,24 @@ function appHtmlRes(res, file, appId) {
       this.url = url;
     };
     // PulseOS Bridge: allows apps to report status and log interactions back to their context
+    // Theme sync: listen for theme changes from dashboard
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'set-theme' && e.data.theme) {
+        if (e.data.theme === 'dark') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', e.data.theme);
+      }
+    });
+    // Inject theme CSS variables for all themes
+    var themeStyle = document.createElement('style');
+    themeStyle.textContent = ':root{--bg:#0d0d14;--bg-surface:rgba(13,13,20,0.95);--bg-card:rgba(255,255,255,0.03);--text:rgba(255,255,255,0.85);--text-dim:rgba(255,255,255,0.4);--border:rgba(255,255,255,0.06);--teal:#4ecdc4;--amber:#f5a623}' +
+      'html[data-theme=light]{--bg:#f0f0f4;--bg-surface:rgba(240,240,244,0.95);--bg-card:rgba(0,0,0,0.04);--text:rgba(0,0,0,0.85);--text-dim:rgba(0,0,0,0.45);--border:rgba(0,0,0,0.08);--teal:#0d9488;--amber:#d4890a}' +
+      'html[data-theme=midnight]{--bg:#0a0e1a;--bg-surface:rgba(10,14,26,0.95);--bg-card:rgba(99,102,241,0.06);--text:rgba(199,210,254,0.9);--text-dim:rgba(129,140,248,0.5);--border:rgba(99,102,241,0.1);--teal:#818cf8;--amber:#c084fc}' +
+      'html[data-theme=terminal]{--bg:#0a0f0a;--bg-surface:rgba(10,15,10,0.95);--bg-card:rgba(34,197,94,0.05);--text:rgba(34,197,94,0.9);--text-dim:rgba(34,197,94,0.4);--border:rgba(34,197,94,0.1);--teal:#22c55e;--amber:#4ade80}' +
+      'html[data-theme=warm]{--bg:#1a1410;--bg-surface:rgba(26,20,16,0.95);--bg-card:rgba(245,166,35,0.05);--text:rgba(255,237,213,0.9);--text-dim:rgba(251,191,36,0.5);--border:rgba(245,166,35,0.1);--teal:#f59e0b;--amber:#fb923c}' +
+      'body{background:var(--bg)!important;color:var(--text)!important}' +
+      'input,textarea,select,button{color:var(--text);border-color:var(--border)}' +
+      'input,textarea,select{background:var(--bg-card)}';
+    document.head.appendChild(themeStyle);
     window.PulseOS = {
       _appId: '${appId}',
       reportStatus: function(status) {

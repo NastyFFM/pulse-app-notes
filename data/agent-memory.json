@@ -1,29 +1,50 @@
 {
   "facts": [
     {
-      "id": 1,
-      "content": "Chris ist Fullstack-Entwickler in Frankfurt"
+      "content": "Christofs Lieblingsfarbe ist Blau",
+      "id": "fdddd18c-5d3b-4844-864c-b4c6bb20aa79"
     },
     {
-      "id": 2,
-      "content": "Arbeitet an PulseOS, einem Browser-basierten Agentic OS"
+      "content": "Christofs Lieblingsessen ist Pizza (Lieblingspizza: Margherita)",
+      "id": "30bc6d3c-4a98-4b75-b121-1eed17c1d5c0"
     },
     {
-      "id": 3,
-      "content": "Bevorzugt vanilla JS, kein npm"
+      "content": "Christof hat in der Nacht vom 23. auf 24.03.2026 an PulseOS gearbeitet: Profilseite, App-Publishing via GitHub, App Install/Uninstall, System-Apps vs User-Apps, Notifications-System — alles im Zusammenspiel mit dem Telegram Relay",
+      "id": "5247d0b3-80d5-4beb-b4d0-fb8fcfb6a171"
+    },
+    {
+      "content": "Christofs Mutter hat am 23.03.2026 Geburtstag. Christof war am 22.03.2026 bei seinen Eltern in Ludwigshafen",
+      "id": "cb72b400-84e4-473a-b744-cde80f7b63c8"
+    },
+    {
+      "content": "Christof war am 21.03.2026 auf dem Geburtstag seiner Schwester in Stuttgart — schöner Abend mit Familie, Musik, gutem Gespräch mit den Schwestern seines Schwagers",
+      "id": "65f58017-60c4-4c5d-8289-970887ee6856"
+    },
+    {
+      "content": "Der Tunnel in PulseOS ist kein Cloudflare Tunnel, sondern ein macOS-eigener Tunnel-Mechanismus",
+      "id": "58cd30bb-71be-4fe2-9210-423506488c6c"
+    },
+    {
+      "content": "Telegram Relay soll immer über launchd laufen (com.claude.telegram-relay), nicht manuell. Ursache für Ausfälle war manueller Start der PulseOS den Prozess startete ohne launchd-Kontrolle",
+      "id": "37b6305a-cf86-448a-83b2-cc4d56b90bbc"
+    },
+    {
+      "content": "Christof kommt am 20.03.2026 um ca. 19:20 Uhr in Mannheim an",
+      "id": "0cc7891a-eaec-4b8d-a64d-3db870294ef8"
+    },
+    {
+      "content": "Christof war am 20.03.2026 im Zug nach Mannheim, auf dem Weg zum Geburtstag seiner Schwester in Stuttgart",
+      "id": "fb8cd2f8-51c8-45bc-8331-066b15c6e003"
+    },
+    {
+      "content": "Christofs Lieblingspizza ist Margherita",
+      "id": "bdfe04fd-ac1d-40bd-97d5-6643ebf1d6fd"
+    },
+    {
+      "content": "Christof fährt am Samstag (21.03.2026) zum Geburtstag seiner Schwester nach Stuttgart",
+      "id": "9b840b25-9b34-45be-bb7c-9fde544c24e3"
     }
   ],
-  "goals": [
-    {
-      "id": 1,
-      "content": "PulseOS v1.0 Release",
-      "deadline": "2026-04-15"
-    },
-    {
-      "id": 2,
-      "content": "Cross-Instance Graphen implementieren",
-      "deadline": null
-    }
-  ],
-  "synced": "2026-03-24T02:15:00Z"
+  "goals": [],
+  "synced": "2026-03-24T15:40:15.117Z"
 }
