@@ -2385,9 +2385,35 @@ async function sendToAgent(text) {
 
   if (!anyOk) {
     hideTypingIndicator();
-    renderChatMsg({ id: 'err-' + Date.now(), from: 'agent', text: 'Offline — kein Agent verbunden.', source: 'system' });
+    // Queue for retry
+    messageRetryQueue.push({ text, target: activeChatTarget, time: Date.now(), retries: 0 });
+    renderChatMsg({ id: 'err-' + Date.now(), from: 'agent', text: 'Offline \u2014 Nachricht wird erneut gesendet wenn Agent online.', source: 'system' });
   }
 }
+
+// ── Message Retry Queue ──
+let messageRetryQueue = [];
+async function processRetryQueue() {
+  if (messageRetryQueue.length === 0) return;
+  const claudeOnline = agentPresence['claudeos']?.online;
+  if (!claudeOnline) return;
+  const queue = [...messageRetryQueue];
+  messageRetryQueue = [];
+  for (const msg of queue) {
+    if (msg.retries >= 3 || Date.now() - msg.time > 30 * 60 * 1000) continue; // Max 3 retries or 30 min old
+    try {
+      const r = await fetch('/api/chat-outbox', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg.text, source: 'dashboard' }) });
+      const d = await r.json();
+      if (d.ok) {
+        renderChatMsg({ id: 'retry-' + Date.now(), from: 'agent', text: '\u2705 Nachricht erneut gesendet.', source: 'system' });
+      } else {
+        msg.retries++;
+        messageRetryQueue.push(msg);
+      }
+    } catch { msg.retries++; messageRetryQueue.push(msg); }
+  }
+}
+setInterval(processRetryQueue, 15000); // Check every 15s with presence refresh
 
 // SSE: Live chat messages from ClaudeOS/Telegram
 function initChatSSE() {
