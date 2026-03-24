@@ -1638,10 +1638,81 @@ const server = http.createServer(async (req, res) => {
         fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
 
         // Invalidate agent-context cache
-        if (typeof agentContextCache !== 'undefined') agentContextCache = null;
+        invalidateAgentContextCache();
 
         broadcast('dashboard', { type: 'app-installed', appId, name: manifest.name });
         jsonRes(res, { ok: true, appId, name: manifest.name, message: 'App installed successfully' });
+      } catch (e) { res.writeHead(500); res.end(JSON.stringify({ error: e.message })); }
+    });
+  }
+
+  // Create new app from template
+  if (url === '/api/apps/create' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { name, description, icon, color } = JSON.parse(b);
+        if (!name) { res.writeHead(400); return res.end(JSON.stringify({ error: 'name required' })); }
+        const appId = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        const appDir = path.join(ROOT, 'apps', appId);
+        if (fs.existsSync(appDir)) return jsonRes(res, { ok: false, error: 'App exists: ' + appId });
+
+        fs.mkdirSync(appDir, { recursive: true });
+        fs.mkdirSync(path.join(appDir, 'data'), { recursive: true });
+
+        // Generate template HTML
+        const appColor = color || '#1a2a3a';
+        const appIcon = icon || name[0].toUpperCase();
+        const html = `<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${name}</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:#0d0d14; color:#e0e0e0; padding:20px; min-height:100vh; }
+h1 { font-size:20px; margin-bottom:8px; }
+p { color:#888; font-size:13px; margin-bottom:20px; }
+.card { background:#1a1a2e; border-radius:8px; padding:16px; margin-bottom:12px; border:1px solid #2a2a3e; }
+button { background:#4ecdc4; color:#0d0d14; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600; }
+button:hover { opacity:0.9; }
+input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid #2a2a3e; border-radius:6px; color:#e0e0e0; font-size:13px; margin-bottom:8px; }
+</style>
+</head>
+<body>
+<h1>${name}</h1>
+<p>${description || 'Eine neue PulseOS App'}</p>
+<div class="card">
+  <p>Diese App wurde mit dem PulseOS App-Builder erstellt.</p>
+  <p style="margin-top:8px;">Bearbeite <code>apps/${appId}/index.html</code> um sie anzupassen.</p>
+</div>
+<script>
+// PulseOS SDK ist automatisch verfuegbar:
+// PulseOS.alert('Nachricht') - Zeige Alert in Agent-Bar
+// PulseOS.saveState(data) - Zustand speichern
+// PulseOS.loadState() - Zustand laden
+// PulseOS.onDataChanged(cb) - Reagiere auf Datenänderungen
+</script>
+</body>
+</html>`;
+
+        fs.writeFileSync(path.join(appDir, 'index.html'), html);
+        fs.writeFileSync(path.join(appDir, 'manifest.json'), JSON.stringify({
+          name, icon: appIcon, color: appColor, description: description || '',
+          nodeType: null, inputs: [], outputs: [], pulseSubscriptions: []
+        }, null, 2));
+        fs.writeFileSync(path.join(appDir, 'data', 'state.json'), '{}');
+
+        // Register
+        const appsFile = path.join(ROOT, 'data', 'apps.json');
+        const appsData = JSON.parse(safeReadJSON(appsFile, '{"apps":[]}'));
+        const apps = appsData.apps || [];
+        apps.push({ id: appId, name, icon: appIcon, color: appColor, description: description || '', installed: true, created: true, position: apps.length });
+        if (appsData.apps) appsData.apps = apps;
+        fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+        invalidateAgentContextCache();
+        broadcast('dashboard', { type: 'app-installed', appId, name });
+        jsonRes(res, { ok: true, appId, name });
       } catch (e) { res.writeHead(500); res.end(JSON.stringify({ error: e.message })); }
     });
   }

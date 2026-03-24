@@ -1241,6 +1241,7 @@ body.mode-builder .home-screen { max-width: 600px; }
   <div class="launcher-grid" id="launcherGrid"></div>
   <div style="padding:8px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;">
     <button onclick="showInstallDialog()" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;">+ App installieren</button>
+    <button onclick="showCreateDialog()" style="background:var(--teal);border:none;color:var(--bg);padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">+ Neue App</button>
   </div>
 </div>
 
@@ -1788,23 +1789,65 @@ function showInstallDialog() {
 
 async function doInstallApp() {
   const urlInput = document.getElementById('installUrl');
-  const status = document.getElementById('installStatus');
+  const statusEl = document.getElementById('installStatus');
   const repoUrl = urlInput.value.trim();
-  if (!repoUrl) { status.textContent = 'Bitte URL eingeben'; status.style.color = '#e74c3c'; return; }
-  status.textContent = 'Installiere...'; status.style.color = 'var(--teal)';
+  if (!repoUrl) { statusEl.textContent = 'Bitte URL eingeben'; statusEl.style.color = '#e74c3c'; return; }
+  statusEl.textContent = 'Installiere...'; statusEl.style.color = 'var(--teal)';
   try {
     const r = await fetch('/api/apps/install', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: repoUrl }) });
     const d = await r.json();
     if (d.ok) {
-      status.textContent = d.name + ' installiert!'; status.style.color = 'var(--green)';
+      statusEl.textContent = d.name + ' installiert!'; statusEl.style.color = 'var(--green)';
       setTimeout(() => { document.getElementById('installModal')?.remove(); filterApps(''); }, 1500);
       addFeed('App installiert: ' + d.name, 'install');
     } else {
-      status.textContent = d.error || 'Fehler'; status.style.color = '#e74c3c';
+      statusEl.textContent = d.error || 'Fehler'; statusEl.style.color = '#e74c3c';
     }
   } catch (e) {
-    status.textContent = 'Netzwerkfehler'; status.style.color = '#e74c3c';
+    statusEl.textContent = 'Netzwerkfehler'; statusEl.style.color = '#e74c3c';
   }
+}
+
+// ── App Create ──
+function showCreateDialog() {
+  let modal = document.getElementById('createModal');
+  if (modal) { modal.remove(); return; }
+  modal = document.createElement('div');
+  modal.id = 'createModal';
+  modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:20px;z-index:10001;min-width:350px;box-shadow:0 20px 60px rgba(0,0,0,0.5);';
+  modal.innerHTML = '<div style="font-weight:600;margin-bottom:12px;">Neue App erstellen</div>' +
+    '<input id="createName" type="text" placeholder="App Name" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;box-sizing:border-box;margin-bottom:8px;">' +
+    '<input id="createDesc" type="text" placeholder="Beschreibung (optional)" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;box-sizing:border-box;margin-bottom:8px;">' +
+    '<div style="display:flex;gap:8px;margin-bottom:8px;">' +
+    '<input id="createIcon" type="text" placeholder="Icon (1 Buchstabe)" maxlength="2" style="width:60px;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;text-align:center;">' +
+    '<input id="createColor" type="color" value="#1a2a3a" style="width:40px;height:36px;border:none;background:none;cursor:pointer;"></div>' +
+    '<div id="createStatus" style="font-size:11px;margin:8px 0;min-height:16px;"></div>' +
+    '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+    '<button onclick="document.getElementById(\'createModal\').remove()" style="padding:6px 12px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;">Abbrechen</button>' +
+    '<button onclick="doCreateApp()" style="padding:6px 12px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">Erstellen</button></div>';
+  document.body.appendChild(modal);
+  document.getElementById('createName').focus();
+}
+
+async function doCreateApp() {
+  const appName = document.getElementById('createName').value.trim();
+  const desc = document.getElementById('createDesc').value.trim();
+  const icon = document.getElementById('createIcon').value.trim();
+  const color = document.getElementById('createColor').value;
+  const statusEl = document.getElementById('createStatus');
+  if (!appName) { statusEl.textContent = 'Name erforderlich'; statusEl.style.color = '#e74c3c'; return; }
+  statusEl.textContent = 'Erstelle...'; statusEl.style.color = 'var(--teal)';
+  try {
+    const r = await fetch('/api/apps/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: appName, description: desc, icon: icon || undefined, color }) });
+    const d = await r.json();
+    if (d.ok) {
+      statusEl.textContent = d.name + ' erstellt!'; statusEl.style.color = 'var(--green)';
+      setTimeout(() => { document.getElementById('createModal')?.remove(); filterApps(''); openApp({ id: d.appId, name: d.name }); }, 1000);
+      addFeed('App erstellt: ' + d.name, 'create');
+    } else {
+      statusEl.textContent = d.error || 'Fehler'; statusEl.style.color = '#e74c3c';
+    }
+  } catch { statusEl.textContent = 'Netzwerkfehler'; statusEl.style.color = '#e74c3c'; }
 }
 
 // ── Feed / Pulse ──

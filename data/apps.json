@@ -87,7 +87,7 @@
     {
       "id": "youtube",
       "name": "YouTube",
-      "icon": "▶",
+      "icon": "\u25b6",
       "color": "#3d0000",
       "description": "YouTube Videos ansehen",
       "installed": true,
@@ -96,34 +96,34 @@
     {
       "id": "podcast",
       "name": "Podcast",
-      "icon": "🎙",
+      "icon": "\ud83c\udf99",
       "color": "#1a1a3a",
-      "description": "Podcasts suchen und hören",
+      "description": "Podcasts suchen und h\u00f6ren",
       "installed": true,
       "position": 10
     },
     {
       "id": "diary",
       "name": "Diary",
-      "icon": "📓",
+      "icon": "\ud83d\udcd3",
       "color": "#1a2a1a",
-      "description": "Tagesrückblick und persönliches Tagebuch",
+      "description": "Tagesr\u00fcckblick und pers\u00f6nliches Tagebuch",
       "installed": true,
       "position": 11
     },
     {
       "id": "kanban",
       "name": "Kanban",
-      "icon": "▦",
+      "icon": "\u25a6",
       "color": "#0d1a2a",
-      "description": "Kanban Board für Projekte und Tasks",
+      "description": "Kanban Board f\u00fcr Projekte und Tasks",
       "installed": true,
       "position": 12
     },
     {
       "id": "pong",
       "name": "Pong",
-      "icon": "🏓",
+      "icon": "\ud83c\udfd3",
       "color": "#0a0a14",
       "description": "Klassisches Pong-Spiel",
       "installed": true,
@@ -132,7 +132,7 @@
     {
       "id": "blockblast",
       "name": "Block Blast",
-      "icon": "⬛",
+      "icon": "\u2b1b",
       "color": "#0a0d1a",
       "description": "Block Blast Puzzle-Spiel",
       "installed": true,
@@ -141,7 +141,7 @@
     {
       "id": "todo",
       "name": "Todo",
-      "icon": "✓",
+      "icon": "\u2713",
       "color": "#0d1a0d",
       "description": "Einfache Todo-Liste zum Abhaken",
       "installed": true,
