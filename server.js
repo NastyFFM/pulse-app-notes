@@ -78,7 +78,7 @@ function appHtmlRes(res, file, appId) {
   // Inject SSE blocker BEFORE any app scripts to prevent connection exhaustion
   // Apps in iframes don't need their own SSE — the dashboard handles updates
   // Exception: terminal app needs its SSE for PTY output
-  const ssePatch = appId === 'terminal' ? '' : `<script>
+  const ssePatch = (appId === 'terminal' || appId === 'claude-terminal') ? '' : `<script>
 (function(){
   if (window.parent !== window) {
     window.__OrigEventSource = window.EventSource;
@@ -6317,7 +6317,12 @@ Regeln:
   if (url === '/api/terminal/input' && req.method === 'POST') {
     return readBody(req, body => {
       if (ptyProcess && ptyProcess.stdin.writable) {
-        ptyProcess.stdin.write(body);
+        try {
+          const { input } = JSON.parse(body);
+          if (input) ptyProcess.stdin.write(input);
+        } catch {
+          ptyProcess.stdin.write(body);
+        }
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('{"ok":true}');

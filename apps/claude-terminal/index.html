@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; background:#0d0d14; }
+#terminal { width:100%; height:100%; }
+.xterm { height:100%; }
+/* Status bar */
+#status { position:fixed; bottom:0; left:0; right:0; height:20px; background:rgba(13,13,20,0.9); border-top:1px solid #1e1e2e; display:flex; align-items:center; padding:0 8px; font:10px -apple-system, system-ui, sans-serif; color:#666; gap:8px; z-index:10; }
+#status .dot { width:6px; height:6px; border-radius:50%; background:#22c55e; flex-shrink:0; }
+#status .dot.dead { background:#ef4444; }
+#status .dot.starting { background:#f59e0b; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
+</style>
+</head>
+<body>
+<div id="terminal"></div>
+<div id="status">
+  <div class="dot starting" id="statusDot"></div>
+  <span id="statusText">Verbinde mit Claude Code...</span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+<script>
+const term = new Terminal({
+  cursorBlink: true,
+  cursorStyle: 'block',
+  fontSize: 13,
+  fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
+  theme: {
+    background: '#0d0d14',
+    foreground: '#e0e0e0',
+    cursor: '#4ecdc4',
+    cursorAccent: '#0d0d14',
+    selectionBackground: 'rgba(78, 205, 196, 0.3)',
+    black: '#0d0d14',
+    red: '#ef4444',
+    green: '#22c55e',
+    yellow: '#f59e0b',
+    blue: '#3b82f6',
+    magenta: '#a855f7',
+    cyan: '#4ecdc4',
+    white: '#e0e0e0',
+    brightBlack: '#555',
+    brightRed: '#f87171',
+    brightGreen: '#4ade80',
+    brightYellow: '#fbbf24',
+    brightBlue: '#60a5fa',
+    brightMagenta: '#c084fc',
+    brightCyan: '#67e8f9',
+    brightWhite: '#ffffff'
+  },
+  allowProposedApi: true,
+  scrollback: 5000
+});
+
+const fitAddon = new FitAddon.FitAddon();
+term.loadAddon(fitAddon);
+term.open(document.getElementById('terminal'));
+
+// Fit to container
+function fit() {
+  fitAddon.fit();
+  // Resize PTY to match
+  fetch('/api/terminal/resize', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cols: term.cols, rows: term.rows })
+  }).catch(() => {});
+}
+
+// Initial fit (slight delay for iframe to be sized)
+setTimeout(fit, 100);
+setTimeout(fit, 500);
+
+// Re-fit on window resize
+window.addEventListener('resize', fit);
+// Re-fit when parent iframe resizes
+window.addEventListener('message', function(e) {
+  if (e.data && (e.data.type === 'resize' || e.data.type === 'data-changed')) {
+    setTimeout(fit, 50);
+  }
+});
+
+// Observe container size changes
+const ro = new ResizeObserver(() => setTimeout(fit, 50));
+ro.observe(document.getElementById('terminal'));
+
+// Send keyboard input to PTY
+term.onData(function(data) {
+  fetch('/api/terminal/input', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input: data })
+  }).catch(() => {});
+});
+
+// SSE: receive PTY output
+let evtSrc;
+let reconnectTimer;
+
+function connectSSE() {
+  if (evtSrc) { try { evtSrc.close(); } catch {} }
+  evtSrc = new EventSource('/sse/terminal');
+
+  evtSrc.onopen = function() {
+    document.getElementById('statusDot').className = 'dot';
+    document.getElementById('statusText').textContent = 'Claude Code';
+  };
+
+  evtSrc.onmessage = function(e) {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'output' && msg.data) {
+        // Decode base64 → Uint8Array → proper UTF-8
+        const binary = atob(msg.data);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        term.write(bytes);
+      } else if (msg.type === 'exit') {
+        document.getElementById('statusDot').className = 'dot dead';
+        document.getElementById('statusText').textContent = 'Beendet (Code ' + (msg.code || '?') + ') — Neustart...';
+        // Auto-restart after 2s
+        setTimeout(restartPty, 2000);
+      } else if (msg.type === 'heartbeat') {
+        // Keep-alive, ignore
+      }
+    } catch {}
+  };
+
+  evtSrc.onerror = function() {
+    document.getElementById('statusDot').className = 'dot dead';
+    document.getElementById('statusText').textContent = 'Verbindung verloren — Reconnect...';
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connectSSE, 3000);
+  };
+}
+
+function restartPty() {
+  document.getElementById('statusDot').className = 'dot starting';
+  document.getElementById('statusText').textContent = 'Starte Claude Code...';
+  fetch('/api/terminal/restart', { method: 'POST' })
+    .then(() => {
+      term.clear();
+      setTimeout(fit, 500);
+    })
+    .catch(() => {
+      document.getElementById('statusText').textContent = 'Neustart fehlgeschlagen';
+    });
+}
+
+// Start connection
+connectSSE();
+
+// Focus terminal on click
+document.addEventListener('click', () => term.focus());
+term.focus();
+</script>
+</body>
+</html>
