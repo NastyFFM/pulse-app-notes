@@ -219,6 +219,10 @@ function selectProject(id) {
   if (!p) return;
   renderList();
   activeTab = 'info';
+  // Pre-load graph data so triggers tab is always fresh
+  fetch('/api/graphs/' + id).then(r => r.json()).then(g => {
+    if (g && g.nodes) { graph = g; }
+  }).catch(() => { graph = { nodes: [], edges: [], triggers: [] }; });
   renderDetail(p);
 }
 
