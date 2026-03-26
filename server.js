@@ -860,6 +860,8 @@ function loadGraph(projectId) {
 function saveGraph(projectId, graph) {
   graph.updatedAt = new Date().toISOString();
   fs.writeFileSync(path.join(GRAPHS_DIR, `graph-${projectId}.json`), JSON.stringify(graph, null, 2));
+  // Re-register triggers when graph is saved
+  registerGraphTriggers(projectId);
 }
 
 function resolveOutput(appId, outputId) {
@@ -901,6 +903,106 @@ function sendGraphResultToChat(text, target) {
     out.messages.push({ id: 'out-' + Date.now(), message: text, source: 'graph-run', time: new Date().toISOString() });
     fs.writeFileSync(outFile, JSON.stringify(out, null, 2));
   }
+}
+
+// --- Graph Trigger System ---
+const graphTriggerIntervals = new Map(); // graphId:triggerIndex → intervalId/timeoutId
+const graphChatTriggers = new Map(); // command → graphId
+
+function registerGraphTriggers(graphId) {
+  const graph = loadGraph(graphId);
+  if (!graph || !graph.triggers) return;
+
+  // Clear existing triggers for this graph
+  for (const [key, timerId] of graphTriggerIntervals) {
+    if (key.startsWith(graphId + ':')) {
+      clearInterval(timerId);
+      clearTimeout(timerId);
+      graphTriggerIntervals.delete(key);
+    }
+  }
+  // Clear chat triggers for this graph
+  for (const [cmd, gId] of graphChatTriggers) {
+    if (gId === graphId) graphChatTriggers.delete(cmd);
+  }
+
+  graph.triggers.forEach((trigger, i) => {
+    const key = graphId + ':' + i;
+
+    if (trigger.type === 'cron') {
+      const schedule = parseClockSchedule(trigger.schedule);
+      const fire = () => {
+        console.log(`[graph-trigger] ⏰ ${graph.name || graphId} (${trigger.schedule})`);
+        executeGraph(graphId);
+        broadcast('dashboard', { type: 'graph-triggered', graphId, trigger: trigger.label || trigger.schedule, time: Date.now() });
+      };
+      if (schedule.type === 'daily') {
+        const t = setTimeout(() => {
+          fire();
+          graphTriggerIntervals.set(key, setInterval(fire, schedule.interval));
+        }, schedule.msUntilFirst);
+        graphTriggerIntervals.set(key, t);
+        console.log(`[graph-trigger] ${graph.name}: daily@${new Date(Date.now() + schedule.msUntilFirst).toLocaleTimeString()}`);
+      } else {
+        graphTriggerIntervals.set(key, setInterval(fire, schedule.interval));
+        console.log(`[graph-trigger] ${graph.name}: every ${schedule.interval / 1000}s`);
+      }
+    }
+
+    if (trigger.type === 'chat' && trigger.command) {
+      graphChatTriggers.set(trigger.command.toLowerCase(), graphId);
+      console.log(`[graph-trigger] ${graph.name}: !${trigger.command}`);
+    }
+
+    if (trigger.type === 'app-event' && trigger.appId) {
+      // Registered in event system — checked in broadcast handler
+      console.log(`[graph-trigger] ${graph.name}: on ${trigger.appId} data-changed`);
+    }
+  });
+}
+
+function registerAllGraphTriggers() {
+  try {
+    const files = fs.readdirSync(GRAPHS_DIR).filter(f => f.endsWith('.json'));
+    for (const f of files) {
+      const graphId = f.replace('graph-', '').replace('.json', '');
+      registerGraphTriggers(graphId);
+    }
+  } catch {}
+}
+
+function handleChatTrigger(text) {
+  if (!text.startsWith('!')) return null;
+  const cmd = text.slice(1).trim().toLowerCase().split(/\s+/)[0];
+  if (cmd === 'help') {
+    const cmds = Array.from(graphChatTriggers.entries()).map(([c, gId]) => {
+      const g = loadGraph(gId);
+      return '  !' + c + ' — ' + (g?.name || gId);
+    });
+    return cmds.length > 0 ? '📋 Verfügbare Graph-Befehle:\n' + cmds.join('\n') : 'Keine Graph-Befehle konfiguriert.';
+  }
+  const graphId = graphChatTriggers.get(cmd);
+  if (graphId) {
+    const result = executeGraph(graphId);
+    return result.summary || 'Graph ausgeführt.';
+  }
+  return null;
+}
+
+function checkAppEventTriggers(appId) {
+  try {
+    const files = fs.readdirSync(GRAPHS_DIR).filter(f => f.endsWith('.json'));
+    for (const f of files) {
+      const graph = JSON.parse(fs.readFileSync(path.join(GRAPHS_DIR, f), 'utf8'));
+      if (!graph.triggers) continue;
+      for (const t of graph.triggers) {
+        if (t.type === 'app-event' && t.appId === appId) {
+          console.log(`[graph-trigger] ⚡ ${graph.name} triggered by ${appId} data-changed`);
+          executeGraph(graph.projectId || graph.id);
+        }
+      }
+    }
+  } catch {}
 }
 
 function executeGraph(graphId) {
@@ -2249,6 +2351,20 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
           if (hist.messages.length > 200) hist.messages = hist.messages.slice(-200);
           fs.writeFileSync(histFile, JSON.stringify(hist, null, 2));
           broadcast('dashboard', { type: 'chat-message', message: histMsg });
+        }
+
+        // Check for graph trigger commands (!briefing etc.)
+        const triggerResult = handleChatTrigger(message);
+        if (triggerResult) {
+          const histFile1 = path.join(ROOT, 'data', 'chat-history.json');
+          const hist1 = safeReadJSON(histFile1, '{"messages":[]}');
+          if (!hist1.messages) hist1.messages = [];
+          const agentMsg = { id: 'm-' + Date.now() + '-t', from: 'agent', text: triggerResult, source: 'pulseos', time: new Date().toISOString() };
+          hist1.messages.push(agentMsg);
+          if (hist1.messages.length > 200) hist1.messages = hist1.messages.slice(-200);
+          fs.writeFileSync(histFile1, JSON.stringify(hist1, null, 2));
+          broadcast('dashboard', { type: 'chat-message', message: agentMsg });
+          return jsonRes(res, { ok: true, response: triggerResult });
         }
 
         // Build context: chat history + app list
@@ -4382,6 +4498,7 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
         fs.writeFileSync(file, JSON.stringify(JSON.parse(b), null, 2));
         broadcast(appId, { type: 'change', file: apiMatch[1] + '.json', time: Date.now() });
         broadcast('dashboard', { type: 'app-data-changed', appId: appId, file: apiMatch[1] + '.json', time: Date.now() });
+        checkAppEventTriggers(appId);
         invalidateAgentContextCache();
         vikingImportApp(appId);
         emitEvent({ type: 'data:changed', source: `app:${appId}`, data: { appId, file: apiMatch[1] + '.json' } });
@@ -7197,8 +7314,9 @@ server.on('error', (err) => {
 server.listen(PORT, () => {
   console.log(`Claude Desktop → http://localhost:${PORT}`);
   console.log(`[supervisor] Agent auto-restart active (check: ${SUPERVISOR_CHECK_MS/1000}s, threshold: ${SUPERVISOR_DEAD_THRESHOLD_MS/1000}s)`);
-  // Start pulse engine
+  // Start pulse engine + graph triggers
   startPulseEngine();
+  registerAllGraphTriggers();
   // Initial supervisor check
   supervisorCheck();
   writeSupervisorStatus();

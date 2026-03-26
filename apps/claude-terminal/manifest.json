@@ -1,0 +1,8 @@
+{
+  "name": "Claude",
+  "icon": "◆",
+  "color": "#d97706",
+  "description": "Claude Code Terminal — direkte KI-Session",
+  "outputs": [{"id": "response", "desc": "Claude Antwort"}],
+  "inputs": [{"id": "prompt", "desc": "Nachricht an Claude"}]
+}

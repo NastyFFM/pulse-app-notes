@@ -1263,6 +1263,25 @@ body.mode-builder .home-screen { max-width: 600px; }
 </head>
 <body>
 
+<!-- ═══ Splashscreen ═══ -->
+<div id="splash" style="position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);transition:opacity 0.8s ease, visibility 0.8s ease;">
+  <div style="text-align:center;">
+    <div style="font-size:13px;letter-spacing:6px;text-transform:uppercase;color:var(--text-dim);margin-bottom:16px;animation:splashFadeUp 0.8s ease both;">Welcome to</div>
+    <div style="font-size:clamp(48px, 10vw, 80px);font-weight:700;font-family:var(--font);color:var(--text);letter-spacing:-2px;animation:splashFadeUp 0.8s ease 0.2s both;text-shadow:0 0 40px var(--teal), 0 0 80px rgba(78,205,196,0.3);">
+      Claude<span style="color:var(--teal);text-shadow:0 0 30px var(--teal), 0 0 60px var(--teal);">.OS</span>
+    </div>
+    <div style="margin-top:24px;display:flex;gap:6px;justify-content:center;animation:splashFadeUp 0.8s ease 0.4s both;">
+      <span class="splash-dot" style="width:6px;height:6px;border-radius:50%;background:var(--teal);animation:splashPulse 1.2s ease infinite;"></span>
+      <span class="splash-dot" style="width:6px;height:6px;border-radius:50%;background:var(--teal);animation:splashPulse 1.2s ease 0.2s infinite;"></span>
+      <span class="splash-dot" style="width:6px;height:6px;border-radius:50%;background:var(--teal);animation:splashPulse 1.2s ease 0.4s infinite;"></span>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes splashFadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes splashPulse { 0%,100% { opacity:0.3; transform:scale(0.8); } 50% { opacity:1; transform:scale(1.2); } }
+</style>
+
 <!-- ═══ Topbar ═══ -->
 <div class="topbar">
   <div class="topbar-left">
@@ -1560,6 +1579,15 @@ async function load() {
     if (hash !== lastHash) { state = data; lastHash = hash; render(); }
     setSyncStatus('saved');
   } catch { setSyncStatus('error'); }
+  // Dismiss splash after first load
+  const splash = document.getElementById('splash');
+  if (splash && splash.style.opacity !== '0') {
+    setTimeout(() => {
+      splash.style.opacity = '0';
+      splash.style.visibility = 'hidden';
+      setTimeout(() => splash.remove(), 800);
+    }, 1500);
+  }
 }
 
 async function save() {
@@ -3414,7 +3442,9 @@ async function renderActiveGraphs() {
       const delBtn = '<button class="graph-del-btn" onclick="event.stopPropagation();deleteGraph(\'' + g.projectId + '\')" title="Graph löschen">x</button>';
       return '<div class="graph-card" onclick="openGraphEditor(\'' + g.projectId + '\')" style="cursor:pointer;"><div class="graph-nodes">' + nodesHtml + '</div>' +
         '<div class="graph-info"><div class="graph-name">' + label + '</div>' +
-        '<div class="graph-status">' + nodes.length + ' Nodes · ' + (g.edges || []).length + ' Edges</div></div>' + playBtn + delBtn + '</div>';
+        '<div class="graph-status">' + nodes.length + ' Nodes · ' + (g.edges || []).length + ' Edges' +
+        ((g.triggers && g.triggers.length > 0) ? ' · ' + g.triggers.map(t => t.type === 'cron' ? '⏰' : t.type === 'chat' ? '💬' : '⚡').join('') : '') +
+        '</div></div>' + playBtn + delBtn + '</div>';
     }).join('');
   } catch { section.style.display = 'none'; }
 }

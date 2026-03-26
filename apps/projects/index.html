@@ -93,9 +93,9 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
 .gnode-icon{font-size:14px;flex-shrink:0}
 .gnode-name{font-size:11px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gnode-type{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.04)}
-.gnode-delete{font-size:10px;color:var(--muted);cursor:pointer;padding:2px 4px;border-radius:3px;opacity:0;transition:opacity .15s}
+.gnode-delete{font-size:10px;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:3px;opacity:0.4;transition:opacity .15s}
 .gnode:hover .gnode-delete{opacity:1}
-.gnode-delete:hover{color:var(--red);background:rgba(239,68,68,.1)}
+.gnode-delete:hover{color:var(--red);background:rgba(239,68,68,.15)}
 .gnode-ports{padding:6px 0}
 .gnode-config{padding:4px 12px 6px;border-top:1px solid var(--border)}
 .gnode-target-select{background:var(--bg);border:1px solid var(--border);color:var(--text);font:10px var(--font);padding:2px 6px;border-radius:3px;width:100%}
@@ -229,6 +229,7 @@ function renderDetail(p) {
     '<div class="tab-bar">' +
       '<button class="tab-btn' + (activeTab === 'info' ? ' active' : '') + '" onclick="switchTab(\'info\')">Info</button>' +
       '<button class="tab-btn' + (activeTab === 'graph' ? ' active' : '') + '" onclick="switchTab(\'graph\')">Graph</button>' +
+      '<button class="tab-btn' + (activeTab === 'triggers' ? ' active' : '') + '" onclick="switchTab(\'triggers\')">Triggers</button>' +
     '</div>' +
     '<div class="tab-content' + (activeTab === 'info' ? ' active' : '') + '" id="tabInfo">' +
       '<div class="detail-content">' +
@@ -258,7 +259,25 @@ function renderDetail(p) {
         '<svg id="graphSvg"></svg>' +
         '<div id="graphNodes"></div>' +
       '</div>' +
+    '</div>' +
+    '<div class="tab-content' + (activeTab === 'triggers' ? ' active' : '') + '" id="tabTriggers">' +
+      '<div class="detail-content" style="padding:16px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+          '<div style="font-weight:600;font-size:13px;">Trigger</div>' +
+          '<select id="addTriggerSelect" onchange="addTrigger(this.value);this.value=\'\'" style="background:var(--bg);border:1px solid var(--border);color:var(--text);font:11px var(--font);padding:4px 8px;border-radius:4px;">' +
+            '<option value="">+ Trigger hinzufuegen</option>' +
+            '<option value="cron">⏰ Timer</option>' +
+            '<option value="chat">💬 Chat-Befehl</option>' +
+            '<option value="app-event">⚡ App-Event</option>' +
+          '</select>' +
+        '</div>' +
+        '<div id="triggerList"></div>' +
+      '</div>' +
     '</div>';
+
+  if (activeTab === 'triggers') {
+    renderTriggerList();
+  }
 
   if (activeTab === 'graph') {
     initGraphEditor();
@@ -325,10 +344,11 @@ async function loadGraph() {
           const fromNode = graph.nodes?.find(n => n.appId === e.from?.appId)?.id || e.from?.appId;
           const toNode = graph.nodes?.find(n => n.appId === e.to?.appId)?.id || e.to?.appId;
           return { id: e.id || 'e-' + Date.now(), fromNode, toNode, fromPort: e.from?.output || 'data', toPort: e.to?.input || 'data' };
-        })
+        }),
+        triggers: d.triggers || []
       };
     } else {
-      graph = { nodes: [], edges: [] };
+      graph = { nodes: [], edges: [], triggers: [] };
     }
   } catch {
     graph = { nodes: [], edges: [] };
@@ -467,7 +487,9 @@ function renderEdges() {
       ' C ' + (fromPos.x + dx) + ' ' + fromPos.y + ', ' +
       (toPos.x - dx) + ' ' + toPos.y + ', ' +
       toPos.x + ' ' + toPos.y;
-    html += '<path class="graph-edge" d="' + path + '" data-edge="' + e.id + '" onclick="removeEdge(\'' + e.id + '\')"/>';
+    // Invisible wide hit area + visible edge
+    html += '<path d="' + path + '" stroke="transparent" stroke-width="14" fill="none" style="cursor:pointer;pointer-events:stroke" onclick="removeEdge(\'' + e.id + '\')"/>';
+    html += '<path class="graph-edge" d="' + path + '" data-edge="' + e.id + '" style="pointer-events:none"/>';
   }
 
   // Temp edge while drawing
@@ -488,6 +510,8 @@ function bindCanvasEvents() {
   if (!wrap) return;
 
   wrap.addEventListener('mousedown', function(e) {
+    // Let select/button elements work without interference
+    if (e.target.closest('select') || e.target.closest('option') || e.target.closest('.gnode-delete')) return;
     const port = e.target.closest('.gnode-port');
     if (port) {
       e.preventDefault();
@@ -655,6 +679,7 @@ async function saveGraph() {
       fromOutput: e.fromPort,
       toInput: e.toPort
     })),
+    triggers: graph.triggers || [],
     updated: new Date().toISOString()
   };
   try {
@@ -684,6 +709,65 @@ async function runGraph() {
   } catch {
     updateStatus('Run fehlgeschlagen');
   }
+}
+
+// --- Trigger Management ---
+function renderTriggerList() {
+  const el = document.getElementById('triggerList');
+  if (!el) return;
+  const triggers = graph.triggers || [];
+  if (triggers.length === 0) {
+    el.innerHTML = '<div style="color:var(--dim);font-size:11px;text-align:center;padding:20px;">Keine Trigger konfiguriert.<br>Trigger starten den Graph automatisch.</div>';
+    return;
+  }
+  el.innerHTML = triggers.map((t, i) => {
+    const icon = t.type === 'cron' ? '⏰' : t.type === 'chat' ? '💬' : '⚡';
+    const label = t.label || t.schedule || ('!' + (t.command || '')) || t.appId || '';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;">' +
+      '<span style="font-size:14px;">' + icon + '</span>' +
+      '<div style="flex:1;font-size:11px;">' +
+        '<div style="font-weight:600;">' + esc(t.type === 'cron' ? 'Timer' : t.type === 'chat' ? 'Chat-Befehl' : 'App-Event') + '</div>' +
+        '<div style="color:var(--dim);">' + esc(label) + '</div>' +
+      '</div>' +
+      '<span style="cursor:pointer;color:var(--dim);font-size:10px;padding:2px 6px;" onclick="removeTrigger(' + i + ')" title="Entfernen">x</span>' +
+    '</div>';
+  }).join('');
+}
+
+function addTrigger(type) {
+  if (!type || !activeId) return;
+  if (!graph.triggers) graph.triggers = [];
+  if (type === 'cron') {
+    const presets = [
+      { label: 'Alle 5 Minuten', schedule: 'clock:5m' },
+      { label: 'Alle 30 Minuten', schedule: 'clock:30m' },
+      { label: 'Stündlich', schedule: 'clock:1h' },
+      { label: 'Täglich 8:00', schedule: 'daily@08:00' },
+      { label: 'Täglich 20:00', schedule: 'daily@20:00' }
+    ];
+    const choice = prompt('Timer-Intervall wählen:\n' + presets.map((p, i) => (i+1) + '. ' + p.label).join('\n') + '\n\nNummer eingeben:');
+    const idx = parseInt(choice) - 1;
+    if (idx >= 0 && idx < presets.length) {
+      graph.triggers.push({ type: 'cron', schedule: presets[idx].schedule, label: presets[idx].label });
+    } else return;
+  } else if (type === 'chat') {
+    const cmd = prompt('Chat-Befehl (ohne !):');
+    if (!cmd) return;
+    graph.triggers.push({ type: 'chat', command: cmd.trim().toLowerCase(), label: '!' + cmd.trim().toLowerCase() });
+  } else if (type === 'app-event') {
+    const appId = prompt('App-ID (z.B. notes, tasks, calendar):');
+    if (!appId) return;
+    graph.triggers.push({ type: 'app-event', appId: appId.trim(), event: 'data-changed', label: appId.trim() + ' geändert' });
+  }
+  saveGraph();
+  renderTriggerList();
+}
+
+function removeTrigger(index) {
+  if (!graph.triggers) return;
+  graph.triggers.splice(index, 1);
+  saveGraph();
+  renderTriggerList();
 }
 
 function updateStatus(msg) {
