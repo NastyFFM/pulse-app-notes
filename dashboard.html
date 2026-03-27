@@ -4029,9 +4029,10 @@ function showToast(msg, type) {
           };
           fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(peerContact) }).catch(() => {});
           updatePeerBar();
-          // Auto-create DM chat for this peer
+          // Auto-create DM chat for this peer — use guestId for unique chat per tab
           const peerHandle = data.profile.handle || data.profile.name || senderId;
-          const peerChatId = 'chat-peer-' + peerHandle.toLowerCase().replace(/[^a-z0-9-]/g, '');
+          const peerUniqueId = data.profile.guestId || peerHandle;
+          const peerChatId = 'chat-peer-' + peerUniqueId.toLowerCase().replace(/[^a-z0-9-]/g, '');
           // Store chatId on peer for message routing
           connectedPeers[senderId].chatId = peerChatId;
           fetch('/api/chats/' + peerChatId).then(r => r.json()).then(existing => {
@@ -4115,14 +4116,21 @@ function showToast(msg, type) {
   window.sendChatToPeers = function(text, targetChatId) {
     const msgId = 'm-out-' + Date.now();
     const payload = JSON.stringify({ type: 'chat-message', text: text, id: msgId });
-    // Log channel states
-    const states = {};
-    for (const [pid, dc] of Object.entries(bridgeChannels)) states[pid] = dc ? dc.readyState : 'null';
-    console.log('[bridge] sendChatToPeers target:', targetChatId, 'channels:', JSON.stringify(states));
-    // Send to ANY open channel (simple approach — works for 1-to-1)
+    // Try to find the specific peer for this chat
+    if (targetChatId) {
+      for (const [pid, peer] of Object.entries(connectedPeers)) {
+        if (peer.chatId === targetChatId) {
+          const dc = bridgeChannels[pid];
+          if (dc && dc.readyState === 'open') {
+            try { dc.send(payload); console.log('[bridge] Sent to matched peer:', pid, 'chat:', targetChatId); return true; } catch(e) { console.warn('[bridge] Send fail:', e); }
+          }
+        }
+      }
+    }
+    // Fallback: send to first open channel
     for (const [pid, dc] of Object.entries(bridgeChannels)) {
       if (dc && dc.readyState === 'open') {
-        try { dc.send(payload); console.log('[bridge] Sent via channel:', pid); return true; } catch(e) { console.warn('[bridge] Send fail:', e); }
+        try { dc.send(payload); console.log('[bridge] Sent via fallback channel:', pid); return true; } catch(e) { console.warn('[bridge] Send fail:', e); }
       }
     }
     console.warn('[bridge] No open channels!');
