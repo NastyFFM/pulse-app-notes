@@ -276,6 +276,24 @@
       "position": 23,
       "visibility": "private",
       "allowedUsers": []
+    },
+    {
+      "id": "pages",
+      "name": "Pages",
+      "icon": "📄",
+      "color": "#6366f1",
+      "description": "Eigene Webseiten erstellen",
+      "installed": true,
+      "position": 25
+    },
+    {
+      "id": "social",
+      "name": "Social",
+      "icon": "🌐",
+      "color": "#f59e0b",
+      "description": "Social Feed deiner Kontakte",
+      "installed": true,
+      "position": 26
     }
   ]
 }

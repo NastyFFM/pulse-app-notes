@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pages</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg, #0d0d14); color:var(--text, #e0e0e0); min-height:100vh; display:flex; }
+
+/* Sidebar */
+.sidebar { width:200px; border-right:1px solid var(--border, #1e1e2e); display:flex; flex-direction:column; flex-shrink:0; }
+.sidebar-header { padding:12px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border, #1e1e2e); }
+.sidebar-header h1 { font-size:14px; }
+.add-btn { background:var(--teal, #4ecdc4); color:#000; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; font-size:16px; font-weight:600; }
+.page-list { flex:1; overflow-y:auto; }
+.page-item { padding:10px 12px; cursor:pointer; border-bottom:1px solid var(--border, #1e1e2e); transition:background 0.1s; }
+.page-item:hover { background:var(--bg-card-hover, #1a1a2e); }
+.page-item.active { background:var(--bg-card-hover, #1a1a2e); border-left:2px solid var(--teal, #4ecdc4); }
+.page-item .title { font-size:12px; font-weight:600; }
+.page-item .meta { font-size:10px; color:var(--text-dim, #666); margin-top:2px; }
+.empty-list { padding:20px; text-align:center; color:var(--text-dim, #666); font-size:12px; }
+
+/* Editor */
+.editor { flex:1; display:flex; flex-direction:column; }
+.editor-header { padding:8px 12px; border-bottom:1px solid var(--border, #1e1e2e); display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.editor-header input { background:var(--bg-card, #151520); border:1px solid var(--border, #1e1e2e); color:var(--text, #e0e0e0); padding:6px 10px; border-radius:6px; font-size:13px; font-weight:600; flex:1; min-width:120px; }
+.editor-header select { background:var(--bg-card, #151520); border:1px solid var(--border, #1e1e2e); color:var(--text, #e0e0e0); padding:6px 8px; border-radius:6px; font-size:11px; }
+.editor-header button { padding:6px 12px; border-radius:6px; font-size:11px; cursor:pointer; border:none; }
+.btn-save { background:var(--teal, #4ecdc4); color:#000; font-weight:600; }
+.btn-delete { background:#ef4444; color:#fff; }
+.btn-preview { background:var(--bg-card, #151520); color:var(--text, #e0e0e0); border:1px solid var(--border, #1e1e2e) !important; }
+
+/* Content area */
+.editor-body { flex:1; display:flex; overflow:hidden; }
+.content-area { flex:1; display:flex; flex-direction:column; }
+.content-area textarea { flex:1; background:var(--bg, #0d0d14); color:var(--text, #e0e0e0); border:none; padding:16px; font:13px/1.6 'SF Mono','Fira Code',monospace; resize:none; outline:none; }
+
+/* Media sidebar */
+.media-panel { width:180px; border-left:1px solid var(--border, #1e1e2e); padding:8px; overflow-y:auto; }
+.media-panel h3 { font-size:10px; text-transform:uppercase; color:var(--text-dim, #666); margin-bottom:8px; letter-spacing:1px; }
+.media-item { font-size:11px; padding:4px 6px; background:var(--bg-card, #151520); border-radius:4px; margin-bottom:4px; word-break:break-all; display:flex; justify-content:space-between; align-items:center; }
+.media-item button { background:none; border:none; color:#ef4444; cursor:pointer; font-size:12px; }
+.media-add { display:flex; gap:4px; margin-top:8px; }
+.media-add input { flex:1; padding:4px 6px; background:var(--bg-card, #151520); border:1px solid var(--border, #1e1e2e); border-radius:4px; color:var(--text, #e0e0e0); font-size:10px; }
+.media-add button { background:var(--teal, #4ecdc4); color:#000; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; }
+
+/* Preview */
+.preview-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:100; display:flex; align-items:center; justify-content:center; }
+.preview-frame { background:#fff; color:#333; width:90%; max-width:700px; max-height:85vh; overflow-y:auto; border-radius:12px; padding:32px; }
+.preview-frame h1 { font-size:24px; margin-bottom:12px; }
+.preview-frame h2 { font-size:18px; margin:16px 0 8px; }
+.preview-frame h3 { font-size:15px; margin:12px 0 6px; }
+.preview-frame p { margin:8px 0; line-height:1.6; }
+.preview-frame code { background:#f0f0f0; padding:2px 6px; border-radius:3px; font-size:12px; }
+.preview-frame pre { background:#f5f5f5; padding:12px; border-radius:6px; overflow-x:auto; margin:8px 0; }
+.preview-frame img { max-width:100%; border-radius:8px; margin:8px 0; }
+.preview-frame ul, .preview-frame ol { padding-left:20px; margin:8px 0; }
+.preview-close { position:fixed; top:16px; right:16px; background:none; border:none; color:#fff; font-size:24px; cursor:pointer; z-index:101; }
+
+/* No page selected */
+.no-page { flex:1; display:flex; align-items:center; justify-content:center; color:var(--text-dim, #666); font-size:13px; }
+
+/* Mobile */
+@media (max-width:600px) {
+  .sidebar { width:100%; position:absolute; top:0; left:0; bottom:0; z-index:10; background:var(--bg, #0d0d14); }
+  .sidebar.hidden { display:none; }
+  .media-panel { display:none; }
+}
+</style>
+</head>
+<body>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h1>Pages</h1>
+    <button class="add-btn" onclick="createPage()" title="Neue Seite">+</button>
+  </div>
+  <div class="page-list" id="pageList"></div>
+</div>
+<div class="editor" id="editor">
+  <div class="no-page" id="noPage">Wähle oder erstelle eine Seite</div>
+</div>
+
+<script>
+const DATA_URL = '/app/pages/api/pages';
+let pages = [];
+let activePage = null;
+
+async function load() {
+  try {
+    const r = await fetch(DATA_URL);
+    const d = await r.json();
+    pages = d.pages || [];
+  } catch { pages = []; }
+  renderList();
+  if (activePage) {
+    const p = pages.find(x => x.id === activePage);
+    if (p) openPage(p.id);
+    else { activePage = null; showNoPage(); }
+  }
+}
+
+function renderList() {
+  const el = document.getElementById('pageList');
+  if (!pages.length) { el.innerHTML = '<div class="empty-list">Keine Seiten.<br>Klick + um eine zu erstellen.</div>'; return; }
+  el.innerHTML = pages.map(p => {
+    const types = { blog: '📝', gallery: '🖼️', custom: '📄' };
+    return '<div class="page-item' + (activePage === p.id ? ' active' : '') + '" onclick="openPage(\'' + p.id + '\')">' +
+      '<div class="title">' + (types[p.type] || '📄') + ' ' + esc(p.title || 'Ohne Titel') + '</div>' +
+      '<div class="meta">' + esc(p.type || 'custom') + ' · ' + (p.visibility || 'public') + '</div></div>';
+  }).join('');
+}
+
+function showNoPage() {
+  document.getElementById('editor').innerHTML = '<div class="no-page">Wähle oder erstelle eine Seite</div>';
+}
+
+function openPage(id) {
+  activePage = id;
+  const p = pages.find(x => x.id === id);
+  if (!p) return;
+  renderList();
+  // Mobile: hide sidebar
+  document.getElementById('sidebar').classList.add('hidden');
+
+  const ed = document.getElementById('editor');
+  ed.innerHTML =
+    '<div class="editor-header">' +
+      '<input id="pageTitle" value="' + esc(p.title || '') + '" placeholder="Seitentitel">' +
+      '<select id="pageType"><option value="blog"' + (p.type === 'blog' ? ' selected' : '') + '>Blog</option><option value="gallery"' + (p.type === 'gallery' ? ' selected' : '') + '>Galerie</option><option value="custom"' + (p.type === 'custom' ? ' selected' : '') + '>Custom</option></select>' +
+      '<select id="pageVis"><option value="public"' + (p.visibility === 'public' ? ' selected' : '') + '>Öffentlich</option><option value="unlisted"' + (p.visibility === 'unlisted' ? ' selected' : '') + '>Unlisted</option><option value="private"' + (p.visibility === 'private' ? ' selected' : '') + '>Privat</option></select>' +
+      '<button class="btn-preview" onclick="previewPage()">Vorschau</button>' +
+      '<button class="btn-save" onclick="savePage()">Speichern</button>' +
+      '<button class="btn-delete" onclick="deletePage()">✕</button>' +
+    '</div>' +
+    '<div class="editor-body">' +
+      '<div class="content-area"><textarea id="pageContent" placeholder="Markdown schreiben...">' + esc(p.content || '') + '</textarea></div>' +
+      '<div class="media-panel">' +
+        '<h3>Medien</h3>' +
+        '<div id="mediaList">' + (p.media || []).map((m, i) => '<div class="media-item"><span>' + esc(m.substring(0, 30)) + '</span><button onclick="removeMedia(' + i + ')">✕</button></div>').join('') + '</div>' +
+        '<div class="media-add"><input id="mediaUrl" placeholder="URL..."><button onclick="addMedia()">+</button></div>' +
+      '</div>' +
+    '</div>';
+}
+
+function createPage() {
+  const id = 'page-' + Date.now().toString(36);
+  const p = { id, title: 'Neue Seite', slug: id, type: 'blog', visibility: 'public', content: '', media: [], created: new Date().toISOString(), updated: new Date().toISOString() };
+  pages.push(p);
+  save();
+  openPage(id);
+}
+
+async function savePage() {
+  const p = pages.find(x => x.id === activePage);
+  if (!p) return;
+  p.title = document.getElementById('pageTitle').value.trim() || 'Ohne Titel';
+  p.slug = p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || p.id;
+  p.type = document.getElementById('pageType').value;
+  p.visibility = document.getElementById('pageVis').value;
+  p.content = document.getElementById('pageContent').value;
+  p.updated = new Date().toISOString();
+  await save();
+  renderList();
+}
+
+async function deletePage() {
+  if (!confirm('Seite löschen?')) return;
+  pages = pages.filter(x => x.id !== activePage);
+  activePage = null;
+  await save();
+  renderList();
+  showNoPage();
+}
+
+function addMedia() {
+  const p = pages.find(x => x.id === activePage);
+  const url = document.getElementById('mediaUrl').value.trim();
+  if (!p || !url) return;
+  if (!p.media) p.media = [];
+  p.media.push(url);
+  document.getElementById('mediaUrl').value = '';
+  openPage(activePage); // re-render
+}
+
+function removeMedia(i) {
+  const p = pages.find(x => x.id === activePage);
+  if (!p || !p.media) return;
+  p.media.splice(i, 1);
+  openPage(activePage);
+}
+
+function previewPage() {
+  const content = document.getElementById('pageContent').value;
+  const title = document.getElementById('pageTitle').value;
+  const html = renderMarkdown(content);
+  const overlay = document.createElement('div');
+  overlay.className = 'preview-overlay';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = '<button class="preview-close" onclick="this.parentElement.remove()">✕</button>' +
+    '<div class="preview-frame"><h1>' + esc(title) + '</h1>' + html + '</div>';
+  document.body.appendChild(overlay);
+}
+
+function renderMarkdown(text) {
+  let html = esc(text);
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = html.replace(/\n/g, '<br>');
+  html = '<p>' + html + '</p>';
+  html = html.replace(/<pre><code>([\s\S]*?)<\/code><\/pre>/g, (m, c) => '<pre><code>' + c.replace(/<br>/g, '\n').replace(/<\/?p>/g, '') + '</code></pre>');
+  return html;
+}
+
+async function save() {
+  await fetch(DATA_URL, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pages })
+  });
+}
+
+function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+// SDK
+if (window.PulseOS) {
+  PulseOS.onInput('create-page', function(data) {
+    if (data && data.title) {
+      const id = 'page-' + Date.now().toString(36);
+      pages.push({ id, title: data.title, slug: data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'), type: data.type || 'blog', visibility: 'public', content: data.content || '', media: data.media || [], created: new Date().toISOString(), updated: new Date().toISOString() });
+      save();
+      renderList();
+    }
+  });
+  PulseOS.onDataChanged(function() { load(); });
+}
+
+load();
+</script>
+</body>
+</html>

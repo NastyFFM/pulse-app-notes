@@ -1,0 +1,15 @@
+{
+  "name": "Pages",
+  "icon": "📄",
+  "color": "#6366f1",
+  "description": "Eigene Webseiten erstellen und publizieren",
+  "inputs": [
+    { "id": "create-page", "desc": "Neue Seite erstellen" }
+  ],
+  "outputs": [
+    { "id": "all-pages", "desc": "Alle Seiten" },
+    { "id": "public-pages", "desc": "Öffentliche Seiten" }
+  ],
+  "dataFiles": ["pages"],
+  "pulseSubscriptions": []
+}

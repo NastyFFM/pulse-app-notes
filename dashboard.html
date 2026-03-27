@@ -1543,6 +1543,10 @@ function connectSSE() {
         load();
       } else if (msg.type === 'profile-published') {
         addFeed('Profil publiziert', 'sse');
+        // Push profile update to all connected peers
+        if (window.sendToAllPeers) {
+          window.sendToAllPeers({ type: 'profile-updated', url: msg.url, handle: userProfile?.handle, time: Date.now() });
+        }
       } else if (msg.type === 'bridge-room-changed' && msg.roomId) {
         window.startBridgeHost(msg.roomId);
         addFeed('Bridge Room gewechselt', 'sse');
@@ -4051,6 +4055,11 @@ function showToast(msg, type) {
             }
           }).catch(() => {});
         }
+        break;
+      case 'profile-updated':
+        const updaterName = connectedPeers[senderId]?.name || data.handle || 'Peer';
+        showAgentAlert(updaterName + ' hat sein Profil aktualisiert');
+        addFeed(updaterName + ': Profil aktualisiert', 'webrtc');
         break;
       case 'pulse-signal':
         if (data.appId) fetch('/api/pulse/fire/' + data.appId, { method: 'POST' }).catch(() => {});

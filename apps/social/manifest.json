@@ -1,0 +1,14 @@
+{
+  "name": "Social",
+  "icon": "🌐",
+  "color": "#f59e0b",
+  "description": "Social Feed deiner Kontakte",
+  "inputs": [
+    { "id": "refresh", "desc": "Feed aktualisieren" }
+  ],
+  "outputs": [
+    { "id": "feed", "desc": "Aggregierter Feed aller Kontakte" }
+  ],
+  "dataFiles": ["feeds"],
+  "pulseSubscriptions": []
+}

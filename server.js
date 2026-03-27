@@ -6755,6 +6755,20 @@ Regeln:
         updated: new Date().toISOString()
       };
 
+      // Add pages from pages app
+      try {
+        const pagesPath = path.join(ROOT, 'apps', 'pages', 'data', 'pages.json');
+        if (fs.existsSync(pagesPath)) {
+          const pagesData = JSON.parse(fs.readFileSync(pagesPath, 'utf8'));
+          pulseProfile.pages = (pagesData.pages || []).filter(p => p.visibility === 'public').map(p => ({
+            id: p.id, title: p.title, slug: p.slug, type: p.type,
+            content: (p.content || '').substring(0, 500),
+            media: p.media || [],
+            updated: p.updated, created: p.created
+          }));
+        }
+      } catch {}
+
       // Static HTML profile page — shows only public apps
       const appCards = publicApps.map(a => {
         const icon = a.icon || a.name[0];

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Social</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg, #0d0d14); color:var(--text, #e0e0e0); min-height:100vh; }
+
+.header { padding:10px 16px; border-bottom:1px solid var(--border, #1e1e2e); display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.header h1 { font-size:14px; font-weight:600; }
+.views { display:flex; gap:2px; background:var(--bg-card, #151520); border-radius:8px; padding:2px; }
+.views button { background:none; border:none; color:var(--text-dim, #888); padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; transition:all 0.15s; }
+.views button.active { background:var(--teal, #4ecdc4); color:#000; font-weight:600; }
+.refresh-btn { background:none; border:1px solid var(--border, #1e1e2e); color:var(--text-dim, #888); padding:4px 10px; border-radius:6px; cursor:pointer; font-size:11px; }
+
+.filter { padding:8px 16px; display:flex; gap:6px; overflow-x:auto; }
+.filter-chip { background:var(--bg-card, #151520); border:1px solid var(--border, #1e1e2e); color:var(--text-dim, #888); padding:4px 10px; border-radius:12px; font-size:10px; cursor:pointer; white-space:nowrap; }
+.filter-chip.active { border-color:var(--teal, #4ecdc4); color:var(--teal, #4ecdc4); }
+
+.feed { padding:8px 16px; }
+.empty { text-align:center; padding:40px; color:var(--text-dim, #666); font-size:13px; }
+
+/* Feed View */
+.feed-item { background:var(--bg-card, #151520); border:1px solid var(--border, #1e1e2e); border-radius:10px; padding:14px; margin-bottom:10px; }
+.feed-item .author { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.feed-item .avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; }
+.feed-item .author-info { flex:1; }
+.feed-item .author-name { font-size:12px; font-weight:600; }
+.feed-item .author-handle { font-size:10px; color:var(--text-dim, #666); }
+.feed-item .time { font-size:9px; color:var(--text-dim, #666); }
+.feed-item .title { font-size:13px; font-weight:600; margin-bottom:4px; }
+.feed-item .desc { font-size:11px; color:var(--text-dim, #aaa); line-height:1.5; }
+.feed-item .type-badge { display:inline-block; font-size:9px; padding:2px 6px; border-radius:4px; background:var(--bg, #0d0d14); color:var(--text-dim, #888); margin-top:6px; }
+.feed-item .media-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(80px, 1fr)); gap:4px; margin-top:8px; }
+.feed-item .media-grid img { width:100%; height:60px; object-fit:cover; border-radius:4px; }
+
+/* Gallery View */
+.gallery { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:8px; padding:8px 16px; }
+.gallery-item { position:relative; border-radius:8px; overflow:hidden; aspect-ratio:1; background:var(--bg-card, #151520); }
+.gallery-item img { width:100%; height:100%; object-fit:cover; }
+.gallery-item .overlay { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent, rgba(0,0,0,0.8)); padding:8px; }
+.gallery-item .overlay span { font-size:10px; color:#fff; }
+
+/* Apps View */
+.app-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:10px; padding:8px 16px; }
+.app-card { background:var(--bg-card, #151520); border:1px solid var(--border, #1e1e2e); border-radius:10px; padding:12px; text-align:center; }
+.app-card .icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; margin:0 auto 8px; }
+.app-card .name { font-size:12px; font-weight:600; margin-bottom:2px; }
+.app-card .author { font-size:10px; color:var(--text-dim, #666); margin-bottom:6px; }
+.app-card .install-btn { background:var(--teal, #4ecdc4); color:#000; border:none; padding:4px 12px; border-radius:6px; font-size:10px; cursor:pointer; font-weight:600; }
+
+/* Original View */
+.original-frame { width:100%; height:calc(100vh - 90px); border:none; }
+
+.loading { text-align:center; padding:40px; color:var(--text-dim, #666); font-size:12px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Social</h1>
+  <div class="views" id="viewTabs">
+    <button class="active" onclick="setView('feed')">Feed</button>
+    <button onclick="setView('gallery')">Galerie</button>
+    <button onclick="setView('apps')">Apps</button>
+    <button onclick="setView('original')">Original</button>
+  </div>
+  <button class="refresh-btn" onclick="refreshFeeds()">↻</button>
+</div>
+<div class="filter" id="filterBar"></div>
+<div id="content"><div class="loading">Lade Feeds...</div></div>
+
+<script>
+let contacts = [];
+let feeds = {}; // handle → pulse-profile.json data
+let activeView = 'feed';
+let activeFilter = 'all';
+
+async function init() {
+  // Load contacts
+  try {
+    const r = await fetch('/app/contacts/api/contacts');
+    const d = await r.json();
+    contacts = (d.contacts || []).filter(c => c.type !== 'agent');
+  } catch { contacts = []; }
+
+  // Load cached feeds
+  try {
+    const r = await fetch('/app/social/api/feeds');
+    const d = await r.json();
+    if (d.feeds) d.feeds.forEach(f => { feeds[f.handle] = f; });
+  } catch {}
+
+  // Add own profile
+  try {
+    const r = await fetch('/api/profile/export');
+    const d = await r.json();
+    if (d.profile) feeds[d.profile.handle || 'me'] = { ...d.profile, isSelf: true };
+  } catch {}
+
+  renderFilters();
+  render();
+
+  // Auto-fetch remote profiles
+  refreshFeeds();
+}
+
+async function refreshFeeds() {
+  document.querySelector('.refresh-btn').textContent = '⏳';
+  for (const c of contacts) {
+    const url = c.githubPages || c.pagesUrl;
+    if (!url) continue;
+    try {
+      const profileUrl = url.replace(/\/$/, '') + '/pulse-profile.json';
+      const r = await fetch(profileUrl);
+      if (r.ok) {
+        const data = await r.json();
+        feeds[data.handle || c.handle || c.id] = { ...data, contactId: c.id, avatar: c.avatar, color: c.color };
+      }
+    } catch {}
+  }
+  // Cache feeds
+  const feedArr = Object.values(feeds);
+  fetch('/app/social/api/feeds', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ feeds: feedArr, lastUpdated: new Date().toISOString() })
+  }).catch(() => {});
+  document.querySelector('.refresh-btn').textContent = '↻';
+  render();
+}
+
+function renderFilters() {
+  const bar = document.getElementById('filterBar');
+  const all = [{ handle: 'all', name: 'Alle' }];
+  Object.values(feeds).forEach(f => all.push({ handle: f.handle, name: f.name || f.handle }));
+  bar.innerHTML = all.map(f =>
+    '<button class="filter-chip' + (activeFilter === f.handle ? ' active' : '') + '" onclick="setFilter(\'' + f.handle + '\')">' + esc(f.name) + '</button>'
+  ).join('');
+}
+
+function setFilter(handle) {
+  activeFilter = handle;
+  renderFilters();
+  render();
+}
+
+function setView(view) {
+  activeView = view;
+  document.querySelectorAll('.views button').forEach(b => b.classList.remove('active'));
+  document.querySelector('.views button[onclick*="' + view + '"]')?.classList.add('active');
+  render();
+}
+
+function render() {
+  const el = document.getElementById('content');
+  const filtered = activeFilter === 'all' ? Object.values(feeds) : [feeds[activeFilter]].filter(Boolean);
+
+  if (!filtered.length) { el.innerHTML = '<div class="empty">Keine Feeds. Verbinde dich mit anderen PulseOS-Usern um ihren Feed zu sehen.</div>'; return; }
+
+  switch (activeView) {
+    case 'feed': renderFeed(el, filtered); break;
+    case 'gallery': renderGallery(el, filtered); break;
+    case 'apps': renderApps(el, filtered); break;
+    case 'original': renderOriginal(el, filtered); break;
+  }
+}
+
+function renderFeed(el, profiles) {
+  const items = [];
+  profiles.forEach(p => {
+    // Pages as feed items
+    (p.pages || []).filter(pg => pg.visibility === 'public').forEach(pg => {
+      items.push({ type: 'page', profile: p, page: pg, time: pg.updated || pg.created });
+    });
+    // Apps as feed items
+    (p.publicApps || []).forEach(app => {
+      items.push({ type: 'app', profile: p, app, time: p.updated });
+    });
+  });
+  items.sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0));
+
+  if (!items.length) { el.innerHTML = '<div class="empty">Noch keine Inhalte im Feed.</div>'; return; }
+
+  el.innerHTML = '<div class="feed">' + items.map(item => {
+    const p = item.profile;
+    const authorHtml = '<div class="author">' +
+      '<div class="avatar" style="background:' + (p.color || '#4ecdc4') + ';">' + esc(p.avatar || '?') + '</div>' +
+      '<div class="author-info"><div class="author-name">' + esc(p.name || p.handle) + '</div><div class="author-handle">@' + esc(p.handle || '') + '</div></div>' +
+      '<span class="time">' + timeAgo(item.time) + '</span></div>';
+
+    if (item.type === 'page') {
+      const pg = item.page;
+      const mediaHtml = (pg.media && pg.media.length) ? '<div class="media-grid">' + pg.media.slice(0, 4).map(m => '<img src="' + esc(m) + '" onerror="this.remove()">').join('') + '</div>' : '';
+      return '<div class="feed-item">' + authorHtml +
+        '<div class="title">' + esc(pg.title) + '</div>' +
+        '<div class="desc">' + esc((pg.content || '').substring(0, 200)) + '</div>' +
+        mediaHtml +
+        '<span class="type-badge">' + esc(pg.type || 'page') + '</span></div>';
+    } else {
+      const app = item.app;
+      return '<div class="feed-item">' + authorHtml +
+        '<div class="title">' + esc(app.icon || '') + ' ' + esc(app.name) + '</div>' +
+        '<div class="desc">' + esc(app.description || '') + '</div>' +
+        '<span class="type-badge">App</span>' +
+        (app.installUrl ? ' <button onclick="installApp(\'' + esc(app.installUrl) + '\')" style="margin-left:8px;background:var(--teal);color:#000;border:none;padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;">Installieren</button>' : '') +
+        '</div>';
+    }
+  }).join('') + '</div>';
+}
+
+function renderGallery(el, profiles) {
+  const media = [];
+  profiles.forEach(p => {
+    (p.pages || []).forEach(pg => {
+      (pg.media || []).forEach(m => media.push({ url: m, title: pg.title, profile: p }));
+    });
+  });
+  if (!media.length) { el.innerHTML = '<div class="empty">Keine Medien gefunden.</div>'; return; }
+  el.innerHTML = '<div class="gallery">' + media.map(m =>
+    '<div class="gallery-item"><img src="' + esc(m.url) + '" onerror="this.parentElement.remove()"><div class="overlay"><span>' + esc(m.title) + ' · ' + esc(m.profile.name || '') + '</span></div></div>'
+  ).join('') + '</div>';
+}
+
+function renderApps(el, profiles) {
+  const apps = [];
+  profiles.forEach(p => (p.publicApps || []).forEach(a => apps.push({ ...a, profile: p })));
+  if (!apps.length) { el.innerHTML = '<div class="empty">Keine Apps gefunden.</div>'; return; }
+  el.innerHTML = '<div class="app-grid">' + apps.map(a =>
+    '<div class="app-card">' +
+    '<div class="icon" style="background:' + (a.color || '#1a2a3a') + ';">' + esc(a.icon || '?') + '</div>' +
+    '<div class="name">' + esc(a.name) + '</div>' +
+    '<div class="author">von ' + esc(a.profile.name || a.profile.handle) + '</div>' +
+    (a.installUrl ? '<button class="install-btn" onclick="installApp(\'' + esc(a.installUrl) + '\')">Installieren</button>' : '') +
+    '</div>'
+  ).join('') + '</div>';
+}
+
+function renderOriginal(el, profiles) {
+  const p = profiles[0];
+  if (!p) { el.innerHTML = '<div class="empty">Kein Profil ausgewählt.</div>'; return; }
+  const url = p.pagesUrl || p.githubPages || (p.github ? 'https://' + p.github + '.github.io' : '');
+  if (!url) { el.innerHTML = '<div class="empty">Keine Profilseite verfügbar.</div>'; return; }
+  el.innerHTML = '<iframe class="original-frame" src="' + esc(url) + '"></iframe>';
+}
+
+async function installApp(url) {
+  if (!url) return;
+  const repo = url.replace('https://github.com/', '');
+  try {
+    const r = await fetch('/api/install-app', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repo }) });
+    const d = await r.json();
+    alert(d.ok ? 'App installiert!' : (d.error || 'Fehler'));
+  } catch { alert('Installation fehlgeschlagen'); }
+}
+
+function timeAgo(t) {
+  if (!t) return '';
+  const s = Math.floor((Date.now() - new Date(t)) / 1000);
+  if (s < 60) return 'gerade';
+  if (s < 3600) return Math.floor(s / 60) + 'min';
+  if (s < 86400) return Math.floor(s / 3600) + 'h';
+  return Math.floor(s / 86400) + 'd';
+}
+
+function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+// SDK
+if (window.PulseOS) {
+  PulseOS.onInput('refresh', function() { refreshFeeds(); });
+  PulseOS.onDataChanged(function() { init(); });
+}
+
+init();
+</script>
+</body>
+</html>
