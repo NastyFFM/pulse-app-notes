@@ -63,7 +63,7 @@
       "description": "Datei-Browser",
       "installed": true,
       "position": 5,
-      "visibility": "private",
+      "visibility": "public",
       "allowedUsers": []
     },
     {
@@ -96,6 +96,17 @@
       "description": "System-Einstellungen",
       "installed": true,
       "position": 8,
+      "visibility": "private",
+      "allowedUsers": []
+    },
+    {
+      "id": "claude-terminal",
+      "name": "Claude",
+      "icon": "◆",
+      "color": "#d97706",
+      "description": "Claude Code Terminal — direkte KI-Session",
+      "installed": true,
+      "position": 3,
       "visibility": "private",
       "allowedUsers": []
     },

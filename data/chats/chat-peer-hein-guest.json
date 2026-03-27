@@ -1,0 +1,508 @@
+{
+  "id": "chat-peer-hein-guest",
+  "type": "dm",
+  "name": "Hein",
+  "participants": [
+    "chris",
+    "hein-guest"
+  ],
+  "messages": [
+    {
+      "id": "m-1774623739013",
+      "from": "hein-guest",
+      "text": "test",
+      "source": "webrtc",
+      "time": "2026-03-27T15:02:19.013Z"
+    },
+    {
+      "id": "m-1774623744694",
+      "from": "hein-guest",
+      "text": "hallo",
+      "source": "webrtc",
+      "time": "2026-03-27T15:02:24.694Z"
+    },
+    {
+      "id": "m-1774623771319",
+      "from": "hein-guest",
+      "text": "Hein here",
+      "source": "webrtc",
+      "time": "2026-03-27T15:02:51.319Z"
+    },
+    {
+      "id": "m-1774627938452",
+      "from": "user",
+      "text": "christof hier",
+      "source": "dashboard",
+      "time": "2026-03-27T16:12:18.452Z"
+    },
+    {
+      "id": "m-1774627943577",
+      "from": "agent",
+      "text": "hein hier",
+      "source": "webrtc",
+      "time": "2026-03-27T16:12:23.577Z"
+    },
+    {
+      "id": "m-1774628046805",
+      "from": "agent",
+      "text": "test",
+      "source": "webrtc",
+      "time": "2026-03-27T16:14:06.805Z"
+    },
+    {
+      "id": "m-1774629910795",
+      "from": "agent",
+      "text": "hallo",
+      "source": "webrtc",
+      "time": "2026-03-27T16:45:10.795Z"
+    },
+    {
+      "id": "m-1774630851899",
+      "from": "user",
+      "text": "öffne claude",
+      "source": "dashboard",
+      "time": "2026-03-27T17:00:51.899Z"
+    },
+    {
+      "id": "m-1774630864275",
+      "from": "user",
+      "text": "öffne notes",
+      "source": "dashboard",
+      "time": "2026-03-27T17:01:04.275Z"
+    },
+    {
+      "id": "m-1774630875309",
+      "from": "agent",
+      "text": "test",
+      "source": "webrtc",
+      "time": "2026-03-27T17:01:15.309Z"
+    },
+    {
+      "id": "m-1774631062735",
+      "from": "user",
+      "text": "test",
+      "source": "dashboard",
+      "time": "2026-03-27T17:04:22.735Z"
+    },
+    {
+      "id": "m-1774631065918",
+      "from": "agent",
+      "text": "test",
+      "source": "webrtc",
+      "time": "2026-03-27T17:04:25.918Z"
+    },
+    {
+      "id": "m-1774631071264",
+      "from": "user",
+      "text": "test",
+      "source": "dashboard",
+      "time": "2026-03-27T17:04:31.264Z"
+    },
+    {
+      "id": "m-1774631415610",
+      "from": "user",
+      "text": "chris",
+      "source": "dashboard",
+      "time": "2026-03-27T17:10:15.610Z"
+    },
+    {
+      "id": "m-1774631419934",
+      "from": "agent",
+      "text": "hein",
+      "source": "webrtc",
+      "time": "2026-03-27T17:10:19.934Z"
+    },
+    {
+      "id": "m-1774632010285",
+      "from": "user",
+      "text": "Christof",
+      "source": "dashboard",
+      "time": "2026-03-27T17:20:10.285Z"
+    },
+    {
+      "id": "m-1774632015255",
+      "from": "agent",
+      "text": "Heinrich",
+      "source": "webrtc",
+      "time": "2026-03-27T17:20:15.255Z"
+    },
+    {
+      "id": "m-1774632327052",
+      "from": "agent",
+      "text": "test",
+      "source": "webrtc",
+      "time": "2026-03-27T17:25:27.052Z"
+    },
+    {
+      "id": "m-1774633075987",
+      "from": "user",
+      "text": "test",
+      "source": "dashboard",
+      "time": "2026-03-27T17:37:55.987Z"
+    },
+    {
+      "id": "m-1774633079966",
+      "from": "user",
+      "text": "test",
+      "source": "dashboard",
+      "time": "2026-03-27T17:37:59.966Z"
+    },
+    {
+      "id": "m-1774633083808",
+      "from": "agent",
+      "text": "test",
+      "source": "webrtc",
+      "time": "2026-03-27T17:38:03.808Z"
+    },
+    {
+      "id": "m-1774633087937",
+      "from": "user",
+      "text": "test",
+      "source": "dashboard",
+      "time": "2026-03-27T17:38:07.937Z"
+    },
+    {
+      "id": "m-1774633111638",
+      "from": "user",
+      "text": "test",
+      "source": "dashboard",
+      "time": "2026-03-27T17:38:31.638Z"
+    },
+    {
+      "id": "m-1774633114447",
+      "from": "agent",
+      "text": "test",
+      "source": "webrtc",
+      "time": "2026-03-27T17:38:34.448Z"
+    },
+    {
+      "id": "m-1774633168787",
+      "from": "user",
+      "text": "ttestset",
+      "source": "dashboard",
+      "time": "2026-03-27T17:39:28.787Z"
+    },
+    {
+      "id": "m-1774633171761",
+      "from": "agent",
+      "text": "fwefew",
+      "source": "webrtc",
+      "time": "2026-03-27T17:39:31.761Z"
+    },
+    {
+      "id": "m-1774633174888",
+      "from": "user",
+      "text": "wefwfe",
+      "source": "dashboard",
+      "time": "2026-03-27T17:39:34.888Z"
+    },
+    {
+      "id": "m-1774633185936",
+      "from": "agent",
+      "text": "eqrewr",
+      "source": "webrtc",
+      "time": "2026-03-27T17:39:45.936Z"
+    },
+    {
+      "id": "m-1774633188444",
+      "from": "user",
+      "text": "werwer",
+      "source": "dashboard",
+      "time": "2026-03-27T17:39:48.444Z"
+    },
+    {
+      "id": "m-1774633197348",
+      "from": "user",
+      "text": "erwer",
+      "source": "dashboard",
+      "time": "2026-03-27T17:39:57.348Z"
+    },
+    {
+      "id": "m-1774633200033",
+      "from": "user",
+      "text": "werer",
+      "source": "dashboard",
+      "time": "2026-03-27T17:40:00.033Z"
+    },
+    {
+      "id": "m-1774633225723",
+      "from": "user",
+      "text": "wefewf",
+      "source": "dashboard",
+      "time": "2026-03-27T17:40:25.723Z"
+    },
+    {
+      "id": "m-1774633228588",
+      "from": "agent",
+      "text": "wefwef",
+      "source": "webrtc",
+      "time": "2026-03-27T17:40:28.588Z"
+    },
+    {
+      "id": "m-1774633461263",
+      "from": "user",
+      "text": "test",
+      "source": "dashboard",
+      "time": "2026-03-27T17:44:21.263Z"
+    },
+    {
+      "id": "m-1774633463738",
+      "from": "agent",
+      "text": "test",
+      "source": "webrtc",
+      "time": "2026-03-27T17:44:23.738Z"
+    },
+    {
+      "id": "m-1774633518678",
+      "from": "user",
+      "text": "khk",
+      "source": "dashboard",
+      "time": "2026-03-27T17:45:18.678Z"
+    },
+    {
+      "id": "m-1774633612627",
+      "from": "agent",
+      "text": "hallo wie geht es dir. ich werde nachher ein schönes Abendessen machen",
+      "source": "webrtc",
+      "time": "2026-03-27T17:46:52.627Z"
+    },
+    {
+      "id": "m-1774633619670",
+      "from": "agent",
+      "text": "test",
+      "source": "webrtc",
+      "time": "2026-03-27T17:46:59.670Z"
+    },
+    {
+      "id": "m-1774633622906",
+      "from": "user",
+      "text": "halo",
+      "source": "dashboard",
+      "time": "2026-03-27T17:47:02.906Z"
+    },
+    {
+      "id": "m-1774633638505",
+      "from": "user",
+      "text": "mir geht es gut. ich mache auch bald feierabend",
+      "source": "dashboard",
+      "time": "2026-03-27T17:47:18.505Z"
+    },
+    {
+      "id": "m-1774633655893",
+      "from": "agent",
+      "text": "Nachrichten pro Nutzer: Ein durchschnittlicher WhatsApp-Nutzer versendet schätzungsweise über 1.000 bis zu 1.200 Nachrichten pro Monat (basierend auf älteren Studien von ca. 40 Nachrichten pro Tag).",
+      "source": "webrtc",
+      "time": "2026-03-27T17:47:35.893Z"
+    },
+    {
+      "id": "m-1774633671476",
+      "from": "user",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "dashboard",
+      "time": "2026-03-27T17:47:51.476Z"
+    },
+    {
+      "id": "m-1774633681014",
+      "from": "agent",
+      "text": "da ist eine kurze nachricht",
+      "source": "webrtc",
+      "time": "2026-03-27T17:48:01.014Z"
+    },
+    {
+      "id": "m-1774633916949",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T17:51:56.949Z"
+    },
+    {
+      "id": "m-1774633919251",
+      "from": "user",
+      "text": "Nachrichten pro Nutzer: Ein durchschnittlicher WhatsApp-Nutzer versendet schätzungsweise über 1.000 bis zu 1.200 Nachrichten pro Monat (basierend auf älteren Studien von ca. 40 Nachrichten pro Tag).",
+      "source": "dashboard",
+      "time": "2026-03-27T17:51:59.251Z"
+    },
+    {
+      "id": "m-1774633934745",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T17:52:14.745Z"
+    },
+    {
+      "id": "m-1774633953320",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T17:52:33.320Z"
+    },
+    {
+      "id": "m-1774633956938",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T17:52:36.938Z"
+    },
+    {
+      "id": "m-1774633962060",
+      "from": "user",
+      "text": "Nachrichten pro Nutzer: Ein durchschnittlicher WhatsApp-Nutzer versendet schätzungsweise über 1.000 bis zu 1.200 Nachrichten pro Monat (basierend auf älteren Studien von ca. 40 Nachrichten pro Tag).",
+      "source": "dashboard",
+      "time": "2026-03-27T17:52:42.060Z"
+    },
+    {
+      "id": "m-1774634588881",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T18:03:08.881Z"
+    },
+    {
+      "id": "m-1774634616955",
+      "from": "user",
+      "text": "qwdqwdqwd",
+      "source": "dashboard",
+      "time": "2026-03-27T18:03:36.955Z"
+    },
+    {
+      "id": "m-1774634620918",
+      "from": "user",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "dashboard",
+      "time": "2026-03-27T18:03:40.918Z"
+    },
+    {
+      "id": "m-1774634716494",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T18:05:16.494Z"
+    },
+    {
+      "id": "m-1774634723197",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T18:05:23.197Z"
+    },
+    {
+      "id": "m-1774634728738",
+      "from": "user",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "dashboard",
+      "time": "2026-03-27T18:05:28.738Z"
+    },
+    {
+      "id": "m-1774634734480",
+      "from": "agent",
+      "text": "1234",
+      "source": "webrtc",
+      "time": "2026-03-27T18:05:34.480Z"
+    },
+    {
+      "id": "m-1774634738648",
+      "from": "agent",
+      "text": "1234567890",
+      "source": "webrtc",
+      "time": "2026-03-27T18:05:38.648Z"
+    },
+    {
+      "id": "m-1774634745670",
+      "from": "agent",
+      "text": "122345678901234567890ß´",
+      "source": "webrtc",
+      "time": "2026-03-27T18:05:45.670Z"
+    },
+    {
+      "id": "m-1774634753303",
+      "from": "agent",
+      "text": "qwetrouiasdfgllasdfb. 3p2oiuh32fkljn h fhoiuh 23iu n23ufhbnfweuiophf",
+      "source": "webrtc",
+      "time": "2026-03-27T18:05:53.303Z"
+    },
+    {
+      "id": "m-1774634771137",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T18:06:11.137Z"
+    },
+    {
+      "id": "m-1774634860970",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T18:07:40.970Z"
+    },
+    {
+      "id": "m-1774635496468",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T18:18:16.468Z"
+    },
+    {
+      "id": "m-1774635504383",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T18:18:24.383Z"
+    },
+    {
+      "id": "m-1774635543569",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T18:19:03.569Z"
+    },
+    {
+      "id": "m-1774635547937",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T18:19:07.937Z"
+    },
+    {
+      "id": "m-1774635550644",
+      "from": "user",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "dashboard",
+      "time": "2026-03-27T18:19:10.644Z"
+    },
+    {
+      "id": "m-1774635552704",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T18:19:12.704Z"
+    },
+    {
+      "id": "m-1774635683539",
+      "from": "agent",
+      "text": "<body>\n\n<!-- Setup Screen -->\n<div id=\"setupScreen\" style=\"display: none;\">\n  <div class=\"setup-title\">PulseOS Chat</div>\n  <div class=\"setup-sub\">Verbinde dich mit einem PulseOS User</div>\n  <input class=\"setup-input\" id=\"nameInput\" placeholder=\"Dein Name\" maxlength=\"30\">\n  <input class=\"setup-input\" id=\"avatarInput\" placeholder=\"Avatar (1 Emoji)\" maxlength=\"4\" value=\"👤\" style=\"width:80px;\">\n  <div class=\"setup-divider\"></div>\n  <input class=\"setup-input\" id=\"roomInput\" placeholder=\"Raum-Code (z.B. pulse-56d8fb24)\">\n  <button class=\"setup-btn\" id=\"joinBtn\" onclick=\"joinRoom()\">Verbinden</button>\n  <div id=\"setupError\" style=\"color:#ef4444;font-size:11px;min-height:16px;\"></div>\n</div>\n\n<!-- Chat Screen -->\n<div id=\"chatScreen\" style=\"display: flex;\">\n  <div class=\"chat-topbar\">\n    <div class=\"dot online\" id=\"statusDot\"></div>\n    <span class=\"title\" id=\"roomTitle\">Raum: pulse-56d8fb24</span>\n    <span class=\"info\" id=\"peerCount\">1 online</span>\n    <button class=\"btn\" onclick=\"disconnect()\">Verlassen</button>\n  </div>\n  <div id=\"messages\"><div class=\"system-msg\">— Verbunden mit Signaling-Server —</div><div class=\"system-msg\">— Chris ist beigetreten —</div><div class=\"msg self\"><div class=\"avatar\">👤</div><div><div class=\"name\">Hein</div><div class=\"bubble\">Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).</div></div></div><div class=\"msg peer\"><div class=\"avatar\">🧑‍💻</div><div><div class=\"name\">Chris</div><div class=\"bubble\">Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).</div></div></div><div class=\"msg self\"><div class=\"avatar\">👤</div><div><div class=\"name\">Hein</div><div class=\"bubble\">Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).</div></div></div></div>\n  <div class=\"input-row\">\n    <textarea id=\"chatInput\" rows=\"1\" placeholder=\"Nachricht...\" onkeydown=\"if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();sendMsg();}\" style=\"height: auto;\"></textarea>\n    <button id=\"sendBtn\" onclick=\"sendMsg()\">▶</button>\n  </div>\n  <div class=\"powered\">Powered by <a href=\"https://github.com/NastyFFM/PulseOS\" target=\"_blank\">PulseOS</a></div>\n</div>\n\n<script src=\"https://cdn.socket.io/4.7.5/socket.io.min.js\"></script>\n<script>\nconst SIGNALING_URL = 'https://web-production-84380f.up.railway.app';\nconst ICE_SERVERS = [\n  { urls: 'stun:stun.l.google.com:19302' },\n  { urls: 'stun:stun1.l.google.com:19302' }\n];\n\nlet socket = null, roomId = null;\nlet myProfile = { name: '', avatar: '👤', handle: '' };\nconst peers = {}; // peerId → { pc, dc, profile }\nconst msgIds = new Set();\n\n// Load saved profile from localStorage\nfunction loadProfile() {\n  try {\n    const saved = JSON.parse(localStorage.getItem('pulseChat') || '{}');\n    if (saved.name) document.getElementById('nameInput').value = saved.name;\n    if (saved.avatar) document.getElementById('avatarInput').value = saved.avatar;\n    if (saved.lastRoom) document.getElementById('roomInput').value = saved.lastRoom;\n  } catch {}\n}\n\nfunction saveProfile() {\n  localStorage.setItem('pulseChat', JSON.stringify({\n    name: myProfile.name,\n    avatar: myProfile.avatar,\n    lastRoom: roomId\n  }));\n}\n\n// Check URL params for room\nfunction checkUrlParams() {\n  const params = new URLSearchParams(window.location.search);\n  const room = params.get('room');\n  if (room) document.getElementById('roomInput').value = room;\n}\n\n// Join room\nfunction joinRoom() {\n  const name = document.getElementById('nameInput').value.trim();\n  const avatar = document.getElementById('avatarInput').value.trim() || '👤';\n  const room = document.getElementById('roomInput').value.trim();\n\n  if (!name) { document.getElementById('setupError').textContent = 'Bitte Name eingeben'; return; }\n  if (!room) { document.getElementById('setupError').textContent = 'Bitte Raum-Code eingeben'; return; }\n\n  myProfile = { name, avatar, handle: name.toLowerCase().replace(/\\s+/g, '-') + '-guest' };\n  roomId = room;\n  saveProfile();\n\n  document.getElementById('setupScreen').style.display = 'none';\n  document.getElementById('chatScreen').style.display = 'flex';\n  document.getElementById('roomTitle').textContent = 'Raum: ' + roomId.substring(0, 16);\n\n  connectSocket();\n}\n\n// Socket.io + WebRTC\nfunction connectSocket() {\n  if (socket) { try { socket.disconnect(); } catch {} }\n\n  socket = io(SIGNALING_URL, {\n    forceNew: true,\n    transports: ['websocket', 'polling'],\n    reconnection: true,\n    reconnectionAttempts: Infinity,\n    reconnectionDelay: 3000\n  });\n\n  socket.on('connect', () => {\n    document.getElementById('statusDot').className = 'dot connecting';\n    socket.emit('join-room', { roomId });\n    addSystemMsg('Verbunden mit Signaling-Server');\n  });\n\n  socket.on('room-users', ({ users }) => {\n    users.forEach(id => createPeer(id, true));\n    updatePeerCount();\n  });\n\n  socket.on('user-left', ({ userId }) => {\n    const name = peers[userId]?.profile?.name || 'Peer';\n    cleanupPeer(userId);\n    addSystemMsg(name + ' hat den Raum verlassen');\n    updatePeerCount();\n  });\n\n  socket.on('offer', async ({ offer, senderId }) => {\n    const pc = createPeer(senderId, false);\n    try {\n      await pc.setRemoteDescription(offer);\n      const answer = await pc.createAnswer();\n      await pc.setLocalDescription(answer);\n      socket.emit('answer', { roomId, answer, targetId: senderId });\n    } catch (e) {\n      console.warn('Offer handling failed:', e.message);\n      cleanupPeer(senderId);\n    }\n  });\n\n  socket.on('answer', async ({ answer, senderId }) => {\n    if (peers[senderId]?.pc)\n      try { await peers[senderId].pc.setRemoteDescription(answer); } catch {}\n  });\n\n  socket.on('ice-candidate', async ({ candidate, senderId }) => {\n    if (peers[senderId]?.pc && candidate)\n      try { await peers[senderId].pc.addIceCandidate(candidate); } catch {}\n  });\n\n  socket.on('disconnect', () => {\n    document.getElementById('statusDot').className = 'dot';\n    addSystemMsg('Verbindung verloren — versuche erneut...');\n  });\n\n  socket.on('reconnect', () => {\n    socket.emit('join-room', { roomId });\n    addSystemMsg('Wieder verbunden');\n  });\n}\n\nfunction createPeer(targetId, isInitiator) {\n  if (peers[targetId]?.pc) return peers[targetId].pc;\n\n  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });\n  peers[targetId] = { pc, dc: null, profile: null };\n\n  if (isInitiator) {\n    const dc = pc.createDataChannel('bridge', { ordered: true });\n    setupChannel(dc, targetId);\n  }\n\n  pc.ondatachannel = e => setupChannel(e.channel, targetId);\n\n  pc.onicecandidate = e => {\n    if (e.candidate && socket)\n      socket.emit('ice-candidate', { roomId, candidate: e.candidate, targetId });\n  };\n\n  pc.onconnectionstatechange = () => {\n    if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {\n      const name = peers[targetId]?.profile?.name || 'Peer';\n      addSystemMsg('Verbindung zu ' + name + ' verloren');\n      cleanupPeer(targetId);\n      updatePeerCount();\n    }\n  };\n\n  if (isInitiator) {\n    pc.createOffer()\n      .then(offer => { pc.setLocalDescription(offer); socket.emit('offer', { roomId, offer, targetId }); })\n      .catch(() => cleanupPeer(targetId));\n  }\n\n  return pc;\n}\n\nfunction setupChannel(dc, targetId) {\n  peers[targetId].dc = dc;\n\n  dc.onopen = () => {\n    document.getElementById('statusDot').className = 'dot online';\n    dc.send(JSON.stringify({ type: 'profile-exchange', profile: myProfile }));\n    updatePeerCount();\n  };\n\n  dc.onclose = () => {\n    if (peers[targetId]) peers[targetId].dc = null;\n    updatePeerCount();\n  };\n\n  dc.onmessage = e => {\n    try {\n      const data = JSON.parse(e.data);\n      console.log('[DC] Received from', targetId, ':', data.type, data.text?.substring(0,30));\n      handleMessage(data, targetId);\n    } catch(err) { console.warn('[DC] Parse error:', err); }\n  };\n}\n\nfunction handleMessage(data, senderId) {\n  switch (data.type) {\n    case 'profile-exchange':\n      peers[senderId].profile = data.profile;\n      addSystemMsg((data.profile.name || 'Peer') + ' ist beigetreten');\n      updatePeerCount();\n      break;\n\n    case 'chat-message': case 'text':\n      const text = data.text || data.content;\n      if (!text) return;\n      const from = peers[senderId]?.profile?.name || 'Peer';\n      const avatar = peers[senderId]?.profile?.avatar || '?';\n      // Check if it's from ClaudeOS\n      const isAgent = data.fromAgent || data.source === 'claudeos';\n      addChatMsg(from, avatar, text, isAgent ? 'agent' : 'peer', data.id);\n      break;\n\n    case 'ping':\n      if (peers[senderId]?.dc?.readyState === 'open')\n        peers[senderId].dc.send(JSON.stringify({ type: 'pong', timestamp: data.timestamp }));\n      break;\n  }\n}\n\nfunction sendMsg() {\n  const input = document.getElementById('chatInput');\n  const text = input.value.trim();\n  if (!text) return;\n  input.value = '';\n  input.style.height = 'auto';\n\n  const msgId = 'g-' + Date.now() + Math.random().toString(36).substring(7);\n\n  // Send to all peers\n  Object.values(peers).forEach(p => {\n    if (p.dc?.readyState === 'open') {\n      p.dc.send(JSON.stringify({ type: 'chat-message', text, id: msgId, timestamp: Date.now() }));\n    }\n  });\n\n  addChatMsg(myProfile.name, myProfile.avatar, text, 'self', msgId);\n}\n\nfunction addChatMsg(name, avatar, text, type, id) {\n  if (id && msgIds.has(id)) return;\n  if (id) msgIds.add(id);\n\n  const msgs = document.getElementById('messages');\n  const div = document.createElement('div');\n  div.className = 'msg ' + type;\n\n  const nameLabel = type === 'agent' ? '◆ ClaudeOS' : name;\n  div.innerHTML =\n    '<div class=\"avatar\">' + esc(avatar || '?') + '</div>' +\n    '<div>' +\n      '<div class=\"name\">' + esc(nameLabel) + '</div>' +\n      '<div class=\"bubble\">' + esc(text) + '</div>' +\n    '</div>';\n\n  msgs.appendChild(div);\n  msgs.scrollTop = msgs.scrollHeight;\n}\n\nfunction addSystemMsg(text) {\n  const msgs = document.getElementById('messages');\n  const div = document.createElement('div');\n  div.className = 'system-msg';\n  div.textContent = '— ' + text + ' —';\n  msgs.appendChild(div);\n  msgs.scrollTop = msgs.scrollHeight;\n}\n\nfunction updatePeerCount() {\n  const online = Object.values(peers).filter(p => p.dc?.readyState === 'open').length;\n  document.getElementById('peerCount').textContent = online + ' online';\n  if (online > 0) document.getElementById('statusDot').className = 'dot online';\n}\n\nfunction cleanupPeer(id) {\n  if (peers[id]) {\n    if (peers[id].dc) try { peers[id].dc.close(); } catch {}\n    if (peers[id].pc) try { peers[id].pc.close(); } catch {}\n    delete peers[id];\n  }\n}\n\nfunction disconnect() {\n  Object.keys(peers).forEach(cleanupPeer);\n  if (socket) { try { socket.disconnect(); } catch {} socket = null; }\n  document.getElementById('chatScreen').style.display = 'none';\n  document.getElementById('setupScreen').style.display = 'flex';\n  document.getElementById('statusDot').className = 'dot';\n}\n\nfunction esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }\n\n// Auto-resize textarea\ndocument.getElementById('chatInput')?.addEventListener('input', function() {\n  this.style.height = 'auto';\n  this.style.height = Math.min(this.scrollHeight, 80) + 'px';\n});\n\n// Init\nloadProfile();\ncheckUrlParams();\n\n// Auto-join if URL has room param\nconst autoRoom = new URLSearchParams(window.location.search).get('room');\nif (autoRoom && document.getElementById('nameInput').value) {\n  document.getElementById('roomInput').value = autoRoom;\n  // Small delay for DOM\n  setTimeout(() => {\n    if (document.getElementById('nameInput').value) joinRoom();\n  }, 100);\n}\n</script>\n\n\n<veepn-lock-screen><template shadowrootmode=\"open\"><style>html{box-sizing:border-box;text-size-adjust:100%;word-break:normal;tab-size:4}*,:before,:after{background-repeat:no-repeat;box-sizing:border-box}:before,:after{text-decoration:inherit;vertical-align:inherit}*{padding:0;margin:0}hr{overflow:visible;height:0;color:inherit;border:0;border-top:1px solid}details,main{display:block}summary{display:list-item}small{font-size:80%}[hidden]{display:none!important}abbr[title]{border-bottom:none;text-decoration:underline;text-decoration:underline dotted}a{background-color:transparent}a:active,a:hover{outline-width:0}code,kbd,pre,samp{font-family:monospace}pre{font-size:1em}b,strong{font-weight:bolder}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{border-color:inherit;text-indent:0}iframe{border-style:none}input{border-radius:0}[type=number]::-webkit-inner-spin-button,[type=number]::-webkit-outer-spin-button{height:auto}[type=search]{appearance:textfield;outline-offset:-2px}[type=search]::-webkit-search-decoration{appearance:none}textarea{overflow:auto;resize:vertical}button,input,optgroup,select,textarea{font:inherit;color:inherit}optgroup{font-weight:700}button{overflow:visible}button,select{text-transform:none}button,[type=button],[type=reset],[type=submit],[role=button]{cursor:pointer}button::-moz-focus-inner,[type=button]::-moz-focus-inner,[type=reset]::-moz-focus-inner,[type=submit]::-moz-focus-inner{border-style:none;padding:0}button,html [type=button],[type=reset],[type=submit]{appearance:auto}button,input,select,textarea{background-color:transparent;border-style:none}button:-moz-focusring,[type=button]::-moz-focus-inner,[type=reset]::-moz-focus-inner,[type=submit]::-moz-focus-inner{outline:1px dotted ButtonText}select{appearance:none}a:focus,button:focus,input:focus,select:focus,textarea:focus{outline-width:0}select::-ms-expand{display:none}select::-ms-value{color:currentcolor}legend{border:0;color:inherit;display:table;white-space:normal;max-width:100%}::-webkit-file-upload-button{appearance:auto;color:inherit;font:inherit}[disabled]{cursor:default}img{border-style:none}progress{vertical-align:baseline}[aria-busy=true]{cursor:progress}[aria-controls]{cursor:pointer}[aria-disabled=true]{cursor:default}ul,ol{list-style-type:none}figure{margin:0}@keyframes slide-in{0%{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}.gradient-blue{background:radial-gradient(106.41% 128.47% at 50.15% 128.47%,#23abff,#3066ff)}.gradient-green{background:radial-gradient(92.26% 118.88% at 50.15% .13%,#00c3c3,#00aab3)}.gradient-purple{background:radial-gradient(165.12% 115.56% at 50.15% .13%,#a15aff,#00a0eb)}.bg-blue{background-color:#f2f5ff}.bg-purple{background-color:#f7f0ff}.bg-green{background-color:#ebffed}.lock-screen{font-family:FigtreeVF,sans-serif;letter-spacing:normal;position:fixed;z-index:2147483638;right:24px;bottom:24px;width:327px;border-radius:24px;overflow:hidden;box-shadow:0 24px 32px #00000014;animation:slide-in .3s ease-in-out forwards}.lock-screen__content{position:relative;padding:24px 24px 64px}.lock-screen__close{position:absolute;top:16px;right:16px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;opacity:.5}.lock-screen__label{height:26px;width:fit-content;border-radius:50px;background-color:#fff3;padding-inline:16px;display:flex;align-items:center;justify-content:center;gap:8px;color:#fff;font-size:12px;line-height:18px;margin:-8px auto 16px}.lock-screen__title{color:#fff;text-align:center;font-size:20px;line-height:28px;font-weight:600;margin-bottom:8px}.lock-screen__description{color:#f5f6f7;text-align:center;font-size:14px;line-height:20px}.lock-screen__description b{font-weight:600}.lock-screen__card{position:relative;z-index:1;margin-top:-44px;background-color:#fff;border-radius:24px;padding:32px 20px 20px}.lock-screen__inner{margin-bottom:24px}.lock-screen__submit{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:16px;height:40px;width:100%;border-radius:12px;padding-inline:16px;background-color:#f70;color:#fff;margin-bottom:16px}.lock-screen__skip{display:flex;align-items:center;justify-content:center;font-size:14px;line-height:20px;color:#82829c;margin-inline:auto}.price-card{border:1px solid #f2f2fc;background:linear-gradient(254.14deg,#fafbff .04%,#f5f8ff 100.04%);border-radius:24px;padding:24px 28px}.price-card__label{color:#4a5764;text-align:center;font-size:14px;line-height:20px;text-transform:uppercase;margin-bottom:16px}.price-card__price{display:flex;justify-content:center;align-items:flex-start;column-gap:2px;margin-bottom:12px}.price-card__currency{color:#515478;font-size:18px;line-height:28px}.price-card__number{color:#14142a;text-align:center;font-size:64px;line-height:54px}.price-card__wrap{display:flex;flex-direction:column}.price-card__decimal{color:#515478;font-size:18px;line-height:28px;font-weight:600}.price-card__period{color:#515478;font-size:14px;line-height:20px;margin-top:-6px}.price-card__discount{position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:12px}.price-card__discount-divider{position:absolute;z-index:0;top:50%;left:0;width:100%;height:1px;background-color:#dbe2f9;transform:translateY(-50%)}.price-card__discount-icon{position:absolute;z-index:1;top:50%;left:50%;transform:translate(-50%,-50%)}.price-card__discount-text{position:relative;z-index:2;color:#fff;font-size:12px;font-weight:600;line-height:18px}.price-card__features{display:flex;align-items:center;justify-content:center;column-gap:16px}.price-card__feature{color:#222e3a;font-size:14px;line-height:20px;display:flex;align-items:center;gap:6px}.price-card__feature:before{content:\"\";display:block;width:4px;height:4px;background-color:#20df9e;border-radius:50%;flex-shrink:0}.features-list{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.features-list__item{display:flex;flex-direction:column;align-items:center;gap:6px}.features-list__icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center}.features-list__text{color:#293a53;text-align:center;font-size:16px;line-height:24px;letter-spacing:-.1px}</style></template><style>@font-face{font-family:FigtreeVF;src:url(chrome-extension://majdfhpaihoncoakbjgbdhglocklcgno/fonts/FigtreeVF.woff2) format(\"woff2 supports variations\"),url(chrome-extension://majdfhpaihoncoakbjgbdhglocklcgno/fonts/FigtreeVF.woff2) format(\"woff2-variations\");font-weight:100 1000;font-display:swap}</style></veepn-lock-screen></body>",
+      "source": "webrtc",
+      "time": "2026-03-27T18:21:23.539Z"
+    },
+    {
+      "id": "m-1774635701926",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T18:21:41.926Z"
+    },
+    {
+      "id": "m-1774635705037",
+      "from": "user",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "dashboard",
+      "time": "2026-03-27T18:21:45.037Z"
+    }
+  ],
+  "unread": 1,
+  "created": "2026-03-27T15:02:08.688Z",
+  "lastMessage": {
+    "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wö",
+    "from": "user",
+    "time": "2026-03-27T18:21:45.037Z"
+  }
+}

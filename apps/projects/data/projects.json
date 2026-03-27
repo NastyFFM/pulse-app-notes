@@ -20,6 +20,20 @@
       "description": "",
       "color": "#4ecdc4",
       "created": "2026-03-24T16:48:42.600Z"
+    },
+    {
+      "id": "graph-1774373582426",
+      "name": "Test",
+      "description": "",
+      "color": "#4ecdc4",
+      "created": "2026-03-24T17:33:02.426Z"
+    },
+    {
+      "id": "graph-1774463442416",
+      "name": "Fred Demo",
+      "description": "",
+      "color": "#4ecdc4",
+      "created": "2026-03-25T18:30:42.416Z"
     }
   ]
 }
