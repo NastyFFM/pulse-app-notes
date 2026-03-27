@@ -3946,6 +3946,12 @@ function showToast(msg, type) {
   }
 
   function setupBridgeChannel(dc, targetId) {
+    // If we already have an open channel for this peer, close the new one
+    if (bridgeChannels[targetId] && bridgeChannels[targetId].readyState === 'open' && dc !== bridgeChannels[targetId]) {
+      console.log('[bridge] Duplicate channel for', targetId, '— closing new one');
+      try { dc.close(); } catch {}
+      return;
+    }
     bridgeChannels[targetId] = dc;
     dc.onopen = () => {
       connectedPeers[targetId] = { peerId: targetId, online: true, lastSeen: Date.now() };
