@@ -2995,7 +2995,8 @@ function renderChatsList() {
     const preview = c.lastMessage ? c.lastMessage.text : 'Noch keine Nachrichten';
     const unread = c.unread > 0 ? '<span style="background:var(--teal);color:var(--bg);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">' + c.unread + '</span>' : '';
     const time = c.lastMessage?.time ? new Date(c.lastMessage.time).toLocaleTimeString('de', {hour:'2-digit',minute:'2-digit'}) : '';
-    return '<div class="chat-list-item" onclick="openChat(\'' + c.id + '\')" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;" onmouseenter="this.style.background=\'var(--bg-card-hover)\'" onmouseleave="this.style.background=\'\'">' +
+    const deletable = c.id !== 'chat-claudeos';
+    return '<div class="chat-list-item" onclick="openChat(\'' + c.id + '\')" oncontextmenu="event.preventDefault();' + (deletable ? 'confirmDeleteChat(\'' + c.id + '\',\'' + escapeHtml(name).replace(/'/g, "\\'") + '\')' : '') + '" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;" onmouseenter="this.style.background=\'var(--bg-card-hover)\'" onmouseleave="this.style.background=\'\'">' +
       '<span style="font-size:18px;width:28px;text-align:center;flex-shrink:0;">' + icon + '</span>' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;">' +
@@ -3019,7 +3020,10 @@ async function openChat(chatId) {
   document.getElementById('chatBackBtn').style.display = '';
   const chat = chatsList.find(c => c.id === chatId);
   const name = chat?.name || chat?.participants?.filter(p => p !== (userProfile?.handle || 'chris')).join(', ') || 'Chat';
-  document.getElementById('chatHeaderTitle').textContent = name;
+  const titleEl = document.getElementById('chatHeaderTitle');
+  titleEl.textContent = name;
+  titleEl.style.cursor = chat?.type === 'group' ? 'pointer' : '';
+  titleEl.onclick = chat?.type === 'group' ? () => showGroupEditDialog(chatId) : null;
   // Show ClaudeOS toggle for peer chats
   const slot = document.getElementById('claudeToggleSlot');
   let toggleEl = document.getElementById('claudeToggle');
@@ -3078,6 +3082,59 @@ function chatShowList() {
   document.getElementById('chatListView').style.display = 'flex';
   document.getElementById('chatBackBtn').style.display = 'none';
   document.getElementById('chatHeaderTitle').textContent = 'Chats';
+  loadChatsList();
+}
+
+async function confirmDeleteChat(chatId, chatName) {
+  if (!confirm('Chat "' + chatName + '" löschen?')) return;
+  await fetch('/api/chats/' + chatId, { method: 'DELETE' });
+  if (activeChatId === chatId) chatShowList();
+  else loadChatsList();
+}
+
+async function confirmDeleteContact(contactId, contactName) {
+  if (!confirm('Kontakt "' + contactName + '" entfernen?')) return;
+  try {
+    const r = await fetch('/app/contacts/api/contacts');
+    const d = await r.json();
+    d.contacts = (d.contacts || []).filter(c => c.id !== contactId);
+    d.updatedAt = new Date().toISOString();
+    await fetch('/app/contacts/api/contacts', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+    renderContacts();
+  } catch {}
+}
+
+function showGroupEditDialog(chatId) {
+  const chat = chatsList.find(c => c.id === chatId);
+  if (!chat || chat.type !== 'group') return;
+  let modal = document.getElementById('groupEditModal');
+  if (modal) { modal.remove(); return; }
+  modal = document.createElement('div');
+  modal.id = 'groupEditModal';
+  modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:16px;z-index:10001;min-width:280px;box-shadow:0 20px 60px rgba(0,0,0,0.5);';
+  const parts = (chat.participants || []).filter(p => p !== (userProfile?.handle || 'chris'));
+  modal.innerHTML = '<div style="font-weight:600;margin-bottom:12px;font-size:13px;">Gruppe bearbeiten</div>' +
+    '<input id="geditName" value="' + escapeHtml(chat.name || '') + '" placeholder="Gruppenname" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;margin-bottom:8px;">' +
+    '<div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;">Teilnehmer:</div>' +
+    '<div id="geditParts" style="margin-bottom:8px;">' + parts.map(p => '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;"><span>' + escapeHtml(p) + '</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;">✕</button></div>').join('') + '</div>' +
+    '<input id="geditAdd" placeholder="Teilnehmer hinzufügen..." style="width:100%;padding:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;margin-bottom:8px;" onkeydown="if(event.key===\'Enter\'){const v=this.value.trim();if(v){document.getElementById(\'geditParts\').innerHTML+=\'<div style=&quot;display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;&quot;><span>\'+v+\'</span><button onclick=&quot;this.parentElement.remove()&quot; style=&quot;background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;&quot;>✕</button></div>\';this.value=\'\';}}">' +
+    '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+    '<button onclick="document.getElementById(\'groupEditModal\').remove()" style="padding:6px 12px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;">Abbrechen</button>' +
+    '<button onclick="saveGroupEdit(\'' + chatId + '\')" style="padding:6px 12px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">Speichern</button></div>';
+  document.body.appendChild(modal);
+  document.getElementById('geditName').focus();
+}
+
+async function saveGroupEdit(chatId) {
+  const name = document.getElementById('geditName').value.trim();
+  const partEls = document.querySelectorAll('#geditParts > div > span');
+  const participants = [(userProfile?.handle || 'chris')];
+  partEls.forEach(el => { if (el.textContent.trim()) participants.push(el.textContent.trim()); });
+  await fetch('/api/chats/' + chatId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, participants }) });
+  document.getElementById('groupEditModal')?.remove();
+  if (activeChatId === chatId) {
+    document.getElementById('chatHeaderTitle').textContent = name || 'Gruppe';
+  }
   loadChatsList();
 }
 

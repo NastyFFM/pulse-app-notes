@@ -1,0 +1,15 @@
+{
+  "name": "Contacts",
+  "icon": "👤",
+  "color": "#4ecdc4",
+  "description": "Kontakte verwalten",
+  "inputs": [
+    { "id": "add-contact", "desc": "Neuen Kontakt hinzufügen" }
+  ],
+  "outputs": [
+    { "id": "all-contacts", "desc": "Alle Kontakte" },
+    { "id": "online-contacts", "desc": "Aktuell verbundene Peers" }
+  ],
+  "dataFiles": ["contacts"],
+  "pulseSubscriptions": []
+}

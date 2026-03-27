@@ -104,6 +104,64 @@ Then open `http://localhost:3000`.
 
 alarm, budget, calendar, camera, chat, context-demo, dashboard, diary, doom, drumcomputer, eggtimer, filebrowser, flappy, imagegen, kanban, mindmap, news-channels, notes, orchestrator, picviewer, pipette, podcast, pulse, radio, recipes, social-trends, terminal, tetris, tickets, travel-planner, viking, weather, whiteboard, youtube, calendar-view
 
+## App-Konvention (PFLICHT für jede App)
+
+Jede App in PulseOS folgt dem gleichen Paradigma: **App = Daten + UI + API = Graph-Node**.
+Die KI, der Graph-Editor und der User nutzen dieselben APIs.
+
+### Pflicht-Dateien
+```
+apps/<name>/
+├── index.html        ← UI (vanilla HTML/CSS/JS)
+├── manifest.json     ← Metadaten + Graph-Ports
+└── data/
+    └── <name>.json   ← App-Daten (mind. eine Datei)
+```
+
+### manifest.json Pflichtfelder
+```json
+{
+  "name": "App Name",
+  "icon": "A",
+  "color": "#hex",
+  "description": "Was die App tut",
+  "inputs": [{ "id": "input-name", "desc": "Was dieser Input empfängt" }],
+  "outputs": [{ "id": "output-name", "desc": "Was dieser Output liefert" }],
+  "dataFiles": ["state"],
+  "pulseSubscriptions": []
+}
+```
+
+- **inputs/outputs**: Definieren die Graph-Ports. Der Graph-Editor zeigt diese als Verbindungspunkte.
+- **dataFiles**: Listet alle JSON-Dateien in `data/` — diese werden automatisch als API-Endpoints verfügbar (`GET/PUT /app/<name>/api/<dataFile>`).
+
+### SDK-Nutzung (PFLICHT)
+Jede App MUSS das PulseOS SDK nutzen:
+```javascript
+// Daten empfangen (Graph-Input)
+PulseOS.onInput('input-name', function(data) { /* ... */ });
+// Daten senden (Graph-Output)
+PulseOS.emit('output-name', data);
+// Auf externe Änderungen reagieren
+PulseOS.onDataChanged(function() { loadData(); });
+// Zustand speichern/laden
+PulseOS.saveState(data);
+PulseOS.loadState().then(data => { /* ... */ });
+```
+
+### Daten-API
+Alle App-Daten sind über die einheitliche API erreichbar:
+- `GET /app/<name>/api/<dataFile>` → liest `apps/<name>/data/<dataFile>.json`
+- `PUT /app/<name>/api/<dataFile>` → schreibt `apps/<name>/data/<dataFile>.json`
+- Nach dem Schreiben: `POST /api/notify-change` mit `{"appId":"<name>","file":"<dataFile>.json"}` für Live-Updates
+
+### Regeln für KI
+Wenn du eine App erstellst oder modifizierst:
+1. Stelle sicher dass `manifest.json` `inputs`, `outputs` und `dataFiles` hat
+2. Die App MUSS `PulseOS.onInput()`, `PulseOS.emit()` und `PulseOS.onDataChanged()` nutzen
+3. Daten werden NUR über die Data-API gelesen/geschrieben, nie direkt ins Dateisystem
+4. Hardcodierte Farben vermeiden — nutze CSS-Variablen (`var(--bg)`, `var(--text)`, `var(--teal)`, etc.)
+
 ## Data Patterns
 
 - App-specific data: `apps/<name>/data/`

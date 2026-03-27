@@ -56,6 +56,15 @@
       "allowedUsers": []
     },
     {
+      "id": "contacts",
+      "name": "Contacts",
+      "icon": "👤",
+      "color": "#4ecdc4",
+      "description": "Kontakte verwalten",
+      "installed": true,
+      "position": 5
+    },
+    {
       "id": "files",
       "name": "Files",
       "icon": "F",

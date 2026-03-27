@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contacts</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg, #0d0d14); color:var(--text, #e0e0e0); min-height:100vh; }
+.header { padding:12px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border, #1e1e2e); }
+.header h1 { font-size:16px; font-weight:600; }
+.add-btn { background:var(--teal, #4ecdc4); color:#000; border:none; padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; }
+.search { padding:8px 16px; }
+.search input { width:100%; padding:8px 12px; background:var(--bg-card, #151520); border:1px solid var(--border, #1e1e2e); border-radius:8px; color:var(--text, #e0e0e0); font-size:13px; outline:none; }
+.search input:focus { border-color:var(--teal, #4ecdc4); }
+.section-title { padding:8px 16px 4px; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim, #666); }
+.contact-list { padding:0 8px; }
+.contact { display:flex; align-items:center; gap:12px; padding:10px 8px; border-radius:8px; cursor:pointer; transition:background 0.15s; }
+.contact:hover { background:var(--bg-card-hover, #1a1a2e); }
+.contact .avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.contact .info { flex:1; min-width:0; }
+.contact .name { font-size:13px; font-weight:600; }
+.contact .handle { font-size:11px; color:var(--text-dim, #666); }
+.contact .type-badge { font-size:9px; padding:2px 6px; border-radius:4px; background:var(--bg-card, #151520); color:var(--text-dim, #666); }
+.contact .delete-btn { display:none; background:none; border:none; color:#ef4444; font-size:16px; cursor:pointer; padding:4px 8px; }
+.contact:hover .delete-btn { display:block; }
+.empty { text-align:center; padding:40px 20px; color:var(--text-dim, #666); font-size:13px; }
+
+/* Add Contact Dialog */
+.dialog-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:100; }
+.dialog { background:var(--bg-surface, #13131f); border:1px solid var(--border, #1e1e2e); border-radius:12px; padding:20px; width:300px; }
+.dialog h2 { font-size:14px; margin-bottom:12px; }
+.dialog input { width:100%; padding:8px; background:var(--bg-card, #151520); border:1px solid var(--border, #1e1e2e); border-radius:6px; color:var(--text, #e0e0e0); font-size:12px; margin-bottom:8px; }
+.dialog .btn-row { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+.dialog .btn-cancel { background:none; border:1px solid var(--border, #1e1e2e); color:var(--text-dim, #888); padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; }
+.dialog .btn-save { background:var(--teal, #4ecdc4); color:#000; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Kontakte</h1>
+  <button class="add-btn" onclick="showAddDialog()">+ Neu</button>
+</div>
+<div class="search">
+  <input id="searchInput" placeholder="Suchen..." oninput="render()">
+</div>
+<div id="contactsList"></div>
+
+<script>
+const DATA_URL = '/app/contacts/api/contacts';
+let contacts = [];
+
+async function load() {
+  try {
+    const r = await fetch(DATA_URL);
+    const d = await r.json();
+    contacts = d.contacts || [];
+    render();
+  } catch { contacts = []; render(); }
+}
+
+function render() {
+  const el = document.getElementById('contactsList');
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  const filtered = contacts.filter(c =>
+    !q || (c.name || '').toLowerCase().includes(q) || (c.handle || '').toLowerCase().includes(q)
+  );
+
+  const agents = filtered.filter(c => c.type === 'agent');
+  const users = filtered.filter(c => c.type === 'user');
+  const peers = filtered.filter(c => c.type === 'peer');
+
+  let html = '';
+  if (agents.length) {
+    html += '<div class="section-title">Agents</div><div class="contact-list">';
+    agents.forEach(c => html += contactHtml(c));
+    html += '</div>';
+  }
+  if (users.length) {
+    html += '<div class="section-title">User</div><div class="contact-list">';
+    users.forEach(c => html += contactHtml(c));
+    html += '</div>';
+  }
+  if (peers.length) {
+    html += '<div class="section-title">Peers</div><div class="contact-list">';
+    peers.forEach(c => html += contactHtml(c));
+    html += '</div>';
+  }
+  if (!filtered.length) html = '<div class="empty">Keine Kontakte</div>';
+  el.innerHTML = html;
+}
+
+function contactHtml(c) {
+  const color = c.color || '#4ecdc4';
+  const avatar = c.avatar || (c.name || '?')[0].toUpperCase();
+  const typeLabel = c.type === 'agent' ? '◆' : c.type === 'user' ? '👤' : '🔗';
+  const deletable = c.type === 'peer';
+  return '<div class="contact" onclick="selectContact(\'' + esc(c.id) + '\')">' +
+    '<div class="avatar" style="background:' + color + ';">' + esc(avatar) + '</div>' +
+    '<div class="info"><div class="name">' + esc(c.name || c.id) + '</div>' +
+    '<div class="handle">' + esc(c.handle || c.id) + '</div></div>' +
+    '<span class="type-badge">' + typeLabel + ' ' + esc(c.type || '') + '</span>' +
+    (deletable ? '<button class="delete-btn" onclick="event.stopPropagation();deleteContact(\'' + esc(c.id) + '\')" title="Entfernen">✕</button>' : '') +
+    '</div>';
+}
+
+function selectContact(id) {
+  const c = contacts.find(x => x.id === id);
+  if (c) {
+    if (window.PulseOS) PulseOS.emit('all-contacts', c);
+  }
+}
+
+async function deleteContact(id) {
+  const c = contacts.find(x => x.id === id);
+  if (!c || c.type === 'agent') return;
+  if (!confirm('Kontakt "' + (c.name || id) + '" entfernen?')) return;
+  contacts = contacts.filter(x => x.id !== id);
+  await save();
+  render();
+}
+
+function showAddDialog() {
+  if (document.querySelector('.dialog-overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'dialog-overlay';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = '<div class="dialog">' +
+    '<h2>Neuer Kontakt</h2>' +
+    '<input id="addName" placeholder="Name">' +
+    '<input id="addHandle" placeholder="Handle (z.B. @max)">' +
+    '<input id="addAvatar" placeholder="Avatar (Emoji)" maxlength="4" value="👤" style="width:80px;">' +
+    '<div class="btn-row">' +
+    '<button class="btn-cancel" onclick="this.closest(\'.dialog-overlay\').remove()">Abbrechen</button>' +
+    '<button class="btn-save" onclick="addContact()">Speichern</button></div></div>';
+  document.body.appendChild(overlay);
+  document.getElementById('addName').focus();
+}
+
+async function addContact() {
+  const name = document.getElementById('addName').value.trim();
+  if (!name) return;
+  const handle = document.getElementById('addHandle').value.trim() || name.toLowerCase().replace(/\s+/g, '-');
+  const avatar = document.getElementById('addAvatar').value.trim() || '👤';
+  contacts.push({
+    id: handle,
+    name,
+    handle,
+    avatar,
+    color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'),
+    type: 'peer',
+    createdAt: new Date().toISOString(),
+    lastSeen: new Date().toISOString()
+  });
+  await save();
+  document.querySelector('.dialog-overlay')?.remove();
+  render();
+}
+
+async function save() {
+  await fetch(DATA_URL, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ version: 1, contacts, updatedAt: new Date().toISOString() })
+  });
+}
+
+function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// SDK integration
+if (window.PulseOS) {
+  PulseOS.onInput('add-contact', function(data) {
+    if (data && data.name) {
+      contacts.push({ ...data, type: data.type || 'peer', createdAt: new Date().toISOString() });
+      save();
+      render();
+    }
+  });
+  PulseOS.onDataChanged(function() { load(); });
+}
+
+load();
+</script>
+</body>
+</html>

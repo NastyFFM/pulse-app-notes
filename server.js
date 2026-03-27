@@ -2142,11 +2142,23 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
   <p style="margin-top:8px;">Bearbeite <code>apps/${appId}/index.html</code> um sie anzupassen.</p>
 </div>
 <script>
-// PulseOS SDK ist automatisch verfuegbar:
-// PulseOS.alert('Nachricht') - Zeige Alert in Agent-Bar
-// PulseOS.saveState(data) - Zustand speichern
-// PulseOS.loadState() - Zustand laden
-// PulseOS.onDataChanged(cb) - Reagiere auf Datenänderungen
+// PulseOS SDK (automatisch verfuegbar):
+// PulseOS.saveState(data)     - Zustand speichern (PUT /app/${appId}/api/state)
+// PulseOS.loadState()         - Zustand laden (GET /app/${appId}/api/state)
+// PulseOS.emit(name, data)    - Output an Graph senden
+// PulseOS.onInput(name, cb)   - Input von Graph empfangen
+// PulseOS.onDataChanged(cb)   - Reagiere auf externe Datenänderungen
+// PulseOS.alert(msg)          - Zeige Alert in Agent-Bar
+
+// Graph-Integration: Empfange Daten von anderen Apps
+if (window.PulseOS) {
+  PulseOS.onInput('data', function(incoming) {
+    console.log('Received graph input:', incoming);
+  });
+  PulseOS.onDataChanged(function() {
+    console.log('Data changed externally, reloading...');
+  });
+}
 </script>
 </body>
 </html>`;
@@ -2154,7 +2166,10 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
         fs.writeFileSync(path.join(appDir, 'index.html'), html);
         fs.writeFileSync(path.join(appDir, 'manifest.json'), JSON.stringify({
           name, icon: appIcon, color: appColor, description: description || '',
-          nodeType: null, inputs: [], outputs: [], pulseSubscriptions: []
+          inputs: [{ id: 'data', desc: 'Beliebige Daten empfangen' }],
+          outputs: [{ id: 'state', desc: 'Aktueller App-Zustand' }],
+          dataFiles: ['state'],
+          pulseSubscriptions: []
         }, null, 2));
         fs.writeFileSync(path.join(appDir, 'data', 'state.json'), '{}');
 
@@ -6548,10 +6563,15 @@ Regeln:
   }
 
   if (url === '/api/contacts') {
-    const contactsPath = path.join(__dirname, 'data', 'contacts.json');
+    // Proxy to contacts app data — single source of truth
+    const contactsPath = path.join(ROOT, 'apps', 'contacts', 'data', 'contacts.json');
+    // Fallback to old location if app doesn't exist yet
+    const fallbackPath = path.join(__dirname, 'data', 'contacts.json');
+    const actualPath = fs.existsSync(contactsPath) ? contactsPath : fallbackPath;
+
     if (req.method === 'GET') {
       try {
-        const data = JSON.parse(fs.readFileSync(contactsPath, 'utf8'));
+        const data = JSON.parse(fs.readFileSync(actualPath, 'utf8'));
         return jsonRes(res, data);
       } catch (e) {
         return jsonRes(res, { version: 1, contacts: [], updatedAt: null });
@@ -6562,12 +6582,10 @@ Regeln:
         try {
           const contact = JSON.parse(b);
           let data = { version: 1, contacts: [], updatedAt: null };
-          try { data = JSON.parse(fs.readFileSync(contactsPath, 'utf8')); } catch (e) {}
+          try { data = JSON.parse(fs.readFileSync(actualPath, 'utf8')); } catch (e) {}
           const idx = data.contacts.findIndex(c => c.id === contact.id || (c.handle === contact.handle && c.type !== 'agent'));
           if (idx >= 0) {
-            // Never overwrite agent contacts with peer data
             if (data.contacts[idx].type === 'agent' && contact.type === 'peer') {
-              // Skip — don't overwrite agents
               return jsonRes(res, { ok: true, skipped: true, contact: data.contacts[idx] });
             }
             data.contacts[idx] = { ...data.contacts[idx], ...contact, lastSeen: new Date().toISOString() };
@@ -6575,7 +6593,7 @@ Regeln:
             data.contacts.push({ ...contact, firstSeen: new Date().toISOString(), lastSeen: new Date().toISOString() });
           }
           data.updatedAt = new Date().toISOString();
-          fs.writeFileSync(contactsPath, JSON.stringify(data, null, 2));
+          fs.writeFileSync(actualPath, JSON.stringify(data, null, 2));
           broadcast('dashboard', { type: 'contacts-updated', time: Date.now() });
           return jsonRes(res, { ok: true, contact: data.contacts[idx >= 0 ? idx : data.contacts.length - 1] });
         } catch (e) {

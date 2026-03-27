@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "contacts": [
+    {
+      "id": "peer-nastycoder",
+      "name": "Chris",
+      "handle": "nastycoder",
+      "avatar": "🧑‍💻",
+      "color": "#4ecdc4",
+      "type": "peer",
+      "bio": "Building PulseOS",
+      "status": "online",
+      "githubPages": "https://nastycoder.github.io",
+      "links": [],
+      "roomId": "pulse-5093113b",
+      "createdAt": "2026-03-18T22:44:20.728Z",
+      "updatedAt": "2026-03-24T03:13:37.311Z",
+      "lastSeen": "2026-03-27T19:37:19.726Z",
+      "role": "",
+      "email": "",
+      "github": "NastyFFM",
+      "twitter": "",
+      "website": "",
+      "lastPublished": "2026-03-25T18:20:19.746Z",
+      "pagesUrl": "https://NastyFFM.github.io",
+      "peerId": "3EPkSyT-Imf2dqw_AAs4"
+    },
+    {
+      "id": "pulseos",
+      "name": "PulseOS",
+      "handle": "pulseos",
+      "avatar": "P",
+      "color": "#f5a623",
+      "type": "agent",
+      "bio": "PulseOS Local Agent",
+      "endpoint": "local-cli",
+      "status": "online"
+    },
+    {
+      "id": "peer-hein-guest",
+      "name": "Hein",
+      "handle": "hein-guest",
+      "avatar": "👤",
+      "type": "peer",
+      "pulseos": false,
+      "claudeos": false,
+      "lastSeen": "2026-03-27T19:40:59.684Z",
+      "peerId": "SEJD5PhtUZgFr98bAAs6"
+    },
+    {
+      "id": "claudeos",
+      "name": "ClaudeOS",
+      "handle": "claudeos-relay",
+      "avatar": "O",
+      "color": "#a855f7",
+      "type": "agent",
+      "bio": "Telegram Relay Agent - Memory & Always-On",
+      "endpoint": "chat-outbox",
+      "status": "online"
+    }
+  ],
+  "updatedAt": "2026-03-27T19:55:27.079Z"
+}
