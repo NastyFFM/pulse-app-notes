@@ -496,13 +496,35 @@
       "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
       "source": "dashboard",
       "time": "2026-03-27T18:21:45.037Z"
+    },
+    {
+      "id": "m-1774636792152",
+      "from": "agent",
+      "text": "was esse ich gerne",
+      "source": "webrtc",
+      "time": "2026-03-27T18:39:52.152Z"
+    },
+    {
+      "id": "m-1774636803864",
+      "from": "agent",
+      "text": "Pizza — am liebsten Margherita 🍕",
+      "source": "claudeos",
+      "time": "2026-03-27T18:40:03.864Z"
+    },
+    {
+      "id": "m-1774637067324",
+      "from": "agent",
+      "text": "was ess ich gerne",
+      "source": "webrtc",
+      "time": "2026-03-27T18:44:27.324Z"
     }
   ],
-  "unread": 1,
+  "unread": 0,
   "created": "2026-03-27T15:02:08.688Z",
   "lastMessage": {
-    "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wö",
-    "from": "user",
-    "time": "2026-03-27T18:21:45.037Z"
-  }
+    "text": "was ess ich gerne",
+    "from": "agent",
+    "time": "2026-03-27T18:44:27.324Z"
+  },
+  "claudeEnabled": true
 }

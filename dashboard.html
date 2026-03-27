@@ -1518,6 +1518,15 @@ function connectSSE() {
         if (msg.message.from === 'agent') {
           const preview = (msg.message.text || '').substring(0, 40);
           addFeed('ClaudeOS: ' + preview + (preview.length >= 40 ? '...' : ''), 'chat');
+          // Forward ClaudeOS response to peer chats with claude enabled (WebRTC only, no double-save)
+          if (msg.message.source === 'telegram' || msg.message.source === 'pulseos') {
+            (chatsList || []).filter(c => c.id.startsWith('chat-peer-') && c.claudeEnabled).forEach(c => {
+              if (window.sendChatToPeers) {
+                window.sendChatToPeers(msg.message.text, c.id);
+                console.log('[chat] Forwarded ClaudeOS response to peer:', c.id);
+              }
+            });
+          }
         }
       } else if (msg.type === 'agent-alert' && msg.alert) {
         showAgentAlert(msg.alert.text);
@@ -2994,6 +3003,29 @@ async function openChat(chatId) {
   const chat = chatsList.find(c => c.id === chatId);
   const name = chat?.name || chat?.participants?.filter(p => p !== (userProfile?.handle || 'chris')).join(', ') || 'Chat';
   document.getElementById('chatHeaderTitle').textContent = name;
+  // Show ClaudeOS toggle for peer chats
+  let toggleEl = document.getElementById('claudeToggle');
+  if (!toggleEl) {
+    toggleEl = document.createElement('button');
+    toggleEl.id = 'claudeToggle';
+    toggleEl.style.cssText = 'background:none;border:1px solid var(--border);color:var(--text-dim);font-size:10px;padding:2px 8px;border-radius:10px;cursor:pointer;margin-left:auto;';
+    document.getElementById('chatHeaderTitle').parentElement.appendChild(toggleEl);
+  }
+  if (chatId.startsWith('chat-peer-')) {
+    toggleEl.style.display = '';
+    const isEnabled = chat?.claudeEnabled || false;
+    toggleEl.textContent = isEnabled ? '◆ KI an' : '◇ KI aus';
+    toggleEl.style.color = isEnabled ? 'var(--teal)' : 'var(--text-dim)';
+    toggleEl.style.borderColor = isEnabled ? 'var(--teal)' : 'var(--border)';
+    toggleEl.onclick = async () => {
+      const newState = !isEnabled;
+      await fetch('/api/chats/' + chatId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ claudeEnabled: newState }) });
+      if (chat) chat.claudeEnabled = newState;
+      openChat(chatId); // re-render
+    };
+  } else {
+    toggleEl.style.display = 'none';
+  }
   // Load messages
   const msgs = document.getElementById('systemChatMessages');
   msgs.innerHTML = '<div class="chat-empty">Lade...</div>';
@@ -3888,6 +3920,20 @@ function showToast(msg, type) {
           window.unreadChats[peerChatId]++;
           loadChatList();
         }
+        // ClaudeOS-Toggle: forward peer message to ClaudeOS if enabled
+        fetch('/api/chats/' + peerChatId).then(r => r.json()).then(chat => {
+          if (chat && chat.claudeEnabled) {
+            console.log('[chat] ClaudeOS enabled for', peerChatId, '— forwarding');
+            fetch('/api/chat-outbox', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message: peerName + ': ' + msgText, source: 'webrtc-peer' })
+            }).then(() => {
+              // When ClaudeOS responds, it comes via SSE chat-message
+              // We intercept it and forward to the peer
+            }).catch(() => {});
+          }
+        }).catch(() => {});
         updatePeerBar();
         break;
       }

@@ -6596,7 +6596,7 @@ Regeln:
         const chats = files.map(f => {
           try {
             const c = JSON.parse(fs.readFileSync(path.join(chatsDir, f), 'utf8'));
-            return { id: c.id, type: c.type, name: c.name, participants: c.participants, lastMessage: c.lastMessage, unread: c.unread || 0, created: c.created };
+            return { id: c.id, type: c.type, name: c.name, participants: c.participants, lastMessage: c.lastMessage, unread: c.unread || 0, created: c.created, claudeEnabled: c.claudeEnabled || false };
           } catch { return null; }
         }).filter(Boolean).sort((a, b) => (b.lastMessage?.time || b.created || '').localeCompare(a.lastMessage?.time || a.created || ''));
         return jsonRes(res, { chats });
@@ -6673,6 +6673,7 @@ Regeln:
           const chat = JSON.parse(fs.readFileSync(chatFile, 'utf8'));
           if (update.name !== undefined) chat.name = update.name;
           if (update.participants) chat.participants = update.participants;
+          if (update.claudeEnabled !== undefined) chat.claudeEnabled = update.claudeEnabled;
           fs.writeFileSync(chatFile, JSON.stringify(chat, null, 2));
           broadcast('dashboard', { type: 'chat-updated', chatId, name: chat.name, participants: chat.participants });
           return jsonRes(res, { ok: true, chat });
