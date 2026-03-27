@@ -6514,6 +6514,39 @@ Regeln:
     }
   }
 
+  // ── Invite API ──
+  const inviteMatch = url.match(/^\/api\/invite(?:\/([A-Za-z0-9]+))?$/);
+  if (inviteMatch) {
+    const invitesFile = path.join(ROOT, 'data', 'invites.json');
+    const loadInvites = () => { try { return JSON.parse(fs.readFileSync(invitesFile, 'utf8')); } catch { return { invites: {} }; } };
+    const saveInvites = (d) => fs.writeFileSync(invitesFile, JSON.stringify(d, null, 2));
+
+    if (!inviteMatch[1] && req.method === 'POST') {
+      // Generate new invite code
+      const code = crypto.randomBytes(3).toString('hex').toUpperCase().substring(0, 6);
+      const roomId = getBridgeRoom();
+      let profileUrl = '';
+      try { const p = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'profile.json'), 'utf8')); profileUrl = p.pagesUrl || p.githubPages || ''; } catch {}
+      const chatLink = profileUrl ? profileUrl + '/chat/?room=' + roomId : 'https://nastycoder.github.io/chat/?room=' + roomId;
+      const data = loadInvites();
+      data.invites[code] = { roomId, created: new Date().toISOString(), expires: new Date(Date.now() + 24*60*60*1000).toISOString() };
+      // Clean expired
+      Object.entries(data.invites).forEach(([k, v]) => { if (new Date(v.expires) < new Date()) delete data.invites[k]; });
+      saveInvites(data);
+      return jsonRes(res, { ok: true, code, roomId, link: chatLink });
+    }
+
+    if (inviteMatch[1] && req.method === 'GET') {
+      // Resolve invite code
+      const code = inviteMatch[1].toUpperCase();
+      const data = loadInvites();
+      const invite = data.invites[code];
+      if (!invite) return jsonRes(res, { error: 'Code ungültig oder abgelaufen' }, 404);
+      if (new Date(invite.expires) < new Date()) { delete data.invites[code]; saveInvites(data); return jsonRes(res, { error: 'Code abgelaufen' }, 410); }
+      return jsonRes(res, { roomId: invite.roomId });
+    }
+  }
+
   if (url === '/api/contacts') {
     const contactsPath = path.join(__dirname, 'data', 'contacts.json');
     if (req.method === 'GET') {
