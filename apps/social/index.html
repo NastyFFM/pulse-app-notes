@@ -76,6 +76,7 @@ let contacts = [];
 let feeds = {}; // handle → pulse-profile.json data
 let activeView = 'feed';
 let activeFilter = 'all';
+let lastFeedHash = '';
 
 async function init() {
   // Load contacts
@@ -120,13 +121,17 @@ async function refreshFeeds() {
       }
     } catch {}
   }
-  // Cache feeds
+  // Cache feeds (skip save if nothing changed to avoid onDataChanged loop)
   const feedArr = Object.values(feeds);
-  fetch('/app/social/api/feeds', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ feeds: feedArr, lastUpdated: new Date().toISOString() })
-  }).catch(() => {});
+  const newHash = JSON.stringify(feedArr.map(f => f.handle + (f.updated || '')));
+  if (newHash !== lastFeedHash) {
+    lastFeedHash = newHash;
+    fetch('/app/social/api/feeds', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feeds: feedArr, lastUpdated: new Date().toISOString() })
+    }).catch(() => {});
+  }
   document.querySelector('.refresh-btn').textContent = '↻';
   render();
 }
@@ -269,7 +274,7 @@ function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').
 // SDK
 if (window.PulseOS) {
   PulseOS.onInput('refresh', function() { refreshFeeds(); });
-  PulseOS.onDataChanged(function() { init(); });
+  PulseOS.onDataChanged(function() { render(); });
 }
 
 init();
