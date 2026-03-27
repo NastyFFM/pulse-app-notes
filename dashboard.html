@@ -3975,24 +3975,20 @@ function showToast(msg, type) {
   window.bridgeChannels = bridgeChannels;
   // Exposed function for chat system to send to peers
   window.sendChatToPeers = function(text, targetChatId) {
-    let sent = false;
-    for (const [pid, p] of Object.entries(connectedPeers)) {
-      const derivedId = 'chat-peer-' + (p.handle || p.name || pid).toLowerCase().replace(/[^a-z0-9-]/g, '');
-      if (p.chatId === targetChatId || derivedId === targetChatId) {
-        sent = sendBridgeMsg(pid, { type: 'chat-message', text: text, id: 'm-out-' + Date.now() });
-        console.log('[bridge] sendChatToPeers matched:', pid, p.name, 'sent:', sent);
-        if (sent) return true;
+    const msgId = 'm-out-' + Date.now();
+    const payload = JSON.stringify({ type: 'chat-message', text: text, id: msgId });
+    // Log channel states
+    const states = {};
+    for (const [pid, dc] of Object.entries(bridgeChannels)) states[pid] = dc ? dc.readyState : 'null';
+    console.log('[bridge] sendChatToPeers target:', targetChatId, 'channels:', JSON.stringify(states));
+    // Send to ANY open channel (simple approach — works for 1-to-1)
+    for (const [pid, dc] of Object.entries(bridgeChannels)) {
+      if (dc && dc.readyState === 'open') {
+        try { dc.send(payload); console.log('[bridge] Sent via channel:', pid); return true; } catch(e) { console.warn('[bridge] Send fail:', e); }
       }
     }
-    // Fallback: broadcast to all open channels
-    if (!sent) {
-      for (const [pid, dc] of Object.entries(bridgeChannels)) {
-        if (dc && dc.readyState === 'open') {
-          try { dc.send(JSON.stringify({ type: 'chat-message', text: text, id: 'm-out-' + Date.now() })); sent = true; console.log('[bridge] Broadcast to', pid); } catch {}
-        }
-      }
-    }
-    return sent;
+    console.warn('[bridge] No open channels!');
+    return false;
   };
   function cleanupBridgePeer(targetId) {
     if (bridgeChannels[targetId]) { try { bridgeChannels[targetId].close(); } catch {} delete bridgeChannels[targetId]; }
