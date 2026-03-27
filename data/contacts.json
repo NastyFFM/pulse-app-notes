@@ -15,7 +15,7 @@
       "roomId": "pulse-5093113b",
       "createdAt": "2026-03-18T22:44:20.728Z",
       "updatedAt": "2026-03-24T03:13:37.311Z",
-      "lastSeen": "2026-03-27T14:16:50.269Z",
+      "lastSeen": "2026-03-27T19:00:38.318Z",
       "role": "",
       "email": "",
       "github": "NastyFFM",
@@ -26,15 +26,24 @@
     },
     {
       "id": "pulseos",
+      "name": "PulseOS",
+      "handle": "pulseos",
+      "avatar": "P",
+      "color": "#f5a623",
+      "type": "agent",
+      "bio": "PulseOS Local Agent",
+      "endpoint": "local-cli",
+      "status": "online"
+    },
+    {
+      "id": "peer-hein-guest",
       "name": "Hein",
       "handle": "hein-guest",
       "avatar": "👤",
-      "color": "#f5a623",
-      "type": "agent",
-      "bio": "PulseOS Claude Code Agent - Terminal & Code",
-      "endpoint": "local-cli",
-      "status": "online",
-      "lastSeen": "2026-03-27T18:21:27.956Z"
+      "type": "peer",
+      "pulseos": false,
+      "claudeos": false,
+      "lastSeen": "2026-03-27T19:09:01.440Z"
     },
     {
       "id": "claudeos",
@@ -48,5 +57,5 @@
       "status": "online"
     }
   ],
-  "updatedAt": "2026-03-27T18:21:27.956Z"
+  "updatedAt": "2026-03-27T19:09:01.440Z"
 }

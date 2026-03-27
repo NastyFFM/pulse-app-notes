@@ -3958,7 +3958,15 @@ function showToast(msg, type) {
       case 'profile-exchange':
         if (data.profile) {
           connectedPeers[senderId] = { ...connectedPeers[senderId], ...data.profile, peerId: senderId, online: true, lastSeen: Date.now() };
-          fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data.profile) }).catch(() => {});
+          // Save peer as contact (with type 'peer', never overwrite agents)
+          const peerContact = {
+            ...data.profile,
+            id: 'peer-' + (data.profile.handle || data.profile.name || senderId).toLowerCase().replace(/[^a-z0-9-]/g, ''),
+            type: 'peer',
+            peerId: senderId,
+            lastSeen: new Date().toISOString()
+          };
+          fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(peerContact) }).catch(() => {});
           updatePeerBar();
           // Auto-create DM chat for this peer
           const peerHandle = data.profile.handle || data.profile.name || senderId;

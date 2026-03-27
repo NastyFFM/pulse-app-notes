@@ -6563,8 +6563,13 @@ Regeln:
           const contact = JSON.parse(b);
           let data = { version: 1, contacts: [], updatedAt: null };
           try { data = JSON.parse(fs.readFileSync(contactsPath, 'utf8')); } catch (e) {}
-          const idx = data.contacts.findIndex(c => c.handle === contact.handle || c.roomId === contact.roomId);
+          const idx = data.contacts.findIndex(c => c.id === contact.id || (c.handle === contact.handle && c.type !== 'agent'));
           if (idx >= 0) {
+            // Never overwrite agent contacts with peer data
+            if (data.contacts[idx].type === 'agent' && contact.type === 'peer') {
+              // Skip — don't overwrite agents
+              return jsonRes(res, { ok: true, skipped: true, contact: data.contacts[idx] });
+            }
             data.contacts[idx] = { ...data.contacts[idx], ...contact, lastSeen: new Date().toISOString() };
           } else {
             data.contacts.push({ ...contact, firstSeen: new Date().toISOString(), lastSeen: new Date().toISOString() });
