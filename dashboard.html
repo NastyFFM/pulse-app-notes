@@ -1380,15 +1380,34 @@ body.mode-builder .home-screen { max-width: 600px; }
 <!-- ═══ System Chat Panel ═══ -->
 <div class="chat-panel" id="systemChat">
   <div class="chat-header">
-    <span class="chat-header-title">PulseOS</span>
-    <button class="chat-close" onclick="toggleSystemChat()">x</button>
+    <span class="chat-header-title" id="chatHeaderTitle">Chats</span>
+    <div style="display:flex;gap:4px;align-items:center;">
+      <button class="chat-close" onclick="chatShowList()" title="Zurück" id="chatBackBtn" style="display:none;font-size:14px;">←</button>
+      <button class="chat-close" onclick="chatNewDialog()" title="Neuer Chat" style="font-size:14px;">+</button>
+      <button class="chat-close" onclick="toggleSystemChat()">x</button>
+    </div>
   </div>
-  <div class="chat-tabs">
-    <div class="chat-tab active" id="tabChat" onclick="switchSysChatTab('chat')">Chat</div>
-    <div class="chat-tab" id="tabContacts" onclick="switchSysChatTab('contacts')">Kontakte <span id="contactCount" style="opacity:0.4;"></span></div>
-    <div class="chat-tab" id="tabMemory" onclick="switchSysChatTab('memory')">Memory</div>
+  <!-- Chat List View -->
+  <div id="chatListView" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+    <div class="chat-tabs">
+      <div class="chat-tab active" id="tabChats" onclick="switchSysChatTab('chats')">Chats</div>
+      <div class="chat-tab" id="tabContacts" onclick="switchSysChatTab('contacts')">Kontakte</div>
+      <div class="chat-tab" id="tabMemory" onclick="switchSysChatTab('memory')">Memory</div>
+    </div>
+    <div id="chatListContent" style="flex:1;overflow-y:auto;padding:4px 0;">
+      <div class="chat-empty">Lade Chats...</div>
+    </div>
+    <div id="sysContactsView" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="contacts-list" id="contactsList">
+        <div class="contacts-empty">Noch keine Kontakte.</div>
+      </div>
+    </div>
+    <div id="sysMemoryView" style="display:none;flex-direction:column;flex:1;overflow:auto;padding:8px;gap:8px;">
+      <div id="memoryContent" style="font-size:11px;color:var(--text-dim);">Lade Memories...</div>
+    </div>
   </div>
-  <div id="sysChatView" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+  <!-- Chat Messages View (hidden until chat selected) -->
+  <div id="chatMsgView" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
     <div class="chat-messages" id="systemChatMessages">
       <div class="chat-empty">Noch keine Nachrichten</div>
     </div>
@@ -1396,14 +1415,6 @@ body.mode-builder .home-screen { max-width: 600px; }
       <input class="chat-input" id="systemChatInput" type="text" placeholder="Nachricht..." onkeydown="if(event.key==='Enter')sendSystemChat()">
       <button class="chat-send" onclick="sendSystemChat()">&#9654;</button>
     </div>
-  </div>
-  <div id="sysContactsView" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-    <div class="contacts-list" id="contactsList">
-      <div class="contacts-empty">Noch keine Kontakte.</div>
-    </div>
-  </div>
-  <div id="sysMemoryView" style="display:none;flex-direction:column;flex:1;overflow:auto;padding:8px;gap:8px;">
-    <div id="memoryContent" style="font-size:11px;color:var(--text-dim);">Lade Memories...</div>
   </div>
 </div>
 
@@ -2888,7 +2899,7 @@ async function loadQuickStats() {
 let systemChatOpen = false;
 let chatHistoryLoaded = false;
 const renderedMsgIds = new Set();
-let activeChatTarget = 'group'; // 'group', 'claudeos', 'pulseos'
+let activeChatTarget = 'claudeos'; // unified: always ClaudeOS
 let unreadAgentCount = 0;
 
 function updateAgentBadge() {
@@ -2919,17 +2930,15 @@ document.addEventListener('click', function reqNotif() {
   document.removeEventListener('click', reqNotif);
 }, { once: true });
 
+let activeChatId = null;
+let chatsList = [];
+
 function toggleSystemChat() {
   systemChatOpen = !systemChatOpen;
   document.getElementById('systemChat').classList.toggle('open', systemChatOpen);
   if (systemChatOpen) {
-    // Always open on chat tab
-    switchSysChatTab('chat');
-    if (!chatHistoryLoaded) loadChatHistory();
-    const msgs = document.getElementById('systemChatMessages');
-    msgs.scrollTop = msgs.scrollHeight;
-    document.getElementById('systemChatInput')?.focus();
-    // Clear alert state and badge when chat is opened
+    switchSysChatTab('chats');
+    loadChatsList();
     document.getElementById('agentStatus')?.classList.remove('has-alert');
     if (agentAlertTimeout) { clearTimeout(agentAlertTimeout); agentAlertTimeout = null; }
     unreadAgentCount = 0;
@@ -2937,7 +2946,148 @@ function toggleSystemChat() {
   }
 }
 
+async function loadChatsList() {
+  try {
+    const res = await fetch('/api/chats');
+    const data = await res.json();
+    chatsList = data.chats || [];
+    renderChatsList();
+  } catch {}
+}
+
+function renderChatsList() {
+  const el = document.getElementById('chatListContent');
+  if (!el) return;
+  if (chatsList.length === 0) {
+    el.innerHTML = '<div class="chat-empty" style="padding:16px;text-align:center;">Keine Chats.<br><button onclick="chatNewDialog()" style="margin-top:8px;background:var(--teal);border:none;color:var(--bg);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:11px;">+ Neuer Chat</button></div>';
+    return;
+  }
+  el.innerHTML = chatsList.map(c => {
+    const isGroup = c.type === 'group';
+    const name = c.name || c.participants.filter(p => p !== (userProfile?.handle || 'chris')).join(', ') || 'Chat';
+    const icon = isGroup ? '👥' : (name.includes('claude') ? '◆' : '💬');
+    const preview = c.lastMessage ? c.lastMessage.text : 'Noch keine Nachrichten';
+    const unread = c.unread > 0 ? '<span style="background:var(--teal);color:var(--bg);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">' + c.unread + '</span>' : '';
+    const time = c.lastMessage?.time ? new Date(c.lastMessage.time).toLocaleTimeString('de', {hour:'2-digit',minute:'2-digit'}) : '';
+    return '<div class="chat-list-item" onclick="openChat(\'' + c.id + '\')" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;" onmouseenter="this.style.background=\'var(--bg-card-hover)\'" onmouseleave="this.style.background=\'\'">' +
+      '<span style="font-size:18px;width:28px;text-align:center;flex-shrink:0;">' + icon + '</span>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<span style="font-weight:600;font-size:12px;">' + escapeHtml(name) + '</span>' +
+          '<span style="font-size:9px;color:var(--text-dim);">' + time + '</span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">' +
+          '<span style="font-size:10px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(preview.substring(0, 50)) + '</span>' +
+          unread +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function openChat(chatId) {
+  activeChatId = chatId;
+  renderedMsgIds.clear();
+  document.getElementById('chatListView').style.display = 'none';
+  document.getElementById('chatMsgView').style.display = 'flex';
+  document.getElementById('chatBackBtn').style.display = '';
+  const chat = chatsList.find(c => c.id === chatId);
+  const name = chat?.name || chat?.participants?.filter(p => p !== (userProfile?.handle || 'chris')).join(', ') || 'Chat';
+  document.getElementById('chatHeaderTitle').textContent = name;
+  // Load messages
+  const msgs = document.getElementById('systemChatMessages');
+  msgs.innerHTML = '<div class="chat-empty">Lade...</div>';
+  chatHistoryRendering = true;
+  try {
+    const res = await fetch('/api/chats/' + chatId);
+    const data = await res.json();
+    msgs.innerHTML = '';
+    if (data.messages && data.messages.length > 0) {
+      data.messages.forEach(m => renderChatMsg(m));
+    } else {
+      msgs.innerHTML = '<div class="chat-empty">Noch keine Nachrichten</div>';
+    }
+    // Also load legacy global history for ClaudeOS chat (backward compat)
+    if (chatId === 'chat-claudeos' && (!data.messages || data.messages.length === 0)) {
+      const legacyRes = await fetch('/api/chat-history');
+      const legacyData = await legacyRes.json();
+      if (legacyData.messages && legacyData.messages.length > 0) {
+        msgs.innerHTML = '';
+        legacyData.messages.forEach(m => renderChatMsg(m));
+      }
+    }
+  } catch {}
+  chatHistoryRendering = false;
+  msgs.scrollTop = msgs.scrollHeight;
+  document.getElementById('systemChatInput')?.focus();
+}
+
+function chatShowList() {
+  activeChatId = null;
+  document.getElementById('chatMsgView').style.display = 'none';
+  document.getElementById('chatListView').style.display = 'flex';
+  document.getElementById('chatBackBtn').style.display = 'none';
+  document.getElementById('chatHeaderTitle').textContent = 'Chats';
+  loadChatsList();
+}
+
+function chatNewDialog() {
+  let modal = document.getElementById('chatNewModal');
+  if (modal) { modal.remove(); return; }
+  modal = document.createElement('div');
+  modal.id = 'chatNewModal';
+  modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:16px;z-index:10002;min-width:280px;box-shadow:0 20px 60px rgba(0,0,0,0.5);';
+  modal.innerHTML = '<div style="font-weight:600;margin-bottom:10px;font-size:13px;">Neuer Chat</div>' +
+    '<div style="display:flex;flex-direction:column;gap:6px;">' +
+      '<button onclick="createQuickChat(\'dm\',\'claudeos\');this.parentElement.parentElement.remove()" style="padding:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:11px;text-align:left;">◆ DM mit ClaudeOS</button>' +
+      '<button onclick="createQuickChat(\'dm\',\'pulseos\');this.parentElement.parentElement.remove()" style="padding:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:11px;text-align:left;">💬 DM mit PulseOS</button>' +
+      '<div style="border-top:1px solid var(--border);margin:4px 0;"></div>' +
+      '<input id="newGroupName" placeholder="Gruppenname" style="padding:6px 8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:11px;">' +
+      '<button onclick="createGroupChat()" style="padding:8px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">👥 Gruppe erstellen</button>' +
+      '<button onclick="this.parentElement.parentElement.remove()" style="padding:6px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:10px;">Abbrechen</button>' +
+    '</div>';
+  document.body.appendChild(modal);
+}
+
+async function createQuickChat(type, participantId) {
+  // Check if chat already exists
+  const existing = chatsList.find(c => c.type === 'dm' && c.participants.includes(participantId));
+  if (existing) { openChat(existing.id); return; }
+  try {
+    const res = await fetch('/api/chats', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ type, participants: [userProfile?.handle || 'chris', participantId] }) });
+    const data = await res.json();
+    if (data.ok && data.chat) {
+      await loadChatsList();
+      openChat(data.chat.id);
+    }
+  } catch {}
+}
+
+async function createGroupChat() {
+  const name = document.getElementById('newGroupName')?.value.trim() || 'Neue Gruppe';
+  document.getElementById('chatNewModal')?.remove();
+  try {
+    const res = await fetch('/api/chats', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ type: 'group', name, participants: [userProfile?.handle || 'chris', 'claudeos', 'pulseos'] }) });
+    const data = await res.json();
+    if (data.ok && data.chat) {
+      await loadChatsList();
+      openChat(data.chat.id);
+    }
+  } catch {}
+}
+
+async function deleteChat(chatId, e) {
+  if (e) e.stopPropagation();
+  if (!confirm('Chat wirklich löschen?')) return;
+  try {
+    await fetch('/api/chats/' + chatId, { method: 'DELETE' });
+    if (activeChatId === chatId) chatShowList();
+    else loadChatsList();
+  } catch {}
+}
+
 async function loadChatHistory() {
+  // Legacy: still load global history for backward compat
   chatHistoryLoaded = true;
   chatHistoryRendering = true;
   try {
@@ -3039,34 +3189,33 @@ function hideTypingIndicator() {
 }
 
 async function sendToAgent(text) {
-  const targets = activeChatTarget === 'group' ? ['claudeos', 'pulseos'] : [activeChatTarget];
-  let anyOk = false;
-  // Render user message immediately and track text to dedupe SSE echo
-  const localMsgId = 'local-' + Date.now();
-  renderChatMsg({ id: localMsgId, from: 'user', text, source: targets.includes('pulseos') ? 'pulseos' : 'dashboard' });
+  // Render user message immediately
+  renderChatMsg({ id: 'local-' + Date.now(), from: 'user', text, source: 'dashboard' });
   lastSentText = text; lastSentTime = Date.now();
-  showTypingIndicator();
 
-  for (const target of targets) {
-    try {
-      if (target === 'claudeos') {
-        const r = await fetch('/api/chat-outbox', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, source: 'dashboard' }) });
-        const d = await r.json();
-        if (d.ok) anyOk = true;
-      } else if (target === 'pulseos') {
-        const skipMirror = targets.length > 1; // group: outbox already mirrors
-        const r = await fetch('/api/pulseos-chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, source: 'dashboard', skipMirror }) });
-        const d = await r.json();
-        if (d.ok) anyOk = true;
-      }
-    } catch(e) {}
+  // ── Fast-path: Action Cache (instant, no API call) ──
+  const lower = text.toLowerCase().trim();
+  const openMatch = lower.match(/(?:öffne|open|starte|start|zeig|show)\s+(?:die\s+|den\s+|das\s+|mir\s+|die\s+app\s+)?(.+?)(?:\s+app)?$/i);
+  if (openMatch && state && state.apps) {
+    const search = openMatch[1].replace(/[^a-z0-9äöü]/g, '');
+    const found = state.apps.find(a => a.id.toLowerCase() === search || (a.name || '').toLowerCase().includes(search) || a.id.includes(search));
+    if (found) {
+      renderChatMsg({ id: 'action-' + Date.now(), from: 'agent', text: '[ACTION:open:' + found.id + ']', source: 'pulseos' });
+      return;
+    }
   }
 
-  if (!anyOk) {
+  // ── Everything else → ClaudeOS (persistent memory + personality) ──
+  showTypingIndicator();
+  try {
+    const r = await fetch('/api/chat-outbox', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, source: 'dashboard' }) });
+    const d = await r.json();
+    if (!d.ok) throw new Error('outbox failed');
+  } catch(e) {
     hideTypingIndicator();
-    // Queue for retry
-    messageRetryQueue.push({ text, target: activeChatTarget, time: Date.now(), retries: 0 });
-    renderChatMsg({ id: 'err-' + Date.now(), from: 'agent', text: 'Offline \u2014 Nachricht wird erneut gesendet wenn Agent online.', source: 'system' });
+    // Queue for retry when ClaudeOS comes online
+    messageRetryQueue.push({ text, target: 'claudeos', time: Date.now(), retries: 0 });
+    renderChatMsg({ id: 'err-' + Date.now(), from: 'agent', text: 'Offline \u2014 Nachricht wird erneut gesendet wenn ClaudeOS online.', source: 'system' });
   }
 }
 
@@ -3170,12 +3319,19 @@ function showAgentAlert(text) {
 }
 
 function switchSysChatTab(tab) {
-  document.getElementById('sysChatView').style.display = tab === 'chat' ? 'flex' : 'none';
-  document.getElementById('sysContactsView').style.display = tab === 'contacts' ? 'flex' : 'none';
-  document.getElementById('sysMemoryView').style.display = tab === 'memory' ? 'flex' : 'none';
-  document.getElementById('tabChat').classList.toggle('active', tab === 'chat');
-  document.getElementById('tabContacts').classList.toggle('active', tab === 'contacts');
-  document.getElementById('tabMemory').classList.toggle('active', tab === 'memory');
+  const chatList = document.getElementById('chatListContent');
+  const contacts = document.getElementById('sysContactsView');
+  const memory = document.getElementById('sysMemoryView');
+  if (chatList) chatList.style.display = tab === 'chats' ? '' : 'none';
+  if (contacts) contacts.style.display = tab === 'contacts' ? 'flex' : 'none';
+  if (memory) memory.style.display = tab === 'memory' ? 'flex' : 'none';
+  const tabChats = document.getElementById('tabChats');
+  const tabContacts = document.getElementById('tabContacts');
+  const tabMemory = document.getElementById('tabMemory');
+  if (tabChats) tabChats.classList.toggle('active', tab === 'chats');
+  if (tabContacts) tabContacts.classList.toggle('active', tab === 'contacts');
+  if (tabMemory) tabMemory.classList.toggle('active', tab === 'memory');
+  if (tab === 'chats') loadChatsList();
   if (tab === 'memory') loadMemoryUI();
   if (tab === 'contacts') loadContacts();
 }
@@ -3225,43 +3381,32 @@ function renderContacts() {
   const list = document.getElementById('contactsList');
   const countEl = document.getElementById('contactCount');
   if (!list) return;
-  if (countEl) countEl.textContent = contactsCache.length > 0 ? '(' + contactsCache.length + ')' : '';
-  if (contactsCache.length === 0) {
-    list.innerHTML = '<div class="contacts-empty">Noch keine Kontakte.</div>';
-    return;
+  // Show ClaudeOS status + connected peers
+  const claudePresence = agentPresence['claudeos'];
+  const claudeOnline = claudePresence?.online || false;
+  let html = '<div class="contact-item active" style="cursor:default;">' +
+    '<div class="contact-avatar" style="background:#a855f7;color:#fff;">C</div>' +
+    '<div class="contact-info"><div class="contact-name">ClaudeOS</div>' +
+    '<div class="contact-handle" style="color:' + (claudeOnline ? 'var(--teal)' : 'var(--text-dim)') + ';">' + (claudeOnline ? 'online' : 'offline') + '</div></div>' +
+    '<div class="contact-status ' + (claudeOnline ? 'online' : 'offline') + '"></div></div>';
+  // Show connected peers (real people)
+  const peers = contactsCache.filter(c => c.type === 'peer' || c.type === 'user');
+  if (peers.length > 0) {
+    html += '<div style="font-size:9px;color:var(--text-dim);padding:8px 12px 4px;text-transform:uppercase;letter-spacing:1px;">Verbundene Peers</div>';
+    html += peers.map(c => {
+      return '<div class="contact-item" style="cursor:pointer;">' +
+        '<div class="contact-avatar" style="background:' + (c.color || 'var(--teal)') + ';color:var(--bg);">' + (c.avatar || c.name?.charAt(0) || '?') + '</div>' +
+        '<div class="contact-info"><div class="contact-name">' + esc(c.name || '?') + '</div>' +
+        '<div class="contact-handle">' + esc(c.handle || '') + '</div></div></div>';
+    }).join('');
   }
-  // Group chat option at top
-  let html = '<div class="contact-item' + (activeChatTarget === 'group' ? ' active' : '') + '" onclick="setChatTarget(\'group\')" style="cursor:pointer;">' +
-    '<div class="contact-avatar" style="background:var(--teal);color:var(--bg);">G</div>' +
-    '<div class="contact-info"><div class="contact-name">Gruppenchat</div>' +
-    '<div class="contact-handle">Chris + PulseOS + ClaudeOS</div></div>' +
-    '<div class="contact-status online"></div></div>';
-  // Individual contacts
-  html += contactsCache.filter(c => c.type === 'agent').map(c => {
-    const isActive = activeChatTarget === c.id;
-    const presence = agentPresence[c.id];
-    const isOnline = c.id === 'pulseos' ? true : (presence?.online || false); // PulseOS is always online (it IS the server)
-    const statusClass = isOnline ? 'online' : 'offline';
-    const statusLabel = isOnline ? 'online' : 'offline';
-    return '<div class="contact-item' + (isActive ? ' active' : '') + '" onclick="setChatTarget(\'' + c.id + '\')" style="cursor:pointer;">' +
-      '<div class="contact-avatar" style="background:' + (c.color || 'var(--teal)') + ';color:var(--bg);">' + (c.avatar || '>') + '</div>' +
-      '<div class="contact-info"><div class="contact-name">' + esc(c.name || '?') + '</div>' +
-      '<div class="contact-handle" style="color:' + (isOnline ? 'var(--teal)' : 'var(--text-dim)') + ';">' + statusLabel + '</div></div>' +
-      '<div class="contact-status ' + statusClass + '"></div></div>';
-  }).join('');
+  if (countEl) countEl.textContent = peers.length > 0 ? '(' + peers.length + ')' : '';
   list.innerHTML = html;
 }
 
 function setChatTarget(target) {
-  activeChatTarget = target;
-  const headerTitle = document.querySelector('.chat-header-title');
-  if (headerTitle) {
-    if (target === 'group') headerTitle.textContent = 'Gruppenchat';
-    else if (target === 'claudeos') headerTitle.textContent = 'ClaudeOS';
-    else if (target === 'pulseos') headerTitle.textContent = 'PulseOS';
-  }
-  renderContacts();
-  switchSysChatTab('chat');
+  // Unified: always ClaudeOS — no switching
+  activeChatTarget = 'claudeos';
 }
 
 // ── Peers ──

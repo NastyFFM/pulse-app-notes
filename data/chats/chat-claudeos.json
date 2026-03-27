@@ -1,0 +1,25 @@
+{
+  "id": "chat-claudeos",
+  "type": "dm",
+  "participants": [
+    "chris",
+    "claudeos"
+  ],
+  "name": null,
+  "messages": [
+    {
+      "id": "m-1774619031928",
+      "from": "user",
+      "text": "Hallo ClaudeOS!",
+      "source": "dashboard",
+      "time": "2026-03-27T13:43:51.928Z"
+    }
+  ],
+  "unread": 0,
+  "created": "2026-03-27T00:00:00.000Z",
+  "lastMessage": {
+    "text": "Hallo ClaudeOS!",
+    "from": "user",
+    "time": "2026-03-27T13:43:51.928Z"
+  }
+}

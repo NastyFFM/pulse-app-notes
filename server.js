@@ -2367,52 +2367,64 @@ input, textarea { width:100%; padding:8px; background:#13131f; border:1px solid 
           return jsonRes(res, { ok: true, response: triggerResult });
         }
 
-        // Build context: chat history + app list
-        const histFile0 = path.join(ROOT, 'data', 'chat-history.json');
-        const hist0 = safeReadJSON(histFile0, '{"messages":[]}');
-        const recent = (hist0.messages || []).slice(-15).map(m => `${m.from === 'agent' ? 'PulseOS' : 'User'}: ${m.text}`).join('\n');
-
-        // Get app list for context
+        // ── Fast-path: Action Cache (no API call needed) ──
         const appsFile = path.join(ROOT, 'data', 'apps.json');
         const appsData = safeReadJSON(appsFile, '{"apps":[]}');
-        const appList = (appsData.apps || []).map(a => a.id).join(', ');
+        const allApps = appsData.apps || [];
+        const appList = allApps.map(a => a.id).join(', ');
+        const msgLower = message.toLowerCase().trim();
 
-        // Spawn claude -p to respond (async, non-blocking)
+        // Check for app-open commands (instant, no API call)
+        const openMatch = msgLower.match(/(?:öffne|open|starte|start|zeig|show)\s+(?:die\s+|den\s+|das\s+|mir\s+|die\s+app\s+)?(.+?)(?:\s+app)?$/i);
+        if (openMatch) {
+          const search = openMatch[1].toLowerCase().replace(/[^a-z0-9äöü]/g, '');
+          const found = allApps.find(a =>
+            a.id.toLowerCase() === search ||
+            (a.name || '').toLowerCase().includes(search) ||
+            a.id.toLowerCase().includes(search)
+          );
+          if (found) {
+            const t0 = Date.now();
+            const responseText = `[ACTION:open:${found.id}]`;
+            const histFile2 = path.join(ROOT, 'data', 'chat-history.json');
+            const hist2 = safeReadJSON(histFile2, '{"messages":[]}');
+            if (!hist2.messages) hist2.messages = [];
+            const respMsg = { id: 'm-' + Date.now(), from: 'agent', text: responseText, source: 'pulseos', time: new Date().toISOString() };
+            hist2.messages.push(respMsg);
+            if (hist2.messages.length > 200) hist2.messages = hist2.messages.slice(-200);
+            fs.writeFileSync(histFile2, JSON.stringify(hist2, null, 2));
+            broadcast('dashboard', { type: 'chat-message', message: respMsg });
+            console.log(`[pulseos-chat] CACHED action in ${Date.now() - t0}ms: open ${found.id}`);
+            return jsonRes(res, { ok: true, cached: true });
+          }
+        }
+
+        // ── Claude CLI with Haiku (already authenticated, no API key needed) ──
+        const t0 = Date.now();
         const { spawn: spawnProc } = require('child_process');
-        const systemPrompt = `Du bist PulseOS, ein freundlicher und smarter Desktop-Assistent. Du hilfst dem User sein PulseOS zu bedienen.
-
-FÄHIGKEITEN:
-- Apps öffnen: Füge [ACTION:open:appId] in deine Antwort ein
-- Daten lesen: curl http://localhost:3000/app/{id}/api/{name}
-- Daten schreiben: curl -X PUT http://localhost:3000/app/{id}/api/{name} -H 'Content-Type: application/json' -d '{...}'
-- Nach Schreiben: curl -X POST http://localhost:3000/api/notify-change -H 'Content-Type: application/json' -d '{"appId":"...","file":"...json"}'
-
+        const histFile0 = path.join(ROOT, 'data', 'chat-history.json');
+        const hist0 = safeReadJSON(histFile0, '{"messages":[]}');
+        const recent = (hist0.messages || []).slice(-10).map(m => `${m.from === 'agent' ? 'PulseOS' : 'User'}: ${m.text}`).join('\n');
+        const sysPrompt = `Du bist PulseOS, ein freundlicher Desktop-Assistent. Antworte kurz auf Deutsch.
 APPS: ${appList}
-
-STIL:
-- Antworte auf Deutsch, kurz aber persönlich (nicht robotisch)
-- Beschreibe was du getan hast, z.B. "Ich habe deine Notiz 'Einkaufen' gespeichert" statt nur "Erledigt"
-- Bei App-Öffnung: Erkläre kurz was die App kann, z.B. "Öffne die Kalender-App — dort siehst du deine Termine"
-- Bei Fragen: Lies zuerst die Daten, dann antworte mit konkreten Infos
-- Sei proaktiv: Wenn der User "Notiz erstellen" sagt, erstelle sie direkt statt zu fragen
-
+Apps öffnen: [ACTION:open:appId] in Antwort einfügen (z.B. [ACTION:open:notes]).
+Sei persönlich, nicht robotisch. Bei App-Öffnung kurz erklären was die App kann.
 VERLAUF:
 ${recent}`;
 
-        const claudePath = process.env.CLAUDE_PATH || '/Users/chris.pohl/.bun/bin/claude';
-        const claude = spawnProc(claudePath, ['-p', '--allowedTools', 'Bash', '--append-system-prompt', systemPrompt, message], {
-          timeout: 120000,
+        const claudePath = process.env.CLAUDE_PATH || 'claude';
+        console.log(`[pulseos-chat] T+0ms CLI (haiku) for: "${message.substring(0, 50)}"`);
+        const claude = spawnProc(claudePath, ['-p', '--model', 'haiku', sysPrompt, message], {
+          timeout: 60000,
           env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin:/Users/chris.pohl/.bun/bin' }
         });
-
-        console.log('[pulseos-chat] Spawning claude for:', message.substring(0, 50));
         let output = '';
         claude.stdout.on('data', d => output += d.toString());
-        claude.stderr.on('data', d => console.log('[pulseos-chat-err]', d.toString().substring(0, 100)));
-        claude.on('close', (code) => {
-          console.log('[pulseos-chat] Claude exited (code ' + code + '), output:', output.substring(0, 100));
+        claude.stderr.on('data', () => {});
+        claude.on('close', () => {
+          const elapsed = Date.now() - t0;
+          console.log(`[pulseos-chat] T+${elapsed}ms response: ${output.substring(0, 80)}`);
           const responseText = output.trim() || 'Keine Antwort erhalten.';
-          // Save response to chat history
           const histFile2 = path.join(ROOT, 'data', 'chat-history.json');
           const hist2 = safeReadJSON(histFile2, '{"messages":[]}');
           if (!hist2.messages) hist2.messages = [];
@@ -2422,10 +2434,8 @@ ${recent}`;
           fs.writeFileSync(histFile2, JSON.stringify(hist2, null, 2));
           broadcast('dashboard', { type: 'chat-message', message: respMsg });
         });
-        claude.on('error', (err) => {
-          console.error('[pulseos-chat] Spawn error:', err.message);
-          const errMsg = { id: 'm-' + Date.now(), from: 'agent', text: 'PulseOS Agent nicht verfuegbar.', source: 'pulseos', time: new Date().toISOString() };
-          broadcast('dashboard', { type: 'chat-message', message: errMsg });
+        claude.on('error', () => {
+          broadcast('dashboard', { type: 'chat-message', message: { id: 'm-' + Date.now(), from: 'agent', text: 'PulseOS Agent nicht verfuegbar.', source: 'pulseos', time: new Date().toISOString() } });
         });
 
         jsonRes(res, { ok: true, processing: true });
@@ -6535,6 +6545,110 @@ Regeln:
         }
       });
       return;
+    }
+  }
+
+  // ── Chat CRUD APIs (per-contact/group chats) ──
+  const chatsDir = path.join(ROOT, 'data', 'chats');
+  const chatsMatch = url.match(/^\/api\/chats(?:\/(.+))?$/);
+  if (chatsMatch) {
+    if (!fs.existsSync(chatsDir)) fs.mkdirSync(chatsDir, { recursive: true });
+    const chatId = chatsMatch[1]?.split('/')[0]; // e.g. "chat-claudeos" or "chat-claudeos/message"
+    const subAction = chatsMatch[1]?.split('/')[1]; // e.g. "message"
+
+    // GET /api/chats — list all chats
+    if (!chatId && req.method === 'GET') {
+      try {
+        const files = fs.readdirSync(chatsDir).filter(f => f.endsWith('.json'));
+        const chats = files.map(f => {
+          try {
+            const c = JSON.parse(fs.readFileSync(path.join(chatsDir, f), 'utf8'));
+            return { id: c.id, type: c.type, name: c.name, participants: c.participants, lastMessage: c.lastMessage, unread: c.unread || 0, created: c.created };
+          } catch { return null; }
+        }).filter(Boolean).sort((a, b) => (b.lastMessage?.time || b.created || '').localeCompare(a.lastMessage?.time || a.created || ''));
+        return jsonRes(res, { chats });
+      } catch (e) { return jsonRes(res, { chats: [] }); }
+    }
+
+    // POST /api/chats — create new chat
+    if (!chatId && req.method === 'POST') {
+      return readBody(req, b => {
+        try {
+          const { type, participants, name } = JSON.parse(b);
+          if (!participants || !Array.isArray(participants) || participants.length < 1) return jsonRes(res, { error: 'participants required' }, 400);
+          const id = (type === 'group' ? 'group-' : 'chat-') + crypto.randomBytes(4).toString('hex');
+          const chat = {
+            id, type: type || 'dm', name: name || null,
+            participants,
+            messages: [],
+            unread: 0,
+            created: new Date().toISOString(),
+            lastMessage: null
+          };
+          fs.writeFileSync(path.join(chatsDir, id + '.json'), JSON.stringify(chat, null, 2));
+          broadcast('dashboard', { type: 'chat-created', chat: { id, type: chat.type, name: chat.name, participants, created: chat.created } });
+          return jsonRes(res, { ok: true, chat });
+        } catch (e) { return jsonRes(res, { error: e.message }, 400); }
+      });
+    }
+
+    // GET /api/chats/:id — get chat with messages
+    if (chatId && !subAction && req.method === 'GET') {
+      const chatFile = path.join(chatsDir, chatId + '.json');
+      try {
+        const chat = JSON.parse(fs.readFileSync(chatFile, 'utf8'));
+        // Mark as read
+        chat.unread = 0;
+        fs.writeFileSync(chatFile, JSON.stringify(chat, null, 2));
+        return jsonRes(res, chat);
+      } catch { return jsonRes(res, { error: 'Chat not found' }, 404); }
+    }
+
+    // POST /api/chats/:id/message — send message to chat
+    if (chatId && subAction === 'message' && req.method === 'POST') {
+      return readBody(req, b => {
+        try {
+          const { from, text, source } = JSON.parse(b);
+          const chatFile = path.join(chatsDir, chatId + '.json');
+          if (!fs.existsSync(chatFile)) return jsonRes(res, { error: 'Chat not found' }, 404);
+          const chat = JSON.parse(fs.readFileSync(chatFile, 'utf8'));
+          const msg = { id: 'm-' + Date.now(), from: from || 'user', text, source: source || 'dashboard', time: new Date().toISOString() };
+          chat.messages.push(msg);
+          if (chat.messages.length > 500) chat.messages = chat.messages.slice(-500);
+          chat.lastMessage = { text: text.substring(0, 100), from: msg.from, time: msg.time };
+          if (msg.from !== 'user') chat.unread = (chat.unread || 0) + 1;
+          fs.writeFileSync(chatFile, JSON.stringify(chat, null, 2));
+          broadcast('dashboard', { type: 'chat-message', chatId, message: msg });
+          return jsonRes(res, { ok: true, message: msg });
+        } catch (e) { return jsonRes(res, { error: e.message }, 400); }
+      });
+    }
+
+    // PUT /api/chats/:id — update chat (rename, participants)
+    if (chatId && !subAction && req.method === 'PUT') {
+      return readBody(req, b => {
+        try {
+          const update = JSON.parse(b);
+          const chatFile = path.join(chatsDir, chatId + '.json');
+          if (!fs.existsSync(chatFile)) return jsonRes(res, { error: 'Chat not found' }, 404);
+          const chat = JSON.parse(fs.readFileSync(chatFile, 'utf8'));
+          if (update.name !== undefined) chat.name = update.name;
+          if (update.participants) chat.participants = update.participants;
+          fs.writeFileSync(chatFile, JSON.stringify(chat, null, 2));
+          broadcast('dashboard', { type: 'chat-updated', chatId, name: chat.name, participants: chat.participants });
+          return jsonRes(res, { ok: true, chat });
+        } catch (e) { return jsonRes(res, { error: e.message }, 400); }
+      });
+    }
+
+    // DELETE /api/chats/:id — delete chat
+    if (chatId && !subAction && req.method === 'DELETE') {
+      const chatFile = path.join(chatsDir, chatId + '.json');
+      try {
+        if (fs.existsSync(chatFile)) fs.unlinkSync(chatFile);
+        broadcast('dashboard', { type: 'chat-deleted', chatId });
+        return jsonRes(res, { ok: true });
+      } catch (e) { return jsonRes(res, { error: e.message }, 500); }
     }
   }
 
