@@ -2981,7 +2981,17 @@ function renderChatsList() {
   el.innerHTML = chatsList.map(c => {
     const isGroup = c.type === 'group';
     const name = c.name || c.participants.filter(p => p !== (userProfile?.handle || 'chris')).join(', ') || 'Chat';
-    const icon = isGroup ? '👥' : (name.includes('claude') ? '◆' : '💬');
+    // Peer-type icon: 🟢 PulseOS+ClaudeOS, 🔵 PulseOS, ⚪ Guest, ◆ ClaudeOS, 👥 Group
+    let icon = '💬';
+    if (isGroup) { icon = '👥'; }
+    else if (c.id === 'chat-claudeos') { icon = '◆'; }
+    else if (c.id.startsWith('chat-peer-')) {
+      // Find connected peer to check capabilities
+      const peer = Object.values(window.connectedPeers || {}).find(p => p.chatId === c.id);
+      if (peer && peer.pulseos && peer.claudeos) icon = '🟢';
+      else if (peer && peer.pulseos) icon = '🔵';
+      else icon = '⚪';
+    }
     const preview = c.lastMessage ? c.lastMessage.text : 'Noch keine Nachrichten';
     const unread = c.unread > 0 ? '<span style="background:var(--teal);color:var(--bg);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">' + c.unread + '</span>' : '';
     const time = c.lastMessage?.time ? new Date(c.lastMessage.time).toLocaleTimeString('de', {hour:'2-digit',minute:'2-digit'}) : '';
@@ -3879,7 +3889,7 @@ function showToast(msg, type) {
     dc.onopen = () => {
       connectedPeers[targetId] = { peerId: targetId, online: true, lastSeen: Date.now() };
       updatePeerBar();
-      if (userProfile) sendBridgeMsg(targetId, { type: 'profile-exchange', profile: userProfile });
+      if (userProfile) sendBridgeMsg(targetId, { type: 'profile-exchange', profile: { ...userProfile, pulseos: true, claudeos: !!(agentPresence.claudeos && agentPresence.claudeos.online), capabilities: ['chat', 'app-share', 'clipboard', 'agent-relay', 'graphs'] } });
     };
     dc.onclose = () => { if (connectedPeers[targetId]) connectedPeers[targetId].online = false; updatePeerBar(); };
     dc.onmessage = e => { let data; try { data = JSON.parse(e.data); } catch { data = { type: 'text', content: e.data }; } handleBridgeMessage(data, targetId); };
