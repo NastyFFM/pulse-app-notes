@@ -1034,10 +1034,16 @@ body {
   border: none;
   color: var(--text-dim);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 18px;
   font-family: var(--font);
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
 }
-.chat-close:hover { color: var(--text); }
+.chat-close:hover { color: var(--text); background: var(--bg-card-hover); }
 
 .chat-tabs {
   display: flex;
@@ -1380,7 +1386,8 @@ body.mode-builder .home-screen { max-width: 600px; }
 <!-- ═══ System Chat Panel ═══ -->
 <div class="chat-panel" id="systemChat">
   <div class="chat-header">
-    <span class="chat-header-title" id="chatHeaderTitle">Chats</span>
+    <span class="chat-header-title" id="chatHeaderTitle" style="flex:1;">Chats</span>
+    <span id="claudeToggleSlot"></span>
     <div style="display:flex;gap:4px;align-items:center;">
       <button class="chat-close" onclick="chatShowList()" title="Zurück" id="chatBackBtn" style="display:none;font-size:14px;">←</button>
       <button class="chat-close" onclick="chatNewDialog()" title="Neuer Chat" style="font-size:14px;">+</button>
@@ -3004,12 +3011,13 @@ async function openChat(chatId) {
   const name = chat?.name || chat?.participants?.filter(p => p !== (userProfile?.handle || 'chris')).join(', ') || 'Chat';
   document.getElementById('chatHeaderTitle').textContent = name;
   // Show ClaudeOS toggle for peer chats
+  const slot = document.getElementById('claudeToggleSlot');
   let toggleEl = document.getElementById('claudeToggle');
   if (!toggleEl) {
     toggleEl = document.createElement('button');
     toggleEl.id = 'claudeToggle';
-    toggleEl.style.cssText = 'background:none;border:1px solid var(--border);color:var(--text-dim);font-size:10px;padding:2px 8px;border-radius:10px;cursor:pointer;margin-left:auto;';
-    document.getElementById('chatHeaderTitle').parentElement.appendChild(toggleEl);
+    toggleEl.style.cssText = 'background:none;border:1px solid var(--border);color:var(--text-dim);font-size:10px;padding:2px 8px;border-radius:10px;cursor:pointer;';
+    slot.appendChild(toggleEl);
   }
   if (chatId.startsWith('chat-peer-')) {
     toggleEl.style.display = '';
