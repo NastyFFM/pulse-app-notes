@@ -3985,23 +3985,24 @@ function showToast(msg, type) {
         const peerChatId = connectedPeers[senderId]?.chatId || ('chat-peer-' + peerHandle.toLowerCase().replace(/[^a-z0-9-]/g, ''));
         const msgText = data.content || data.text;
         if (!msgText) break;
-        // Dedupe: track last N messages by text to catch duplicate DataChannels
-        if (!window._lastPeerMsgs) window._lastPeerMsgs = [];
-        const now = Date.now();
-        window._lastPeerMsgs = window._lastPeerMsgs.filter(m => now - m.t < 3000); // keep last 3s
-        if (window._lastPeerMsgs.some(m => m.text === msgText)) { console.log('[chat] Skipping dupe (text match):', msgText.substring(0, 30)); break; }
-        window._lastPeerMsgs.push({ text: msgText, t: now });
-        const msgId = data.id || ('m-peer-' + now);
-        if (renderedMsgIds.has(msgId)) { console.log('[chat] Skipping dupe (id):', msgId); break; }
+        // STRICT dedupe: only process from first senderId we see for this chat
+        if (!window._chatPeerMap) window._chatPeerMap = {};
+        if (!window._chatPeerMap[peerChatId]) window._chatPeerMap[peerChatId] = senderId;
+        if (window._chatPeerMap[peerChatId] !== senderId) {
+          console.log('[chat] Ignoring msg from secondary channel:', senderId, 'primary:', window._chatPeerMap[peerChatId]);
+          break;
+        }
+        const msgId = data.id || ('m-peer-' + Date.now());
+        if (renderedMsgIds.has(msgId)) break;
         renderedMsgIds.add(msgId);
         const msgObj = { id: msgId, from: 'agent', text: msgText, source: 'webrtc', time: new Date().toISOString(), senderName: peerName };
-        // Save to per-chat history via API
+        // Save to per-chat history via API (no SSE broadcast for webrtc)
         fetch('/api/chats/' + peerChatId + '/message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(msgObj)
         }).catch(() => {});
-        // Show in UI if this chat is open (only render once)
+        // Show in UI if this chat is open
         if (activeChatId === peerChatId) {
           renderChatMsg(msgObj);
         } else {
