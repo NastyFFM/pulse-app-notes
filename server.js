@@ -6680,7 +6680,10 @@ Regeln:
           chat.lastMessage = { text: text.substring(0, 100), from: msg.from, time: msg.time };
           if (msg.from !== 'user') chat.unread = (chat.unread || 0) + 1;
           fs.writeFileSync(chatFile, JSON.stringify(chat, null, 2));
-          broadcast('dashboard', { type: 'chat-message', chatId, message: msg });
+          // Only broadcast for non-webrtc messages (webrtc messages are already rendered locally)
+          if (source !== 'webrtc') {
+            broadcast('dashboard', { type: 'chat-message', chatId, message: msg });
+          }
           return jsonRes(res, { ok: true, message: msg });
         } catch (e) { return jsonRes(res, { error: e.message }, 400); }
       });
