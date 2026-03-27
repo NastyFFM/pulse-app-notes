@@ -3978,12 +3978,16 @@ function showToast(msg, type) {
         const peerHandle = connectedPeers[senderId]?.handle || peerName;
         const peerChatId = connectedPeers[senderId]?.chatId || ('chat-peer-' + peerHandle.toLowerCase().replace(/[^a-z0-9-]/g, ''));
         const msgText = data.content || data.text;
-        // Dedupe: incoming id + text-based hash (catches same msg from duplicate DataChannels)
-        const msgId = data.id || ('m-peer-' + (msgText || '').substring(0, 20).replace(/\s/g, '') + '-' + Math.floor(Date.now() / 1000));
-        const textHash = 'th-' + (msgText || '').substring(0, 40) + '-' + Math.floor(Date.now() / 2000);
-        if (renderedMsgIds.has(msgId) || renderedMsgIds.has(textHash)) { console.log('[chat] Skipping dupe:', msgId); break; }
+        if (!msgText) break;
+        // Dedupe: track last N messages by text to catch duplicate DataChannels
+        if (!window._lastPeerMsgs) window._lastPeerMsgs = [];
+        const now = Date.now();
+        window._lastPeerMsgs = window._lastPeerMsgs.filter(m => now - m.t < 3000); // keep last 3s
+        if (window._lastPeerMsgs.some(m => m.text === msgText)) { console.log('[chat] Skipping dupe (text match):', msgText.substring(0, 30)); break; }
+        window._lastPeerMsgs.push({ text: msgText, t: now });
+        const msgId = data.id || ('m-peer-' + now);
+        if (renderedMsgIds.has(msgId)) { console.log('[chat] Skipping dupe (id):', msgId); break; }
         renderedMsgIds.add(msgId);
-        renderedMsgIds.add(textHash);
         const msgObj = { id: msgId, from: 'agent', text: msgText, source: 'webrtc', time: new Date().toISOString(), senderName: peerName };
         // Save to per-chat history via API
         fetch('/api/chats/' + peerChatId + '/message', {
