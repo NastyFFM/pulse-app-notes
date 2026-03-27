@@ -4029,10 +4029,11 @@ function showToast(msg, type) {
           };
           fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(peerContact) }).catch(() => {});
           updatePeerBar();
-          // Auto-create DM chat for this peer — use guestId for unique chat per tab
+          // Auto-create DM chat for this peer — one chat per handle (not per session)
           const peerHandle = data.profile.handle || data.profile.name || senderId;
-          const peerUniqueId = data.profile.guestId || peerHandle;
-          const peerChatId = 'chat-peer-' + peerUniqueId.toLowerCase().replace(/[^a-z0-9-]/g, '');
+          const peerChatId = 'chat-peer-' + peerHandle.toLowerCase().replace(/[^a-z0-9-]/g, '');
+          // Clear old mapping: if another targetId had this chatId, remove it
+          Object.entries(connectedPeers).forEach(([pid, p]) => { if (pid !== senderId && p.chatId === peerChatId) delete connectedPeers[pid].chatId; });
           // Store chatId on peer for message routing
           connectedPeers[senderId].chatId = peerChatId;
           fetch('/api/chats/' + peerChatId).then(r => r.json()).then(existing => {
