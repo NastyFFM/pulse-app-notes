@@ -294,6 +294,15 @@
       "description": "Social Feed deiner Kontakte",
       "installed": true,
       "position": 26
+    },
+    {
+      "id": "store",
+      "name": "Store",
+      "icon": "🏪",
+      "color": "#8b5cf6",
+      "description": "Apps von Kontakten entdecken",
+      "installed": true,
+      "position": 27
     }
   ]
 }

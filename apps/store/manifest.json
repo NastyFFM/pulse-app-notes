@@ -1,0 +1,14 @@
+{
+  "name": "Store",
+  "icon": "🏪",
+  "color": "#8b5cf6",
+  "description": "Apps von deinen Kontakten entdecken und installieren",
+  "inputs": [
+    { "id": "refresh", "desc": "App-Katalog aktualisieren" }
+  ],
+  "outputs": [
+    { "id": "catalog", "desc": "Alle verfügbaren Apps" }
+  ],
+  "dataFiles": ["catalog"],
+  "pulseSubscriptions": []
+}
