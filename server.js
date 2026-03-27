@@ -6607,9 +6607,15 @@ Regeln:
     if (!chatId && req.method === 'POST') {
       return readBody(req, b => {
         try {
-          const { type, participants, name } = JSON.parse(b);
+          const body = JSON.parse(b);
+          const { type, participants, name } = body;
           if (!participants || !Array.isArray(participants) || participants.length < 1) return jsonRes(res, { error: 'participants required' }, 400);
-          const id = (type === 'group' ? 'group-' : 'chat-') + crypto.randomBytes(4).toString('hex');
+          const id = body.id || ((type === 'group' ? 'group-' : 'chat-') + crypto.randomBytes(4).toString('hex'));
+          // Dedup: if chat already exists, return it
+          const existingFile = path.join(chatsDir, id + '.json');
+          if (fs.existsSync(existingFile)) {
+            return jsonRes(res, { ok: true, chat: JSON.parse(fs.readFileSync(existingFile, 'utf8')) });
+          }
           const chat = {
             id, type: type || 'dm', name: name || null,
             participants,

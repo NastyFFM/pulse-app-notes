@@ -3170,7 +3170,7 @@ function renderChatMsg(msg) {
   }
   const isProactive = !isUser && /^[\u2600-\u26FF\u{1F300}-\u{1F9FF}]/u.test(txt);
   const sourceIcon = msg.source === 'telegram' ? '\u2708' : '\u25b8';
-  const fromLabel = isUser ? (userProfile?.name || 'Du') : (msg.source === 'pulseos' ? 'PulseOS' : 'ClaudeOS');
+  const fromLabel = isUser ? (userProfile?.name || 'Du') : (msg.source === 'webrtc' ? (msg.senderName || 'Peer') : msg.source === 'pulseos' ? 'PulseOS' : 'ClaudeOS');
   const div = document.createElement('div');
   div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;' + (isUser ? 'flex-direction:row-reverse;' : '');
   const bgStyle = isUser ? 'background:var(--teal);color:var(--bg);' : isProactive ? 'background:linear-gradient(135deg, var(--bg-card-hover), rgba(245,166,35,0.15));color:var(--text);border:1px solid rgba(245,166,35,0.3);' : 'background:var(--bg-card-hover);color:var(--text);';
@@ -3199,7 +3199,25 @@ function sendSystemChat() {
   if (!text) return;
   input.value = '';
 
-  // Send to ClaudeOS via outbox (or fallback to smart handler)
+  // Check if this is a peer chat — route via WebRTC
+  if (activeChatId && activeChatId.startsWith('chat-peer-')) {
+    // Send via WebRTC DataChannel
+    const sent = window.sendChatToPeers ? window.sendChatToPeers(text, activeChatId) : false;
+    console.log('[chat] sendChatToPeers result:', sent);
+    // Save own message + render (use stable ID to prevent doubles)
+    const userMsgId = 'm-self-' + Date.now();
+    renderedMsgIds.add(userMsgId); // Mark before render
+    const userMsg = { id: userMsgId, from: 'user', text: text, source: 'dashboard', time: new Date().toISOString() };
+    fetch('/api/chats/' + activeChatId + '/message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userMsg)
+    }).catch(() => {});
+    renderChatMsg(userMsg);
+    return;
+  }
+
+  // Agent chat — send to ClaudeOS
   sendToAgent(text);
 }
 
@@ -3844,18 +3862,65 @@ function showToast(msg, type) {
       case 'status-request':
         fetch('/api/tunnel').then(r => r.json()).then(d => sendBridgeMsg(senderId, { type: 'status-response', data: { server: 'PulseOS', tunnelActive: d.active, tunnelUrl: d.url || 'inactive' } })).catch(() => {});
         break;
-      case 'text': case 'chat-message':
-        const msg = { from: connectedPeers[senderId]?.name || senderId.substring(0, 8), avatar: connectedPeers[senderId]?.avatar || '>', text: data.content || data.text, time: Date.now(), peerId: senderId };
-        systemChatHistory.push(msg); if (systemChatHistory.length > 200) systemChatHistory.shift();
-        renderSystemChatMessage(msg);
-        if (!systemChatOpen) unreadChatCount++;
+      case 'text': case 'chat-message': {
+        const peerName = connectedPeers[senderId]?.name || senderId.substring(0, 8);
+        const peerHandle = connectedPeers[senderId]?.handle || peerName;
+        const peerChatId = connectedPeers[senderId]?.chatId || ('chat-peer-' + peerHandle.toLowerCase().replace(/[^a-z0-9-]/g, ''));
+        const msgText = data.content || data.text;
+        // Dedupe: use incoming id or generate one with text hash to prevent doubles
+        const msgId = data.id || ('m-peer-' + (msgText || '').substring(0, 20).replace(/\s/g, '') + '-' + Math.floor(Date.now() / 1000));
+        if (renderedMsgIds.has(msgId)) { console.log('[chat] Skipping dupe:', msgId); break; }
+        renderedMsgIds.add(msgId); // Mark immediately to prevent race condition
+        const msgObj = { id: msgId, from: 'agent', text: msgText, source: 'webrtc', time: new Date().toISOString(), senderName: peerName };
+        // Save to per-chat history via API
+        fetch('/api/chats/' + peerChatId + '/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(msgObj)
+        }).catch(() => {});
+        // Show in UI if this chat is open (only render once)
+        if (activeChatId === peerChatId) {
+          renderChatMsg(msgObj);
+        } else {
+          // Unread badge
+          if (!window.unreadChats) window.unreadChats = {};
+          if (!window.unreadChats[peerChatId]) window.unreadChats[peerChatId] = 0;
+          window.unreadChats[peerChatId]++;
+          loadChatList();
+        }
         updatePeerBar();
         break;
+      }
       case 'profile-exchange':
         if (data.profile) {
           connectedPeers[senderId] = { ...connectedPeers[senderId], ...data.profile, peerId: senderId, online: true, lastSeen: Date.now() };
           fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data.profile) }).catch(() => {});
           updatePeerBar();
+          // Auto-create DM chat for this peer
+          const peerHandle = data.profile.handle || data.profile.name || senderId;
+          const peerChatId = 'chat-peer-' + peerHandle.toLowerCase().replace(/[^a-z0-9-]/g, '');
+          // Store chatId on peer for message routing
+          connectedPeers[senderId].chatId = peerChatId;
+          fetch('/api/chats/' + peerChatId).then(r => r.json()).then(existing => {
+            if (existing.error) {
+              // Chat doesn't exist — create it
+              fetch('/api/chats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: peerChatId,
+                  type: 'dm',
+                  name: data.profile.name || peerHandle,
+                  participants: ['chris', peerHandle],
+                  peerType: data.profile.pulseos ? 'pulseos' : 'guest',
+                  peerId: senderId
+                })
+              }).then(() => {
+                showAgentAlert((data.profile.name || peerHandle) + ' verbunden!');
+                loadChatList();
+              }).catch(() => {});
+            }
+          }).catch(() => {});
         }
         break;
       case 'pulse-signal':
@@ -3899,11 +3964,36 @@ function showToast(msg, type) {
     if (dc && dc.readyState === 'open') { try { dc.send(JSON.stringify(data)); return true; } catch (e) { console.warn('[bridge] Send failed:', e.message); return false; } }
     return false;
   }
+  window.sendBridgeMsg = sendBridgeMsg;
   function sendToAllPeers(data) {
     let sent = 0, failed = 0;
     Object.keys(bridgeChannels).forEach(id => { if (sendBridgeMsg(id, data)) sent++; else failed++; });
     return { sent, failed, total: sent + failed };
   }
+  window.sendToAllPeers = sendToAllPeers;
+  window.connectedPeers = connectedPeers;
+  window.bridgeChannels = bridgeChannels;
+  // Exposed function for chat system to send to peers
+  window.sendChatToPeers = function(text, targetChatId) {
+    let sent = false;
+    for (const [pid, p] of Object.entries(connectedPeers)) {
+      const derivedId = 'chat-peer-' + (p.handle || p.name || pid).toLowerCase().replace(/[^a-z0-9-]/g, '');
+      if (p.chatId === targetChatId || derivedId === targetChatId) {
+        sent = sendBridgeMsg(pid, { type: 'chat-message', text: text, id: 'm-out-' + Date.now() });
+        console.log('[bridge] sendChatToPeers matched:', pid, p.name, 'sent:', sent);
+        if (sent) return true;
+      }
+    }
+    // Fallback: broadcast to all open channels
+    if (!sent) {
+      for (const [pid, dc] of Object.entries(bridgeChannels)) {
+        if (dc && dc.readyState === 'open') {
+          try { dc.send(JSON.stringify({ type: 'chat-message', text: text, id: 'm-out-' + Date.now() })); sent = true; console.log('[bridge] Broadcast to', pid); } catch {}
+        }
+      }
+    }
+    return sent;
+  };
   function cleanupBridgePeer(targetId) {
     if (bridgeChannels[targetId]) { try { bridgeChannels[targetId].close(); } catch {} delete bridgeChannels[targetId]; }
     if (bridgePeers[targetId]) { try { bridgePeers[targetId].close(); } catch {} delete bridgePeers[targetId]; }
