@@ -6958,6 +6958,18 @@ function copyInstall(repo, btn) {
     } catch (e) { return jsonRes(res, { ok: false, error: e.message }, 500); } });
   }
 
+  // ── Peer Profiles (cached profiles from connected peers) ──
+  if (url === '/api/peer-profiles' && req.method === 'GET') {
+    const dir = path.join(__dirname, 'data', 'peer-profiles');
+    try {
+      const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+      const profiles = files.map(f => {
+        try { return JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); } catch { return null; }
+      }).filter(Boolean);
+      return jsonRes(res, { profiles });
+    } catch { return jsonRes(res, { profiles: [] }); }
+  }
+
   // ── Profile Publish (push to GitHub Pages via gh CLI) ──
   if (url === '/api/profile/publish' && req.method === 'POST') {
     const profilePath = path.join(__dirname, 'data', 'profile.json');
@@ -7043,6 +7055,52 @@ function copyInstall(repo, btn) {
       return jsonRes(res, { ok: true, url: pagesUrl, repo: ghUser + '/' + repoName, files: ['index.html', 'pulse-profile.json'] });
     } catch (e) {
       return jsonRes(res, { ok: false, error: e.message }, 500);
+    }
+  }
+
+  // ── Contact Profile Checker (poll for changes) ──
+  if (url === '/api/contacts/check-updates' && req.method === 'POST') {
+    try {
+      const contactsPath = path.join(__dirname, 'data', 'contacts.json');
+      const contactsData = JSON.parse(fs.readFileSync(contactsPath, 'utf8'));
+      const contacts = contactsData.contacts || [];
+      const cachePath = path.join(__dirname, 'data', 'profile-cache.json');
+      let cache = {};
+      try { cache = JSON.parse(fs.readFileSync(cachePath, 'utf8')); } catch {}
+
+      const changes = [];
+      const checks = contacts.filter(c => c.githubPages || c.pagesUrl).map(async (c) => {
+        const profileUrl = (c.githubPages || c.pagesUrl).replace(/\/$/, '') + '/pulse-profile.json';
+        try {
+          const data = await new Promise((resolve, reject) => {
+            const mod = profileUrl.startsWith('https') ? require('https') : require('http');
+            mod.get(profileUrl, { timeout: 5000 }, resp => {
+              if (resp.statusCode !== 200) return reject(new Error('HTTP ' + resp.statusCode));
+              let d = ''; resp.on('data', c => d += c); resp.on('end', () => { try { resolve(JSON.parse(d)); } catch { reject(new Error('parse')); } });
+            }).on('error', reject);
+          });
+          const key = c.handle || c.id;
+          const oldHash = cache[key]?.hash;
+          const newHash = JSON.stringify(data).length + '-' + (data.updated || '');
+          if (oldHash && oldHash !== newHash) {
+            changes.push({ contact: key, name: data.name || c.name, type: 'profile-updated' });
+          }
+          cache[key] = { hash: newHash, lastChecked: new Date().toISOString(), profile: data };
+        } catch {}
+      });
+
+      await Promise.allSettled(checks);
+      fs.writeFileSync(cachePath, JSON.stringify(cache, null, 2));
+
+      // Notify about changes
+      if (changes.length > 0) {
+        const names = changes.map(c => c.name).join(', ');
+        broadcast('dashboard', { type: 'agent-alert', text: 'Profil-Updates: ' + names, source: 'contact-checker' });
+      }
+
+      return jsonRes(res, { ok: true, checked: contacts.filter(c => c.githubPages || c.pagesUrl).length, changes });
+    } catch (e) {
+      return jsonRes(res, { error: e.message }, 500);
     }
   }
 

@@ -86,6 +86,13 @@ async function init() {
     contacts = (d.contacts || []).filter(c => c.type !== 'agent');
   } catch { contacts = []; }
 
+  // Load cached peer profiles
+  try {
+    const r = await fetch('/api/peer-profiles');
+    const d = await r.json();
+    (d.profiles || []).forEach(p => { feeds[p.handle] = p; });
+  } catch {}
+
   // Load cached feeds
   try {
     const r = await fetch('/app/social/api/feeds');
@@ -176,7 +183,7 @@ function renderFeed(el, profiles) {
   const items = [];
   profiles.forEach(p => {
     // Pages as feed items
-    (p.pages || []).filter(pg => pg.visibility === 'public').forEach(pg => {
+    (p.pages || []).filter(pg => !pg.visibility || pg.visibility === 'public').forEach(pg => {
       items.push({ type: 'page', profile: p, page: pg, time: pg.updated || pg.created });
     });
     // Apps as feed items
@@ -216,16 +223,21 @@ function renderFeed(el, profiles) {
 }
 
 function renderGallery(el, profiles) {
-  const media = [];
+  const items = [];
   profiles.forEach(p => {
-    (p.pages || []).forEach(pg => {
-      (pg.media || []).forEach(m => media.push({ url: m, title: pg.title, profile: p }));
+    (p.pages || []).filter(pg => pg.type === 'gallery').forEach(pg => {
+      (pg.items || []).forEach(item => items.push({ ...item, pageTitle: pg.title, profile: p }));
+      (pg.media || []).forEach(m => items.push({ title: pg.title, image: m, profile: p }));
     });
   });
-  if (!media.length) { el.innerHTML = '<div class="empty">Keine Medien gefunden.</div>'; return; }
-  el.innerHTML = '<div class="gallery">' + media.map(m =>
-    '<div class="gallery-item"><img src="' + esc(m.url) + '" onerror="this.parentElement.remove()"><div class="overlay"><span>' + esc(m.title) + ' · ' + esc(m.profile.name || '') + '</span></div></div>'
-  ).join('') + '</div>';
+  if (!items.length) { el.innerHTML = '<div class="empty">Keine Galerie-Einträge gefunden.</div>'; return; }
+  el.innerHTML = '<div class="gallery">' + items.map(item => {
+    const hasImage = item.image && item.image.startsWith('http');
+    const emoji = (item.image && !hasImage) ? item.image : '📷';
+    return '<div class="gallery-item" style="display:flex;align-items:center;justify-content:center;font-size:32px;background:var(--bg-card);">' +
+      (hasImage ? '<img src="' + esc(item.image) + '" onerror="this.parentElement.innerHTML=\'📷\'">' : emoji) +
+      '<div class="overlay"><span>' + esc(item.title || '') + ' · ' + esc(item.profile.name || '') + '</span></div></div>';
+  }).join('') + '</div>';
 }
 
 function renderApps(el, profiles) {
@@ -246,8 +258,35 @@ function renderOriginal(el, profiles) {
   const p = profiles[0];
   if (!p) { el.innerHTML = '<div class="empty">Kein Profil ausgewählt.</div>'; return; }
   const url = p.pagesUrl || p.githubPages || (p.github ? 'https://' + p.github + '.github.io' : '');
-  if (!url) { el.innerHTML = '<div class="empty">Keine Profilseite verfügbar.</div>'; return; }
-  el.innerHTML = '<iframe class="original-frame" src="' + esc(url) + '"></iframe>';
+  if (url) {
+    // Try iframe, fallback to profile card on error
+    el.innerHTML = '<iframe class="original-frame" src="' + esc(url) + '" onerror="this.parentElement.innerHTML=buildProfileCard(window._origProfile)"></iframe>';
+    window._origProfile = p;
+    // Also check via fetch if URL is valid
+    fetch(url, { mode: 'no-cors' }).catch(() => { el.innerHTML = buildProfileCard(p); });
+  } else {
+    el.innerHTML = buildProfileCard(p);
+  }
+}
+
+function buildProfileCard(p) {
+  if (!p) return '<div class="empty">Kein Profil verfügbar.</div>';
+  const apps = (p.publicApps || []).map(a =>
+    '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-card,#151520);padding:6px 10px;border-radius:8px;font-size:11px;">' +
+    '<span style="font-size:16px;">' + esc(a.icon || '📦') + '</span>' + esc(a.name || a.id) + '</div>'
+  ).join('');
+  const social = [];
+  if (p.github) social.push('<a href="https://github.com/' + esc(p.github) + '" target="_blank" style="color:var(--teal,#4ecdc4);">GitHub</a>');
+  if (p.twitter) social.push('<a href="https://x.com/' + esc(p.twitter) + '" target="_blank" style="color:var(--teal,#4ecdc4);">X/Twitter</a>');
+  if (p.website) social.push('<a href="' + esc(p.website) + '" target="_blank" style="color:var(--teal,#4ecdc4);">Website</a>');
+  return '<div style="max-width:500px;margin:40px auto;text-align:center;padding:20px;">' +
+    '<div style="font-size:48px;margin-bottom:12px;">' + esc(p.avatar || '👤') + '</div>' +
+    '<div style="font-size:20px;font-weight:600;">' + esc(p.name || 'Unknown') + '</div>' +
+    (p.handle ? '<div style="color:var(--text-dim,#888);font-size:13px;margin:4px 0;">@' + esc(p.handle) + '</div>' : '') +
+    (p.bio ? '<div style="margin:12px 0;font-size:13px;color:var(--text,#e0e0e0);">' + esc(p.bio) + '</div>' : '') +
+    (social.length ? '<div style="margin:8px 0;display:flex;gap:12px;justify-content:center;font-size:12px;">' + social.join('') + '</div>' : '') +
+    (apps ? '<div style="margin-top:20px;"><div style="font-size:11px;color:var(--text-dim,#888);margin-bottom:8px;">APPS</div><div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">' + apps + '</div></div>' : '') +
+    '</div>';
 }
 
 async function installApp(url) {
