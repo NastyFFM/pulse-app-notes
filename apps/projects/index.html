@@ -258,6 +258,7 @@ function renderDetail(p) {
         '<span class="tb-status" id="graphStatus"></span>' +
         '<button class="tb-btn run" onclick="runGraph()">Run</button>' +
         '<button class="tb-btn" onclick="saveGraph()">Speichern</button>' +
+        '<button class="tb-btn" onclick="saveGraphAsApp()" title="Graph als eigenstaendige App im Launcher registrieren">Als App</button>' +
       '</div>' +
       '<div class="graph-canvas-wrap" id="graphCanvas">' +
         '<svg id="graphSvg"></svg>' +
@@ -712,6 +713,31 @@ async function runGraph() {
     }
   } catch {
     updateStatus('Run fehlgeschlagen');
+  }
+}
+
+// --- Graph as App ---
+async function saveGraphAsApp() {
+  if (!activeId || !graph || graph.nodes.length === 0) {
+    updateStatus('Graph muss mindestens einen Node haben');
+    return;
+  }
+  await saveGraph(); // Save first
+  const appId = 'graph-' + activeId;
+  const appName = graph.name || activeId;
+  try {
+    const r = await fetch('/api/graphs/' + activeId + '/save-as-app', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appId, name: appName })
+    });
+    if (r.ok) {
+      updateStatus('Als App gespeichert: ' + appName);
+    } else {
+      const d = await r.json().catch(() => ({}));
+      updateStatus('Fehler: ' + (d.error || 'Unbekannt'));
+    }
+  } catch (e) {
+    updateStatus('Fehler: ' + e.message);
   }
 }
 

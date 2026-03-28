@@ -2858,6 +2858,90 @@ Wenn der User nach dem "Share Link" fragt, prüfe \`GET /api/tunnel\` — wenn \
   const graphMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)$/);
   const graphConnectMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)\/connect$/);
   const graphRunMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)\/run$/);
+  const graphSaveAsAppMatch = url.match(/^\/api\/graphs\/([a-zA-Z0-9_-]+)\/save-as-app$/);
+
+  // POST /api/graphs/:projectId/save-as-app — register graph as launchable app
+  if (graphSaveAsAppMatch && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const projectId = graphSaveAsAppMatch[1];
+        const { appId, name } = JSON.parse(b);
+        const graph = loadGraph(projectId);
+        if (!graph) return jsonRes(res, { error: 'Graph not found' }, 404);
+        const finalAppId = appId || ('graph-' + projectId);
+        const finalName = name || graph.name || projectId;
+        // Create app directory with a graph-runner index.html
+        const appDir = path.join(ROOT, 'apps', finalAppId);
+        if (!fs.existsSync(appDir)) fs.mkdirSync(appDir, { recursive: true });
+        const dataDir = path.join(appDir, 'data');
+        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+        // Build manifest from graph nodes
+        const inputs = (graph.nodes || []).filter(n => (n.inputs || []).length > 0).flatMap(n => n.inputs.map(i => ({ id: i, desc: 'Graph Input: ' + i })));
+        const outputs = (graph.nodes || []).filter(n => (n.outputs || []).length > 0).flatMap(n => n.outputs.map(o => ({ id: o, desc: 'Graph Output: ' + o })));
+        const nodeIcons = (graph.nodes || []).map(n => n.name || n.appId || '?').join(' → ');
+        fs.writeFileSync(path.join(appDir, 'manifest.json'), JSON.stringify({
+          name: finalName, icon: '⚡', color: '#6366f1',
+          description: 'Graph: ' + nodeIcons,
+          inputs: inputs.slice(0, 5), outputs: outputs.slice(0, 5),
+          dataFiles: ['state'], pulseSubscriptions: [],
+          graphId: projectId
+        }, null, 2));
+        // State file stores last run info
+        fs.writeFileSync(path.join(dataDir, 'state.json'), JSON.stringify({ lastRun: null, runs: 0 }, null, 2));
+        // index.html: graph runner UI that shows nodes and has a Run button
+        const nodesList = (graph.nodes || []).map(n => '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">' +
+          '<span style="font-size:16px;">' + (n.icon || '⚙') + '</span><span>' + (n.name || n.appId) + '</span></div>').join('\n          ');
+        fs.writeFileSync(path.join(appDir, 'index.html'), `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>${finalName}</title>
+<style>
+  body { background: var(--bg, #0d1117); color: var(--text, #c9d1d9); font-family: system-ui; margin: 0; padding: 20px; }
+  .header { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .sub { font-size: 12px; color: var(--text-dim, #8b949e); margin-bottom: 20px; }
+  .nodes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .run-btn { background: var(--teal, #2dd4bf); color: #000; border: none; padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .run-btn:hover { opacity: 0.9; }
+  .status { margin-top: 12px; font-size: 12px; color: var(--text-dim, #8b949e); }
+</style></head><body>
+<div class="header">⚡ ${finalName}</div>
+<div class="sub">${(graph.nodes || []).length} Nodes · ${(graph.edges || []).length} Edges</div>
+<div class="nodes">
+  ${nodesList}
+</div>
+<button class="run-btn" onclick="runGraph()">▶ Graph ausführen</button>
+<div class="status" id="status"></div>
+<script src="/sdk.js"></script>
+<script>
+PulseOS.onInput('trigger', function() { runGraph(); });
+async function runGraph() {
+  document.getElementById('status').textContent = 'Wird ausgeführt...';
+  try {
+    const r = await fetch('/api/graphs/${projectId}/run', { method: 'POST' });
+    const d = await r.json();
+    document.getElementById('status').textContent = 'Ausgeführt: ' + (d.triggered || []).length + ' Nodes · ' + new Date().toLocaleTimeString();
+    const stateR = await fetch('/app/${finalAppId}/api/state');
+    const state = await stateR.json();
+    state.lastRun = new Date().toISOString();
+    state.runs = (state.runs || 0) + 1;
+    await fetch('/app/${finalAppId}/api/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) });
+    PulseOS.emit('result', d);
+  } catch(e) { document.getElementById('status').textContent = 'Fehler: ' + e.message; }
+}
+PulseOS.onDataChanged(function() {});
+</script></body></html>`);
+        // Register in apps.json
+        const appsFile = path.join(ROOT, 'data', 'apps.json');
+        const apps = safeReadJSON(appsFile, '{"apps":[]}');
+        if (!apps.apps.some(a => a.id === finalAppId)) {
+          apps.apps.push({ id: finalAppId, name: finalName, icon: '⚡', color: '#6366f1',
+            description: 'Graph: ' + nodeIcons, installed: true, created: true,
+            position: apps.apps.length, visibility: 'private', allowedUsers: [] });
+          fs.writeFileSync(appsFile, JSON.stringify(apps, null, 2));
+        }
+        broadcast('dashboard', { type: 'app-change', appId: finalAppId });
+        return jsonRes(res, { ok: true, appId: finalAppId, name: finalName });
+      } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+    });
+  }
 
   // GET /api/graphs/:projectId
   if (graphMatch && !graphConnectMatch && !graphRunMatch && req.method === 'GET') {
@@ -7215,13 +7299,41 @@ ${task}
 REGELN:
 - Arbeite im Verzeichnis: ${ROOT}
 - Apps erstellen in: apps/<name>/index.html + apps/<name>/manifest.json + apps/<name>/data/
-- Folge die PulseOS App-Konvention (manifest.json mit inputs/outputs, PulseOS SDK nutzen)
-- Schreibe regelmäßig deinen Fortschritt in ${workerFile}:
-  Lese die Datei, update das "progress" Feld und füge Log-Einträge zu "log" hinzu.
-  Beispiel: {"progress": "CSS fertig, arbeite an JS...", "log": [...existierende, {"time":"...","type":"progress","text":"CSS erstellt"}]}
+
+APP-KONVENTION (PFLICHT):
+Jede App braucht diese 3 Dateien:
+1. apps/<name>/index.html — Vanilla HTML/CSS/JS, KEINE Frameworks
+2. apps/<name>/manifest.json:
+   {"name":"App Name","icon":"X","color":"#hex","description":"Was die App tut",
+    "inputs":[{"id":"input-name","desc":"Was dieser Input empfängt"}],
+    "outputs":[{"id":"output-name","desc":"Was dieser Output liefert"}],
+    "dataFiles":["state"],"pulseSubscriptions":[]}
+3. apps/<name>/data/<name>.json — App-Daten (mindestens eine Datei)
+
+SDK-NUTZUNG (PFLICHT im index.html):
+<script src="/sdk.js"></script>
+PulseOS.onInput('input-name', function(data) { /* Daten empfangen */ });
+PulseOS.emit('output-name', data); // Daten senden
+PulseOS.onDataChanged(function() { loadData(); }); // Live-Updates
+PulseOS.saveState(data); PulseOS.loadState().then(data => { });
+
+DATEN-API:
+- Lesen: fetch('/app/<name>/api/<dataFile>').then(r => r.json())
+- Schreiben: fetch('/app/<name>/api/<dataFile>', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)})
+
+CSS-VARIABLEN (nutze diese statt hardcodierte Farben):
+var(--bg), var(--bg-card), var(--bg-card-hover), var(--text), var(--text-dim),
+var(--teal), var(--border), var(--accent)
+body { background: var(--bg); color: var(--text); font-family: system-ui; margin: 0; padding: 16px; }
+
+FORTSCHRITT MELDEN:
+- Schreibe regelmäßig in ${workerFile}: update "progress" Feld + füge Log-Einträge hinzu
 - Wenn fertig: setze "status" auf "done" und "result" auf eine Zusammenfassung
 - Wenn Fehler: setze "status" auf "error" und "result" auf die Fehlermeldung
-- Registriere neue Apps in data/apps.json
+
+APP REGISTRIEREN:
+Füge die neue App in data/apps.json ein (im "apps" Array):
+{"id":"<name>","name":"App Name","icon":"X","color":"#hex","description":"...","installed":true,"created":true,"position":20,"visibility":"private","allowedUsers":[]}
 
 STARTE JETZT mit der Aufgabe.`;
 

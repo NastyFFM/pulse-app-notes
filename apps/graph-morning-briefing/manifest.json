@@ -1,0 +1,31 @@
+{
+  "name": "morning-briefing",
+  "icon": "⚡",
+  "color": "#6366f1",
+  "description": "Graph: Notes → Notification",
+  "inputs": [
+    {
+      "id": "data",
+      "desc": "Graph Input: data"
+    },
+    {
+      "id": "data",
+      "desc": "Graph Input: data"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "notes",
+      "desc": "Graph Output: notes"
+    },
+    {
+      "id": "recent-notes",
+      "desc": "Graph Output: recent-notes"
+    }
+  ],
+  "dataFiles": [
+    "state"
+  ],
+  "pulseSubscriptions": [],
+  "graphId": "morning-briefing"
+}

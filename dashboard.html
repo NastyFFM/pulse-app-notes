@@ -1305,6 +1305,8 @@ body.mode-builder .home-screen { max-width: 600px; }
       <span class="agent-text" id="agentText">bereit</span>
     </div>
 
+    <div class="worker-badge" id="workerBadge" onclick="openApp(state.apps.find(a=>a.id==='workers'))" title="Laufende Worker" style="display:none;cursor:pointer;padding:2px 8px;border-radius:10px;background:#6366f1;color:#fff;font-size:11px;font-weight:600;margin-right:4px;">⚙ <span id="workerCount">0</span></div>
+
     <div class="topbar-peers" id="topbarPeers"></div>
 
     <button class="topbar-btn" id="tunnelBtn" onclick="toggleTunnel()" title="Share">Share</button>
@@ -1520,7 +1522,8 @@ function connectSSE() {
         // Mark worker as reported so polling doesn't duplicate
         if (msg.status === 'done' || msg.status === 'error') workerDoneReported.add(msg.workerId);
         // Reload app list when worker finishes (new apps may have been created)
-        if (msg.status === 'done') fetch('/api/state').then(r => r.json()).then(s => { state = s; }).catch(() => {});
+        if (msg.status === 'done') fetch('/api/state').then(r => r.json()).then(s => { state = s; render(); }).catch(() => {});
+        updateWorkerBadge();
       } else if (msg.type === 'chat-message' && msg.message) {
         renderChatMsg(msg.message);
         if (!systemChatOpen) {
@@ -2893,7 +2896,24 @@ function updateGreeting() {
   document.getElementById('greetingSub').textContent = sub;
   // Load quick stats
   loadQuickStats();
+  updateWorkerBadge();
 }
+
+async function updateWorkerBadge() {
+  try {
+    const r = await fetch('/api/workers');
+    if (!r.ok) return;
+    const workers = await r.json();
+    const running = (Array.isArray(workers) ? workers : []).filter(w => w.status === 'running').length;
+    const badge = document.getElementById('workerBadge');
+    const count = document.getElementById('workerCount');
+    if (badge && count) {
+      badge.style.display = running > 0 ? 'inline-block' : 'none';
+      count.textContent = running;
+    }
+  } catch {}
+}
+setInterval(updateWorkerBadge, 10000);
 
 async function loadQuickStats() {
   try {
