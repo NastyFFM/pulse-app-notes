@@ -1,0 +1,53 @@
+{
+  "id": "chat-peer-safari-guest",
+  "type": "dm",
+  "name": "Safari",
+  "participants": [
+    "chris",
+    "safari-guest"
+  ],
+  "messages": [
+    {
+      "id": "m-1774697643839",
+      "from": "agent",
+      "text": "safari hier",
+      "source": "webrtc",
+      "time": "2026-03-28T11:34:03.839Z"
+    },
+    {
+      "id": "m-1774698275866",
+      "from": "user",
+      "text": "wef",
+      "source": "dashboard",
+      "time": "2026-03-28T11:44:35.866Z"
+    },
+    {
+      "id": "m-1774698282206",
+      "from": "agent",
+      "text": "wefef",
+      "source": "webrtc",
+      "time": "2026-03-28T11:44:42.206Z"
+    },
+    {
+      "id": "m-1774698700110",
+      "from": "user",
+      "text": "huhuh",
+      "source": "dashboard",
+      "time": "2026-03-28T11:51:40.110Z"
+    },
+    {
+      "id": "m-1774698706492",
+      "from": "agent",
+      "text": "qwdqw",
+      "source": "webrtc",
+      "time": "2026-03-28T11:51:46.492Z"
+    }
+  ],
+  "unread": 0,
+  "created": "2026-03-28T11:33:39.236Z",
+  "lastMessage": {
+    "text": "qwdqw",
+    "from": "agent",
+    "time": "2026-03-28T11:51:46.492Z"
+  }
+}

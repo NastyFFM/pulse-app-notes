@@ -15,7 +15,7 @@
       "roomId": "pulse-5093113b",
       "createdAt": "2026-03-18T22:44:20.728Z",
       "updatedAt": "2026-03-24T03:13:37.311Z",
-      "lastSeen": "2026-03-27T19:37:19.726Z",
+      "lastSeen": "2026-03-27T22:14:52.000Z",
       "role": "",
       "email": "",
       "github": "NastyFFM",
@@ -23,7 +23,16 @@
       "website": "",
       "lastPublished": "2026-03-25T18:20:19.746Z",
       "pagesUrl": "https://NastyFFM.github.io",
-      "peerId": "3EPkSyT-Imf2dqw_AAs4"
+      "peerId": "hGmjO9fafHUKXb9jAAvQ",
+      "pulseos": true,
+      "claudeos": true,
+      "capabilities": [
+        "chat",
+        "app-share",
+        "clipboard",
+        "agent-relay",
+        "graphs"
+      ]
     },
     {
       "id": "pulseos",
@@ -44,8 +53,9 @@
       "type": "peer",
       "pulseos": false,
       "claudeos": false,
-      "lastSeen": "2026-03-27T19:40:59.684Z",
-      "peerId": "SEJD5PhtUZgFr98bAAs6"
+      "lastSeen": "2026-03-28T11:50:36.296Z",
+      "peerId": "p9yqBQR8oSolal60AAzJ",
+      "guestId": "guest-mn9e72agjx7r"
     },
     {
       "id": "claudeos",
@@ -57,7 +67,37 @@
       "bio": "Telegram Relay Agent - Memory & Always-On",
       "endpoint": "chat-outbox",
       "status": "online"
+    },
+    {
+      "id": "qwfqwf",
+      "name": "Timmy",
+      "handle": "qwfqwf",
+      "avatar": "👤",
+      "color": "#42a4e2",
+      "type": "peer",
+      "createdAt": "2026-03-27T20:23:53.525Z",
+      "lastSeen": "2026-03-27T20:23:53.525Z"
+    },
+    {
+      "name": "Flip",
+      "avatar": "👤",
+      "handle": "flip-guest",
+      "id": "peer-flip-guest",
+      "type": "peer",
+      "peerId": "0KpAA5i6AZ6alaeAAAzL",
+      "lastSeen": "2026-03-28T11:50:55.471Z",
+      "firstSeen": "2026-03-28T11:24:25.149Z"
+    },
+    {
+      "name": "Safari",
+      "avatar": "👤",
+      "handle": "safari-guest",
+      "id": "peer-safari-guest",
+      "type": "peer",
+      "peerId": "JmTBzZF8l4C56Z17AAy1",
+      "lastSeen": "2026-03-28T11:50:35.971Z",
+      "firstSeen": "2026-03-28T11:33:39.206Z"
     }
   ],
-  "updatedAt": "2026-03-27T19:55:27.079Z"
+  "updatedAt": "2026-03-28T11:50:55.471Z"
 }

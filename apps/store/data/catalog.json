@@ -1,1 +1,56 @@
-{ "sources": [], "lastUpdated": null }
+{
+  "sources": [
+    {
+      "handle": "nastycoder",
+      "name": "Chris",
+      "avatar": "🧑‍💻",
+      "color": "#4ecdc4",
+      "url": "https://nastycoder.github.io",
+      "apps": [
+        {
+          "id": "notes",
+          "name": "Notes",
+          "icon": "N",
+          "description": "Notizen erstellen und bearbeiten",
+          "installUrl": "NastyFFM/pulse-app-notes",
+          "color": "#1a2a3a"
+        },
+        {
+          "id": "calendar",
+          "name": "Calendar",
+          "icon": "C",
+          "description": "Termine und Events",
+          "installUrl": "NastyFFM/pulse-app-calendar",
+          "color": "#1a2a3a"
+        },
+        {
+          "id": "files",
+          "name": "Files",
+          "icon": "F",
+          "description": "Datei-Browser",
+          "installUrl": "NastyFFM/pulse-app-files",
+          "color": "#1a2a3a"
+        },
+        {
+          "id": "weather",
+          "name": "Weather",
+          "icon": "W",
+          "description": "Wetter-Anzeige",
+          "installUrl": "NastyFFM/pulse-app-weather",
+          "color": "#1a2a3a"
+        },
+        {
+          "id": "habit-tracker",
+          "name": "Habit Tracker",
+          "icon": "H",
+          "description": "Gewohnheiten tracken mit Streak-Grid",
+          "installUrl": "NastyFFM/pulse-app-habit-tracker",
+          "color": "#1a2a3a"
+        }
+      ],
+      "lastFetched": null,
+      "isSelf": true
+    }
+  ],
+  "lastUpdated": "2026-03-27T20:38:33.556Z"
+}

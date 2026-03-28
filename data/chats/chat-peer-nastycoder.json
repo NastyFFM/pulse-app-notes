@@ -1,0 +1,14 @@
+{
+  "id": "chat-peer-nastycoder",
+  "type": "dm",
+  "name": "Chris",
+  "participants": [
+    "chris",
+    "nastycoder"
+  ],
+  "messages": [],
+  "unread": 0,
+  "created": "2026-03-27T18:56:14.992Z",
+  "lastMessage": null,
+  "claudeEnabled": false
+}

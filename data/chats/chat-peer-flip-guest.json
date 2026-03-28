@@ -1,0 +1,67 @@
+{
+  "id": "chat-peer-flip-guest",
+  "type": "dm",
+  "name": "Flip",
+  "participants": [
+    "chris",
+    "flip-guest"
+  ],
+  "messages": [
+    {
+      "id": "m-1774697076110",
+      "from": "agent",
+      "text": "Test flip",
+      "source": "webrtc",
+      "time": "2026-03-28T11:24:36.110Z"
+    },
+    {
+      "id": "m-1774697113294",
+      "from": "agent",
+      "text": "Hsjsks",
+      "source": "webrtc",
+      "time": "2026-03-28T11:25:13.294Z"
+    },
+    {
+      "id": "m-1774697469647",
+      "from": "agent",
+      "text": "Jdjdjd",
+      "source": "webrtc",
+      "time": "2026-03-28T11:31:09.647Z"
+    },
+    {
+      "id": "m-1774698655766",
+      "from": "agent",
+      "text": "Test",
+      "source": "webrtc",
+      "time": "2026-03-28T11:50:55.766Z"
+    },
+    {
+      "id": "m-1774698665439",
+      "from": "agent",
+      "text": "Hekkkix",
+      "source": "webrtc",
+      "time": "2026-03-28T11:51:05.439Z"
+    },
+    {
+      "id": "m-1774698669014",
+      "from": "user",
+      "text": "yo",
+      "source": "dashboard",
+      "time": "2026-03-28T11:51:09.014Z"
+    },
+    {
+      "id": "m-1774698685216",
+      "from": "user",
+      "text": "qwd",
+      "source": "dashboard",
+      "time": "2026-03-28T11:51:25.216Z"
+    }
+  ],
+  "unread": 0,
+  "created": "2026-03-28T11:24:25.182Z",
+  "lastMessage": {
+    "text": "qwd",
+    "from": "user",
+    "time": "2026-03-28T11:51:25.216Z"
+  }
+}

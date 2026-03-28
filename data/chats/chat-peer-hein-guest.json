@@ -517,14 +517,819 @@
       "text": "was ess ich gerne",
       "source": "webrtc",
       "time": "2026-03-27T18:44:27.324Z"
+    },
+    {
+      "id": "m-1774637247424",
+      "from": "agent",
+      "text": "was ess ich am liebsten",
+      "source": "webrtc",
+      "time": "2026-03-27T18:47:27.424Z"
+    },
+    {
+      "id": "m-1774645187459",
+      "from": "agent",
+      "text": "neuer test",
+      "source": "webrtc",
+      "time": "2026-03-27T20:59:47.459Z"
+    },
+    {
+      "id": "m-1774645200656",
+      "from": "user",
+      "text": "test",
+      "source": "dashboard",
+      "time": "2026-03-27T21:00:00.656Z"
+    },
+    {
+      "id": "m-1774645214939",
+      "from": "user",
+      "text": "jqewfopiqfjpqfnj",
+      "source": "dashboard",
+      "time": "2026-03-27T21:00:14.939Z"
+    },
+    {
+      "id": "m-1774645662051",
+      "from": "agent",
+      "text": "hallo",
+      "source": "webrtc",
+      "time": "2026-03-27T21:07:42.051Z"
+    },
+    {
+      "id": "m-1774645662065",
+      "from": "agent",
+      "text": "hallo",
+      "source": "webrtc",
+      "time": "2026-03-27T21:07:42.065Z"
+    },
+    {
+      "id": "m-1774645668819",
+      "from": "agent",
+      "text": "grgr",
+      "source": "webrtc",
+      "time": "2026-03-27T21:07:48.819Z"
+    },
+    {
+      "id": "m-1774645668831",
+      "from": "agent",
+      "text": "grgr",
+      "source": "webrtc",
+      "time": "2026-03-27T21:07:48.831Z"
+    },
+    {
+      "id": "m-1774645677441",
+      "from": "user",
+      "text": "qwefwefew",
+      "source": "dashboard",
+      "time": "2026-03-27T21:07:57.441Z"
+    },
+    {
+      "id": "m-1774645712092",
+      "from": "user",
+      "text": "eqwrwre",
+      "source": "dashboard",
+      "time": "2026-03-27T21:08:32.092Z"
+    },
+    {
+      "id": "m-1774645715360",
+      "from": "agent",
+      "text": "werwer",
+      "source": "webrtc",
+      "time": "2026-03-27T21:08:35.360Z"
+    },
+    {
+      "id": "m-1774645715371",
+      "from": "agent",
+      "text": "werwer",
+      "source": "webrtc",
+      "time": "2026-03-27T21:08:35.371Z"
+    },
+    {
+      "id": "m-1774645724773",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T21:08:44.773Z"
+    },
+    {
+      "id": "m-1774645724818",
+      "from": "agent",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "webrtc",
+      "time": "2026-03-27T21:08:44.818Z"
+    },
+    {
+      "id": "m-1774645729303",
+      "from": "user",
+      "text": "wefwef",
+      "source": "dashboard",
+      "time": "2026-03-27T21:08:49.303Z"
+    },
+    {
+      "id": "m-1774645732046",
+      "from": "user",
+      "text": "Wortanzahl: Nimmt man eine durchschnittliche, kurze Länge von Nachrichten an, dürfte die Zahl der Wörter in die Tausende gehen, wobei viele Nachrichten sehr kurz sind (Emojis/kurze Antworten).",
+      "source": "dashboard",
+      "time": "2026-03-27T21:08:52.046Z"
+    },
+    {
+      "id": "m-1774645917533",
+      "from": "agent",
+      "text": "qweqwe",
+      "source": "webrtc",
+      "time": "2026-03-27T21:11:57.533Z"
+    },
+    {
+      "id": "m-1774645917541",
+      "from": "agent",
+      "text": "qweqwe",
+      "source": "webrtc",
+      "time": "2026-03-27T21:11:57.541Z"
+    },
+    {
+      "id": "m-1774645922300",
+      "from": "user",
+      "text": "wefwefwe",
+      "source": "dashboard",
+      "time": "2026-03-27T21:12:02.300Z"
+    },
+    {
+      "id": "m-1774645927894",
+      "from": "agent",
+      "text": "123123123123",
+      "source": "webrtc",
+      "time": "2026-03-27T21:12:07.894Z"
+    },
+    {
+      "id": "m-1774645927902",
+      "from": "agent",
+      "text": "123123123123",
+      "source": "webrtc",
+      "time": "2026-03-27T21:12:07.902Z"
+    },
+    {
+      "id": "m-1774645947154",
+      "from": "agent",
+      "text": "qwrqwrqwrqwrqwr",
+      "source": "webrtc",
+      "time": "2026-03-27T21:12:27.154Z"
+    },
+    {
+      "id": "m-1774645947168",
+      "from": "agent",
+      "text": "qwrqwrqwrqwrqwr",
+      "source": "webrtc",
+      "time": "2026-03-27T21:12:27.168Z"
+    },
+    {
+      "id": "m-1774645961845",
+      "from": "user",
+      "text": "q1dqqdqw",
+      "source": "dashboard",
+      "time": "2026-03-27T21:12:41.845Z"
+    },
+    {
+      "id": "m-1774646051498",
+      "from": "agent",
+      "text": "fqwefwf",
+      "source": "webrtc",
+      "time": "2026-03-27T21:14:11.498Z"
+    },
+    {
+      "id": "m-1774646051506",
+      "from": "agent",
+      "text": "fqwefwf",
+      "source": "webrtc",
+      "time": "2026-03-27T21:14:11.506Z"
+    },
+    {
+      "id": "m-1774646056874",
+      "from": "user",
+      "text": "qwefwfewq",
+      "source": "dashboard",
+      "time": "2026-03-27T21:14:16.874Z"
+    },
+    {
+      "id": "m-1774646059368",
+      "from": "agent",
+      "text": "wqefwqefwq",
+      "source": "webrtc",
+      "time": "2026-03-27T21:14:19.368Z"
+    },
+    {
+      "id": "m-1774646059384",
+      "from": "agent",
+      "text": "wqefwqefwq",
+      "source": "webrtc",
+      "time": "2026-03-27T21:14:19.384Z"
+    },
+    {
+      "id": "m-1774646355449",
+      "from": "agent",
+      "text": "dsfsdf",
+      "source": "webrtc",
+      "time": "2026-03-27T21:19:15.449Z"
+    },
+    {
+      "id": "m-1774646355459",
+      "from": "agent",
+      "text": "dsfsdf",
+      "source": "webrtc",
+      "time": "2026-03-27T21:19:15.459Z"
+    },
+    {
+      "id": "m-1774646357354",
+      "from": "agent",
+      "text": "1",
+      "source": "webrtc",
+      "time": "2026-03-27T21:19:17.354Z"
+    },
+    {
+      "id": "m-1774646357365",
+      "from": "agent",
+      "text": "1",
+      "source": "webrtc",
+      "time": "2026-03-27T21:19:17.365Z"
+    },
+    {
+      "id": "m-1774646370711",
+      "from": "agent",
+      "text": "f",
+      "source": "webrtc",
+      "time": "2026-03-27T21:19:30.711Z"
+    },
+    {
+      "id": "m-1774646370724",
+      "from": "agent",
+      "text": "f",
+      "source": "webrtc",
+      "time": "2026-03-27T21:19:30.724Z"
+    },
+    {
+      "id": "m-1774646572958",
+      "from": "user",
+      "text": "qwdqwd",
+      "source": "dashboard",
+      "time": "2026-03-27T21:22:52.958Z"
+    },
+    {
+      "id": "m-1774646574646",
+      "from": "agent",
+      "text": "qwdqdw",
+      "source": "webrtc",
+      "time": "2026-03-27T21:22:54.647Z"
+    },
+    {
+      "id": "m-1774646574667",
+      "from": "agent",
+      "text": "qwdqdw",
+      "source": "webrtc",
+      "time": "2026-03-27T21:22:54.667Z"
+    },
+    {
+      "id": "m-1774646642866",
+      "from": "agent",
+      "text": "qwdqwd",
+      "source": "webrtc",
+      "time": "2026-03-27T21:24:02.866Z"
+    },
+    {
+      "id": "m-1774646642887",
+      "from": "agent",
+      "text": "qwdqwd",
+      "source": "webrtc",
+      "time": "2026-03-27T21:24:02.887Z"
+    },
+    {
+      "id": "m-1774646645703",
+      "from": "agent",
+      "text": "33",
+      "source": "webrtc",
+      "time": "2026-03-27T21:24:05.703Z"
+    },
+    {
+      "id": "m-1774646645717",
+      "from": "agent",
+      "text": "33",
+      "source": "webrtc",
+      "time": "2026-03-27T21:24:05.717Z"
+    },
+    {
+      "id": "m-1774646648565",
+      "from": "user",
+      "text": "eqewq",
+      "source": "dashboard",
+      "time": "2026-03-27T21:24:08.565Z"
+    },
+    {
+      "id": "m-1774647056590",
+      "from": "user",
+      "text": "qwdqwd",
+      "source": "dashboard",
+      "time": "2026-03-27T21:30:56.590Z"
+    },
+    {
+      "id": "m-1774647058484",
+      "from": "agent",
+      "text": "asdfasf",
+      "source": "webrtc",
+      "time": "2026-03-27T21:30:58.484Z"
+    },
+    {
+      "id": "m-1774647058492",
+      "from": "agent",
+      "text": "asdfasf",
+      "source": "webrtc",
+      "time": "2026-03-27T21:30:58.492Z"
+    },
+    {
+      "id": "m-1774647062837",
+      "from": "user",
+      "text": "qwd",
+      "source": "dashboard",
+      "time": "2026-03-27T21:31:02.837Z"
+    },
+    {
+      "id": "m-1774647066020",
+      "from": "agent",
+      "text": "3f",
+      "source": "webrtc",
+      "time": "2026-03-27T21:31:06.020Z"
+    },
+    {
+      "id": "m-1774647066032",
+      "from": "agent",
+      "text": "3f",
+      "source": "webrtc",
+      "time": "2026-03-27T21:31:06.032Z"
+    },
+    {
+      "id": "m-1774647269206",
+      "from": "user",
+      "text": "qwd",
+      "source": "dashboard",
+      "time": "2026-03-27T21:34:29.206Z"
+    },
+    {
+      "id": "m-1774647271039",
+      "from": "agent",
+      "text": "123",
+      "source": "webrtc",
+      "time": "2026-03-27T21:34:31.039Z"
+    },
+    {
+      "id": "m-1774647271060",
+      "from": "agent",
+      "text": "123",
+      "source": "webrtc",
+      "time": "2026-03-27T21:34:31.060Z"
+    },
+    {
+      "id": "m-1774647274316",
+      "from": "agent",
+      "text": "qwddqw",
+      "source": "webrtc",
+      "time": "2026-03-27T21:34:34.316Z"
+    },
+    {
+      "id": "m-1774647274326",
+      "from": "agent",
+      "text": "qwddqw",
+      "source": "webrtc",
+      "time": "2026-03-27T21:34:34.326Z"
+    },
+    {
+      "id": "m-1774647621497",
+      "from": "user",
+      "text": "qwde",
+      "source": "dashboard",
+      "time": "2026-03-27T21:40:21.497Z"
+    },
+    {
+      "id": "m-1774647624068",
+      "from": "agent",
+      "text": "1111",
+      "source": "webrtc",
+      "time": "2026-03-27T21:40:24.068Z"
+    },
+    {
+      "id": "m-1774647624077",
+      "from": "agent",
+      "text": "1111",
+      "source": "webrtc",
+      "time": "2026-03-27T21:40:24.077Z"
+    },
+    {
+      "id": "m-1774647707524",
+      "from": "user",
+      "text": "qwdqwd",
+      "source": "dashboard",
+      "time": "2026-03-27T21:41:47.524Z"
+    },
+    {
+      "id": "m-1774647716316",
+      "from": "agent",
+      "text": "qwdqwd",
+      "source": "webrtc",
+      "time": "2026-03-27T21:41:56.316Z"
+    },
+    {
+      "id": "m-1774647716326",
+      "from": "agent",
+      "text": "qwdqwd",
+      "source": "webrtc",
+      "time": "2026-03-27T21:41:56.326Z"
+    },
+    {
+      "id": "m-1774647718739",
+      "from": "agent",
+      "text": "dwdw",
+      "source": "webrtc",
+      "time": "2026-03-27T21:41:58.739Z"
+    },
+    {
+      "id": "m-1774647718748",
+      "from": "agent",
+      "text": "dwdw",
+      "source": "webrtc",
+      "time": "2026-03-27T21:41:58.748Z"
+    },
+    {
+      "id": "m-1774647720494",
+      "from": "user",
+      "text": "qwdqwd",
+      "source": "dashboard",
+      "time": "2026-03-27T21:42:00.494Z"
+    },
+    {
+      "id": "m-1774647725880",
+      "from": "agent",
+      "text": "ddd",
+      "source": "webrtc",
+      "time": "2026-03-27T21:42:05.880Z"
+    },
+    {
+      "id": "m-1774647725899",
+      "from": "agent",
+      "text": "ddd",
+      "source": "webrtc",
+      "time": "2026-03-27T21:42:05.899Z"
+    },
+    {
+      "id": "m-1774647736318",
+      "from": "user",
+      "text": "qw",
+      "source": "dashboard",
+      "time": "2026-03-27T21:42:16.318Z"
+    },
+    {
+      "id": "m-1774647738026",
+      "from": "agent",
+      "text": "ewqw",
+      "source": "webrtc",
+      "time": "2026-03-27T21:42:18.026Z"
+    },
+    {
+      "id": "m-1774648012402",
+      "from": "user",
+      "text": "qwd",
+      "source": "dashboard",
+      "time": "2026-03-27T21:46:52.402Z"
+    },
+    {
+      "id": "m-1774648014536",
+      "from": "agent",
+      "text": "qwdqwd",
+      "source": "webrtc",
+      "time": "2026-03-27T21:46:54.536Z"
+    },
+    {
+      "id": "m-1774648014546",
+      "from": "agent",
+      "text": "qwdqwd",
+      "source": "webrtc",
+      "time": "2026-03-27T21:46:54.546Z"
+    },
+    {
+      "id": "m-1774648016760",
+      "from": "agent",
+      "text": "32er",
+      "source": "webrtc",
+      "time": "2026-03-27T21:46:56.760Z"
+    },
+    {
+      "id": "m-1774648016767",
+      "from": "agent",
+      "text": "32er",
+      "source": "webrtc",
+      "time": "2026-03-27T21:46:56.767Z"
+    },
+    {
+      "id": "m-1774648023007",
+      "from": "user",
+      "text": "cw",
+      "source": "dashboard",
+      "time": "2026-03-27T21:47:03.007Z"
+    },
+    {
+      "id": "m-1774648287252",
+      "from": "user",
+      "text": "eqfwe",
+      "source": "dashboard",
+      "time": "2026-03-27T21:51:27.253Z"
+    },
+    {
+      "id": "m-1774648289097",
+      "from": "agent",
+      "text": "wefwef",
+      "source": "webrtc",
+      "time": "2026-03-27T21:51:29.097Z"
+    },
+    {
+      "id": "m-1774648289120",
+      "from": "agent",
+      "text": "wefwef",
+      "source": "webrtc",
+      "time": "2026-03-27T21:51:29.120Z"
+    },
+    {
+      "id": "m-1774648292171",
+      "from": "agent",
+      "text": "wef",
+      "source": "webrtc",
+      "time": "2026-03-27T21:51:32.171Z"
+    },
+    {
+      "id": "m-1774648292182",
+      "from": "agent",
+      "text": "wef",
+      "source": "webrtc",
+      "time": "2026-03-27T21:51:32.182Z"
+    },
+    {
+      "id": "m-1774648293807",
+      "from": "user",
+      "text": "wef",
+      "source": "dashboard",
+      "time": "2026-03-27T21:51:33.807Z"
+    },
+    {
+      "id": "m-1774648890209",
+      "from": "user",
+      "text": "qwe",
+      "source": "dashboard",
+      "time": "2026-03-27T22:01:30.209Z"
+    },
+    {
+      "id": "m-1774648891540",
+      "from": "agent",
+      "text": "qwe",
+      "source": "webrtc",
+      "time": "2026-03-27T22:01:31.540Z"
+    },
+    {
+      "id": "m-1774648891549",
+      "from": "agent",
+      "text": "qwe",
+      "source": "webrtc",
+      "time": "2026-03-27T22:01:31.549Z"
+    },
+    {
+      "id": "m-1774648893605",
+      "from": "agent",
+      "text": "fewf",
+      "source": "webrtc",
+      "time": "2026-03-27T22:01:33.605Z"
+    },
+    {
+      "id": "m-1774648893622",
+      "from": "agent",
+      "text": "fewf",
+      "source": "webrtc",
+      "time": "2026-03-27T22:01:33.622Z"
+    },
+    {
+      "id": "m-1774649400293",
+      "from": "user",
+      "text": "qd",
+      "source": "dashboard",
+      "time": "2026-03-27T22:10:00.293Z"
+    },
+    {
+      "id": "m-1774649402319",
+      "from": "agent",
+      "text": "dqw",
+      "source": "webrtc",
+      "time": "2026-03-27T22:10:02.319Z"
+    },
+    {
+      "id": "m-1774649402335",
+      "from": "agent",
+      "text": "dqw",
+      "source": "webrtc",
+      "time": "2026-03-27T22:10:02.335Z"
+    },
+    {
+      "id": "m-1774649495812",
+      "from": "user",
+      "text": "qwdqwd",
+      "source": "dashboard",
+      "time": "2026-03-27T22:11:35.812Z"
+    },
+    {
+      "id": "m-1774649498030",
+      "from": "agent",
+      "text": "qwdqwd",
+      "source": "webrtc",
+      "time": "2026-03-27T22:11:38.030Z"
+    },
+    {
+      "id": "m-1774649498039",
+      "from": "agent",
+      "text": "qwdqwd",
+      "source": "webrtc",
+      "time": "2026-03-27T22:11:38.039Z"
+    },
+    {
+      "id": "m-1774649500966",
+      "from": "agent",
+      "text": "qwdqwd",
+      "source": "webrtc",
+      "time": "2026-03-27T22:11:40.966Z"
+    },
+    {
+      "id": "m-1774649500973",
+      "from": "agent",
+      "text": "qwdqwd",
+      "source": "webrtc",
+      "time": "2026-03-27T22:11:40.973Z"
+    },
+    {
+      "id": "m-1774649595255",
+      "from": "user",
+      "text": "qwd",
+      "source": "dashboard",
+      "time": "2026-03-27T22:13:15.255Z"
+    },
+    {
+      "id": "m-1774649596954",
+      "from": "agent",
+      "text": "qwdqwd",
+      "source": "webrtc",
+      "time": "2026-03-27T22:13:16.954Z"
+    },
+    {
+      "id": "m-1774649596961",
+      "from": "agent",
+      "text": "qwdqwd",
+      "source": "webrtc",
+      "time": "2026-03-27T22:13:16.961Z"
+    },
+    {
+      "id": "m-1774696139096",
+      "from": "user",
+      "text": "i",
+      "source": "dashboard",
+      "time": "2026-03-28T11:08:59.096Z"
+    },
+    {
+      "id": "m-1774696141564",
+      "from": "agent",
+      "text": "i",
+      "source": "webrtc",
+      "time": "2026-03-28T11:09:01.564Z"
+    },
+    {
+      "id": "m-1774696145081",
+      "from": "agent",
+      "text": "izf",
+      "source": "webrtc",
+      "time": "2026-03-28T11:09:05.081Z"
+    },
+    {
+      "id": "m-1774696148712",
+      "from": "user",
+      "text": "khtd",
+      "source": "dashboard",
+      "time": "2026-03-28T11:09:08.712Z"
+    },
+    {
+      "id": "m-1774696947427",
+      "from": "user",
+      "text": "qwd",
+      "source": "dashboard",
+      "time": "2026-03-28T11:22:27.427Z"
+    },
+    {
+      "id": "m-1774696949721",
+      "from": "agent",
+      "text": "qwe",
+      "source": "webrtc",
+      "time": "2026-03-28T11:22:29.721Z"
+    },
+    {
+      "id": "m-1774697003162",
+      "from": "user",
+      "text": "kzurstd",
+      "source": "dashboard",
+      "time": "2026-03-28T11:23:23.162Z"
+    },
+    {
+      "id": "m-1774697005442",
+      "from": "agent",
+      "text": ",jlgcx",
+      "source": "webrtc",
+      "time": "2026-03-28T11:23:25.442Z"
+    },
+    {
+      "id": "m-1774697086101",
+      "from": "agent",
+      "text": "khx",
+      "source": "webrtc",
+      "time": "2026-03-28T11:24:46.101Z"
+    },
+    {
+      "id": "m-1774697447148",
+      "from": "user",
+      "text": "uts",
+      "source": "dashboard",
+      "time": "2026-03-28T11:30:47.148Z"
+    },
+    {
+      "id": "m-1774697449971",
+      "from": "agent",
+      "text": "lutd",
+      "source": "webrtc",
+      "time": "2026-03-28T11:30:49.971Z"
+    },
+    {
+      "id": "m-1774697451695",
+      "from": "agent",
+      "text": "öioh",
+      "source": "webrtc",
+      "time": "2026-03-28T11:30:51.695Z"
+    },
+    {
+      "id": "m-1774697564145",
+      "from": "user",
+      "text": "qwd",
+      "source": "dashboard",
+      "time": "2026-03-28T11:32:44.145Z"
+    },
+    {
+      "id": "m-1774697581254",
+      "from": "agent",
+      "text": "testHein",
+      "source": "webrtc",
+      "time": "2026-03-28T11:33:01.254Z"
+    },
+    {
+      "id": "m-1774698198782",
+      "from": "user",
+      "text": "sdf",
+      "source": "dashboard",
+      "time": "2026-03-28T11:43:18.782Z"
+    },
+    {
+      "id": "m-1774698263854",
+      "from": "agent",
+      "text": "wef",
+      "source": "webrtc",
+      "time": "2026-03-28T11:44:23.854Z"
+    },
+    {
+      "id": "m-1774698266305",
+      "from": "user",
+      "text": "ewf",
+      "source": "dashboard",
+      "time": "2026-03-28T11:44:26.305Z"
+    },
+    {
+      "id": "m-1774698269856",
+      "from": "user",
+      "text": "wef",
+      "source": "dashboard",
+      "time": "2026-03-28T11:44:29.856Z"
+    },
+    {
+      "id": "m-1774698639880",
+      "from": "user",
+      "text": "qwd",
+      "source": "dashboard",
+      "time": "2026-03-28T11:50:39.880Z"
+    },
+    {
+      "id": "m-1774698641835",
+      "from": "agent",
+      "text": "qwd",
+      "source": "webrtc",
+      "time": "2026-03-28T11:50:41.835Z"
     }
   ],
   "unread": 0,
   "created": "2026-03-27T15:02:08.688Z",
   "lastMessage": {
-    "text": "was ess ich gerne",
+    "text": "qwd",
     "from": "agent",
-    "time": "2026-03-27T18:44:27.324Z"
+    "time": "2026-03-28T11:50:41.835Z"
   },
-  "claudeEnabled": true
+  "claudeEnabled": false
 }

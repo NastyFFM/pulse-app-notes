@@ -1,1 +1,78 @@
-{ "feeds": [], "lastUpdated": null }
+{
+  "feeds": [
+    {
+      "schema": "pulse-profile/1.1",
+      "name": "Chris",
+      "handle": "nastycoder",
+      "avatar": "🧑‍💻",
+      "bio": "Building PulseOS",
+      "github": "NastyFFM",
+      "twitter": "",
+      "website": "",
+      "links": [],
+      "apps": 28,
+      "publicApps": [
+        {
+          "id": "notes",
+          "name": "Notes",
+          "icon": "N",
+          "description": "Notizen erstellen und bearbeiten",
+          "installUrl": "NastyFFM/pulse-app-notes"
+        },
+        {
+          "id": "calendar",
+          "name": "Calendar",
+          "icon": "C",
+          "description": "Termine und Events",
+          "installUrl": "NastyFFM/pulse-app-calendar"
+        },
+        {
+          "id": "files",
+          "name": "Files",
+          "icon": "F",
+          "description": "Datei-Browser",
+          "installUrl": "NastyFFM/pulse-app-files"
+        },
+        {
+          "id": "weather",
+          "name": "Weather",
+          "icon": "W",
+          "description": "Wetter-Anzeige",
+          "installUrl": "NastyFFM/pulse-app-weather"
+        },
+        {
+          "id": "habit-tracker",
+          "name": "Habit Tracker",
+          "icon": "H",
+          "description": "Gewohnheiten tracken mit Streak-Grid",
+          "installUrl": "NastyFFM/pulse-app-habit-tracker"
+        }
+      ],
+      "unlistedApps": [
+        {
+          "id": "youtube",
+          "name": "YouTube"
+        }
+      ],
+      "inviteApps": [],
+      "roomId": "pulse-5093113b",
+      "updated": "2026-03-27T21:20:59.315Z",
+      "pages": [
+        {
+          "id": "page-mn9cjh9n",
+          "title": "Neue Seite",
+          "slug": "neue-seite",
+          "type": "blog",
+          "content": "summer beach",
+          "media": [
+            "https://voca-land.sgp1.cdn.digitaloceanspaces.com/43844/1652589460330/8a553ed693545535545dd4654eac6e0f56d2c2825b203271ed02fbe25d98f57d.jpg"
+          ],
+          "updated": "2026-03-27T20:22:25.380Z",
+          "created": "2026-03-27T20:21:03.659Z"
+        }
+      ],
+      "isSelf": true
+    }
+  ],
+  "lastUpdated": "2026-03-27T21:20:59.753Z"
+}

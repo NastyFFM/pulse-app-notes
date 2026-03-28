@@ -3946,12 +3946,6 @@ function showToast(msg, type) {
   }
 
   function setupBridgeChannel(dc, targetId) {
-    // If we already have an open channel for this peer, close the new one
-    if (bridgeChannels[targetId] && bridgeChannels[targetId].readyState === 'open' && dc !== bridgeChannels[targetId]) {
-      console.log('[bridge] Duplicate channel for', targetId, '— closing new one');
-      try { dc.close(); } catch {}
-      return;
-    }
     bridgeChannels[targetId] = dc;
     dc.onopen = () => {
       connectedPeers[targetId] = { peerId: targetId, online: true, lastSeen: Date.now() };
@@ -3959,7 +3953,7 @@ function showToast(msg, type) {
       if (userProfile) sendBridgeMsg(targetId, { type: 'profile-exchange', profile: { ...userProfile, pulseos: true, claudeos: !!(agentPresence.claudeos && agentPresence.claudeos.online), capabilities: ['chat', 'app-share', 'clipboard', 'agent-relay', 'graphs'] } });
     };
     dc.onclose = () => { if (connectedPeers[targetId]) connectedPeers[targetId].online = false; updatePeerBar(); };
-    dc.onmessage = e => { let data; try { data = JSON.parse(e.data); } catch { data = { type: 'text', content: e.data }; } handleBridgeMessage(data, targetId); };
+    dc.onmessage = e => { let data; try { data = JSON.parse(e.data); } catch { data = { type: 'text', content: e.data }; } console.log('[bridge] DC message from', targetId, ':', data.type, data.text?.substring(0,30) || ''); handleBridgeMessage(data, targetId); };
   }
 
   function handleBridgeMessage(data, senderId) {
@@ -3985,16 +3979,8 @@ function showToast(msg, type) {
         const peerChatId = connectedPeers[senderId]?.chatId || ('chat-peer-' + peerHandle.toLowerCase().replace(/[^a-z0-9-]/g, ''));
         const msgText = data.content || data.text;
         if (!msgText) break;
-        // STRICT dedupe: only process from first senderId we see for this chat
-        if (!window._chatPeerMap) window._chatPeerMap = {};
-        if (!window._chatPeerMap[peerChatId]) window._chatPeerMap[peerChatId] = senderId;
-        if (window._chatPeerMap[peerChatId] !== senderId) {
-          console.log('[chat] Ignoring msg from secondary channel:', senderId, 'primary:', window._chatPeerMap[peerChatId]);
-          break;
-        }
         const msgId = data.id || ('m-peer-' + Date.now());
         if (renderedMsgIds.has(msgId)) break;
-        renderedMsgIds.add(msgId);
         const msgObj = { id: msgId, from: 'agent', text: msgText, source: 'webrtc', time: new Date().toISOString(), senderName: peerName };
         // Save to per-chat history via API (no SSE broadcast for webrtc)
         fetch('/api/chats/' + peerChatId + '/message', {
@@ -4003,7 +3989,9 @@ function showToast(msg, type) {
           body: JSON.stringify(msgObj)
         }).catch(() => {});
         // Show in UI if this chat is open
-        if (activeChatId === peerChatId) {
+        console.log('[bridge] Chat routing: activeChatId=' + activeChatId + ' peerChatId=' + peerChatId + ' match=' + (activeChatId === peerChatId));
+        // Show in UI if this peer's chat is open
+        if (activeChatId === peerChatId || activeChatId === connectedPeers[senderId]?.chatId) {
           renderChatMsg(msgObj);
         } else {
           // Unread badge
