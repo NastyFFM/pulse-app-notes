@@ -1,0 +1,58 @@
+{
+  "quizzes": [
+    {
+      "id": 1,
+      "title": "Allgemeinwissen",
+      "icon": "🌍",
+      "questions": [
+        {
+          "q": "Was ist die Hauptstadt von Australien?",
+          "options": ["Sydney", "Melbourne", "Canberra", "Brisbane"],
+          "answer": 2
+        },
+        {
+          "q": "Welches Element hat das chemische Symbol 'Au'?",
+          "options": ["Silber", "Gold", "Aluminium", "Kupfer"],
+          "answer": 1
+        },
+        {
+          "q": "In welchem Jahr fiel die Berliner Mauer?",
+          "options": ["1987", "1988", "1989", "1990"],
+          "answer": 2
+        },
+        {
+          "q": "Wie viele Planeten hat unser Sonnensystem?",
+          "options": ["7", "8", "9", "10"],
+          "answer": 1
+        },
+        {
+          "q": "Wer malte die Mona Lisa?",
+          "options": ["Michelangelo", "Raphael", "Leonardo da Vinci", "Botticelli"],
+          "answer": 2
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Technologie",
+      "icon": "💻",
+      "questions": [
+        {
+          "q": "Was bedeutet 'HTTP'?",
+          "options": ["HyperText Transfer Protocol", "High Transfer Text Protocol", "Hyper Terminal Transfer Protocol", "Host Text Transfer Protocol"],
+          "answer": 0
+        },
+        {
+          "q": "Welche Sprache läuft im Browser?",
+          "options": ["Python", "Java", "JavaScript", "Ruby"],
+          "answer": 2
+        },
+        {
+          "q": "Was ist ein 'API'?",
+          "options": ["Application Performance Index", "Application Programming Interface", "Automated Process Integration", "Advanced Protocol Interface"],
+          "answer": 1
+        }
+      ]
+    }
+  ]
+}

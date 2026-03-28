@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pomodoro</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--font:'IBM Plex Mono',monospace;--red:#ef4444;--red-dim:rgba(239,68,68,.15);--red-border:rgba(239,68,68,.3);--green:#22c55e;--green-dim:rgba(34,197,94,.12);--blue:#3b82f6;--blue-dim:rgba(59,130,246,.12);--dim:var(--text-dim,rgba(255,255,255,.4));--muted:rgba(255,255,255,.1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+.header{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.header-title{font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.header-count{display:flex;gap:14px}
+.hc{text-align:right}
+.hc-val{font-size:16px;font-weight:700;color:var(--red)}
+.hc-lbl{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+
+.mode-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.mode-tab{flex:1;padding:9px;font:600 10px var(--font);text-transform:uppercase;letter-spacing:.06em;color:var(--dim);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.mode-tab.active{border-bottom-color:var(--accent)}
+.mode-tab:hover:not(.active){color:var(--text)}
+
+.main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:20px}
+
+.circle-wrap{position:relative;width:180px;height:180px}
+svg.ring{width:180px;height:180px;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--muted);stroke-width:6}
+.ring-progress{fill:none;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .5s ease, stroke .4s ease}
+.timer-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.timer-digits{font-size:44px;font-weight:700;font-family:var(--font);line-height:1;letter-spacing:.02em}
+.timer-mode-lbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+
+.dots{display:flex;gap:8px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--muted);transition:background .3s}
+.dot.filled{background:var(--red)}
+.dot.current{background:var(--red);box-shadow:0 0 6px var(--red)}
+
+.controls{display:flex;gap:10px}
+.btn{padding:10px 22px;font:600 11px var(--font);border-radius:6px;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;transition:all .15s;border:1.5px solid}
+.btn-primary{background:var(--accent-dim);border-color:var(--accent-border);color:var(--accent)}
+.btn-primary:hover{opacity:.8}
+.btn-primary:active{transform:scale(.97)}
+.btn-secondary{background:var(--muted);border-color:rgba(255,255,255,.15);color:var(--dim)}
+.btn-secondary:hover{color:var(--text);border-color:rgba(255,255,255,.3)}
+
+.settings-panel{width:100%;max-width:280px;display:flex;flex-direction:column;gap:10px}
+.setting-row{display:flex;align-items:center;gap:10px}
+.setting-lbl{font-size:11px;color:var(--dim);flex:1}
+.setting-input{width:60px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;color:var(--text);font:600 13px var(--font);padding:5px 8px;text-align:center;outline:none}
+.setting-input:focus{border-color:var(--accent-border)}
+
+.status-bar{padding:6px 20px;border-top:1px solid var(--border);font-size:9px;color:var(--muted);flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="header">
+  <span class="header-title">🍅 Pomodoro</span>
+  <div class="header-count">
+    <div class="hc"><div class="hc-val" id="todayCount">0</div><div class="hc-lbl">Heute</div></div>
+    <div class="hc"><div class="hc-val" id="totalCount" style="color:var(--dim)">0</div><div class="hc-lbl">Gesamt</div></div>
+  </div>
+</div>
+
+<div class="mode-tabs">
+  <button class="mode-tab active" id="tab-work" onclick="switchMode('work')">Arbeit</button>
+  <button class="mode-tab" id="tab-short" onclick="switchMode('short')">Kurze Pause</button>
+  <button class="mode-tab" id="tab-long" onclick="switchMode('long')">Lange Pause</button>
+</div>
+
+<div class="main">
+  <div class="circle-wrap">
+    <svg class="ring" viewBox="0 0 180 180">
+      <circle class="ring-bg" cx="90" cy="90" r="80"/>
+      <circle class="ring-progress" id="ringProgress" cx="90" cy="90" r="80"/>
+    </svg>
+    <div class="timer-center">
+      <div class="timer-digits" id="timerDisplay">25:00</div>
+      <div class="timer-mode-lbl" id="modeLbl">Fokus</div>
+    </div>
+  </div>
+
+  <div class="dots" id="dots"></div>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="startBtn" onclick="toggleTimer()">Start</button>
+    <button class="btn btn-secondary" onclick="resetTimer()">Reset</button>
+  </div>
+
+  <div class="settings-panel" id="settingsPanel" style="display:none">
+    <div class="setting-row">
+      <span class="setting-lbl">Arbeitszeit (Min)</span>
+      <input class="setting-input" id="setWork" type="number" min="1" max="60" value="25" onchange="applySettings()">
+    </div>
+    <div class="setting-row">
+      <span class="setting-lbl">Kurze Pause (Min)</span>
+      <input class="setting-input" id="setShort" type="number" min="1" max="30" value="5" onchange="applySettings()">
+    </div>
+    <div class="setting-row">
+      <span class="setting-lbl">Lange Pause (Min)</span>
+      <input class="setting-input" id="setLong" type="number" min="5" max="60" value="15" onchange="applySettings()">
+    </div>
+    <div class="setting-row">
+      <span class="setting-lbl">Lange Pause nach</span>
+      <input class="setting-input" id="setLongAfter" type="number" min="2" max="8" value="4" onchange="applySettings()"> <span style="font-size:11px;color:var(--dim)">Sessions</span>
+    </div>
+  </div>
+
+  <button class="btn btn-secondary" style="font-size:10px;padding:6px 14px" onclick="toggleSettings()">⚙ Einstellungen</button>
+</div>
+
+<div class="status-bar" id="statusBar">Bereit</div>
+
+<script>
+const DATA_URL = '/app/pomodoro/api/state';
+const CIRCUMFERENCE = 2 * Math.PI * 80;
+
+let cfg = { workMinutes:25, shortBreakMinutes:5, longBreakMinutes:15, longBreakAfter:4 };
+let stats = { sessionsToday:0, sessionsTotal:0, lastReset:'' };
+let mode = 'work'; // work | short | long
+let totalSecs = 0, remainingSecs = 0;
+let running = false, interval = null;
+let sessionCount = 0; // completed work sessions in current cycle
+
+const MODES = {
+  work:  { lbl:'Fokus',        accent:'#ef4444', dim:'rgba(239,68,68,.15)', border:'rgba(239,68,68,.3)' },
+  short: { lbl:'Kurze Pause',  accent:'#22c55e', dim:'rgba(34,197,94,.15)', border:'rgba(34,197,94,.3)' },
+  long:  { lbl:'Lange Pause',  accent:'#3b82f6', dim:'rgba(59,130,246,.15)', border:'rgba(59,130,246,.3)' }
+};
+
+async function load() {
+  try {
+    const r = await fetch(DATA_URL);
+    if (r.ok) {
+      const d = await r.json();
+      cfg.workMinutes = d.workMinutes || 25;
+      cfg.shortBreakMinutes = d.shortBreakMinutes || 5;
+      cfg.longBreakMinutes = d.longBreakMinutes || 15;
+      cfg.longBreakAfter = d.longBreakAfter || 4;
+      stats.sessionsTotal = d.sessionsTotal || 0;
+      // reset today count if new day
+      const today = new Date().toDateString();
+      stats.sessionsToday = (d.lastReset === today) ? (d.sessionsToday || 0) : 0;
+      stats.lastReset = today;
+      updateInputs();
+    }
+  } catch(e) {}
+  applyMode(mode);
+  updateHeader();
+  renderDots();
+}
+
+async function saveStats() {
+  const today = new Date().toDateString();
+  const payload = { ...cfg, sessionsToday: stats.sessionsToday, sessionsTotal: stats.sessionsTotal, lastReset: today };
+  await fetch(DATA_URL, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  await fetch('/api/notify-change', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({appId:'pomodoro',file:'state.json'}) });
+}
+
+function applyMode(m) {
+  mode = m;
+  const mc = MODES[m];
+  document.documentElement.style.setProperty('--accent', mc.accent);
+  document.documentElement.style.setProperty('--accent-dim', mc.dim);
+  document.documentElement.style.setProperty('--accent-border', mc.border);
+  document.getElementById('modeLbl').textContent = mc.lbl;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + (m === 'short' ? 'short' : m === 'long' ? 'long' : 'work')).classList.add('active');
+  totalSecs = (m === 'work' ? cfg.workMinutes : m === 'short' ? cfg.shortBreakMinutes : cfg.longBreakMinutes) * 60;
+  remainingSecs = totalSecs;
+  updateDisplay();
+  updateRing();
+}
+
+function switchMode(m) {
+  if (running) { clearInterval(interval); running = false; document.getElementById('startBtn').textContent = 'Start'; }
+  applyMode(m);
+}
+
+function toggleTimer() {
+  if (running) {
+    clearInterval(interval); running = false;
+    document.getElementById('startBtn').textContent = 'Weiter';
+    status('Pausiert');
+  } else {
+    running = true;
+    document.getElementById('startBtn').textContent = 'Pause';
+    interval = setInterval(tick, 1000);
+    status(MODES[mode].lbl + ' läuft...');
+  }
+}
+
+function tick() {
+  remainingSecs--;
+  updateDisplay();
+  updateRing();
+  if (remainingSecs <= 0) {
+    clearInterval(interval); running = false;
+    onTimerEnd();
+  }
+}
+
+function onTimerEnd() {
+  if (mode === 'work') {
+    stats.sessionsToday++;
+    stats.sessionsTotal++;
+    sessionCount++;
+    updateHeader();
+    saveStats();
+    if (window.PulseOS && window.PulseOS.emit) {
+      window.PulseOS.emit('session-done', { sessionsToday: stats.sessionsToday, total: stats.sessionsTotal });
+    }
+    notify('🍅 Fokus-Session abgeschlossen! Zeit für eine Pause.');
+    status('Session #' + stats.sessionsToday + ' erledigt!');
+    renderDots();
+    // auto-suggest next mode
+    const isLong = sessionCount % cfg.longBreakAfter === 0;
+    setTimeout(() => applyMode(isLong ? 'long' : 'short'), 800);
+  } else {
+    if (window.PulseOS && window.PulseOS.emit) {
+      window.PulseOS.emit('break-done', {});
+    }
+    notify('Pause vorbei — zurück an die Arbeit!');
+    status('Pause beendet');
+    setTimeout(() => applyMode('work'), 800);
+  }
+  document.getElementById('startBtn').textContent = 'Start';
+}
+
+function resetTimer() {
+  clearInterval(interval); running = false;
+  document.getElementById('startBtn').textContent = 'Start';
+  totalSecs = (mode === 'work' ? cfg.workMinutes : mode === 'short' ? cfg.shortBreakMinutes : cfg.longBreakMinutes) * 60;
+  remainingSecs = totalSecs;
+  updateDisplay();
+  updateRing();
+  status('Zurückgesetzt');
+}
+
+function updateDisplay() {
+  const m = Math.floor(remainingSecs / 60);
+  const s = remainingSecs % 60;
+  document.getElementById('timerDisplay').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+function updateRing() {
+  const pct = remainingSecs / totalSecs;
+  const offset = CIRCUMFERENCE * (1 - pct);
+  const el = document.getElementById('ringProgress');
+  el.style.strokeDasharray = CIRCUMFERENCE;
+  el.style.strokeDashoffset = offset;
+  el.style.stroke = MODES[mode].accent;
+}
+
+function renderDots() {
+  const n = cfg.longBreakAfter;
+  const filled = sessionCount % n;
+  document.getElementById('dots').innerHTML = Array.from({length:n}, (_,i) =>
+    `<div class="dot ${i < filled ? 'filled' : ''} ${i === filled && running && mode==='work' ? 'current' : ''}"></div>`
+  ).join('');
+}
+
+function updateHeader() {
+  document.getElementById('todayCount').textContent = stats.sessionsToday;
+  document.getElementById('totalCount').textContent = stats.sessionsTotal;
+}
+
+function toggleSettings() {
+  const p = document.getElementById('settingsPanel');
+  p.style.display = p.style.display === 'none' ? 'flex' : 'none';
+}
+
+function updateInputs() {
+  document.getElementById('setWork').value = cfg.workMinutes;
+  document.getElementById('setShort').value = cfg.shortBreakMinutes;
+  document.getElementById('setLong').value = cfg.longBreakMinutes;
+  document.getElementById('setLongAfter').value = cfg.longBreakAfter;
+}
+
+function applySettings() {
+  cfg.workMinutes = parseInt(document.getElementById('setWork').value) || 25;
+  cfg.shortBreakMinutes = parseInt(document.getElementById('setShort').value) || 5;
+  cfg.longBreakMinutes = parseInt(document.getElementById('setLong').value) || 15;
+  cfg.longBreakAfter = parseInt(document.getElementById('setLongAfter').value) || 4;
+  if (!running) applyMode(mode);
+  renderDots();
+  saveStats();
+}
+
+function notify(msg) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('🍅 Pomodoro', { body: msg });
+  }
+  status(msg);
+}
+
+function status(msg) {
+  document.getElementById('statusBar').textContent = msg;
+}
+
+// Request notification permission
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+// PulseOS integration
+if (window.PulseOS) {
+  PulseOS.onInput('start', () => { if (!running) toggleTimer(); });
+}
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "Pomodoro",
+  "icon": "🍅",
+  "color": "#2a1010",
+  "description": "Pomodoro-Timer: 25 Min Arbeit, 5 Min Pause, Fokus-Sessions tracken",
+  "inputs": [
+    { "id": "start", "desc": "Startet einen Pomodoro" },
+    { "id": "task-name", "desc": "Name der aktuellen Aufgabe setzen" }
+  ],
+  "outputs": [
+    { "id": "session-done", "desc": "Signal wenn eine Arbeits-Session abgeschlossen ist" },
+    { "id": "break-done", "desc": "Signal wenn eine Pause vorbei ist" }
+  ],
+  "dataFiles": ["state"],
+  "pulseSubscriptions": []
+}

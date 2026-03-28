@@ -1,0 +1,15 @@
+{
+  "name": "Quiz",
+  "icon": "?",
+  "color": "#1a1a3d",
+  "description": "Wissens-Quiz mit verschiedenen Kategorien und Schwierigkeitsstufen",
+  "inputs": [
+    { "id": "questions", "desc": "Quiz-Fragen von einer externen Quelle empfangen" }
+  ],
+  "outputs": [
+    { "id": "score", "desc": "Spielergebnis nach Abschluss eines Quiz" },
+    { "id": "answer", "desc": "Einzelne Antworten während des Quiz" }
+  ],
+  "dataFiles": ["quiz"],
+  "pulseSubscriptions": []
+}

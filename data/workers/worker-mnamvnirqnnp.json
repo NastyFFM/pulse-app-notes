@@ -1,0 +1,44 @@
+{
+  "id": "worker-mnamvnirqnnp",
+  "task": "erstelle eine fitness app",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 42283,
+  "progress": "Fertig",
+  "log": [
+    {
+      "time": "2026-03-28T17:58:13.971Z",
+      "type": "start",
+      "text": "Worker gestartet: erstelle eine fitness app"
+    },
+    {
+      "time": "2026-03-28T17:58:30.000Z",
+      "type": "progress",
+      "text": "Erstelle App-Verzeichnis und Dateien"
+    },
+    {
+      "time": "2026-03-28T17:59:10.000Z",
+      "type": "progress",
+      "text": "manifest.json mit inputs/outputs aktualisiert"
+    },
+    {
+      "time": "2026-03-28T17:59:20.000Z",
+      "type": "progress",
+      "text": "PulseOS SDK (onInput, onDataChanged, emit) in index.html integriert"
+    },
+    {
+      "time": "2026-03-28T17:59:30.000Z",
+      "type": "progress",
+      "text": "App in data/apps.json registriert"
+    },
+    {
+      "time": "2026-03-28T17:59:35.000Z",
+      "type": "done",
+      "text": "Fitness App fertig erstellt und registriert"
+    }
+  ],
+  "result": "Fitness App erstellt: apps/fitness/index.html mit Workout-Logger (Typ, Dauer, Intensität, Notiz), Verlauf, Stats + Streak-Anzeige. manifest.json mit inputs (log-workout) und outputs (workout-logged, streak-update). PulseOS SDK integriert. In data/apps.json registriert.",
+  "startedAt": "2026-03-28T17:58:13.971Z",
+  "finishedAt": "2026-03-28T17:59:35.000Z",
+  "createdBy": "user"
+}

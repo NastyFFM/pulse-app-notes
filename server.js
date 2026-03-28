@@ -62,6 +62,22 @@ function jsonRes(res, data, status = 200) { res.writeHead(status, { 'Content-Typ
 function htmlRes(res, file) { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache, no-store, must-revalidate' }); res.end(fs.readFileSync(file)); }
 function readBody(req, cb) { let b = ''; req.on('data', c => b += c); req.on('end', () => cb(b)); }
 // Returns parsed JSON object (not string). Fallback can be string or object.
+function appendToChatFile(chatId, msg) {
+  try {
+    const chatFile = path.join(ROOT, 'data', 'chats', chatId + '.json');
+    if (!fs.existsSync(chatFile)) return;
+    const chat = JSON.parse(fs.readFileSync(chatFile, 'utf8'));
+    if (!chat.messages) chat.messages = [];
+    // Deduplicate by id
+    if (chat.messages.some(m => m.id === msg.id)) return;
+    chat.messages.push(msg);
+    if (chat.messages.length > 500) chat.messages = chat.messages.slice(-500);
+    chat.lastMessage = { text: (msg.text || '').substring(0, 100), from: msg.from, time: msg.time };
+    if (msg.from !== 'user') chat.unread = (chat.unread || 0) + 1;
+    fs.writeFileSync(chatFile, JSON.stringify(chat, null, 2));
+  } catch (e) { console.error('[appendToChatFile] Error:', e.message); }
+}
+
 function safeReadJSON(file, fallback) {
   try {
     const raw = fs.readFileSync(file, 'utf8');
@@ -2333,6 +2349,45 @@ if (window.PulseOS) {
         if (hist.messages.length > 200) hist.messages = hist.messages.slice(-200);
         fs.writeFileSync(histFile, JSON.stringify(hist, null, 2));
         broadcast('dashboard', { type: 'chat-message', message: histMsg });
+        // Also persist user message to chat-claudeos chat file
+        appendToChatFile('chat-claudeos', histMsg);
+
+        // ── Worker Auto-Detection: "erstelle/baue eine App" → spawn worker ──
+        const lower = message.toLowerCase();
+        const looksLikeAppRequest = /(?:erstell|bau|mach|programmier|entwickl|create|build|make|code)/i.test(lower) &&
+          /(?:app|seite|page|tool|widget|spiel|game)/i.test(lower);
+        if (looksLikeAppRequest) {
+          try {
+            const selfReq = http.request({ hostname: 'localhost', port: PORT, path: '/api/workers', method: 'POST', headers: { 'Content-Type': 'application/json' } }, (r) => {
+              let body = '';
+              r.on('data', c => body += c);
+              r.on('end', () => {
+                try {
+                  const wd = JSON.parse(body);
+                  const workerId = wd.worker?.id || 'unknown';
+                  const replyMsg = {
+                    id: 'm-' + (Date.now() + 1),
+                    from: 'agent',
+                    text: 'Ich starte einen Worker der das baut. Du kannst den Fortschritt in der Workers-App verfolgen. [ACTION:worker-started:' + workerId + ']',
+                    source: 'pulseos',
+                    time: new Date().toISOString()
+                  };
+                  const h = safeReadJSON(histFile, '{"messages":[]}');
+                  if (!h.messages) h.messages = [];
+                  h.messages.push(replyMsg);
+                  if (h.messages.length > 200) h.messages = h.messages.slice(-200);
+                  fs.writeFileSync(histFile, JSON.stringify(h, null, 2));
+                  broadcast('dashboard', { type: 'chat-message', message: replyMsg });
+                  appendToChatFile('chat-claudeos', replyMsg);
+                } catch (e) { console.error('[worker-autodetect] parse error:', e.message); }
+              });
+            });
+            selfReq.on('error', e => console.error('[worker-autodetect] request error:', e.message));
+            selfReq.write(JSON.stringify({ task: message, model: 'sonnet' }));
+            selfReq.end();
+          } catch (e) { console.error('[worker-autodetect] Error:', e.message); }
+        }
+
         jsonRes(res, { ok: true, id: msg.id });
       } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
     });
@@ -7102,6 +7157,207 @@ function copyInstall(repo, btn) {
     } catch (e) {
       return jsonRes(res, { error: e.message }, 500);
     }
+  }
+
+  // ── Worker Agent System ──
+  const workersDir = path.join(__dirname, 'data', 'workers');
+  const activeWorkers = {}; // pid → { proc, id }
+
+  // List all workers
+  if (url === '/api/workers' && req.method === 'GET') {
+    try {
+      if (!fs.existsSync(workersDir)) fs.mkdirSync(workersDir, { recursive: true });
+      const files = fs.readdirSync(workersDir).filter(f => f.endsWith('.json'));
+      const workers = files.map(f => {
+        try { return JSON.parse(fs.readFileSync(path.join(workersDir, f), 'utf8')); } catch { return null; }
+      }).filter(Boolean).sort((a, b) => (b.startedAt || '').localeCompare(a.startedAt || ''));
+      return jsonRes(res, { workers });
+    } catch (e) { return jsonRes(res, { workers: [] }); }
+  }
+
+  // Get single worker
+  const workerMatch = url.match(/^\/api\/workers\/([a-zA-Z0-9_-]+)$/);
+  if (workerMatch && req.method === 'GET') {
+    const wFile = path.join(workersDir, workerMatch[1] + '.json');
+    try {
+      return jsonRes(res, JSON.parse(fs.readFileSync(wFile, 'utf8')));
+    } catch { return jsonRes(res, { error: 'Worker not found' }, 404); }
+  }
+
+  // Create + start worker
+  if (url === '/api/workers' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { task, model, maxDuration } = JSON.parse(b);
+        if (!task) return jsonRes(res, { error: 'task required' }, 400);
+
+        const id = 'worker-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+        const workerFile = path.join(workersDir, id + '.json');
+        const workerData = {
+          id,
+          task,
+          status: 'running',
+          model: model || 'sonnet',
+          pid: null,
+          progress: 'Starte...',
+          log: [{ time: new Date().toISOString(), type: 'start', text: 'Worker gestartet: ' + task.substring(0, 80) }],
+          result: null,
+          startedAt: new Date().toISOString(),
+          finishedAt: null,
+          createdBy: 'user'
+        };
+
+        // Build system prompt for worker
+        const workerPrompt = `Du bist ein PulseOS Worker-Agent. Deine Aufgabe:
+
+${task}
+
+REGELN:
+- Arbeite im Verzeichnis: ${ROOT}
+- Apps erstellen in: apps/<name>/index.html + apps/<name>/manifest.json + apps/<name>/data/
+- Folge die PulseOS App-Konvention (manifest.json mit inputs/outputs, PulseOS SDK nutzen)
+- Schreibe regelmäßig deinen Fortschritt in ${workerFile}:
+  Lese die Datei, update das "progress" Feld und füge Log-Einträge zu "log" hinzu.
+  Beispiel: {"progress": "CSS fertig, arbeite an JS...", "log": [...existierende, {"time":"...","type":"progress","text":"CSS erstellt"}]}
+- Wenn fertig: setze "status" auf "done" und "result" auf eine Zusammenfassung
+- Wenn Fehler: setze "status" auf "error" und "result" auf die Fehlermeldung
+- Registriere neue Apps in data/apps.json
+
+STARTE JETZT mit der Aufgabe.`;
+
+        const claudePath = process.env.CLAUDE_PATH || '/Users/chris.pohl/.bun/bin/claude';
+        const modelFlag = workerData.model || 'sonnet'; // claude CLI accepts: haiku, sonnet, opus
+        const proc = spawn(claudePath, [
+          '-p',
+          '--model', modelFlag,
+          '--allowedTools', 'Bash,Read,Write,Edit,Glob,Grep',
+          '--max-turns', '50',
+          workerPrompt
+        ], {
+          cwd: ROOT,
+          env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin:/Users/chris.pohl/.bun/bin' },
+          stdio: ['pipe', 'pipe', 'pipe'],
+          detached: false
+        });
+
+        workerData.pid = proc.pid;
+        fs.writeFileSync(workerFile, JSON.stringify(workerData, null, 2));
+        activeWorkers[proc.pid] = { proc, id };
+
+        // Stream stdout for progress
+        let outputBuf = '';
+        proc.stdout.on('data', d => {
+          outputBuf += d.toString();
+          // Update progress periodically (every 500 chars)
+          if (outputBuf.length > 500) {
+            try {
+              const w = JSON.parse(fs.readFileSync(workerFile, 'utf8'));
+              w.progress = outputBuf.slice(-200).trim();
+              fs.writeFileSync(workerFile, JSON.stringify(w, null, 2));
+            } catch {}
+            outputBuf = '';
+          }
+        });
+
+        proc.stderr.on('data', d => {
+          const err = d.toString().trim();
+          if (err) console.log('[worker-' + id + '-err]', err.substring(0, 100));
+        });
+
+        proc.on('close', code => {
+          let workerStatus = code === 0 ? 'done' : 'error';
+          let workerTask = task;
+          try {
+            const w = JSON.parse(fs.readFileSync(workerFile, 'utf8'));
+            if (w.status === 'running') {
+              w.status = workerStatus;
+              w.finishedAt = new Date().toISOString();
+              w.log.push({ time: new Date().toISOString(), type: w.status, text: 'Worker beendet (Code ' + code + ')' });
+              if (!w.result) w.result = code === 0 ? 'Aufgabe abgeschlossen' : 'Beendet mit Fehlercode ' + code;
+              fs.writeFileSync(workerFile, JSON.stringify(w, null, 2));
+            }
+            workerTask = w.task || task;
+            // ── Chat-Fertigmeldung: Worker done/error → Nachricht im Chat ──
+            const histFile = path.join(ROOT, 'data', 'chat-history.json');
+            const chatMsg = {
+              id: 'm-wdone-' + Date.now(),
+              from: 'agent',
+              source: 'pulseos',
+              time: new Date().toISOString()
+            };
+            if (workerStatus === 'done') {
+              // Find created app from worker log
+              const fileEntry = (w.log || []).find(e => e.type === 'file' && e.path && e.path.startsWith('apps/'));
+              const appId = fileEntry ? fileEntry.path.split('/')[1] : null;
+              chatMsg.text = 'Worker fertig: ' + (w.result || workerTask).substring(0, 100) + (appId ? ' [ACTION:open:' + appId + ']' : '');
+            } else {
+              chatMsg.text = 'Worker fehlgeschlagen: ' + (w.result || 'Fehlercode ' + code);
+            }
+            const hist = safeReadJSON(histFile, '{"messages":[]}');
+            if (!hist.messages) hist.messages = [];
+            hist.messages.push(chatMsg);
+            if (hist.messages.length > 200) hist.messages = hist.messages.slice(-200);
+            fs.writeFileSync(histFile, JSON.stringify(hist, null, 2));
+            appendToChatFile('chat-claudeos', chatMsg);
+            broadcast('dashboard', { type: 'chat-message', message: chatMsg });
+          } catch (e) { console.error('[worker-completion]', e.message); }
+          delete activeWorkers[proc.pid];
+          broadcast('dashboard', { type: 'worker-update', workerId: id, status: workerStatus });
+          console.log('[worker-' + id + '] Finished (code ' + code + ')');
+        });
+
+        proc.on('error', err => {
+          try {
+            const w = JSON.parse(fs.readFileSync(workerFile, 'utf8'));
+            w.status = 'error';
+            w.result = err.message;
+            w.finishedAt = new Date().toISOString();
+            w.log.push({ time: new Date().toISOString(), type: 'error', text: err.message });
+            fs.writeFileSync(workerFile, JSON.stringify(w, null, 2));
+          } catch {}
+          delete activeWorkers[proc.pid];
+          broadcast('dashboard', { type: 'worker-update', workerId: id, status: 'error' });
+        });
+
+        broadcast('dashboard', { type: 'worker-update', workerId: id, status: 'running' });
+        console.log('[worker-' + id + '] Started (PID ' + proc.pid + '): ' + task.substring(0, 60));
+        return jsonRes(res, { ok: true, worker: workerData });
+      } catch (e) { return jsonRes(res, { error: e.message }, 400); }
+    });
+  }
+
+  // Send message to worker (append to stdin or update task)
+  const workerMsgMatch = url.match(/^\/api\/workers\/([a-zA-Z0-9_-]+)\/message$/);
+  if (workerMsgMatch && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { message } = JSON.parse(b);
+        const wFile = path.join(workersDir, workerMsgMatch[1] + '.json');
+        const w = JSON.parse(fs.readFileSync(wFile, 'utf8'));
+        w.log.push({ time: new Date().toISOString(), type: 'user-message', text: message });
+        fs.writeFileSync(wFile, JSON.stringify(w, null, 2));
+        return jsonRes(res, { ok: true });
+      } catch (e) { return jsonRes(res, { error: e.message }, 400); }
+    });
+  }
+
+  // Stop worker
+  const workerDelMatch = url.match(/^\/api\/workers\/([a-zA-Z0-9_-]+)$/);
+  if (workerDelMatch && req.method === 'DELETE') {
+    const wFile = path.join(workersDir, workerDelMatch[1] + '.json');
+    try {
+      const w = JSON.parse(fs.readFileSync(wFile, 'utf8'));
+      if (w.pid && activeWorkers[w.pid]) {
+        try { activeWorkers[w.pid].proc.kill('SIGTERM'); } catch {}
+        delete activeWorkers[w.pid];
+      }
+      w.status = 'stopped';
+      w.finishedAt = new Date().toISOString();
+      w.log.push({ time: new Date().toISOString(), type: 'stopped', text: 'Worker gestoppt durch User' });
+      fs.writeFileSync(wFile, JSON.stringify(w, null, 2));
+      broadcast('dashboard', { type: 'worker-update', workerId: w.id, status: 'stopped' });
+      return jsonRes(res, { ok: true });
+    } catch (e) { return jsonRes(res, { error: e.message }, 404); }
   }
 
   // PulseOS Search — find other PulseOS users via GitHub

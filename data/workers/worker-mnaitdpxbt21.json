@@ -1,0 +1,24 @@
+{
+  "id": "worker-mnaitdpxbt21",
+  "task": "Erstelle eine einfache Countdown-Timer App. Die App soll einen Timer haben den man auf 1-60 Minuten setzen kann, mit Start/Stop/Reset Buttons. Nutze die PulseOS App-Konvention.",
+  "status": "error",
+  "model": "haiku",
+  "pid": 31096,
+  "progress": "Starte...",
+  "log": [
+    {
+      "time": "2026-03-28T16:04:29.493Z",
+      "type": "start",
+      "text": "Worker gestartet: Erstelle eine einfache Countdown-Timer App. Die App soll einen Timer haben den m"
+    },
+    {
+      "time": "2026-03-28T16:04:34.918Z",
+      "type": "error",
+      "text": "Worker beendet (Code 1)"
+    }
+  ],
+  "result": "Beendet mit Fehlercode 1",
+  "startedAt": "2026-03-28T16:04:29.493Z",
+  "finishedAt": "2026-03-28T16:04:34.918Z",
+  "createdBy": "user"
+}

@@ -1516,6 +1516,11 @@ function connectSSE() {
         const fileName = (msg.file || '').replace('.json', '');
         addFeed(appName + ': ' + (fileName || 'Daten') + ' geändert', 'sse');
         loadQuickStats();
+      } else if (msg.type === 'worker-update' && msg.workerId) {
+        // Mark worker as reported so polling doesn't duplicate
+        if (msg.status === 'done' || msg.status === 'error') workerDoneReported.add(msg.workerId);
+        // Reload app list when worker finishes (new apps may have been created)
+        if (msg.status === 'done') fetch('/api/state').then(r => r.json()).then(s => { state = s; }).catch(() => {});
       } else if (msg.type === 'chat-message' && msg.message) {
         renderChatMsg(msg.message);
         if (!systemChatOpen) {
@@ -3069,14 +3074,22 @@ async function openChat(chatId) {
     } else {
       msgs.innerHTML = '<div class="chat-empty">Noch keine Nachrichten</div>';
     }
-    // Also load legacy global history for ClaudeOS chat (backward compat)
-    if (chatId === 'chat-claudeos' && (!data.messages || data.messages.length === 0)) {
-      const legacyRes = await fetch('/api/chat-history');
-      const legacyData = await legacyRes.json();
-      if (legacyData.messages && legacyData.messages.length > 0) {
-        msgs.innerHTML = '';
-        legacyData.messages.forEach(m => renderChatMsg(m));
-      }
+    // Merge global chat-history into ClaudeOS chat (unified view)
+    if (chatId === 'chat-claudeos') {
+      try {
+        const histRes = await fetch('/api/chat-history');
+        const histData = await histRes.json();
+        if (histData.messages && histData.messages.length > 0) {
+          // Merge: combine chat-file messages + history, deduplicate by id, sort by time
+          const chatMsgs = data.messages || [];
+          const allMsgs = [...chatMsgs];
+          const seenIds = new Set(chatMsgs.map(m => m.id));
+          histData.messages.forEach(m => { if (!seenIds.has(m.id)) { allMsgs.push(m); seenIds.add(m.id); } });
+          allMsgs.sort((a, b) => new Date(a.time || 0) - new Date(b.time || 0));
+          msgs.innerHTML = '';
+          allMsgs.forEach(m => renderChatMsg(m));
+        }
+      } catch {}
     }
   } catch {}
   chatHistoryRendering = false;
@@ -3269,6 +3282,16 @@ function renderChatMsg(msg) {
   let txt = msg.text || '';
   // Parse and execute ACTION tags from PulseOS agent (only for new msgs, not history)
   if (!isUser && txt.includes('[ACTION:')) {
+    // Worker-started action: show inline status with link to Workers app
+    const workerStartMatch = txt.match(/\[ACTION:worker-started:([a-zA-Z0-9_-]+)\]/);
+    if (workerStartMatch) {
+      const workerId = workerStartMatch[1];
+      txt = txt.replace(/\[ACTION:worker-started:[a-zA-Z0-9_-]+\]/g, '').trim();
+      if (!txt) txt = 'Worker gestartet';
+      txt += '\n⚙ Worker läuft...';
+      // Start polling worker status for auto-update
+      if (!chatHistoryRendering) pollWorkerStatus(workerId);
+    }
     const actionMatch = txt.match(/\[ACTION:open:([a-zA-Z0-9_-]+)\]/g);
     if (actionMatch) {
       if (!chatHistoryRendering) {
@@ -3357,8 +3380,16 @@ function hideTypingIndicator() {
 
 async function sendToAgent(text) {
   // Render user message immediately
-  renderChatMsg({ id: 'local-' + Date.now(), from: 'user', text, source: 'dashboard' });
+  const userMsgId = 'm-' + Date.now();
+  renderChatMsg({ id: userMsgId, from: 'user', text, source: 'dashboard' });
   lastSentText = text; lastSentTime = Date.now();
+  // Persist user message to active chat file (so it survives reload)
+  if (activeChatId) {
+    fetch('/api/chats/' + activeChatId + '/message', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: userMsgId, from: 'user', text, source: 'dashboard', time: new Date().toISOString() })
+    }).catch(() => {});
+  }
 
   // ── Fast-path: Action Cache (instant, no API call) ──
   const lower = text.toLowerCase().trim();
@@ -3384,6 +3415,31 @@ async function sendToAgent(text) {
     messageRetryQueue.push({ text, target: 'claudeos', time: Date.now(), retries: 0 });
     renderChatMsg({ id: 'err-' + Date.now(), from: 'agent', text: 'Offline \u2014 Nachricht wird erneut gesendet wenn ClaudeOS online.', source: 'system' });
   }
+}
+
+// ── Worker Status Polling ──
+// Track which workers have been reported as done (to avoid duplicate messages from SSE + polling)
+const workerDoneReported = new Set();
+
+function pollWorkerStatus(workerId) {
+  let attempts = 0;
+  const maxAttempts = 40; // 40 * 15s = 10 min max
+  const interval = setInterval(async () => {
+    attempts++;
+    if (attempts > maxAttempts || workerDoneReported.has(workerId)) { clearInterval(interval); return; }
+    try {
+      const r = await fetch('/api/workers/' + workerId);
+      if (!r.ok) { clearInterval(interval); return; }
+      const w = await r.json();
+      if (w.status === 'done' || w.status === 'error' || w.status === 'stopped') {
+        clearInterval(interval);
+        if (workerDoneReported.has(workerId)) return; // Server SSE already delivered the message
+        workerDoneReported.add(workerId);
+        // Reload app list so new apps are available
+        try { const sr = await fetch('/api/state'); if (sr.ok) state = await sr.json(); } catch(e) {}
+      }
+    } catch(e) { /* retry next interval */ }
+  }, 15000);
 }
 
 // ── Message Retry Queue ──

@@ -1,0 +1,15 @@
+{
+  "name": "Fitness",
+  "icon": "💪",
+  "color": "#0d2b1a",
+  "description": "Workout-Tracker: Trainings loggen, Streak verfolgen, Fortschritt sehen",
+  "inputs": [
+    { "id": "log-workout", "desc": "Empfängt Workout-Daten zum automatischen Einloggen" }
+  ],
+  "outputs": [
+    { "id": "workout-logged", "desc": "Sendet Daten wenn ein Workout geloggt wird" },
+    { "id": "streak-update", "desc": "Sendet aktuelle Streak-Zahl nach jedem Workout" }
+  ],
+  "dataFiles": ["workouts"],
+  "pulseSubscriptions": []
+}

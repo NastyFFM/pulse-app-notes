@@ -1,0 +1,10 @@
+{
+  "name": "Workers",
+  "icon": "⚙",
+  "color": "#6366f1",
+  "description": "KI-Worker verwalten — Aufgaben im Hintergrund ausführen lassen",
+  "inputs": [{ "id": "task", "desc": "Neue Aufgabe für einen Worker" }],
+  "outputs": [{ "id": "result", "desc": "Ergebnis eines fertigen Workers" }],
+  "dataFiles": ["workers"],
+  "pulseSubscriptions": []
+}

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--font:'IBM Plex Mono',monospace;--green:#22c55e;--green-dim:rgba(34,197,94,.15);--green-border:rgba(34,197,94,.3);--dim:var(--text-dim,rgba(255,255,255,.4));--muted:rgba(255,255,255,.12)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+.header{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.header-title{font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.header-stats{display:flex;gap:16px}
+.stat{text-align:right}
+.stat-val{font-size:16px;font-weight:700;color:var(--green)}
+.stat-label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+
+.tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{flex:1;padding:10px;font:600 10px var(--font);text-transform:uppercase;letter-spacing:.06em;color:var(--dim);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.tab.active{color:var(--green);border-bottom-color:var(--green)}
+.tab:hover:not(.active){color:var(--text)}
+
+.panel{flex:1;overflow-y:auto;display:none;padding:16px}
+.panel.active{display:flex;flex-direction:column;gap:12px}
+
+/* Log form */
+.form-row{display:flex;gap:8px;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:100px}
+.field label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.field input,.field select,.field textarea{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;color:var(--text);font:13px var(--font);padding:8px 10px;outline:none;transition:border-color .15s;width:100%}
+.field input:focus,.field select,.field select:focus,.field textarea:focus{border-color:var(--green-border)}
+.field textarea{resize:none;height:60px}
+select option{background:#1a1a2e;color:var(--text)}
+
+.workout-types{display:flex;flex-wrap:wrap;gap:6px}
+.type-btn{padding:6px 12px;background:var(--muted);border:1.5px solid transparent;border-radius:20px;color:var(--dim);font:600 11px var(--font);cursor:pointer;transition:all .15s}
+.type-btn:hover{border-color:var(--green-border);color:var(--text)}
+.type-btn.selected{background:var(--green-dim);border-color:var(--green-border);color:var(--green)}
+
+.btn{padding:10px 20px;background:var(--green-dim);border:1.5px solid var(--green-border);color:var(--green);font:600 11px var(--font);border-radius:6px;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;transition:all .15s;width:100%}
+.btn:hover{background:rgba(34,197,94,.25);border-color:var(--green)}
+.btn:active{transform:scale(.98)}
+
+/* History */
+.workout-entry{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.workout-entry:hover{border-color:var(--green-border)}
+.entry-icon{font-size:22px;flex-shrink:0}
+.entry-body{flex:1;min-width:0}
+.entry-top{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.entry-type{font-size:12px;font-weight:600;color:var(--text)}
+.entry-duration{font-size:11px;color:var(--green);font-weight:700}
+.entry-date{font-size:10px;color:var(--dim);margin-left:auto}
+.entry-note{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.delete-btn{background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;padding:2px 4px;opacity:.5;transition:opacity .15s;flex-shrink:0}
+.delete-btn:hover{opacity:1;color:#ef4444}
+
+.empty{text-align:center;padding:40px 20px;color:var(--dim);font-size:12px}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:14px}
+.stat-card .val{font-size:28px;font-weight:700;color:var(--green);line-height:1}
+.stat-card .lbl{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+.bar-chart{display:flex;flex-direction:column;gap:6px}
+.bar-row{display:flex;align-items:center;gap:8px;font-size:10px}
+.bar-label{color:var(--dim);width:50px;text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:8px;background:var(--muted);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;background:var(--green);border-radius:4px;transition:width .5s ease}
+.bar-count{color:var(--dim);width:20px;flex-shrink:0}
+
+.status-bar{padding:6px 20px;border-top:1px solid var(--border);font-size:9px;color:var(--muted);flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="header">
+  <span class="header-title">💪 Fitness Tracker</span>
+  <div class="header-stats">
+    <div class="stat">
+      <div class="stat-val" id="streakVal">0</div>
+      <div class="stat-label">Streak</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="weekVal">0</div>
+      <div class="stat-label">Diese Woche</div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('log')">+ Loggen</button>
+  <button class="tab" onclick="showTab('history')">Verlauf</button>
+  <button class="tab" onclick="showTab('stats')">Stats</button>
+</div>
+
+<!-- LOG TAB -->
+<div class="panel active" id="tab-log">
+  <div class="field">
+    <label>Workout-Typ</label>
+    <div class="workout-types" id="typeButtons">
+      <button class="type-btn selected" data-type="Kraft" onclick="selectType(this)">🏋️ Kraft</button>
+      <button class="type-btn" data-type="Cardio" onclick="selectType(this)">🏃 Cardio</button>
+      <button class="type-btn" data-type="Yoga" onclick="selectType(this)">🧘 Yoga</button>
+      <button class="type-btn" data-type="Radfahren" onclick="selectType(this)">🚴 Radfahren</button>
+      <button class="type-btn" data-type="Schwimmen" onclick="selectType(this)">🏊 Schwimmen</button>
+      <button class="type-btn" data-type="Dehnen" onclick="selectType(this)">🤸 Dehnen</button>
+      <button class="type-btn" data-type="Kampfsport" onclick="selectType(this)">🥊 Kampfsport</button>
+      <button class="type-btn" data-type="Sonstiges" onclick="selectType(this)">⚡ Sonstiges</button>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="field">
+      <label>Dauer (Min)</label>
+      <input type="number" id="duration" min="1" max="300" value="45" placeholder="45">
+    </div>
+    <div class="field">
+      <label>Intensität</label>
+      <select id="intensity">
+        <option value="Leicht">😌 Leicht</option>
+        <option value="Mittel" selected>💪 Mittel</option>
+        <option value="Schwer">🔥 Schwer</option>
+      </select>
+    </div>
+  </div>
+  <div class="field">
+    <label>Notiz (optional)</label>
+    <textarea id="note" placeholder="z.B. Brust + Trizeps, 5km gelaufen..."></textarea>
+  </div>
+  <button class="btn" onclick="logWorkout()">Workout speichern</button>
+</div>
+
+<!-- HISTORY TAB -->
+<div class="panel" id="tab-history">
+  <div id="historyList"></div>
+</div>
+
+<!-- STATS TAB -->
+<div class="panel" id="tab-stats">
+  <div class="stats-grid" id="statsGrid"></div>
+  <div class="field" style="margin-top:4px">
+    <label>Workouts nach Typ</label>
+    <div class="bar-chart" id="typeChart"></div>
+  </div>
+</div>
+
+<div class="status-bar" id="statusBar">Bereit</div>
+
+<script>
+const DATA_URL = '/app/fitness/api/workouts';
+let data = { workouts: [] };
+let selectedType = 'Kraft';
+
+const TYPE_ICONS = {
+  'Kraft':'🏋️','Cardio':'🏃','Yoga':'🧘','Radfahren':'🚴',
+  'Schwimmen':'🏊','Dehnen':'🤸','Kampfsport':'🥊','Sonstiges':'⚡'
+};
+
+async function load() {
+  try {
+    const r = await fetch(DATA_URL);
+    if (r.ok) data = await r.json();
+    if (!data.workouts) data.workouts = [];
+    updateHeader();
+    renderHistory();
+    renderStats();
+  } catch(e) { status('Fehler beim Laden'); }
+}
+
+async function save() {
+  await fetch(DATA_URL, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  await fetch('/api/notify-change', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({appId:'fitness',file:'workouts.json'})
+  });
+}
+
+function selectType(btn) {
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedType = btn.dataset.type;
+}
+
+async function logWorkout() {
+  const duration = parseInt(document.getElementById('duration').value) || 45;
+  const intensity = document.getElementById('intensity').value;
+  const note = document.getElementById('note').value.trim();
+
+  const workout = {
+    id: Date.now(),
+    type: selectedType,
+    duration,
+    intensity,
+    note,
+    date: new Date().toISOString()
+  };
+
+  data.workouts.unshift(workout);
+  await save();
+
+  // Emit graph outputs
+  if (window.PulseOS && window.PulseOS.emit) {
+    window.PulseOS.emit('workout-logged', { type: selectedType, duration, intensity });
+    window.PulseOS.emit('streak-update', { streak: calcStreak() });
+  }
+
+  document.getElementById('note').value = '';
+  status(`✓ ${selectedType} (${duration} Min) gespeichert`);
+  updateHeader();
+  renderHistory();
+  renderStats();
+  showTab('history');
+}
+
+async function deleteWorkout(id) {
+  data.workouts = data.workouts.filter(w => w.id !== id);
+  await save();
+  updateHeader();
+  renderHistory();
+  renderStats();
+  status('Workout gelöscht');
+}
+
+function updateHeader() {
+  document.getElementById('streakVal').textContent = calcStreak();
+  document.getElementById('weekVal').textContent = workoutsThisWeek();
+}
+
+function calcStreak() {
+  if (!data.workouts.length) return 0;
+  const dates = [...new Set(data.workouts.map(w => w.date.slice(0,10)))].sort().reverse();
+  let streak = 0;
+  let d = new Date(); d.setHours(0,0,0,0);
+  for (const dateStr of dates) {
+    const wd = new Date(dateStr);
+    const diff = Math.round((d - wd) / 86400000);
+    if (diff === 0 || diff === streak) { streak++; d = wd; }
+    else if (diff > 1) break;
+  }
+  return streak;
+}
+
+function workoutsThisWeek() {
+  const now = new Date();
+  const monday = new Date(now); monday.setDate(now.getDate() - (now.getDay()||7) + 1); monday.setHours(0,0,0,0);
+  return data.workouts.filter(w => new Date(w.date) >= monday).length;
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yd = new Date(today); yd.setDate(yd.getDate()-1);
+  const dd = new Date(d); dd.setHours(0,0,0,0);
+  if (dd.getTime() === today.getTime()) return 'Heute ' + d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  if (dd.getTime() === yd.getTime()) return 'Gestern ' + d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  if (!data.workouts.length) {
+    el.innerHTML = '<div class="empty">Noch kein Training geloggt.<br>Los geht\'s! 💪</div>';
+    return;
+  }
+  el.innerHTML = data.workouts.map(w => `
+    <div class="workout-entry">
+      <div class="entry-icon">${TYPE_ICONS[w.type]||'⚡'}</div>
+      <div class="entry-body">
+        <div class="entry-top">
+          <span class="entry-type">${w.type}</span>
+          <span class="entry-duration">${w.duration} Min</span>
+          <span style="font-size:10px;color:var(--dim);padding:1px 6px;background:var(--muted);border-radius:10px">${w.intensity}</span>
+          <span class="entry-date">${formatDate(w.date)}</span>
+        </div>
+        ${w.note ? `<div class="entry-note">${w.note}</div>` : ''}
+      </div>
+      <button class="delete-btn" onclick="deleteWorkout(${w.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderStats() {
+  const total = data.workouts.length;
+  const totalMin = data.workouts.reduce((s,w) => s+w.duration, 0);
+  const thisWeek = workoutsThisWeek();
+  const streak = calcStreak();
+  const avgDur = total ? Math.round(totalMin/total) : 0;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="val">${total}</div><div class="lbl">Gesamt Workouts</div></div>
+    <div class="stat-card"><div class="val">${Math.round(totalMin/60*10)/10}h</div><div class="lbl">Gesamtzeit</div></div>
+    <div class="stat-card"><div class="val">${streak}</div><div class="lbl">Aktueller Streak</div></div>
+    <div class="stat-card"><div class="val">${avgDur}m</div><div class="lbl">Ø Dauer</div></div>
+  `;
+
+  const counts = {};
+  data.workouts.forEach(w => counts[w.type] = (counts[w.type]||0)+1);
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+  const max = sorted[0]?.[1] || 1;
+
+  document.getElementById('typeChart').innerHTML = sorted.length
+    ? sorted.map(([type,count]) => `
+        <div class="bar-row">
+          <span class="bar-label">${TYPE_ICONS[type]||''} ${type}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${count/max*100}%"></div></div>
+          <span class="bar-count">${count}</span>
+        </div>`).join('')
+    : '<div class="empty" style="padding:10px">Keine Daten</div>';
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['log','history','stats'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'tab-' + name);
+  });
+}
+
+function status(msg) {
+  document.getElementById('statusBar').textContent = msg;
+  setTimeout(() => document.getElementById('statusBar').textContent = 'Bereit', 3000);
+}
+
+load();
+
+// PulseOS SDK integration
+if (window.PulseOS) {
+  PulseOS.onDataChanged(load);
+  PulseOS.onInput('log-workout', function(d) {
+    if (d && d.type) {
+      const btn = [...document.querySelectorAll('.type-btn')].find(b => b.dataset.type === d.type);
+      if (btn) selectType(btn);
+    }
+    if (d && d.duration) document.getElementById('duration').value = d.duration;
+    logWorkout();
+  });
+}
+</script>
+</body>
+</html>

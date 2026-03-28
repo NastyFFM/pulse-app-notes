@@ -1,0 +1,11 @@
+{
+  "name": "Countdown",
+  "icon": "⏱",
+  "color": "#1a2a3d",
+  "description": "Countdown-Timer für 1-60 Minuten mit Start/Stop/Reset",
+  "nodeType": null,
+  "inputs": [{"id":"start-timer","desc":"Startet den Timer mit vorgesetzter Zeit"}],
+  "outputs": [{"id":"timer-finished","desc":"Signal wenn Timer abgelaufen ist"}],
+  "dataFiles": ["countdown"],
+  "pulseSubscriptions": []
+}

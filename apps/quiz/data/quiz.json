@@ -1,0 +1,283 @@
+{
+  "categories": [
+    "Allgemein",
+    "Wissenschaft",
+    "Geschichte",
+    "Geografie",
+    "Sport",
+    "Kultur"
+  ],
+  "highscores": [
+    {
+      "score": 4,
+      "total": 4,
+      "pct": 100,
+      "category": "Allgemein",
+      "difficulty": "all",
+      "time": 18,
+      "date": "28.3.2026"
+    }
+  ],
+  "questions": [
+    {
+      "id": 1,
+      "category": "Allgemein",
+      "difficulty": "easy",
+      "question": "Wie viele Kontinente hat die Erde?",
+      "options": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correct": 2
+    },
+    {
+      "id": 2,
+      "category": "Allgemein",
+      "difficulty": "easy",
+      "question": "Welche Farbe hat der Himmel bei klarem Wetter?",
+      "options": [
+        "Grün",
+        "Blau",
+        "Rot",
+        "Gelb"
+      ],
+      "correct": 1
+    },
+    {
+      "id": 3,
+      "category": "Allgemein",
+      "difficulty": "medium",
+      "question": "Wie viele Stunden hat ein Tag?",
+      "options": [
+        "12",
+        "24",
+        "48",
+        "36"
+      ],
+      "correct": 1
+    },
+    {
+      "id": 4,
+      "category": "Wissenschaft",
+      "difficulty": "easy",
+      "question": "Was ist die chemische Formel für Wasser?",
+      "options": [
+        "CO2",
+        "H2O",
+        "O2",
+        "NaCl"
+      ],
+      "correct": 1
+    },
+    {
+      "id": 5,
+      "category": "Wissenschaft",
+      "difficulty": "medium",
+      "question": "Welcher Planet ist der größte in unserem Sonnensystem?",
+      "options": [
+        "Saturn",
+        "Erde",
+        "Jupiter",
+        "Neptun"
+      ],
+      "correct": 2
+    },
+    {
+      "id": 6,
+      "category": "Wissenschaft",
+      "difficulty": "hard",
+      "question": "Was ist die Lichtgeschwindigkeit (gerundet)?",
+      "options": [
+        "300.000 km/s",
+        "150.000 km/s",
+        "500.000 km/s",
+        "100.000 km/s"
+      ],
+      "correct": 0
+    },
+    {
+      "id": 7,
+      "category": "Geschichte",
+      "difficulty": "easy",
+      "question": "In welchem Jahr begann der Zweite Weltkrieg?",
+      "options": [
+        "1935",
+        "1939",
+        "1941",
+        "1945"
+      ],
+      "correct": 1
+    },
+    {
+      "id": 8,
+      "category": "Geschichte",
+      "difficulty": "medium",
+      "question": "Wer war der erste Mensch auf dem Mond?",
+      "options": [
+        "Buzz Aldrin",
+        "Yuri Gagarin",
+        "Neil Armstrong",
+        "John Glenn"
+      ],
+      "correct": 2
+    },
+    {
+      "id": 9,
+      "category": "Geschichte",
+      "difficulty": "hard",
+      "question": "In welchem Jahr fiel die Berliner Mauer?",
+      "options": [
+        "1985",
+        "1989",
+        "1991",
+        "1987"
+      ],
+      "correct": 1
+    },
+    {
+      "id": 10,
+      "category": "Geografie",
+      "difficulty": "easy",
+      "question": "Was ist die Hauptstadt von Deutschland?",
+      "options": [
+        "München",
+        "Hamburg",
+        "Berlin",
+        "Frankfurt"
+      ],
+      "correct": 2
+    },
+    {
+      "id": 11,
+      "category": "Geografie",
+      "difficulty": "medium",
+      "question": "Welcher Fluss ist der längste der Welt?",
+      "options": [
+        "Amazonas",
+        "Nil",
+        "Yangtze",
+        "Mississippi"
+      ],
+      "correct": 1
+    },
+    {
+      "id": 12,
+      "category": "Geografie",
+      "difficulty": "hard",
+      "question": "Auf welchem Kontinent liegt Äthiopien?",
+      "options": [
+        "Asien",
+        "Südamerika",
+        "Afrika",
+        "Australien"
+      ],
+      "correct": 2
+    },
+    {
+      "id": 13,
+      "category": "Sport",
+      "difficulty": "easy",
+      "question": "Wie viele Spieler hat eine Fußballmannschaft auf dem Feld?",
+      "options": [
+        "9",
+        "10",
+        "11",
+        "12"
+      ],
+      "correct": 2
+    },
+    {
+      "id": 14,
+      "category": "Sport",
+      "difficulty": "medium",
+      "question": "In welchem Land fanden die Olympischen Spiele 2020 statt (ausgetragen 2021)?",
+      "options": [
+        "China",
+        "Japan",
+        "Südkorea",
+        "Australien"
+      ],
+      "correct": 1
+    },
+    {
+      "id": 15,
+      "category": "Kultur",
+      "difficulty": "easy",
+      "question": "Wer malte die Mona Lisa?",
+      "options": [
+        "Michelangelo",
+        "Raphael",
+        "Leonardo da Vinci",
+        "Botticelli"
+      ],
+      "correct": 2
+    },
+    {
+      "id": 16,
+      "category": "Kultur",
+      "difficulty": "medium",
+      "question": "Welcher Komponist war taubstumm, komponierte aber weiter?",
+      "options": [
+        "Mozart",
+        "Bach",
+        "Beethoven",
+        "Brahms"
+      ],
+      "correct": 2
+    },
+    {
+      "id": 17,
+      "category": "Wissenschaft",
+      "difficulty": "medium",
+      "question": "Welches Element hat das chemische Symbol 'Au'?",
+      "options": [
+        "Silber",
+        "Gold",
+        "Aluminium",
+        "Kupfer"
+      ],
+      "correct": 1
+    },
+    {
+      "id": 18,
+      "category": "Allgemein",
+      "difficulty": "easy",
+      "question": "Wie viele Seiten hat ein Würfel?",
+      "options": [
+        "4",
+        "5",
+        "6",
+        "8"
+      ],
+      "correct": 2
+    },
+    {
+      "id": 19,
+      "category": "Geografie",
+      "difficulty": "medium",
+      "question": "Welches ist das flächenmäßig größte Land der Welt?",
+      "options": [
+        "USA",
+        "China",
+        "Kanada",
+        "Russland"
+      ],
+      "correct": 3
+    },
+    {
+      "id": 20,
+      "category": "Geschichte",
+      "difficulty": "medium",
+      "question": "Wer war der erste Präsident der USA?",
+      "options": [
+        "Abraham Lincoln",
+        "George Washington",
+        "Thomas Jefferson",
+        "John Adams"
+      ],
+      "correct": 1
+    }
+  ]
+}

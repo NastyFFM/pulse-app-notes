@@ -1,0 +1,35 @@
+{
+  "workouts": [
+    {
+      "id": "w1",
+      "date": "2026-03-28",
+      "name": "Morning Run",
+      "type": "cardio",
+      "duration": 30,
+      "calories": 280,
+      "exercises": []
+    }
+  ],
+  "goals": {
+    "weeklyWorkouts": 4,
+    "dailyCalories": 2000,
+    "dailySteps": 10000,
+    "weeklyDistance": 20
+  },
+  "stats": {
+    "totalWorkouts": 1,
+    "totalCalories": 280,
+    "currentStreak": 1,
+    "bestStreak": 1
+  },
+  "exercises": [
+    { "id": "pushup", "name": "Push-Ups", "category": "strength", "muscleGroup": "chest" },
+    { "id": "squat", "name": "Squats", "category": "strength", "muscleGroup": "legs" },
+    { "id": "plank", "name": "Plank", "category": "core", "muscleGroup": "abs" },
+    { "id": "run", "name": "Running", "category": "cardio", "muscleGroup": "full body" },
+    { "id": "pullup", "name": "Pull-Ups", "category": "strength", "muscleGroup": "back" },
+    { "id": "crunch", "name": "Crunches", "category": "core", "muscleGroup": "abs" },
+    { "id": "lunge", "name": "Lunges", "category": "strength", "muscleGroup": "legs" },
+    { "id": "burpee", "name": "Burpees", "category": "cardio", "muscleGroup": "full body" }
+  ]
+}

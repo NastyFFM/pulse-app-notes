@@ -303,6 +303,54 @@
       "description": "Apps von Kontakten entdecken",
       "installed": true,
       "position": 27
+    },
+    {
+      "id": "workers",
+      "name": "Workers",
+      "icon": "⚙",
+      "color": "#6366f1",
+      "description": "KI-Worker verwalten",
+      "favorite": true,
+      "installed": true,
+      "position": 4,
+      "visibility": "private",
+      "allowedUsers": []
+    },
+    {
+      "id": "fitness",
+      "name": "Fitness",
+      "icon": "💪",
+      "color": "#0d2b1a",
+      "description": "Workout-Tracker: Trainings loggen, Streak verfolgen, Fortschritt sehen",
+      "installed": true,
+      "created": true,
+      "position": 28,
+      "visibility": "private",
+      "allowedUsers": []
+    },
+    {
+      "id": "pomodoro",
+      "name": "Pomodoro",
+      "icon": "🍅",
+      "color": "#2a1010",
+      "description": "Pomodoro-Timer: 25 Min Fokus, 5 Min Pause, Sessions tracken",
+      "installed": true,
+      "created": true,
+      "position": 29,
+      "visibility": "private",
+      "allowedUsers": []
+    },
+    {
+      "id": "quiz",
+      "name": "Quiz",
+      "icon": "?",
+      "color": "#1a1a3d",
+      "description": "Wissens-Quiz mit Kategorien, Timer und Highscores",
+      "installed": true,
+      "created": true,
+      "position": 30,
+      "visibility": "public",
+      "allowedUsers": []
     }
   ]
 }
