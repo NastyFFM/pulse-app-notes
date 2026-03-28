@@ -2997,7 +2997,9 @@ function renderChatsList() {
       else icon = '⚪';
     }
     const preview = c.lastMessage ? c.lastMessage.text : 'Noch keine Nachrichten';
-    const unread = c.unread > 0 ? '<span style="background:var(--teal);color:var(--bg);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">' + c.unread + '</span>' : '';
+    const unreadCount = (c.unread || 0) + ((window.unreadChats && window.unreadChats[c.id]) || 0);
+    if (unreadCount > 0) console.log('[chat] Unread badge:', c.id, 'server:', c.unread, 'local:', window.unreadChats?.[c.id], 'total:', unreadCount);
+    const unread = unreadCount > 0 ? '<span style="background:var(--teal);color:var(--bg);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">' + unreadCount + '</span>' : '';
     const time = c.lastMessage?.time ? new Date(c.lastMessage.time).toLocaleTimeString('de', {hour:'2-digit',minute:'2-digit'}) : '';
     const deletable = c.id !== 'chat-claudeos';
     return '<div class="chat-list-item" onclick="openChat(\'' + c.id + '\')" oncontextmenu="event.preventDefault();' + (deletable ? 'confirmDeleteChat(\'' + c.id + '\',\'' + escapeHtml(name).replace(/'/g, "\\'") + '\')' : '') + '" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;" onmouseenter="this.style.background=\'var(--bg-card-hover)\'" onmouseleave="this.style.background=\'\'">' +
@@ -3019,6 +3021,8 @@ function renderChatsList() {
 async function openChat(chatId) {
   activeChatId = chatId;
   renderedMsgIds.clear();
+  // Clear unread counter for this chat
+  if (window.unreadChats) delete window.unreadChats[chatId];
   document.getElementById('chatListView').style.display = 'none';
   document.getElementById('chatMsgView').style.display = 'flex';
   document.getElementById('chatBackBtn').style.display = '';
@@ -3998,7 +4002,7 @@ function showToast(msg, type) {
           if (!window.unreadChats) window.unreadChats = {};
           if (!window.unreadChats[peerChatId]) window.unreadChats[peerChatId] = 0;
           window.unreadChats[peerChatId]++;
-          loadChatList();
+          loadChatsList();
         }
         // ClaudeOS-Toggle: forward peer message to ClaudeOS if enabled
         fetch('/api/chats/' + peerChatId).then(r => r.json()).then(chat => {
@@ -4053,7 +4057,7 @@ function showToast(msg, type) {
                 })
               }).then(() => {
                 showAgentAlert((data.profile.name || peerHandle) + ' verbunden!');
-                loadChatList();
+                loadChatsList();
               }).catch(() => {});
             }
           }).catch(() => {});
