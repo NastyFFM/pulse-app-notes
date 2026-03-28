@@ -1,0 +1,29 @@
+{
+  "id": "worker-mnaqadrqvko3",
+  "task": "baue mir eine Wetter App",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 51177,
+  "progress": "(`onInput`, `emit`, `onDataChanged`)\n- Daten werden in `apps/weather/data/weather.json` gespeichert (Städte + gecachte Wetterdaten)\n\nDie App ist bereits in `data/apps.json` registriert (position 6).",
+  "log": [
+    {
+      "time": "2026-03-28T19:33:40.022Z",
+      "type": "start",
+      "text": "Worker gestartet: baue mir eine Wetter App"
+    },
+    {
+      "time": "2026-03-28T19:34:00.000Z",
+      "type": "progress",
+      "text": "Bestehende App gefunden, wird neu gebaut mit Open-Meteo API"
+    },
+    {
+      "time": "2026-03-28T19:34:30.000Z",
+      "type": "done",
+      "text": "Wetter-App fertig: index.html + manifest.json aktualisiert"
+    }
+  ],
+  "result": "Wetter-App neu gebaut. Features: Echtzeitwetter via Open-Meteo (kostenlos, kein API-Key), Städtesuche via Geocoding, 7-Tage-Vorhersage mit WMO-Icons, Luftfeuchte/Wind-Stats, Auto-Refresh alle 15 Min, PulseOS SDK integriert.",
+  "startedAt": "2026-03-28T19:33:40.022Z",
+  "finishedAt": "2026-03-28T19:34:30.000Z",
+  "createdBy": "user"
+}

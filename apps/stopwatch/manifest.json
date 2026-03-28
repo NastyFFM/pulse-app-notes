@@ -1,0 +1,16 @@
+{
+  "name": "Stopwatch",
+  "icon": "⏱",
+  "color": "#1a2a1a",
+  "description": "Stoppuhr mit Runden-Tracking",
+  "inputs": [
+    { "id": "start", "desc": "Stoppuhr starten" },
+    { "id": "reset", "desc": "Stoppuhr zurücksetzen" }
+  ],
+  "outputs": [
+    { "id": "lap", "desc": "Rundenzeit wenn Runde gespeichert" },
+    { "id": "stopped", "desc": "Gesamtzeit wenn gestoppt" }
+  ],
+  "dataFiles": ["stopwatch"],
+  "pulseSubscriptions": []
+}

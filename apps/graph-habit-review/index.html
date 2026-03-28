@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>habit-review</title>
+<style>
+  body { background: var(--bg, #0d1117); color: var(--text, #c9d1d9); font-family: system-ui; margin: 0; padding: 20px; }
+  .header { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .sub { font-size: 12px; color: var(--text-dim, #8b949e); margin-bottom: 20px; }
+  .nodes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .run-btn { background: var(--teal, #2dd4bf); color: #000; border: none; padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .run-btn:hover { opacity: 0.9; }
+  .status { margin-top: 12px; font-size: 12px; color: var(--text-dim, #8b949e); }
+</style></head><body>
+<div class="header">⚡ habit-review</div>
+<div class="sub">4 Nodes · 1 Edges</div>
+<div class="nodes">
+  <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;"><span style="font-size:16px;">⚙</span><span>Habits</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;"><span style="font-size:16px;">⚙</span><span>Calendar</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;"><span style="font-size:16px;">⚙</span><span>Chat</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;"><span style="font-size:16px;">⚙</span><span>Chat</span></div>
+</div>
+<button class="run-btn" onclick="runGraph()">▶ Graph ausführen</button>
+<div class="status" id="status"></div>
+<script src="/sdk.js"></script>
+<script>
+PulseOS.onInput('trigger', function() { runGraph(); });
+async function runGraph() {
+  document.getElementById('status').textContent = 'Wird ausgeführt...';
+  try {
+    const r = await fetch('/api/graphs/habit-review/run', { method: 'POST' });
+    const d = await r.json();
+    document.getElementById('status').textContent = 'Ausgeführt: ' + (d.triggered || []).length + ' Nodes · ' + new Date().toLocaleTimeString();
+    const stateR = await fetch('/app/graph-habit-review/api/state');
+    const state = await stateR.json();
+    state.lastRun = new Date().toISOString();
+    state.runs = (state.runs || 0) + 1;
+    await fetch('/app/graph-habit-review/api/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) });
+    PulseOS.emit('result', d);
+  } catch(e) { document.getElementById('status').textContent = 'Fehler: ' + e.message; }
+}
+PulseOS.onDataChanged(function() {});
+</script></body></html>

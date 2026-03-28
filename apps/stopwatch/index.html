@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stopwatch</title>
+  <script src="/sdk.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, sans-serif;
+      padding: 16px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 24px;
+      margin-top: 8px;
+    }
+
+    .display {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 40px;
+      text-align: center;
+      width: 100%;
+      max-width: 340px;
+      margin-bottom: 24px;
+    }
+
+    .time {
+      font-size: 3.5rem;
+      font-weight: 200;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .time .ms {
+      font-size: 2rem;
+      color: var(--text-dim);
+    }
+
+    .lap-time {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      margin-top: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    button {
+      padding: 12px 24px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      min-width: 90px;
+    }
+
+    button:hover {
+      background: var(--bg-card-hover);
+    }
+
+    button.primary {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #000;
+    }
+
+    button.primary:hover {
+      opacity: 0.85;
+    }
+
+    button.danger {
+      border-color: #c0392b;
+      color: #e74c3c;
+    }
+
+    button.danger:hover {
+      background: rgba(231, 76, 60, 0.1);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .laps {
+      width: 100%;
+      max-width: 340px;
+    }
+
+    .laps-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .laps-title {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .laps-count {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .lap-list {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .lap-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.9rem;
+    }
+
+    .lap-item:last-child {
+      border-bottom: none;
+    }
+
+    .lap-item.fastest {
+      color: var(--teal);
+    }
+
+    .lap-item.slowest {
+      color: #e74c3c;
+    }
+
+    .lap-num {
+      color: var(--text-dim);
+      font-size: 0.8rem;
+    }
+
+    .lap-split {
+      color: var(--text-dim);
+      font-size: 0.8rem;
+    }
+
+    .empty-laps {
+      padding: 20px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Stopwatch</h1>
+
+  <div class="display">
+    <div class="time" id="display">00:00<span class="ms">.00</span></div>
+    <div class="lap-time" id="lapDisplay"></div>
+  </div>
+
+  <div class="controls">
+    <button id="btnStartStop" class="primary" onclick="toggleStartStop()">Start</button>
+    <button id="btnLap" onclick="recordLap()" disabled>Runde</button>
+    <button id="btnReset" class="danger" onclick="resetTimer()" disabled>Reset</button>
+  </div>
+
+  <div class="laps">
+    <div class="laps-header">
+      <span class="laps-title">Runden</span>
+      <span class="laps-count" id="lapCount"></span>
+    </div>
+    <div class="lap-list" id="lapList">
+      <div class="empty-laps">Keine Runden gespeichert</div>
+    </div>
+  </div>
+
+  <script>
+    let running = false;
+    let startTime = null;
+    let elapsed = 0;
+    let lapStart = 0;
+    let laps = [];
+    let animFrame = null;
+
+    function formatTime(ms) {
+      const totalMs = Math.floor(ms);
+      const centiseconds = Math.floor((totalMs % 1000) / 10);
+      const seconds = Math.floor(totalMs / 1000) % 60;
+      const minutes = Math.floor(totalMs / 60000) % 60;
+      const hours = Math.floor(totalMs / 3600000);
+
+      if (hours > 0) {
+        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}<span class="ms">.${pad(centiseconds)}</span>`;
+      }
+      return `${pad(minutes)}:${pad(seconds)}<span class="ms">.${pad(centiseconds)}</span>`;
+    }
+
+    function pad(n) {
+      return String(n).padStart(2, '0');
+    }
+
+    function tick() {
+      if (!running) return;
+      const now = performance.now();
+      const current = elapsed + (now - startTime);
+      document.getElementById('display').innerHTML = formatTime(current);
+
+      if (laps.length > 0) {
+        const lapElapsed = current - lapStart;
+        document.getElementById('lapDisplay').textContent = 'Aktuelle Runde: ' + formatTimeText(lapElapsed);
+      }
+
+      animFrame = requestAnimationFrame(tick);
+    }
+
+    function formatTimeText(ms) {
+      const totalMs = Math.floor(ms);
+      const cs = Math.floor((totalMs % 1000) / 10);
+      const s = Math.floor(totalMs / 1000) % 60;
+      const m = Math.floor(totalMs / 60000);
+      return `${pad(m)}:${pad(s)}.${pad(cs)}`;
+    }
+
+    function toggleStartStop() {
+      if (running) {
+        // Stop
+        elapsed += performance.now() - startTime;
+        running = false;
+        cancelAnimationFrame(animFrame);
+        document.getElementById('btnStartStop').textContent = 'Weiter';
+        document.getElementById('btnStartStop').classList.remove('primary');
+        document.getElementById('btnLap').disabled = true;
+        document.getElementById('btnReset').disabled = false;
+
+        PulseOS.emit('stopped', { elapsed: elapsed, laps: laps });
+        saveState();
+      } else {
+        // Start
+        startTime = performance.now();
+        running = true;
+        if (laps.length === 0) lapStart = 0;
+        animFrame = requestAnimationFrame(tick);
+        document.getElementById('btnStartStop').textContent = 'Stop';
+        document.getElementById('btnStartStop').classList.add('primary');
+        document.getElementById('btnLap').disabled = false;
+        document.getElementById('btnReset').disabled = true;
+      }
+    }
+
+    function recordLap() {
+      if (!running) return;
+      const now = performance.now();
+      const current = elapsed + (now - startTime);
+      const lapElapsed = current - lapStart;
+      lapStart = current;
+
+      laps.unshift({
+        num: laps.length + 1,
+        time: current,
+        split: lapElapsed
+      });
+
+      // Re-number after unshift
+      laps.forEach((l, i) => { l.num = laps.length - i; });
+
+      renderLaps();
+      PulseOS.emit('lap', { lapNum: laps[0].num, split: lapElapsed, total: current });
+    }
+
+    function resetTimer() {
+      if (running) return;
+      elapsed = 0;
+      lapStart = 0;
+      laps = [];
+      document.getElementById('display').innerHTML = '00:00<span class="ms">.00</span>';
+      document.getElementById('lapDisplay').textContent = '';
+      document.getElementById('btnStartStop').textContent = 'Start';
+      document.getElementById('btnStartStop').classList.add('primary');
+      document.getElementById('btnLap').disabled = true;
+      document.getElementById('btnReset').disabled = true;
+      renderLaps();
+      saveState();
+    }
+
+    function renderLaps() {
+      const list = document.getElementById('lapList');
+      const count = document.getElementById('lapCount');
+
+      if (laps.length === 0) {
+        list.innerHTML = '<div class="empty-laps">Keine Runden gespeichert</div>';
+        count.textContent = '';
+        return;
+      }
+
+      count.textContent = `${laps.length} Runden`;
+
+      const splits = laps.map(l => l.split);
+      const fastest = Math.min(...splits);
+      const slowest = Math.max(...splits);
+
+      list.innerHTML = laps.map(lap => {
+        let cls = '';
+        if (laps.length > 2) {
+          if (lap.split === fastest) cls = 'fastest';
+          else if (lap.split === slowest) cls = 'slowest';
+        }
+        return `<div class="lap-item ${cls}">
+          <span class="lap-num">Runde ${lap.num}</span>
+          <span class="lap-total">${formatTimeText(lap.time)}</span>
+          <span class="lap-split">+${formatTimeText(lap.split)}</span>
+        </div>`;
+      }).join('');
+    }
+
+    function saveState() {
+      const state = {
+        running: false,
+        elapsed: elapsed,
+        laps: laps,
+        lastSaved: new Date().toISOString()
+      };
+      fetch('/app/stopwatch/api/stopwatch', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state)
+      }).then(() => {
+        fetch('/api/notify-change', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ appId: 'stopwatch', file: 'stopwatch.json' })
+        });
+      });
+    }
+
+    function loadState() {
+      fetch('/app/stopwatch/api/stopwatch').then(r => r.json()).then(state => {
+        if (state && state.elapsed) {
+          elapsed = state.elapsed;
+          laps = state.laps || [];
+          document.getElementById('display').innerHTML = formatTime(elapsed);
+          renderLaps();
+          if (elapsed > 0) {
+            document.getElementById('btnReset').disabled = false;
+            document.getElementById('btnStartStop').textContent = 'Weiter';
+            document.getElementById('btnStartStop').classList.remove('primary');
+          }
+        }
+      }).catch(() => {});
+    }
+
+    // PulseOS SDK integration
+    PulseOS.onInput('start', function(data) {
+      if (!running) toggleStartStop();
+    });
+
+    PulseOS.onInput('reset', function(data) {
+      if (!running) resetTimer();
+    });
+
+    PulseOS.onDataChanged(function() {
+      if (!running) loadState();
+    });
+
+    // Initial load
+    loadState();
+  </script>
+</body>
+</html>

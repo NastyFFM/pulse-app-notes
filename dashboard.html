@@ -2903,8 +2903,9 @@ async function updateWorkerBadge() {
   try {
     const r = await fetch('/api/workers');
     if (!r.ok) return;
-    const workers = await r.json();
-    const running = (Array.isArray(workers) ? workers : []).filter(w => w.status === 'running').length;
+    const data = await r.json();
+    const workers = Array.isArray(data) ? data : (data.workers || []);
+    const running = workers.filter(w => w.status === 'running').length;
     const badge = document.getElementById('workerBadge');
     const count = document.getElementById('workerCount');
     if (badge && count) {

@@ -1,0 +1,39 @@
+{
+  "name": "habit-review",
+  "icon": "⚡",
+  "color": "#6366f1",
+  "description": "Graph: Habits → Calendar → Chat → Chat",
+  "inputs": [
+    {
+      "id": "data",
+      "desc": "Graph Input: data"
+    },
+    {
+      "id": "data",
+      "desc": "Graph Input: data"
+    },
+    {
+      "id": "data",
+      "desc": "Graph Input: data"
+    },
+    {
+      "id": "data",
+      "desc": "Graph Input: data"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "data",
+      "desc": "Graph Output: data"
+    },
+    {
+      "id": "data",
+      "desc": "Graph Output: data"
+    }
+  ],
+  "dataFiles": [
+    "state"
+  ],
+  "pulseSubscriptions": [],
+  "graphId": "habit-review"
+}
