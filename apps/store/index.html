@@ -36,6 +36,19 @@ body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:var(-
 .install-btn:disabled { opacity:0.4; cursor:default; }
 .installed-badge { font-size:9px; color:var(--teal, #4ecdc4); padding:4px 8px; }
 .new-badge { background:#f59e0b; color:#000; font-size:8px; padding:1px 4px; border-radius:3px; font-weight:700; margin-left:4px; }
+.status-badge { font-size:8px; padding:2px 6px; border-radius:4px; font-weight:600; }
+.badge-published { background:#22c55e; color:#000; }
+.badge-local { background:#f59e0b; color:#000; }
+.badge-cloud { background:#6366f1; color:#fff; }
+.badge-hidden { background:#666; color:#fff; }
+.action-btn { background:none; border:1px solid var(--border, #1e1e2e); color:var(--text-dim, #aaa); padding:3px 8px; border-radius:5px; font-size:9px; cursor:pointer; }
+.action-btn:hover { border-color:var(--teal, #4ecdc4); color:var(--text, #e0e0e0); }
+.action-btn.danger { border-color:#e74c3c; color:#e74c3c; }
+.action-btn.danger:hover { background:#e74c3c; color:#fff; }
+.token-bar { padding:8px 16px; background:var(--bg-card, #151520); border-bottom:1px solid var(--border, #1e1e2e); display:flex; gap:8px; align-items:center; font-size:11px; }
+.token-bar input { flex:1; padding:5px 8px; background:var(--bg, #0d0d14); border:1px solid var(--border, #1e1e2e); border-radius:4px; color:var(--text); font-size:10px; font-family:monospace; }
+.token-bar button { background:var(--teal, #4ecdc4); color:#000; border:none; padding:4px 10px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:600; }
+.token-status { font-size:10px; color:var(--text-dim, #666); }
 
 .empty { text-align:center; padding:40px; color:var(--text-dim, #666); }
 .empty p { font-size:13px; margin-bottom:12px; }
@@ -57,6 +70,13 @@ body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:var(-
   <button class="tab active" onclick="setTab('all')">Alle</button>
   <button class="tab" onclick="setTab('contacts')">Von Kontakten</button>
   <button class="tab" onclick="setTab('installed')">Installiert</button>
+  <button class="tab" onclick="setTab('myapps')">Meine Apps</button>
+</div>
+<div id="tokenBar" class="token-bar" style="display:none;">
+  <span>🔑 GitHub Token:</span>
+  <input id="tokenInput" type="password" placeholder="ghp_...">
+  <button onclick="saveToken()">Speichern</button>
+  <span class="token-status" id="tokenStatus"></span>
 </div>
 <div class="content" id="content"></div>
 <div class="add-source">
@@ -65,15 +85,20 @@ body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:var(-
 </div>
 
 <script>
-let catalog = { sources: [] }; // each source: { handle, name, avatar, url, apps:[], lastFetched }
+let catalog = { sources: [] };
 let installedApps = [];
+let allAppsData = []; // full app objects from /api/apps
 let activeTab = 'all';
+let hasGithubToken = false;
+let githubUser = '';
 
 async function init() {
   // Load catalog
   try { const r = await fetch('/app/store/api/catalog'); catalog = await r.json(); } catch { catalog = { sources: [] }; }
   // Load installed apps
-  try { const r = await fetch('/api/apps'); const d = await r.json(); installedApps = (d.apps || []).map(a => a.id); } catch {}
+  try { const r = await fetch('/api/apps'); const d = await r.json(); allAppsData = d.apps || []; installedApps = allAppsData.map(a => a.id); } catch {}
+  // Load GitHub token status
+  try { const r = await fetch('/api/github-token'); const d = await r.json(); hasGithubToken = d.hasToken; githubUser = d.github || ''; } catch {}
   // Load contacts and auto-add as sources
   try {
     const r = await fetch('/app/contacts/api/contacts');
@@ -145,43 +170,76 @@ function setTab(tab) {
 
 function render() {
   const el = document.getElementById('content');
-  const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  const tokenBar = document.getElementById('tokenBar');
+  tokenBar.style.display = activeTab === 'myapps' ? 'flex' : 'none';
+  if (activeTab === 'myapps') { renderMyApps(el); return; }
 
-  // Collect all apps with source info
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
   let allApps = [];
   catalog.sources.forEach(src => {
     (src.apps || []).forEach(app => {
       allApps.push({ ...app, source: src, isInstalled: installedApps.includes(app.id) });
     });
   });
-
-  // Filter by search
   if (q) allApps = allApps.filter(a => (a.name || '').toLowerCase().includes(q) || (a.description || '').toLowerCase().includes(q));
-
-  // Filter by tab
   if (activeTab === 'contacts') allApps = allApps.filter(a => !a.source.isSelf);
   if (activeTab === 'installed') allApps = allApps.filter(a => a.isInstalled);
 
   if (!allApps.length) {
-    el.innerHTML = '<div class="empty"><p>Keine Apps gefunden</p><div class="hint">Verbinde dich mit anderen PulseOS-Usern oder füge eine Quelle hinzu</div></div>';
+    el.innerHTML = '<div class="empty"><p>Keine Apps gefunden</p><div class="hint">Verbinde dich mit anderen PulseOS-Usern oder fuege eine Quelle hinzu</div></div>';
     return;
   }
-
-  // Group by source
   const groups = {};
   allApps.forEach(a => {
     const key = a.source.handle || 'unknown';
     if (!groups[key]) groups[key] = { source: a.source, apps: [] };
     groups[key].apps.push(a);
   });
-
   let html = '';
   Object.values(groups).forEach(g => {
     const label = g.source.isSelf ? 'Deine Apps' : 'Apps von ' + esc(g.source.name || g.source.handle);
-    html += '<div class="section">' +
-      '<div class="section-title">' + (g.source.avatar ? esc(g.source.avatar) + ' ' : '') + label + ' <span class="count">' + g.apps.length + '</span></div>' +
-      '<div class="app-grid">' + g.apps.map(a => appCard(a)).join('') + '</div></div>';
+    html += '<div class="section"><div class="section-title">' + (g.source.avatar ? esc(g.source.avatar) + ' ' : '') + label + ' <span class="count">' + g.apps.length + '</span></div><div class="app-grid">' + g.apps.map(a => appCard(a)).join('') + '</div></div>';
   });
+  el.innerHTML = html;
+}
+
+function renderMyApps(el) {
+  const tokenStatus = document.getElementById('tokenStatus');
+  tokenStatus.textContent = hasGithubToken ? '✅ Token gespeichert' : '⚠ Kein Token';
+  // Show user-created + installed-from-github apps
+  const myApps = allAppsData.filter(a => a.created || a.source);
+  if (!myApps.length) {
+    el.innerHTML = '<div class="empty"><p>Keine eigenen Apps</p><div class="hint">Erstelle eine App im Chat: "Baue mir eine XY App"</div></div>';
+    return;
+  }
+  let html = '<div class="app-grid">';
+  myApps.forEach(a => {
+    const isPublished = !!a.source;
+    const isHidden = a.installed === false;
+    const isLocal = !a.source;
+    let badge = '', badgeClass = '';
+    if (isHidden) { badge = 'Ausgeblendet'; badgeClass = 'badge-hidden'; }
+    else if (isPublished) { badge = 'Published'; badgeClass = 'badge-published'; }
+    else { badge = 'Nur lokal'; badgeClass = 'badge-local'; }
+
+    let actions = '';
+    if (isLocal && hasGithubToken) actions += '<button class="action-btn" onclick="publishApp(\'' + esc(a.id) + '\', this)">Publishen</button>';
+    if (isPublished && hasGithubToken) actions += '<button class="action-btn" onclick="publishApp(\'' + esc(a.id) + '\', this)">Update pushen</button>';
+    if (a.installed !== false) {
+      actions += '<button class="action-btn" onclick="hideApp(\'' + esc(a.id) + '\')">Ausblenden</button>';
+      actions += '<button class="action-btn danger" onclick="deleteApp(\'' + esc(a.id) + '\', \'' + esc(a.name) + '\', ' + isPublished + ')">Loeschen</button>';
+    } else {
+      actions += '<button class="action-btn" onclick="unhideApp(\'' + esc(a.id) + '\')">Wieder anzeigen</button>';
+      if (isPublished) actions += '<button class="action-btn" onclick="reinstallApp(\'' + esc(a.source) + '\', this)">Von GitHub installieren</button>';
+    }
+    if (isPublished) actions += '<button class="action-btn danger" onclick="deleteRemote(\'' + esc(a.id) + '\', \'' + esc(a.name) + '\')">Von GitHub loeschen</button>';
+
+    html += '<div class="app-card"><div class="app-icon" style="background:' + esc(a.color || '#1a2a3a') + ';">' + esc(a.icon || '?') + '</div>' +
+      '<div class="app-info"><div class="app-name">' + esc(a.name || a.id) + ' <span class="status-badge ' + badgeClass + '">' + badge + '</span></div>' +
+      '<div class="app-desc">' + esc(a.description || '') + '</div>' +
+      '<div class="app-actions" style="flex-wrap:wrap;">' + actions + '</div></div></div>';
+  });
+  html += '</div>';
   el.innerHTML = html;
 }
 
@@ -207,7 +265,7 @@ async function installApp(repo, btn) {
   btn.disabled = true;
   btn.textContent = '⏳';
   try {
-    const r = await fetch('/api/install-app', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repo }) });
+    const r = await fetch('/api/apps/install', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: 'https://github.com/' + repo }) });
     const d = await r.json();
     if (d.ok) {
       btn.textContent = '✓';
@@ -236,6 +294,91 @@ async function addSource() {
   saveCatalog();
   render();
   refreshAll();
+}
+
+async function saveToken() {
+  const token = document.getElementById('tokenInput').value.trim();
+  if (!token) return;
+  try {
+    await fetch('/api/github-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+    hasGithubToken = true;
+    document.getElementById('tokenInput').value = '';
+    document.getElementById('tokenStatus').textContent = '✅ Token gespeichert';
+    render();
+  } catch { document.getElementById('tokenStatus').textContent = '❌ Fehler'; }
+}
+
+async function publishApp(appId, btn) {
+  if (!hasGithubToken) { alert('Bitte zuerst GitHub Token eingeben'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  try {
+    const r = await fetch('/api/apps/' + appId + '/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const d = await r.json();
+    if (d.ok) {
+      if (btn) btn.textContent = '✅';
+      // Update local data
+      const app = allAppsData.find(a => a.id === appId);
+      if (app) { app.source = d.url; app.publishedAt = new Date().toISOString(); }
+      setTimeout(() => render(), 1000);
+    } else {
+      alert(d.error || 'Fehler beim Publishen');
+      if (btn) { btn.textContent = 'Publishen'; btn.disabled = false; }
+    }
+  } catch (e) { alert('Fehler: ' + e.message); if (btn) { btn.textContent = 'Publishen'; btn.disabled = false; } }
+}
+
+async function hideApp(appId) {
+  await fetch('/api/apps/' + appId + '/hide', { method: 'POST' });
+  const app = allAppsData.find(a => a.id === appId);
+  if (app) app.installed = false;
+  render();
+}
+
+async function unhideApp(appId) {
+  await fetch('/api/apps/' + appId + '/unhide', { method: 'POST' });
+  const app = allAppsData.find(a => a.id === appId);
+  if (app) app.installed = true;
+  render();
+}
+
+async function deleteApp(appId, appName, isPublished) {
+  const msg = isPublished
+    ? 'App "' + appName + '" lokal loeschen? (Bleibt auf GitHub, kann reinstalliert werden)'
+    : 'App "' + appName + '" endgueltig loeschen? (Nicht wiederherstellbar!)';
+  if (!confirm(msg)) return;
+  await fetch('/api/apps/uninstall', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: appId }) });
+  allAppsData = allAppsData.filter(a => a.id !== appId);
+  installedApps = installedApps.filter(id => id !== appId);
+  render();
+}
+
+async function deleteRemote(appId, appName) {
+  if (!confirm('GitHub Repo "pulse-app-' + appId + '" wirklich loeschen?')) return;
+  try {
+    const r = await fetch('/api/apps/' + appId + '/delete-remote', { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) {
+      const app = allAppsData.find(a => a.id === appId);
+      if (app) { delete app.source; delete app.publishedAt; }
+      render();
+    } else { alert(d.error || 'Fehler'); }
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+async function reinstallApp(sourceUrl, btn) {
+  if (!sourceUrl) return;
+  btn.disabled = true; btn.textContent = '⏳';
+  const repo = sourceUrl.replace('https://github.com/', '');
+  try {
+    const r = await fetch('/api/apps/install', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: sourceUrl }) });
+    const d = await r.json();
+    if (d.ok) {
+      btn.textContent = '✅';
+      // Reload apps
+      try { const ar = await fetch('/api/apps'); const ad = await ar.json(); allAppsData = ad.apps || []; installedApps = allAppsData.map(a => a.id); } catch {}
+      setTimeout(() => render(), 500);
+    } else { btn.textContent = d.error || 'Fehler'; setTimeout(() => { btn.textContent = 'Installieren'; btn.disabled = false; }, 2000); }
+  } catch { btn.textContent = 'Fehler'; }
 }
 
 function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }

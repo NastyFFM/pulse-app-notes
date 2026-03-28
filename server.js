@@ -2258,6 +2258,215 @@ if (window.PulseOS) {
     });
   }
 
+  // ── App Hide (soft uninstall — remove from launcher, keep files) ──
+  if (url.match(/^\/api\/apps\/[^/]+\/hide$/) && req.method === 'POST') {
+    const appId = url.split('/')[3];
+    const appsFile = path.join(ROOT, 'data', 'apps.json');
+    const appsData = safeReadJSON(appsFile, '{"apps":[]}');
+    const app = (appsData.apps || []).find(a => a.id === appId);
+    if (app) {
+      app.installed = false;
+      fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+      broadcast('dashboard', { type: 'app-hidden', appId });
+      return jsonRes(res, { ok: true, message: 'App ausgeblendet: ' + appId });
+    }
+    return jsonRes(res, { error: 'App not found' }, 404);
+  }
+
+  // ── App Unhide (re-add to launcher) ──
+  if (url.match(/^\/api\/apps\/[^/]+\/unhide$/) && req.method === 'POST') {
+    const appId = url.split('/')[3];
+    const appsFile = path.join(ROOT, 'data', 'apps.json');
+    const appsData = safeReadJSON(appsFile, '{"apps":[]}');
+    const app = (appsData.apps || []).find(a => a.id === appId);
+    if (app) {
+      app.installed = true;
+      fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+      broadcast('dashboard', { type: 'app-unhidden', appId });
+      return jsonRes(res, { ok: true });
+    }
+    return jsonRes(res, { error: 'App not found' }, 404);
+  }
+
+  // ── App Publish to GitHub ──
+  if (url.match(/^\/api\/apps\/[^/]+\/publish$/) && req.method === 'POST') {
+    const appId = url.split('/')[3];
+    return readBody(req, b => {
+      try {
+        const opts = JSON.parse(b || '{}');
+        const profileFile = path.join(ROOT, 'data', 'profile.json');
+        const profile = safeReadJSON(profileFile, '{}');
+        const token = opts.token || profile.githubToken;
+        const githubUser = profile.github;
+        if (!token) return jsonRes(res, { error: 'GitHub Token fehlt. Bitte in den Store-Einstellungen hinterlegen.' }, 400);
+        if (!githubUser) return jsonRes(res, { error: 'GitHub Username fehlt im Profil.' }, 400);
+
+        // Save token for future use
+        if (opts.token && opts.token !== profile.githubToken) {
+          profile.githubToken = opts.token;
+          fs.writeFileSync(profileFile, JSON.stringify(profile, null, 2));
+        }
+
+        const repoName = 'pulse-app-' + appId;
+        const appDir = resolveAppDir(appId);
+        const isPublic = (opts.visibility || 'private') === 'public';
+
+        // Collect all app files
+        function collectFiles(dir, prefix) {
+          const files = [];
+          if (!fs.existsSync(dir)) return files;
+          fs.readdirSync(dir).forEach(f => {
+            const fp = path.join(dir, f);
+            const rel = prefix ? prefix + '/' + f : f;
+            if (fs.statSync(fp).isDirectory()) {
+              files.push(...collectFiles(fp, rel));
+            } else {
+              files.push({ path: rel, content: fs.readFileSync(fp).toString('base64') });
+            }
+          });
+          return files;
+        }
+        const files = collectFiles(appDir, '');
+        if (files.length === 0) return jsonRes(res, { error: 'App-Verzeichnis leer' }, 400);
+
+        // GitHub API: Create repo
+        const ghApi = (endpoint, method, body) => new Promise((resolve, reject) => {
+          const options = {
+            hostname: 'api.github.com',
+            path: endpoint,
+            method: method || 'GET',
+            headers: { 'Authorization': 'token ' + token, 'User-Agent': 'PulseOS', 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' }
+          };
+          const req = require('https').request(options, r => {
+            let data = '';
+            r.on('data', c => data += c);
+            r.on('end', () => {
+              try { resolve({ status: r.statusCode, data: JSON.parse(data || '{}') }); }
+              catch { resolve({ status: r.statusCode, data: {} }); }
+            });
+          });
+          req.on('error', reject);
+          if (body) req.write(JSON.stringify(body));
+          req.end();
+        });
+
+        (async () => {
+          try {
+            // 1. Create or verify repo exists
+            let repoRes = await ghApi('/user/repos', 'POST', { name: repoName, private: !isPublic, description: 'PulseOS App: ' + appId, auto_init: true });
+            if (repoRes.status === 422) {
+              // Repo already exists — that's fine
+            } else if (repoRes.status !== 201) {
+              return jsonRes(res, { error: 'Repo erstellen fehlgeschlagen: ' + (repoRes.data.message || repoRes.status) }, 500);
+            }
+
+            // 2. Get default branch SHA
+            const refRes = await ghApi('/repos/' + githubUser + '/' + repoName + '/git/refs/heads/main', 'GET');
+            let baseSha = refRes.data?.object?.sha;
+            if (!baseSha) {
+              // Try master branch
+              const refRes2 = await ghApi('/repos/' + githubUser + '/' + repoName + '/git/refs/heads/master', 'GET');
+              baseSha = refRes2.data?.object?.sha;
+            }
+            if (!baseSha) return jsonRes(res, { error: 'Konnte Branch-SHA nicht lesen. Repo evtl. leer.' }, 500);
+
+            // 3. Create blobs for all files
+            const tree = [];
+            for (const f of files) {
+              const blobRes = await ghApi('/repos/' + githubUser + '/' + repoName + '/git/blobs', 'POST', { content: f.content, encoding: 'base64' });
+              tree.push({ path: f.path, mode: '100644', type: 'blob', sha: blobRes.data.sha });
+            }
+
+            // 4. Create tree
+            const treeRes = await ghApi('/repos/' + githubUser + '/' + repoName + '/git/trees', 'POST', { base_tree: baseSha, tree });
+
+            // 5. Create commit
+            const commitRes = await ghApi('/repos/' + githubUser + '/' + repoName + '/git/commits', 'POST', {
+              message: 'PulseOS publish: ' + appId,
+              tree: treeRes.data.sha,
+              parents: [baseSha]
+            });
+
+            // 6. Update ref
+            await ghApi('/repos/' + githubUser + '/' + repoName + '/git/refs/heads/main', 'PATCH', { sha: commitRes.data.sha });
+
+            // 7. Update apps.json with source
+            const appsFile = path.join(ROOT, 'data', 'apps.json');
+            const appsData = safeReadJSON(appsFile, '{"apps":[]}');
+            const app = (appsData.apps || []).find(a => a.id === appId);
+            if (app) {
+              app.source = 'https://github.com/' + githubUser + '/' + repoName;
+              app.publishedAt = new Date().toISOString();
+              fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+            }
+
+            jsonRes(res, { ok: true, repo: githubUser + '/' + repoName, url: 'https://github.com/' + githubUser + '/' + repoName });
+          } catch (e) {
+            console.error('[publish] Error:', e.message);
+            jsonRes(res, { error: e.message }, 500);
+          }
+        })();
+      } catch (e) { jsonRes(res, { error: e.message }, 400); }
+    });
+    return;
+  }
+
+  // ── App Delete from GitHub ──
+  if (url.match(/^\/api\/apps\/[^/]+\/delete-remote$/) && req.method === 'POST') {
+    const appId = url.split('/')[3];
+    const profileFile = path.join(ROOT, 'data', 'profile.json');
+    const profile = safeReadJSON(profileFile, '{}');
+    const token = profile.githubToken;
+    const githubUser = profile.github;
+    if (!token || !githubUser) return jsonRes(res, { error: 'GitHub Token oder Username fehlt' }, 400);
+
+    const repoName = 'pulse-app-' + appId;
+    const ghDelete = () => new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.github.com', path: '/repos/' + githubUser + '/' + repoName, method: 'DELETE',
+        headers: { 'Authorization': 'token ' + token, 'User-Agent': 'PulseOS', 'Accept': 'application/vnd.github.v3+json' }
+      };
+      const req = require('https').request(options, r => {
+        let data = ''; r.on('data', c => data += c);
+        r.on('end', () => resolve({ status: r.statusCode }));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+
+    ghDelete().then(r => {
+      if (r.status === 204 || r.status === 404) {
+        // Remove source from apps.json
+        const appsFile = path.join(ROOT, 'data', 'apps.json');
+        const appsData = safeReadJSON(appsFile, '{"apps":[]}');
+        const app = (appsData.apps || []).find(a => a.id === appId);
+        if (app) { delete app.source; delete app.publishedAt; fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2)); }
+        jsonRes(res, { ok: true, message: 'GitHub Repo gelöscht: ' + repoName });
+      } else {
+        jsonRes(res, { error: 'Löschen fehlgeschlagen (Status ' + r.status + '). Token braucht delete_repo Scope.' }, 500);
+      }
+    }).catch(e => jsonRes(res, { error: e.message }, 500));
+    return;
+  }
+
+  // ── GitHub Token Save ──
+  if (url === '/api/github-token' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { token } = JSON.parse(b);
+        const profileFile = path.join(ROOT, 'data', 'profile.json');
+        const profile = safeReadJSON(profileFile, '{}');
+        profile.githubToken = token || '';
+        fs.writeFileSync(profileFile, JSON.stringify(profile, null, 2));
+        jsonRes(res, { ok: true });
+      } catch (e) { jsonRes(res, { error: e.message }, 400); }
+    });
+  }
+  if (url === '/api/github-token' && req.method === 'GET') {
+    const profile = safeReadJSON(path.join(ROOT, 'data', 'profile.json'), '{}');
+    return jsonRes(res, { hasToken: !!profile.githubToken, github: profile.github || '' });
+  }
+
   // ── Agent Memory ──
   if (url === '/api/agent-memory' && req.method === 'POST') {
     return readBody(req, b => {

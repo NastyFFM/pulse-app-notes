@@ -1743,18 +1743,24 @@ async function checkAppUpdate(app) {
 }
 
 async function uninstallApp(app) {
-  if (!confirm('App "' + app.name + '" wirklich deinstallieren?')) return;
+  const hasSource = !!app.source;
+  const options = ['Nur ausblenden (Dateien behalten)', 'Lokal loeschen'];
+  if (hasSource) options.push('Ueberall loeschen (auch GitHub)');
+  const choice = prompt(app.name + ' deinstallieren?\n\n1 = ' + options[0] + '\n2 = ' + options[1] + (hasSource ? '\n3 = ' + options[2] : '') + '\n\nNummer eingeben:');
+  if (!choice) return;
   try {
-    const r = await fetch('/api/apps/uninstall', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: app.id }) });
-    const d = await r.json();
-    if (d.ok) {
-      showToast(app.name + ' deinstalliert', 'success');
-      await load();
-      render();
-      renderLauncher();
-    } else {
-      showToast(d.error || 'Fehler', 'error');
+    if (choice === '1') {
+      await fetch('/api/apps/' + app.id + '/hide', { method: 'POST' });
+      showToast(app.name + ' ausgeblendet', 'success');
+    } else if (choice === '2') {
+      await fetch('/api/apps/uninstall', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: app.id }) });
+      showToast(app.name + ' geloescht', 'success');
+    } else if (choice === '3' && hasSource) {
+      await fetch('/api/apps/uninstall', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: app.id }) });
+      await fetch('/api/apps/' + app.id + '/delete-remote', { method: 'POST' });
+      showToast(app.name + ' ueberall geloescht', 'success');
     }
+    await load(); render(); renderLauncher();
   } catch (e) { showToast('Fehler: ' + e.message, 'error'); }
 }
 
