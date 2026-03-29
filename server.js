@@ -1908,48 +1908,32 @@ const server = http.createServer(async (req, res) => {
         const appDir = path.join(USERDATA, 'apps', appId);
 
         if (fs.existsSync(appDir) || fs.existsSync(path.join(ROOT, 'apps', appId))) {
+          // If app exists but is hidden → just unhide it
+          const appsData = safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}');
+          const existingApp = (appsData.apps || []).find(a => a.id === appId);
+          if (existingApp && existingApp.installed === false) {
+            existingApp.installed = true;
+            fs.writeFileSync(path.join(ROOT, 'data', 'apps.json'), JSON.stringify(appsData, null, 2));
+            broadcast('dashboard', { type: 'app-unhidden', appId });
+            return jsonRes(res, { ok: true, appId, name: existingApp.name || appId, reinstalled: true });
+          }
           return jsonRes(res, { ok: false, error: 'App already exists: ' + appId });
         }
 
-        // Download repo as ZIP from GitHub API (no git credentials needed)
+        // Clone repo using gh CLI (works with private repos, authenticated via gh)
         const repoPath = repoUrl.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/$/, '');
-        const zipUrl = `https://api.github.com/repos/${repoPath}/zipball/main`;
-        const downloadZip = () => new Promise((resolve, reject) => {
-          const follow = (url, redirects) => {
-            if (redirects > 5) return reject(new Error('Too many redirects'));
-            const mod = url.startsWith('https') ? require('https') : require('http');
-            mod.get(url, { headers: { 'User-Agent': 'PulseOS/1.0', 'Accept': 'application/vnd.github+json' } }, resp => {
-              if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) return follow(resp.headers.location, (redirects || 0) + 1);
-              if (resp.statusCode !== 200) return reject(new Error('GitHub API error: ' + resp.statusCode));
-              const chunks = []; resp.on('data', c => chunks.push(c)); resp.on('end', () => resolve(Buffer.concat(chunks)));
-            }).on('error', reject);
-          };
-          follow(zipUrl, 0);
-        });
-
-        let zipBuf;
-        try { zipBuf = await downloadZip(); } catch (e) {
-          return jsonRes(res, { ok: false, error: 'Download failed: ' + (e.message || '').substring(0, 100) });
-        }
-
-        // Extract ZIP (use built-in zlib + manual zip parsing)
         const { execSync } = require('child_process');
-        const tmpZip = path.join(require('os').tmpdir(), 'pulse-install-' + Date.now() + '.zip');
-        fs.writeFileSync(tmpZip, zipBuf);
         fs.mkdirSync(appDir, { recursive: true });
         try {
-          execSync(`unzip -o -j "${tmpZip}" -d "${appDir}"`, { timeout: 15000 });
-        } catch {
-          // unzip -j flattens; try with directory structure
-          const tmpExtract = tmpZip + '-extract';
-          execSync(`unzip -o "${tmpZip}" -d "${tmpExtract}"`, { timeout: 15000 });
-          // GitHub ZIP has a top-level dir like "user-repo-hash/", move contents up
-          const entries = fs.readdirSync(tmpExtract);
-          const topDir = entries.length === 1 ? path.join(tmpExtract, entries[0]) : tmpExtract;
-          execSync(`cp -r "${topDir}/"* "${appDir}/"`, { timeout: 10000 });
-          try { execSync(`rm -rf "${tmpExtract}"`); } catch {}
+          execSync('gh repo clone ' + repoPath + ' ' + appDir + ' -- --depth=1', { stdio: 'pipe', timeout: 30000 });
+          // Remove .git directory (we don't need git history)
+          try { execSync('rm -rf ' + path.join(appDir, '.git')); } catch {}
+        } catch (e) {
+          // Cleanup on failure
+          try { execSync('rm -rf ' + appDir); } catch {}
+          const errMsg = (e.stderr || e.message || '').toString().substring(0, 200);
+          return jsonRes(res, { ok: false, error: 'GitHub Clone fehlgeschlagen: ' + errMsg.split('\n')[0] });
         }
-        try { fs.unlinkSync(tmpZip); } catch {}
 
         // Read manifest if exists
         let manifest = { name: appId, icon: appId[0].toUpperCase(), color: '#333', description: '' };
