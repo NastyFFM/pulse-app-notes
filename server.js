@@ -2303,9 +2303,10 @@ if (window.PulseOS) {
     try { execSync('which railway', { stdio: 'pipe', env: railwayEnv }); hasRailway = true; } catch {}
     if (hasRailway && savedToken) {
       try {
-        const who = execSync('railway whoami 2>&1', { stdio: 'pipe', timeout: 5000, env: railwayEnv }).toString().trim();
-        if (who && !who.includes('Unauthorized') && !who.includes('error') && !who.includes('Please')) { railwayLoggedIn = true; railwayUser = who; }
-      } catch {}
+        const who = execSync('railway whoami', { stdio: 'pipe', timeout: 5000, env: railwayEnv }).toString().trim();
+        // If execSync didn't throw, token is valid
+        if (who) { railwayLoggedIn = true; railwayUser = who; }
+      } catch {} // Token invalid or expired
     }
     return jsonRes(res, { railway: hasRailway, railwayLoggedIn, railwayUser, gh: true });
   }
@@ -2330,18 +2331,18 @@ if (window.PulseOS) {
         if (!token) return jsonRes(res, { ok: false, error: 'Token fehlt' }, 400);
         const { execSync } = require('child_process');
         const railwayEnv = { ...process.env, PATH: process.env.PATH + ':/Users/chris.pohl/.bun/bin', RAILWAY_TOKEN: token };
-        // Validate token
+        // Save token first, then validate
+        fs.writeFileSync(path.join(ROOT, 'data', 'railway-token'), token.trim());
         try {
           const who = execSync('railway whoami 2>&1', { stdio: 'pipe', timeout: 10000, env: railwayEnv }).toString().trim();
-          if (who.includes('Unauthorized') || who.includes('error') || who.includes('Please')) {
-            return jsonRes(res, { ok: false, error: 'Token ungueltig. Bitte erstelle einen neuen auf railway.com/account/tokens' }, 400);
-          }
-          // Save token
-          fs.writeFileSync(path.join(ROOT, 'data', 'railway-token'), token.trim());
-          console.log('[railway] Token saved, user: ' + who);
+          // If execSync didn't throw, token is valid
+          console.log('[railway] Token saved + validated, user: ' + who);
           return jsonRes(res, { ok: true, user: who });
         } catch (e) {
-          return jsonRes(res, { ok: false, error: 'Token ungueltig: ' + (e.stderr || e.message || '').toString().split('\n')[0] }, 400);
+          // Token invalid — remove it
+          try { fs.unlinkSync(path.join(ROOT, 'data', 'railway-token')); } catch {}
+          const errMsg = (e.stderr || e.stdout || e.message || '').toString().split('\n')[0];
+          return jsonRes(res, { ok: false, error: 'Token ungueltig: ' + errMsg }, 400);
         }
       } catch (e) { return jsonRes(res, { ok: false, error: e.message }, 400); }
     });
