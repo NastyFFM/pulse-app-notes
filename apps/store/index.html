@@ -218,13 +218,15 @@ function renderMyApps(el) {
     const isHidden = a.installed === false;
     const isLocal = !a.source;
     let badge = '', badgeClass = '';
-    if (isHidden) { badge = 'Ausgeblendet'; badgeClass = 'badge-hidden'; }
-    else if (isPublished) { badge = 'Published'; badgeClass = 'badge-published'; }
+    if (isPublished) { badge = 'Published'; badgeClass = 'badge-published'; }
     else { badge = 'Nur lokal'; badgeClass = 'badge-local'; }
+    if (isHidden) { badge += ' · Ausgeblendet'; }
 
     let actions = '';
-    if (isLocal && hasGithubToken) actions += '<button class="action-btn" onclick="publishApp(\'' + esc(a.id) + '\', this)">Publishen</button>';
-    if (isPublished && hasGithubToken) actions += '<button class="action-btn" onclick="publishApp(\'' + esc(a.id) + '\', this)">Update pushen</button>';
+    // Publish / Update button (always visible)
+    if (isLocal) actions += '<button class="install-btn" onclick="publishApp(\'' + esc(a.id) + '\', this)">Publish on GitHub</button>';
+    if (isPublished) actions += '<button class="action-btn" onclick="publishApp(\'' + esc(a.id) + '\', this)">Update pushen</button>';
+    // Show/Hide/Delete
     if (a.installed !== false) {
       actions += '<button class="action-btn" onclick="hideApp(\'' + esc(a.id) + '\')">Ausblenden</button>';
       actions += '<button class="action-btn danger" onclick="deleteApp(\'' + esc(a.id) + '\', \'' + esc(a.name) + '\', ' + isPublished + ')">Loeschen</button>';
