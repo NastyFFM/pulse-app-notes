@@ -2294,10 +2294,40 @@ if (window.PulseOS) {
   // ── Deploy Status Check ──
   if (url === '/api/deploy-status' && req.method === 'GET') {
     const { execSync } = require('child_process');
-    let hasRailway = false, railwayUser = '';
+    let hasRailway = false, railwayUser = '', railwayLoggedIn = false;
     try { execSync('which railway', { stdio: 'pipe' }); hasRailway = true; } catch {}
-    if (hasRailway) { try { railwayUser = execSync('railway whoami 2>&1', { stdio: 'pipe', timeout: 5000 }).toString().trim(); } catch {} }
-    return jsonRes(res, { railway: hasRailway, railwayUser, gh: true });
+    if (hasRailway) {
+      try {
+        const who = execSync('railway whoami 2>&1', { stdio: 'pipe', timeout: 5000 }).toString().trim();
+        if (who && !who.includes('not logged') && !who.includes('error')) { railwayLoggedIn = true; railwayUser = who; }
+      } catch {}
+    }
+    return jsonRes(res, { railway: hasRailway, railwayLoggedIn, railwayUser, gh: true });
+  }
+
+  // ── Railway Setup: Install CLI ──
+  if (url === '/api/deploy-setup/install' && req.method === 'POST') {
+    const { exec } = require('child_process');
+    exec('npm i -g @railway/cli 2>&1', { timeout: 60000 }, (err, stdout, stderr) => {
+      if (err) return jsonRes(res, { ok: false, error: (stderr || err.message).substring(0, 200) }, 500);
+      jsonRes(res, { ok: true, output: stdout.substring(0, 200) });
+    });
+    return;
+  }
+
+  // ── Railway Setup: Login (opens browser) ──
+  if (url === '/api/deploy-setup/login' && req.method === 'POST') {
+    const { exec } = require('child_process');
+    exec('railway login --browserless 2>&1', { timeout: 120000 }, (err, stdout) => {
+      // browserless returns a URL the user must visit
+      if (stdout && stdout.includes('http')) {
+        const urlMatch = stdout.match(/https?:\/\/[^\s]+/);
+        return jsonRes(res, { ok: true, loginUrl: urlMatch ? urlMatch[0] : null, output: stdout.substring(0, 300) });
+      }
+      if (err) return jsonRes(res, { ok: false, error: (err.message || '').substring(0, 200) }, 500);
+      jsonRes(res, { ok: true, output: (stdout || '').substring(0, 200) });
+    });
+    return;
   }
 
   // ── App Deploy (Railway via gh + railway CLI) ──

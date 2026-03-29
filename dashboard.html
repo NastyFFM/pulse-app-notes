@@ -2166,9 +2166,24 @@ async function sendEdit(winId) {
   }
 }
 
-function toggleEnvVars(winId) {
+async function toggleEnvVars(winId) {
   const el = document.getElementById('edit-env-' + winId);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (!el) return;
+  const isHidden = el.style.display === 'none';
+  el.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) {
+    // Load existing env vars
+    const panel = document.getElementById('edit-' + winId);
+    const appId = panel?.dataset.appid;
+    if (appId) {
+      try {
+        const env = await AppActions.getEnv(appId);
+        const txt = Object.entries(env).map(([k, v]) => k + '=' + v).join('\n');
+        const textarea = document.getElementById('edit-envtxt-' + winId);
+        if (textarea && txt) textarea.value = txt;
+      } catch {}
+    }
+  }
 }
 
 async function saveEnvVars(appId, winId) {
@@ -2179,7 +2194,10 @@ async function saveEnvVars(appId, winId) {
     if (eq > 0) vars[line.substring(0, eq).trim()] = line.substring(eq + 1).trim();
   });
   try {
-    await fetch('/api/apps/' + appId + '/env', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(vars) });
+    await AppActions.setEnv(appId, vars);
+    // Show confirmation
+    const btn = document.getElementById('edit-env-' + winId)?.querySelector('button');
+    if (btn) { btn.textContent = '✅ Gespeichert'; setTimeout(() => { btn.textContent = 'Speichern'; }, 1500); }
   } catch {}
 }
 
