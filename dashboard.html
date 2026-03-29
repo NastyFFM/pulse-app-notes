@@ -998,6 +998,7 @@ body {
 .edit-input input:focus { border-color:var(--teal); }
 .edit-input button { background:var(--teal); color:#000; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:700; }
 .edit-spinner { text-align:center; padding:8px; color:var(--teal); font-size:10px; }
+.edit-app-actions { display:flex; gap:4px; padding:6px 8px; border-top:1px solid var(--border); flex-wrap:wrap; }
 
 /* Resize handles */
 .resize-handle { position: absolute; z-index: 10; }
@@ -1995,9 +1996,9 @@ function openApp(app, opts) {
       '<div class="edit-msgs" id="edit-msgs-' + winId + '"><div class="edit-welcome">Was moechtest du aendern?</div></div>' +
       '<div class="edit-controls">' +
         '<select class="edit-template" id="edit-tpl-' + winId + '"><option value="frontend">PulseOS Frontend</option><option value="nextjs-railway">Next.js + Railway</option></select>' +
-        '<button class="edit-action-btn" onclick="deployApp(\'' + app.id + '\',\'' + winId + '\')" id="edit-deploy-' + winId + '" style="display:none;">🚀 Deploy</button>' +
         '<button class="edit-action-btn" onclick="toggleEnvVars(\'' + winId + '\')">⚙ Env</button>' +
       '</div>' +
+      '<div class="edit-app-actions" id="edit-actions-' + winId + '"></div>' +
       '<div class="edit-envvars" id="edit-env-' + winId + '" style="display:none;"><textarea id="edit-envtxt-' + winId + '" placeholder="KEY=value (eine pro Zeile)" spellcheck="false"></textarea><button onclick="saveEnvVars(\'' + app.id + '\',\'' + winId + '\')">Speichern</button></div>' +
       '<div class="edit-input"><input type="text" id="edit-inp-' + winId + '" placeholder="Beschreibe die Aenderung..." onkeydown="if(event.key===\'Enter\')sendEdit(\'' + winId + '\')"><button onclick="sendEdit(\'' + winId + '\')">↑</button></div>' +
     '</div>' +
@@ -2040,18 +2041,25 @@ function editWin(winId) {
   if (!panel) return;
   const isOpen = panel.style.display !== 'none';
   panel.style.display = isOpen ? 'none' : 'flex';
-  // Show deploy button for Next.js template
-  const tpl = document.getElementById('edit-tpl-' + winId);
-  const deployBtn = document.getElementById('edit-deploy-' + winId);
-  if (tpl && deployBtn) {
-    tpl.onchange = () => { deployBtn.style.display = tpl.value === 'nextjs-railway' ? 'inline-block' : 'none'; };
-  }
   if (!isOpen) {
-    // Load existing edit chat history
     const appId = panel.dataset.appid;
     loadEditChat(winId, appId);
+    renderEditActions(winId, appId);
     document.getElementById('edit-inp-' + winId)?.focus();
   }
+}
+
+function renderEditActions(winId, appId) {
+  const el = document.getElementById('edit-actions-' + winId);
+  if (!el || !window.AppActions) return;
+  const app = (state?.apps || []).find(a => a.id === appId);
+  if (!app) return;
+  // Set up callback to refresh after action
+  AppActions._onUpdate = async (id, action) => {
+    await load(); render(); renderLauncher();
+    renderEditActions(winId, appId); // Re-render buttons
+  };
+  el.innerHTML = AppActions.renderButtons(app, { showDeploy: true });
 }
 
 async function loadEditChat(winId, appId) {
@@ -4149,6 +4157,7 @@ function showToast(msg, type) {
 </script>
 
 <!-- ═══ WebRTC Bridge Host ═══ -->
+<script src="/app-actions.js"></script>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
 (function() {

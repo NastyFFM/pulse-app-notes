@@ -1642,6 +1642,12 @@ const server = http.createServer(async (req, res) => {
     if (fs.existsSync(css)) { res.writeHead(200, { 'Content-Type': 'text/css', 'Cache-Control': 'no-cache' }); return res.end(fs.readFileSync(css)); }
     res.writeHead(404); return res.end('Not found');
   }
+  // Serve app-actions.js (shared module for Store + Editor)
+  if (req.method === 'GET' && url === '/app-actions.js') {
+    const f = path.join(ROOT, 'app-actions.js');
+    if (fs.existsSync(f)) { res.writeHead(200, { 'Content-Type': 'application/javascript', 'Cache-Control': 'no-cache' }); return res.end(fs.readFileSync(f)); }
+    res.writeHead(404); return res.end('Not found');
+  }
   // Serve widget assets (JS/CSS)
   const widgetAssetMatch = url.match(/^\/widgets\/([a-z0-9_-]+\.(js|css))$/);
   if (req.method === 'GET' && widgetAssetMatch) {

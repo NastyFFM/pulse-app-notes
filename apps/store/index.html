@@ -74,6 +74,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:var(-
   <button onclick="addSource()">+ Quelle</button>
 </div>
 
+<script src="/app-actions.js"></script>
 <script>
 let catalog = { sources: [] };
 let installedApps = [];
@@ -199,37 +200,22 @@ function renderMyApps(el) {
   }
   let html = '<div class="app-grid">';
   myApps.forEach(a => {
-    const isPublished = !!a.source;
-    const isHidden = a.installed === false;
-    const isLocal = !a.source;
-    let badge = '', badgeClass = '';
-    if (isPublished) { badge = 'Published'; badgeClass = 'badge-published'; }
-    else { badge = 'Nur lokal'; badgeClass = 'badge-local'; }
-    if (isHidden) { badge += ' · Ausgeblendet'; }
-
-    let actions = '';
-    // Open button (always first)
-    if (a.installed !== false) actions += '<button class="action-btn" onclick="window.parent.postMessage({type:\'open-app\',appId:\'' + esc(a.id) + '\'},\'*\')">Oeffnen</button>';
-    // Publish / Update button (always visible)
-    if (isLocal) actions += '<button class="install-btn" onclick="publishApp(\'' + esc(a.id) + '\', this)">Publish on GitHub</button>';
-    if (isPublished) actions += '<button class="action-btn" onclick="publishApp(\'' + esc(a.id) + '\', this)">Update pushen</button>';
-    // Show/Hide/Delete
-    if (a.installed !== false) {
-      actions += '<button class="action-btn" onclick="hideApp(\'' + esc(a.id) + '\')">Ausblenden</button>';
-      actions += '<button class="action-btn danger" onclick="deleteApp(\'' + esc(a.id) + '\', \'' + esc(a.name) + '\', ' + isPublished + ')">Loeschen</button>';
-    } else {
-      actions += '<button class="action-btn" onclick="unhideApp(\'' + esc(a.id) + '\')">Wieder anzeigen</button>';
-      if (isPublished) actions += '<button class="action-btn" onclick="reinstallApp(\'' + esc(a.source) + '\', this)">Von GitHub installieren</button>';
-    }
-    if (isPublished) actions += '<button class="action-btn danger" onclick="deleteRemote(\'' + esc(a.id) + '\', \'' + esc(a.name) + '\')">Von GitHub loeschen</button>';
-
+    const status = AppActions.getStatus(a);
+    const actions = AppActions.renderButtons(a, {
+      onOpen: 'openAppInPulse',
+      showDeploy: true
+    });
     html += '<div class="app-card"><div class="app-icon" style="background:' + esc(a.color || '#1a2a3a') + ';">' + esc(a.icon || '?') + '</div>' +
-      '<div class="app-info"><div class="app-name">' + esc(a.name || a.id) + ' <span class="status-badge ' + badgeClass + '">' + badge + '</span></div>' +
+      '<div class="app-info"><div class="app-name">' + esc(a.name || a.id) + ' <span class="status-badge ' + status.badgeClass + '">' + status.badge + '</span></div>' +
       '<div class="app-desc">' + esc(a.description || '') + '</div>' +
       '<div class="app-actions" style="flex-wrap:wrap;">' + actions + '</div></div></div>';
   });
   html += '</div>';
   el.innerHTML = html;
+}
+
+function openAppInPulse(appId) {
+  window.parent.postMessage({ type: 'open-app', appId }, '*');
 }
 
 function appCard(app) {
@@ -285,77 +271,13 @@ async function addSource() {
   refreshAll();
 }
 
-async function publishApp(appId, btn) {
-  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
-  try {
-    const r = await fetch('/api/apps/' + appId + '/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-    const d = await r.json();
-    if (d.ok) {
-      if (btn) btn.textContent = '✅';
-      // Update local data
-      const app = allAppsData.find(a => a.id === appId);
-      if (app) { app.source = d.url; app.publishedAt = new Date().toISOString(); }
-      setTimeout(() => render(), 1000);
-    } else {
-      alert(d.error || 'Fehler beim Publishen');
-      if (btn) { btn.textContent = 'Publishen'; btn.disabled = false; }
-    }
-  } catch (e) { alert('Fehler: ' + e.message); if (btn) { btn.textContent = 'Publishen'; btn.disabled = false; } }
-}
-
-async function hideApp(appId) {
-  await fetch('/api/apps/' + appId + '/hide', { method: 'POST' });
-  const app = allAppsData.find(a => a.id === appId);
-  if (app) app.installed = false;
+// App lifecycle actions use shared AppActions module
+// Set up callback to refresh UI after any action
+AppActions._onUpdate = async function(appId, action) {
+  // Reload apps data
+  try { const r = await fetch('/api/apps'); const d = await r.json(); allAppsData = d.apps || []; installedApps = allAppsData.map(a => a.id); } catch {}
   render();
-}
-
-async function unhideApp(appId) {
-  await fetch('/api/apps/' + appId + '/unhide', { method: 'POST' });
-  const app = allAppsData.find(a => a.id === appId);
-  if (app) app.installed = true;
-  render();
-}
-
-async function deleteApp(appId, appName, isPublished) {
-  const msg = isPublished
-    ? 'App "' + appName + '" lokal loeschen? (Bleibt auf GitHub, kann reinstalliert werden)'
-    : 'App "' + appName + '" endgueltig loeschen? (Nicht wiederherstellbar!)';
-  if (!confirm(msg)) return;
-  await fetch('/api/apps/uninstall', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: appId }) });
-  allAppsData = allAppsData.filter(a => a.id !== appId);
-  installedApps = installedApps.filter(id => id !== appId);
-  render();
-}
-
-async function deleteRemote(appId, appName) {
-  if (!confirm('GitHub Repo "pulse-app-' + appId + '" wirklich loeschen?')) return;
-  try {
-    const r = await fetch('/api/apps/' + appId + '/delete-remote', { method: 'POST' });
-    const d = await r.json();
-    if (d.ok) {
-      const app = allAppsData.find(a => a.id === appId);
-      if (app) { delete app.source; delete app.publishedAt; }
-      render();
-    } else { alert(d.error || 'Fehler'); }
-  } catch (e) { alert('Fehler: ' + e.message); }
-}
-
-async function reinstallApp(sourceUrl, btn) {
-  if (!sourceUrl) return;
-  btn.disabled = true; btn.textContent = '⏳';
-  const repo = sourceUrl.replace('https://github.com/', '');
-  try {
-    const r = await fetch('/api/apps/install', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: sourceUrl }) });
-    const d = await r.json();
-    if (d.ok) {
-      btn.textContent = '✅';
-      // Reload apps
-      try { const ar = await fetch('/api/apps'); const ad = await ar.json(); allAppsData = ad.apps || []; installedApps = allAppsData.map(a => a.id); } catch {}
-      setTimeout(() => render(), 500);
-    } else { btn.textContent = d.error || 'Fehler'; setTimeout(() => { btn.textContent = 'Installieren'; btn.disabled = false; }, 2000); }
-  } catch { btn.textContent = 'Fehler'; }
-}
+};
 
 function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
