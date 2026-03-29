@@ -245,13 +245,7 @@ const AppActions = {
           if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
           return;
         }
-        this._deployStatus = null; // Reset cache
-        const newStatus = await this.checkDeployStatus();
-        if (!newStatus.railway) {
-          alert('Railway CLI konnte nicht installiert werden. Versuche manuell: npm i -g @railway/cli');
-          if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
-          return;
-        }
+        this._deployStatus = null;
       } catch (e) {
         alert('Fehler: ' + e.message);
         if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
@@ -259,28 +253,44 @@ const AppActions = {
       }
     }
 
-    // Step 2: Login if not logged in
+    // Step 2: Token-based login
     this._deployStatus = null;
     const status2 = await this.checkDeployStatus();
     if (!status2.railwayLoggedIn) {
-      if (btn) { btn.textContent = '⏳ Railway Login...'; }
+      // Open Railway token page in browser
+      window.open('https://railway.com/account/tokens', '_blank');
+
+      // Show token input dialog
+      if (btn) { btn.textContent = '🔑 Token eingeben...'; }
+      const token = prompt(
+        '🚀 Railway Deploy einrichten\n\n' +
+        'Eine neue Seite wurde geoeffnet wo du einen API Token erstellen kannst.\n\n' +
+        'Schritte:\n' +
+        '1. Klicke auf "Create Token" auf railway.com\n' +
+        '2. Gib einen Namen ein (z.B. "PulseOS")\n' +
+        '3. Kopiere den Token\n' +
+        '4. Fuege ihn hier ein:\n'
+      );
+
+      if (!token || !token.trim()) {
+        if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
+        return;
+      }
+
+      // Save token on server
       try {
-        const r = await fetch('/api/deploy-setup/login', { method: 'POST' });
+        const r = await fetch('/api/deploy-setup/save-token', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: token.trim() })
+        });
         const d = await r.json();
-        if (d.loginUrl) {
-          // Open login URL in new tab
-          window.open(d.loginUrl, '_blank');
-          if (btn) { btn.textContent = '🔐 Login im Browser bestaetigen...'; }
-          // Poll until logged in (user completes auth in browser)
-          for (let i = 0; i < 30; i++) {
-            await new Promise(r => setTimeout(r, 3000));
-            this._deployStatus = null;
-            const s = await this.checkDeployStatus();
-            if (s.railwayLoggedIn) break;
-          }
+        if (!d.ok) {
+          alert('Token ungueltig: ' + (d.error || 'Bitte prüfe den Token'));
+          if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
+          return;
         }
       } catch (e) {
-        alert('Login Fehler: ' + e.message);
+        alert('Fehler: ' + e.message);
         if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
         return;
       }
@@ -294,7 +304,6 @@ const AppActions = {
       if (this._onUpdate) this._onUpdate(null, 'railway-setup');
     } else {
       if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
-      alert('Railway Setup nicht abgeschlossen. Bitte Login im Browser bestaetigen.');
     }
   },
 

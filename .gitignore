@@ -157,5 +157,8 @@ data/bridge-room.json
 data/agent-memory.json
 data/graphs/
 
+# Secrets
+data/railway-token
+
 # User apps (created/installed by user)
 userdata/

@@ -2295,12 +2295,16 @@ if (window.PulseOS) {
   if (url === '/api/deploy-status' && req.method === 'GET') {
     const { execSync } = require('child_process');
     let hasRailway = false, railwayUser = '', railwayLoggedIn = false;
+    const tokenFile = path.join(ROOT, 'data', 'railway-token');
+    let savedToken = '';
+    try { savedToken = fs.readFileSync(tokenFile, 'utf8').trim(); } catch {}
     const railwayEnv = { ...process.env, PATH: process.env.PATH + ':/Users/chris.pohl/.bun/bin:/usr/local/bin:/opt/homebrew/bin' };
+    if (savedToken) railwayEnv.RAILWAY_TOKEN = savedToken;
     try { execSync('which railway', { stdio: 'pipe', env: railwayEnv }); hasRailway = true; } catch {}
-    if (hasRailway) {
+    if (hasRailway && savedToken) {
       try {
         const who = execSync('railway whoami 2>&1', { stdio: 'pipe', timeout: 5000, env: railwayEnv }).toString().trim();
-        if (who && !who.includes('not logged') && !who.includes('error')) { railwayLoggedIn = true; railwayUser = who; }
+        if (who && !who.includes('Unauthorized') && !who.includes('error') && !who.includes('Please')) { railwayLoggedIn = true; railwayUser = who; }
       } catch {}
     }
     return jsonRes(res, { railway: hasRailway, railwayLoggedIn, railwayUser, gh: true });
@@ -2318,19 +2322,29 @@ if (window.PulseOS) {
     return;
   }
 
-  // ── Railway Setup: Login (opens browser) ──
-  if (url === '/api/deploy-setup/login' && req.method === 'POST') {
-    const { exec } = require('child_process');
-    exec('railway login --browserless 2>&1', { timeout: 120000 }, (err, stdout) => {
-      // browserless returns a URL the user must visit
-      if (stdout && stdout.includes('http')) {
-        const urlMatch = stdout.match(/https?:\/\/[^\s]+/);
-        return jsonRes(res, { ok: true, loginUrl: urlMatch ? urlMatch[0] : null, output: stdout.substring(0, 300) });
-      }
-      if (err) return jsonRes(res, { ok: false, error: (err.message || '').substring(0, 200) }, 500);
-      jsonRes(res, { ok: true, output: (stdout || '').substring(0, 200) });
+  // ── Railway Setup: Save Token ──
+  if (url === '/api/deploy-setup/save-token' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { token } = JSON.parse(b);
+        if (!token) return jsonRes(res, { ok: false, error: 'Token fehlt' }, 400);
+        const { execSync } = require('child_process');
+        const railwayEnv = { ...process.env, PATH: process.env.PATH + ':/Users/chris.pohl/.bun/bin', RAILWAY_TOKEN: token };
+        // Validate token
+        try {
+          const who = execSync('railway whoami 2>&1', { stdio: 'pipe', timeout: 10000, env: railwayEnv }).toString().trim();
+          if (who.includes('Unauthorized') || who.includes('error') || who.includes('Please')) {
+            return jsonRes(res, { ok: false, error: 'Token ungueltig. Bitte erstelle einen neuen auf railway.com/account/tokens' }, 400);
+          }
+          // Save token
+          fs.writeFileSync(path.join(ROOT, 'data', 'railway-token'), token.trim());
+          console.log('[railway] Token saved, user: ' + who);
+          return jsonRes(res, { ok: true, user: who });
+        } catch (e) {
+          return jsonRes(res, { ok: false, error: 'Token ungueltig: ' + (e.stderr || e.message || '').toString().split('\n')[0] }, 400);
+        }
+      } catch (e) { return jsonRes(res, { ok: false, error: e.message }, 400); }
     });
-    return;
   }
 
   // ── App Deploy (Railway via gh + railway CLI) ──
@@ -2344,11 +2358,19 @@ if (window.PulseOS) {
     const appDir = resolveAppDir(appId);
     const { execSync } = require('child_process');
 
-    // Check Railway CLI first
+    // Check Railway CLI + Token
+    const tokenFile = path.join(ROOT, 'data', 'railway-token');
+    let railwayToken = '';
+    try { railwayToken = fs.readFileSync(tokenFile, 'utf8').trim(); } catch {}
+    const railwayEnv = { ...process.env, PATH: process.env.PATH + ':/Users/chris.pohl/.bun/bin:/usr/local/bin:/opt/homebrew/bin' };
+    if (railwayToken) railwayEnv.RAILWAY_TOKEN = railwayToken;
     let hasRailway = false;
-    try { execSync('which railway', { stdio: 'pipe' }); hasRailway = true; } catch {}
+    try { execSync('which railway', { stdio: 'pipe', env: railwayEnv }); hasRailway = true; } catch {}
     if (!hasRailway) {
-      return jsonRes(res, { error: 'Railway CLI nicht installiert. Installiere mit: npm i -g @railway/cli && railway login' }, 400);
+      return jsonRes(res, { error: 'Railway CLI nicht installiert. Klicke "Deploy einrichten" um es zu installieren.' }, 400);
+    }
+    if (!railwayToken) {
+      return jsonRes(res, { error: 'Railway Token fehlt. Klicke "Deploy einrichten" um dich anzumelden.' }, 400);
     }
 
     try {
@@ -2375,11 +2397,11 @@ if (window.PulseOS) {
         }
       }
 
-      // 2. Railway deploy
+      // 2. Railway deploy (with token env)
       let railwayUrl = '';
       try {
-        execSync('cd ' + appDir + ' && railway link 2>/dev/null || true', { stdio: 'pipe', timeout: 15000 });
-        const output = execSync('cd ' + appDir + ' && railway up --detach 2>&1', { stdio: 'pipe', timeout: 60000 }).toString();
+        execSync('cd ' + appDir + ' && railway link 2>/dev/null || true', { stdio: 'pipe', timeout: 15000, env: railwayEnv });
+        const output = execSync('cd ' + appDir + ' && railway up --detach 2>&1', { stdio: 'pipe', timeout: 60000, env: railwayEnv }).toString();
         const urlMatch = output.match(/https?:\/\/[^\s]+\.railway\.app[^\s]*/);
         if (urlMatch) railwayUrl = urlMatch[0];
       } catch (e) {
@@ -2394,7 +2416,7 @@ if (window.PulseOS) {
         try {
           const envContent = fs.readFileSync(envFile, 'utf8');
           envContent.split('\n').filter(l => l.includes('=')).forEach(line => {
-            try { execSync('cd ' + appDir + ' && railway variables set "' + line.trim() + '" 2>/dev/null', { stdio: 'pipe', timeout: 10000 }); } catch {}
+            try { execSync('cd ' + appDir + ' && railway variables set "' + line.trim() + '" 2>/dev/null', { stdio: 'pipe', timeout: 10000, env: railwayEnv }); } catch {}
           });
         } catch {}
       }
