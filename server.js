@@ -2302,11 +2302,11 @@ if (window.PulseOS) {
     if (savedToken) railwayEnv.RAILWAY_TOKEN = savedToken;
     try { execSync('which railway', { stdio: 'pipe', env: railwayEnv }); hasRailway = true; } catch {}
     if (hasRailway && savedToken) {
+      railwayLoggedIn = true; // Token exists = consider logged in
       try {
         const who = execSync('railway whoami', { stdio: 'pipe', timeout: 5000, env: railwayEnv }).toString().trim();
-        // If execSync didn't throw, token is valid
-        if (who) { railwayLoggedIn = true; railwayUser = who; }
-      } catch {} // Token invalid or expired
+        if (who) railwayUser = who;
+      } catch {} // whoami might fail for project-scoped tokens, still ok
     }
     return jsonRes(res, { railway: hasRailway, railwayLoggedIn, railwayUser, gh: true });
   }
@@ -2331,19 +2331,17 @@ if (window.PulseOS) {
         if (!token) return jsonRes(res, { ok: false, error: 'Token fehlt' }, 400);
         const { execSync } = require('child_process');
         const railwayEnv = { ...process.env, PATH: process.env.PATH + ':/Users/chris.pohl/.bun/bin', RAILWAY_TOKEN: token };
-        // Save token first, then validate
+        // Always save token — validate optionally
         fs.writeFileSync(path.join(ROOT, 'data', 'railway-token'), token.trim());
+        let valid = false, who = '';
         try {
-          const who = execSync('railway whoami 2>&1', { stdio: 'pipe', timeout: 10000, env: railwayEnv }).toString().trim();
-          // If execSync didn't throw, token is valid
-          console.log('[railway] Token saved + validated, user: ' + who);
-          return jsonRes(res, { ok: true, user: who });
+          who = execSync('railway whoami', { stdio: 'pipe', timeout: 10000, env: railwayEnv }).toString().trim();
+          valid = true;
         } catch (e) {
-          // Token invalid — remove it
-          try { fs.unlinkSync(path.join(ROOT, 'data', 'railway-token')); } catch {}
-          const errMsg = (e.stderr || e.stdout || e.message || '').toString().split('\n')[0];
-          return jsonRes(res, { ok: false, error: 'Token ungueltig: ' + errMsg }, 400);
+          who = (e.stderr || e.stdout || e.message || '').toString().substring(0, 100);
         }
+        console.log('[railway] Token saved, valid=' + valid + ', who=' + who);
+        return jsonRes(res, { ok: true, valid, user: valid ? who : '' });
       } catch (e) { return jsonRes(res, { ok: false, error: e.message }, 400); }
     });
   }

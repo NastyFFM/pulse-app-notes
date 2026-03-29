@@ -278,6 +278,7 @@ const AppActions = {
       }
 
       // Save token on server
+      if (btn) { btn.textContent = '⏳ Token pruefen...'; }
       try {
         const r = await fetch('/api/deploy-setup/save-token', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -285,9 +286,15 @@ const AppActions = {
         });
         const d = await r.json();
         if (!d.ok) {
-          alert('Token ungueltig: ' + (d.error || 'Bitte prüfe den Token'));
+          alert('Fehler: ' + (d.error || 'Konnte Token nicht speichern'));
           if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
           return;
+        }
+        // Token saved successfully
+        if (d.valid) {
+          if (btn) { btn.textContent = '✅ Railway bereit! (' + (d.user || 'OK') + ')'; }
+        } else {
+          if (btn) { btn.textContent = '✅ Token gespeichert'; }
         }
       } catch (e) {
         alert('Fehler: ' + e.message);
@@ -296,15 +303,11 @@ const AppActions = {
       }
     }
 
-    // Step 3: Check final status
+    // Refresh status + re-render all buttons
     this._deployStatus = null;
-    const final = await this.checkDeployStatus();
-    if (final.railway && final.railwayLoggedIn) {
-      if (btn) { btn.textContent = '✅ Railway bereit!'; btn.disabled = false; }
-      if (this._onUpdate) this._onUpdate(null, 'railway-setup');
-    } else {
-      if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
-    }
+    await this.checkDeployStatus();
+    if (btn) { btn.disabled = false; }
+    if (this._onUpdate) this._onUpdate(null, 'railway-setup');
   },
 
   async _uiInstall(sourceUrl, btn) {
