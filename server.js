@@ -2265,30 +2265,110 @@ if (window.PulseOS) {
   }
 
   // ── App Env Vars ──
-  if (url.match(/^\/api\/apps\/[^/]+\/env$/) && req.method === 'PUT') {
-    const appId = url.split('/')[3];
-    return readBody(req, b => {
-      try {
-        const vars = JSON.parse(b);
-        const envFile = path.join(resolveAppDir(appId), '.env');
-        const lines = Object.entries(vars).map(([k, v]) => k + '=' + v).join('\n');
-        fs.writeFileSync(envFile, lines);
-        jsonRes(res, { ok: true });
-      } catch (e) { jsonRes(res, { error: e.message }, 400); }
-    });
-  }
-  if (url.match(/^\/api\/apps\/[^/]+\/env$/) && req.method === 'GET') {
-    const appId = url.split('/')[3];
-    const envFile = path.join(resolveAppDir(appId), '.env');
+  // ── Global Env Vars (data/.env) ──
+  const globalEnvFile = path.join(ROOT, 'data', '.env');
+  function readGlobalEnv() {
     const vars = {};
     try {
-      const content = fs.readFileSync(envFile, 'utf8');
-      content.split('\n').forEach(line => {
+      fs.readFileSync(globalEnvFile, 'utf8').split('\n').forEach(line => {
+        if (line.startsWith('#') || !line.includes('=')) return;
         const eq = line.indexOf('=');
         if (eq > 0) vars[line.substring(0, eq).trim()] = line.substring(eq + 1).trim();
       });
     } catch {}
-    return jsonRes(res, vars);
+    return vars;
+  }
+  function writeGlobalEnv(vars) {
+    // Group by prefix for readability
+    const groups = {};
+    Object.entries(vars).forEach(([k, v]) => {
+      const prefix = k.split('_')[0] || 'OTHER';
+      if (!groups[prefix]) groups[prefix] = [];
+      groups[prefix].push(k + '=' + v);
+    });
+    const lines = Object.entries(groups).map(([prefix, entries]) => '# ' + prefix + '\n' + entries.join('\n')).join('\n\n');
+    fs.writeFileSync(globalEnvFile, lines + '\n');
+  }
+
+  if (url === '/api/env' && req.method === 'GET') {
+    return jsonRes(res, readGlobalEnv());
+  }
+  if (url === '/api/env' && req.method === 'PUT') {
+    return readBody(req, b => {
+      try {
+        const newVars = JSON.parse(b);
+        const existing = readGlobalEnv();
+        Object.assign(existing, newVars);
+        // Remove empty values
+        Object.keys(existing).forEach(k => { if (!existing[k]) delete existing[k]; });
+        writeGlobalEnv(existing);
+        jsonRes(res, { ok: true, count: Object.keys(existing).length });
+      } catch (e) { jsonRes(res, { error: e.message }, 400); }
+    });
+  }
+  // Per-app env: redirect to global env (backward compat)
+  if (url.match(/^\/api\/apps\/[^/]+\/env$/) && (req.method === 'GET' || req.method === 'PUT')) {
+    if (req.method === 'GET') return jsonRes(res, readGlobalEnv());
+    return readBody(req, b => {
+      try {
+        const newVars = JSON.parse(b);
+        const existing = readGlobalEnv();
+        Object.assign(existing, newVars);
+        Object.keys(existing).forEach(k => { if (!existing[k]) delete existing[k]; });
+        writeGlobalEnv(existing);
+        jsonRes(res, { ok: true });
+      } catch (e) { jsonRes(res, { error: e.message }, 400); }
+    });
+  }
+
+  // ── Tech-Stack Registry + Status ──
+  if (url === '/api/stacks' && req.method === 'GET') {
+    const stacksFile = path.join(ROOT, 'data', 'tech-stacks.json');
+    const stacks = safeReadJSON(stacksFile, '{"stacks":[]}');
+    return jsonRes(res, stacks);
+  }
+  if (url === '/api/stacks/status' && req.method === 'GET') {
+    const stacksFile = path.join(ROOT, 'data', 'tech-stacks.json');
+    const stacks = safeReadJSON(stacksFile, '{"stacks":[]}');
+    const env = readGlobalEnv();
+    const { execSync } = require('child_process');
+    const extPath = process.env.PATH + ':/Users/chris.pohl/.bun/bin:/usr/local/bin:/opt/homebrew/bin';
+    const status = (stacks.stacks || []).map(s => {
+      const hasKeys = (s.requiredEnvVars || []).every(v => !!env[v]);
+      const missingKeys = (s.requiredEnvVars || []).filter(v => !env[v]);
+      let hasCli = true;
+      if (s.cliBinary) { try { execSync('which ' + s.cliBinary, { stdio: 'pipe', env: { ...process.env, PATH: extPath } }); } catch { hasCli = false; } }
+      return { id: s.id, name: s.name, icon: s.icon, ready: hasKeys && hasCli, hasKeys, hasCli, missingKeys };
+    });
+    return jsonRes(res, { stacks: status });
+  }
+  // Save a key for a specific stack (user gives only the value, we set the variable name)
+  if (url === '/api/stacks/save-key' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { envVar, value } = JSON.parse(b);
+        if (!envVar || !value) return jsonRes(res, { error: 'envVar and value required' }, 400);
+        const env = readGlobalEnv();
+        env[envVar] = value.trim();
+        writeGlobalEnv(env);
+        jsonRes(res, { ok: true, envVar });
+      } catch (e) { jsonRes(res, { error: e.message }, 400); }
+    });
+  }
+  // Install CLI tool for a stack
+  if (url === '/api/stacks/install-cli' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { command } = JSON.parse(b);
+        if (!command) return jsonRes(res, { error: 'command required' }, 400);
+        const { exec } = require('child_process');
+        exec(command + ' 2>&1', { timeout: 60000, env: { ...process.env, PATH: process.env.PATH + ':/Users/chris.pohl/.bun/bin' } }, (err, stdout, stderr) => {
+          if (err) return jsonRes(res, { ok: false, error: (stderr || err.message).substring(0, 200) }, 500);
+          jsonRes(res, { ok: true, output: stdout.substring(0, 200) });
+        });
+      } catch (e) { jsonRes(res, { error: e.message }, 400); }
+    });
+    return;
   }
 
   // ── Deploy Status Check ──

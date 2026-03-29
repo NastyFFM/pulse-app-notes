@@ -1977,7 +1977,8 @@ function openApp(app, opts) {
   w.style.top = (80 + openWindows.filter(x => !x.closed).length * 30) + 'px';
   w.style.zIndex = ++nextZ;
 
-  const iframeSrc = contextId ? '/app/' + app.id + '/?contextId=' + contextId : '/app/' + app.id + '/';
+  // Use deployedUrl if available (external deployed app), fallback to local
+  const iframeSrc = app.deployedUrl ? app.deployedUrl : (contextId ? '/app/' + app.id + '/?contextId=' + contextId : '/app/' + app.id + '/');
   const displayName = titleSuffix ? app.name + ' — ' + titleSuffix : app.name;
 
   w.innerHTML =

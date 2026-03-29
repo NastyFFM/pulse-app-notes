@@ -119,13 +119,9 @@ const AppActions = {
       html += '<button class="action-btn" onclick="' + prefix + '._uiPublish(\'' + id + '\', this)">Update pushen</button>';
     }
 
-    // Deploy (Railway)
+    // Deploy
     if (opts.showDeploy) {
-      if (this._deployStatus?.railway && this._deployStatus?.railwayLoggedIn) {
-        html += '<button class="action-btn" onclick="' + prefix + '._uiDeploy(\'' + id + '\', this)">🚀 Deploy</button>';
-      } else {
-        html += '<button class="action-btn" onclick="' + prefix + '._uiSetupRailway(this)">🚀 Deploy einrichten</button>';
-      }
+      html += '<button class="action-btn" onclick="' + prefix + '._uiSmartDeploy(\'' + id + '\', this)">🚀 Deploy</button>';
     }
 
     // Hide / Unhide
@@ -229,6 +225,103 @@ const AppActions = {
     } else {
       alert(d.error || 'Fehler');
     }
+  },
+
+  // Smart Deploy: checks stacks, runs onboarding if needed, then deploys
+  async _uiSmartDeploy(appId, btn) {
+    // 1. Check which stacks are ready
+    let stackStatus;
+    try { const r = await fetch('/api/stacks/status'); stackStatus = await r.json(); } catch { stackStatus = { stacks: [] }; }
+    const railway = (stackStatus.stacks || []).find(s => s.id === 'railway');
+
+    // 2. If Railway not ready → run onboarding
+    if (!railway || !railway.ready) {
+      await this.onboardStack('railway', btn);
+      // Re-check
+      try { const r = await fetch('/api/stacks/status'); stackStatus = await r.json(); } catch {}
+      const railwayNow = (stackStatus.stacks || []).find(s => s.id === 'railway');
+      if (!railwayNow?.ready) {
+        if (btn) { btn.textContent = '🚀 Deploy'; btn.disabled = false; }
+        return;
+      }
+    }
+
+    // 3. Deploy
+    await this._uiDeploy(appId, btn);
+  },
+
+  // Generic stack onboarding wizard
+  async onboardStack(stackId, btn) {
+    // Load stack definition
+    let stacks;
+    try { const r = await fetch('/api/stacks'); stacks = await r.json(); } catch { return; }
+    const stack = (stacks.stacks || []).find(s => s.id === stackId);
+    if (!stack) { alert('Stack "' + stackId + '" nicht gefunden'); return; }
+
+    if (btn) { btn.disabled = true; btn.textContent = stack.icon + ' ' + stack.name + ' einrichten...'; }
+
+    for (const step of (stack.onboarding || [])) {
+      if (step.auto && step.command) {
+        // Auto-install CLI
+        if (btn) { btn.textContent = '⏳ ' + step.title + '...'; }
+        try {
+          const r = await fetch('/api/stacks/install-cli', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: step.command }) });
+          const d = await r.json();
+          if (!d.ok) { alert(step.title + ' fehlgeschlagen: ' + (d.error || '')); if (btn) { btn.textContent = '🚀 Deploy'; btn.disabled = false; } return; }
+        } catch (e) { alert('Fehler: ' + e.message); if (btn) { btn.textContent = '🚀 Deploy'; btn.disabled = false; } return; }
+        continue;
+      }
+
+      if (step.step === 'account') {
+        // Open account page
+        window.open(step.url, '_blank');
+        const ready = confirm(stack.icon + ' ' + step.title + '\n\n' + step.instruction + '\n\nKlicke OK wenn du fertig bist.');
+        if (!ready) { if (btn) { btn.textContent = '🚀 Deploy'; btn.disabled = false; } return; }
+        continue;
+      }
+
+      if (step.step === 'token' && step.envVar) {
+        // Check if key already exists
+        try {
+          const env = await fetch('/api/env').then(r => r.json());
+          if (env[step.envVar]) continue; // Already have this key
+        } catch {}
+
+        // Open URL + prompt for key
+        if (step.url) window.open(step.url, '_blank');
+        const value = prompt(
+          stack.icon + ' ' + step.title + '\n\n' +
+          step.instruction + '\n\n' +
+          'Einfuegen:'
+        );
+        if (!value || !value.trim()) { if (btn) { btn.textContent = '🚀 Deploy'; btn.disabled = false; } return; }
+
+        // Save key
+        try {
+          await fetch('/api/stacks/save-key', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ envVar: step.envVar, value: value.trim() }) });
+        } catch {}
+        continue;
+      }
+
+      if (step.step === 'project') {
+        window.open(step.url, '_blank');
+        confirm(stack.icon + ' ' + step.title + '\n\n' + step.instruction + '\n\nKlicke OK wenn du fertig bist.');
+        continue;
+      }
+    }
+
+    if (btn) { btn.textContent = '✅ ' + stack.name + ' bereit!'; }
+    // Also save Railway token to legacy file for backward compat
+    if (stackId === 'railway') {
+      try {
+        const env = await fetch('/api/env').then(r => r.json());
+        if (env.RAILWAY_TOKEN) {
+          await fetch('/api/deploy-setup/save-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: env.RAILWAY_TOKEN }) });
+        }
+      } catch {}
+    }
+    this._deployStatus = null;
+    if (this._onUpdate) this._onUpdate(null, 'stack-setup');
   },
 
   async _uiSetupRailway(btn) {

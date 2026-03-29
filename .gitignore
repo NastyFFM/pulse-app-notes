@@ -158,6 +158,7 @@ data/agent-memory.json
 data/graphs/
 
 # Secrets
+data/.env
 data/railway-token
 
 # User apps (created/installed by user)

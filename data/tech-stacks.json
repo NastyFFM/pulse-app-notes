@@ -1,0 +1,129 @@
+{
+  "stacks": [
+    {
+      "id": "railway",
+      "name": "Railway",
+      "icon": "🚂",
+      "description": "Node.js/Next.js App Hosting",
+      "requiredEnvVars": ["RAILWAY_TOKEN"],
+      "cliTool": "@railway/cli",
+      "cliBinary": "railway",
+      "cliCheck": "railway whoami",
+      "onboarding": [
+        {
+          "step": "account",
+          "title": "Railway Account erstellen",
+          "url": "https://railway.com/login",
+          "instruction": "Erstelle einen Account oder logge dich ein bei Railway."
+        },
+        {
+          "step": "token",
+          "title": "API Token erstellen",
+          "url": "https://railway.com/account/tokens",
+          "instruction": "Klicke 'Create Token', gib einen Namen ein (z.B. PulseOS), kopiere den Token.",
+          "envVar": "RAILWAY_TOKEN",
+          "placeholder": "Token hier einfuegen..."
+        },
+        {
+          "step": "cli",
+          "title": "CLI installieren",
+          "auto": true,
+          "command": "bun install -g @railway/cli"
+        }
+      ]
+    },
+    {
+      "id": "supabase",
+      "name": "Supabase",
+      "icon": "⚡",
+      "description": "Datenbank + Auth + Realtime",
+      "requiredEnvVars": ["SUPABASE_URL", "SUPABASE_ANON_KEY"],
+      "onboarding": [
+        {
+          "step": "account",
+          "title": "Supabase Account erstellen",
+          "url": "https://supabase.com/dashboard",
+          "instruction": "Erstelle einen Account oder logge dich ein."
+        },
+        {
+          "step": "project",
+          "title": "Neues Projekt erstellen",
+          "url": "https://supabase.com/dashboard/new",
+          "instruction": "Erstelle ein neues Supabase Projekt. Wähle einen Namen und eine Region."
+        },
+        {
+          "step": "token",
+          "title": "Project URL kopieren",
+          "url": "https://supabase.com/dashboard/project/_/settings/api",
+          "instruction": "Gehe zu Settings > API. Kopiere die 'Project URL'.",
+          "envVar": "SUPABASE_URL",
+          "placeholder": "https://xxx.supabase.co"
+        },
+        {
+          "step": "token",
+          "title": "Anon Key kopieren",
+          "url": "https://supabase.com/dashboard/project/_/settings/api",
+          "instruction": "Kopiere den 'anon public' Key von der gleichen Seite.",
+          "envVar": "SUPABASE_ANON_KEY",
+          "placeholder": "eyJhbGciOi..."
+        }
+      ]
+    },
+    {
+      "id": "stripe",
+      "name": "Stripe",
+      "icon": "💳",
+      "description": "Payments + Subscriptions",
+      "requiredEnvVars": ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY"],
+      "onboarding": [
+        {
+          "step": "account",
+          "title": "Stripe Account erstellen",
+          "url": "https://dashboard.stripe.com/register",
+          "instruction": "Erstelle einen Stripe Account oder logge dich ein."
+        },
+        {
+          "step": "token",
+          "title": "Secret Key kopieren",
+          "url": "https://dashboard.stripe.com/apikeys",
+          "instruction": "Kopiere den 'Secret key' (beginnt mit sk_).",
+          "envVar": "STRIPE_SECRET_KEY",
+          "placeholder": "sk_test_..."
+        },
+        {
+          "step": "token",
+          "title": "Publishable Key kopieren",
+          "url": "https://dashboard.stripe.com/apikeys",
+          "instruction": "Kopiere den 'Publishable key' (beginnt mit pk_).",
+          "envVar": "STRIPE_PUBLISHABLE_KEY",
+          "placeholder": "pk_test_..."
+        }
+      ]
+    },
+    {
+      "id": "vercel",
+      "name": "Vercel",
+      "icon": "▲",
+      "description": "Frontend + Serverless Hosting",
+      "requiredEnvVars": ["VERCEL_TOKEN"],
+      "cliTool": "vercel",
+      "cliBinary": "vercel",
+      "onboarding": [
+        {
+          "step": "account",
+          "title": "Vercel Account erstellen",
+          "url": "https://vercel.com/signup",
+          "instruction": "Erstelle einen Vercel Account oder logge dich ein."
+        },
+        {
+          "step": "token",
+          "title": "API Token erstellen",
+          "url": "https://vercel.com/account/tokens",
+          "instruction": "Klicke 'Create Token', kopiere den Token.",
+          "envVar": "VERCEL_TOKEN",
+          "placeholder": "Token hier einfuegen..."
+        }
+      ]
+    }
+  ]
+}
