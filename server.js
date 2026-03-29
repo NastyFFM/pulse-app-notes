@@ -2258,6 +2258,103 @@ if (window.PulseOS) {
     });
   }
 
+  // ── App Env Vars ──
+  if (url.match(/^\/api\/apps\/[^/]+\/env$/) && req.method === 'PUT') {
+    const appId = url.split('/')[3];
+    return readBody(req, b => {
+      try {
+        const vars = JSON.parse(b);
+        const envFile = path.join(resolveAppDir(appId), '.env');
+        const lines = Object.entries(vars).map(([k, v]) => k + '=' + v).join('\n');
+        fs.writeFileSync(envFile, lines);
+        jsonRes(res, { ok: true });
+      } catch (e) { jsonRes(res, { error: e.message }, 400); }
+    });
+  }
+  if (url.match(/^\/api\/apps\/[^/]+\/env$/) && req.method === 'GET') {
+    const appId = url.split('/')[3];
+    const envFile = path.join(resolveAppDir(appId), '.env');
+    const vars = {};
+    try {
+      const content = fs.readFileSync(envFile, 'utf8');
+      content.split('\n').forEach(line => {
+        const eq = line.indexOf('=');
+        if (eq > 0) vars[line.substring(0, eq).trim()] = line.substring(eq + 1).trim();
+      });
+    } catch {}
+    return jsonRes(res, vars);
+  }
+
+  // ── App Deploy (Railway via gh + railway CLI) ──
+  if (url.match(/^\/api\/apps\/[^/]+\/deploy$/) && req.method === 'POST') {
+    const appId = url.split('/')[3];
+    const profile = safeReadJSON(path.join(ROOT, 'data', 'profile.json'), '{}');
+    const githubUser = profile.github;
+    if (!githubUser) return jsonRes(res, { error: 'GitHub Username fehlt im Profil' }, 400);
+
+    const repoName = 'pulse-app-' + appId;
+    const appDir = resolveAppDir(appId);
+    const { execSync } = require('child_process');
+
+    try {
+      // 1. Ensure published to GitHub first
+      const appsData = safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}');
+      const app = (appsData.apps || []).find(a => a.id === appId);
+      if (!app?.source) {
+        // Auto-publish first
+        execSync('cd /tmp && rm -rf .tmp-pub-' + appId + ' && mkdir .tmp-pub-' + appId);
+        execSync('cp -r ' + appDir + '/* /tmp/.tmp-pub-' + appId + '/');
+        execSync('cd /tmp/.tmp-pub-' + appId + ' && git init && git add -A && git commit -m "PulseOS deploy: ' + appId + '"', { stdio: 'pipe' });
+        try {
+          execSync('gh repo create ' + githubUser + '/' + repoName + ' --private --source /tmp/.tmp-pub-' + appId + ' --push', { stdio: 'pipe', timeout: 30000 });
+        } catch {
+          execSync('cd /tmp/.tmp-pub-' + appId + ' && git remote add origin https://github.com/' + githubUser + '/' + repoName + '.git 2>/dev/null; git push -f origin main 2>/dev/null || git push -f origin master 2>/dev/null || true', { stdio: 'pipe', timeout: 30000 });
+        }
+        execSync('rm -rf /tmp/.tmp-pub-' + appId);
+        if (app) {
+          app.source = 'https://github.com/' + githubUser + '/' + repoName;
+          app.publishedAt = new Date().toISOString();
+          fs.writeFileSync(path.join(ROOT, 'data', 'apps.json'), JSON.stringify(appsData, null, 2));
+        }
+      }
+
+      // 2. Railway deploy (if railway CLI available)
+      let railwayUrl = '';
+      try {
+        execSync('which railway', { stdio: 'pipe' });
+        // Link to GitHub repo and deploy
+        try {
+          execSync('cd ' + appDir + ' && railway link 2>/dev/null || true', { stdio: 'pipe', timeout: 15000 });
+          const output = execSync('cd ' + appDir + ' && railway up --detach 2>&1', { stdio: 'pipe', timeout: 60000 }).toString();
+          const urlMatch = output.match(/https?:\/\/[^\s]+\.railway\.app[^\s]*/);
+          if (urlMatch) railwayUrl = urlMatch[0];
+        } catch (e) {
+          console.log('[deploy] Railway deploy output:', e.message?.substring(0, 200));
+        }
+      } catch {
+        // Railway CLI not found — just push to GitHub
+        console.log('[deploy] Railway CLI not found, only pushed to GitHub');
+      }
+
+      // 3. Set env vars on Railway if available
+      const envFile = path.join(appDir, '.env');
+      if (fs.existsSync(envFile)) {
+        try {
+          const envContent = fs.readFileSync(envFile, 'utf8');
+          envContent.split('\n').filter(l => l.includes('=')).forEach(line => {
+            try { execSync('cd ' + appDir + ' && railway variables set "' + line.trim() + '" 2>/dev/null', { stdio: 'pipe', timeout: 10000 }); } catch {}
+          });
+        } catch {}
+      }
+
+      jsonRes(res, { ok: true, url: railwayUrl || 'https://github.com/' + githubUser + '/' + repoName, github: 'https://github.com/' + githubUser + '/' + repoName });
+    } catch (e) {
+      console.error('[deploy] Error:', e.message);
+      jsonRes(res, { error: 'Deploy fehlgeschlagen: ' + e.message.split('\n')[0] }, 500);
+    }
+    return;
+  }
+
   // ── App Hide (soft uninstall — remove from launcher, keep files) ──
   if (url.match(/^\/api\/apps\/[^/]+\/hide$/) && req.method === 'POST') {
     const appId = url.split('/')[3];
@@ -7383,7 +7480,7 @@ function copyInstall(repo, btn) {
   if (url === '/api/workers' && req.method === 'POST') {
     return readBody(req, b => {
       try {
-        const { task, model, maxDuration } = JSON.parse(b);
+        const { task, model, maxDuration, appId: editAppId, template, editMode } = JSON.parse(b);
         if (!task) return jsonRes(res, { error: 'task required' }, 400);
 
         const id = 'worker-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
@@ -7402,10 +7499,28 @@ function copyInstall(repo, btn) {
           createdBy: 'user'
         };
 
+        // Load template if specified
+        let templateContent = '';
+        if (template) {
+          const tplFile = path.join(ROOT, 'data', 'templates', template + '.md');
+          try { templateContent = fs.readFileSync(tplFile, 'utf8'); } catch {}
+        }
+
+        // For edit mode: add context about existing app
+        let editContext = '';
+        if (editMode && editAppId) {
+          const appDir = resolveAppDir(editAppId);
+          try {
+            const indexHtml = fs.readFileSync(path.join(appDir, 'index.html'), 'utf8');
+            editContext = '\n\nDU MODIFIZIERST EINE BESTEHENDE APP: ' + editAppId + '\nAktuelle index.html (ersten 3000 Zeichen):\n```html\n' + indexHtml.substring(0, 3000) + '\n```\nÄndere NUR was der User verlangt. Behalte den Rest bei.\n';
+          } catch {}
+        }
+
         // Build system prompt for worker
         const workerPrompt = `Du bist ein PulseOS Worker-Agent. Deine Aufgabe:
 
-${task}
+${task}${editContext}
+${templateContent ? '\n--- TEMPLATE INSTRUKTIONEN ---\n' + templateContent + '\n--- ENDE TEMPLATE ---\n' : ''}
 
 REGELN:
 - Arbeite im Verzeichnis: ${ROOT}

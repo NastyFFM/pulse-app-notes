@@ -973,12 +973,31 @@ body {
 .win-btn:hover { background: var(--border-hover); color: var(--text); }
 .win-btn.close:hover { background: var(--red); color: #fff; }
 
+.win-body { display:flex; flex:1; overflow:hidden; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
 .app-window iframe {
   flex: 1;
   border: none;
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   background: var(--bg);
 }
+
+/* Edit Panel */
+.edit-panel { width:280px; flex-shrink:0; display:flex; flex-direction:column; background:var(--bg-card); border-right:1px solid var(--border); font-size:11px; }
+.edit-msgs { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; }
+.edit-welcome { color:var(--text-dim); font-size:10px; padding:8px; text-align:center; }
+.edit-msg-user { align-self:flex-end; background:var(--teal); color:#000; padding:4px 8px; border-radius:8px 8px 2px 8px; max-width:90%; word-break:break-word; font-size:10px; }
+.edit-msg-agent { align-self:flex-start; background:var(--bg-card-hover); color:var(--text); padding:4px 8px; border-radius:8px 8px 8px 2px; max-width:90%; word-break:break-word; font-size:10px; }
+.edit-controls { display:flex; gap:4px; padding:6px 8px; border-top:1px solid var(--border); flex-wrap:wrap; }
+.edit-template { flex:1; padding:3px 4px; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:9px; }
+.edit-action-btn { background:none; border:1px solid var(--border); color:var(--text-dim); padding:3px 6px; border-radius:4px; font-size:9px; cursor:pointer; }
+.edit-action-btn:hover { border-color:var(--teal); color:var(--text); }
+.edit-envvars { padding:6px 8px; border-top:1px solid var(--border); }
+.edit-envvars textarea { width:100%; height:60px; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:9px; font-family:monospace; padding:4px; resize:none; }
+.edit-envvars button { margin-top:4px; background:var(--teal); color:#000; border:none; padding:3px 8px; border-radius:4px; font-size:9px; cursor:pointer; }
+.edit-input { display:flex; gap:4px; padding:6px 8px; border-top:1px solid var(--border); }
+.edit-input input { flex:1; padding:5px 8px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:10px; outline:none; }
+.edit-input input:focus { border-color:var(--teal); }
+.edit-input button { background:var(--teal); color:#000; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:700; }
+.edit-spinner { text-align:center; padding:8px; color:var(--teal); font-size:10px; }
 
 /* Resize handles */
 .resize-handle { position: absolute; z-index: 10; }
@@ -1971,7 +1990,19 @@ function openApp(app, opts) {
         '<button class="win-btn close" onclick="closeWin(\'' + winId + '\')" title="Close">x</button>' +
       '</div>' +
     '</div>' +
+    '<div class="win-body">' +
+    '<div class="edit-panel" id="edit-' + winId + '" style="display:none;" data-appid="' + app.id + '">' +
+      '<div class="edit-msgs" id="edit-msgs-' + winId + '"><div class="edit-welcome">Was moechtest du aendern?</div></div>' +
+      '<div class="edit-controls">' +
+        '<select class="edit-template" id="edit-tpl-' + winId + '"><option value="frontend">PulseOS Frontend</option><option value="nextjs-railway">Next.js + Railway</option></select>' +
+        '<button class="edit-action-btn" onclick="deployApp(\'' + app.id + '\',\'' + winId + '\')" id="edit-deploy-' + winId + '" style="display:none;">🚀 Deploy</button>' +
+        '<button class="edit-action-btn" onclick="toggleEnvVars(\'' + winId + '\')">⚙ Env</button>' +
+      '</div>' +
+      '<div class="edit-envvars" id="edit-env-' + winId + '" style="display:none;"><textarea id="edit-envtxt-' + winId + '" placeholder="KEY=value (eine pro Zeile)" spellcheck="false"></textarea><button onclick="saveEnvVars(\'' + app.id + '\',\'' + winId + '\')">Speichern</button></div>' +
+      '<div class="edit-input"><input type="text" id="edit-inp-' + winId + '" placeholder="Beschreibe die Aenderung..." onkeydown="if(event.key===\'Enter\')sendEdit(\'' + winId + '\')"><button onclick="sendEdit(\'' + winId + '\')">↑</button></div>' +
+    '</div>' +
     '<iframe src="' + iframeSrc + '"></iframe>' +
+    '</div>' +
     '<div class="resize-handle r" onmousedown="startResize(event,\'' + winId + '\',\'r\')" ontouchstart="startResize(event,\'' + winId + '\',\'r\')"></div>' +
     '<div class="resize-handle b" onmousedown="startResize(event,\'' + winId + '\',\'b\')" ontouchstart="startResize(event,\'' + winId + '\',\'b\')"></div>' +
     '<div class="resize-handle br" onmousedown="startResize(event,\'' + winId + '\',\'br\')" ontouchstart="startResize(event,\'' + winId + '\',\'br\')"></div>' +
@@ -2004,30 +2035,163 @@ function focusWindow(winId) {
   if (w) w.style.zIndex = ++nextZ;
 }
 
-async function editWin(winId) {
-  const win = openWindows.find(w => w.winId === winId);
-  if (!win) return;
-  const app = state.apps.find(a => a.id === win.appId);
-  if (!app) return;
+function editWin(winId) {
+  const panel = document.getElementById('edit-' + winId);
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'flex';
+  // Show deploy button for Next.js template
+  const tpl = document.getElementById('edit-tpl-' + winId);
+  const deployBtn = document.getElementById('edit-deploy-' + winId);
+  if (tpl && deployBtn) {
+    tpl.onchange = () => { deployBtn.style.display = tpl.value === 'nextjs-railway' ? 'inline-block' : 'none'; };
+  }
+  if (!isOpen) {
+    // Load existing edit chat history
+    const appId = panel.dataset.appid;
+    loadEditChat(winId, appId);
+    document.getElementById('edit-inp-' + winId)?.focus();
+  }
+}
+
+async function loadEditChat(winId, appId) {
   try {
-    const r = await fetch('/app/chat/api/chat');
-    const chatData = await r.json();
-    let existingEditChat = chatData.chats.find(c => c.appContext === win.appId);
-    if (existingEditChat) {
-      chatData.activeChat = existingEditChat.id;
-    } else {
-      const chatId = 'chat-' + Date.now();
-      chatData.chats.push({ id: chatId, title: app.name + ' anpassen', appContext: win.appId, messages: [{ id: 'msg-welcome-' + chatId, role: 'claude', text: 'Du bearbeitest **' + app.name + '** (' + win.appId + '). Was moechtest du aendern?', time: new Date().toISOString() }] });
-      chatData.activeChat = chatId;
+    const r = await fetch('/app/' + appId + '/api/edit-chat');
+    if (!r.ok) return;
+    const data = await r.json();
+    const msgs = document.getElementById('edit-msgs-' + winId);
+    if (!msgs || !data.messages || data.messages.length === 0) return;
+    msgs.innerHTML = '';
+    data.messages.forEach(m => {
+      const div = document.createElement('div');
+      div.className = m.from === 'user' ? 'edit-msg-user' : 'edit-msg-agent';
+      div.textContent = m.text;
+      msgs.appendChild(div);
+    });
+    msgs.scrollTop = msgs.scrollHeight;
+  } catch {}
+}
+
+async function sendEdit(winId) {
+  const input = document.getElementById('edit-inp-' + winId);
+  const text = input?.value.trim();
+  if (!text) return;
+  input.value = '';
+  const panel = document.getElementById('edit-' + winId);
+  const appId = panel?.dataset.appid;
+  if (!appId) return;
+  const msgs = document.getElementById('edit-msgs-' + winId);
+  const tpl = document.getElementById('edit-tpl-' + winId)?.value || 'frontend';
+
+  // Show user message
+  const userDiv = document.createElement('div');
+  userDiv.className = 'edit-msg-user';
+  userDiv.textContent = text;
+  msgs.appendChild(userDiv);
+
+  // Show spinner
+  const spinner = document.createElement('div');
+  spinner.className = 'edit-spinner';
+  spinner.textContent = '⏳ Worker arbeitet...';
+  msgs.appendChild(spinner);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Save to edit-chat history
+  const chatMsg = { from: 'user', text, time: new Date().toISOString() };
+  try {
+    const existing = await fetch('/app/' + appId + '/api/edit-chat').then(r => r.ok ? r.json() : { messages: [] }).catch(() => ({ messages: [] }));
+    existing.messages = existing.messages || [];
+    existing.messages.push(chatMsg);
+    await fetch('/app/' + appId + '/api/edit-chat', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(existing) });
+  } catch {}
+
+  // Send to worker (with template context)
+  try {
+    const r = await fetch('/api/workers', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task: 'Modifiziere die App "' + appId + '": ' + text, model: 'sonnet', appId, template: tpl, editMode: true })
+    });
+    const d = await r.json();
+    if (d.ok && d.worker) {
+      // Poll worker status
+      const workerId = d.worker.id;
+      const pollEdit = setInterval(async () => {
+        try {
+          const wr = await fetch('/api/workers/' + workerId);
+          const w = await wr.json();
+          if (w.status === 'done') {
+            clearInterval(pollEdit);
+            spinner.remove();
+            const agentDiv = document.createElement('div');
+            agentDiv.className = 'edit-msg-agent';
+            agentDiv.textContent = '✅ ' + (w.result || 'Fertig!');
+            msgs.appendChild(agentDiv);
+            msgs.scrollTop = msgs.scrollHeight;
+            // Save agent response
+            try {
+              const existing = await fetch('/app/' + appId + '/api/edit-chat').then(r => r.ok ? r.json() : { messages: [] }).catch(() => ({ messages: [] }));
+              existing.messages.push({ from: 'agent', text: w.result || 'Fertig', time: new Date().toISOString() });
+              await fetch('/app/' + appId + '/api/edit-chat', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(existing) });
+            } catch {}
+            // Reload iframe
+            const win = document.getElementById(winId);
+            const iframe = win?.querySelector('iframe');
+            if (iframe) iframe.src = iframe.src;
+          } else if (w.status === 'error') {
+            clearInterval(pollEdit);
+            spinner.remove();
+            const errDiv = document.createElement('div');
+            errDiv.className = 'edit-msg-agent';
+            errDiv.textContent = '❌ ' + (w.result || 'Fehler');
+            msgs.appendChild(errDiv);
+            msgs.scrollTop = msgs.scrollHeight;
+          }
+        } catch {}
+      }, 5000);
     }
-    await fetch('/app/chat/api/chat', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(chatData) });
-    const chatApp = state.apps.find(a => a.id === 'chat');
-    if (chatApp) {
-      const existingChat = openWindows.find(w => w.appId === 'chat' && !w.minimized && !w.closed);
-      if (existingChat) { focusWindow(existingChat.winId); const iframe = existingChat.el.querySelector('iframe'); if (iframe) iframe.src = iframe.src; }
-      else openApp(chatApp);
-    }
-  } catch (e) { addFeed('Edit-Chat Fehler: ' + e.message, 'error'); }
+  } catch (e) {
+    spinner.remove();
+    const errDiv = document.createElement('div');
+    errDiv.className = 'edit-msg-agent';
+    errDiv.textContent = '❌ ' + e.message;
+    msgs.appendChild(errDiv);
+  }
+}
+
+function toggleEnvVars(winId) {
+  const el = document.getElementById('edit-env-' + winId);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveEnvVars(appId, winId) {
+  const txt = document.getElementById('edit-envtxt-' + winId)?.value || '';
+  const vars = {};
+  txt.split('\n').forEach(line => {
+    const eq = line.indexOf('=');
+    if (eq > 0) vars[line.substring(0, eq).trim()] = line.substring(eq + 1).trim();
+  });
+  try {
+    await fetch('/api/apps/' + appId + '/env', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(vars) });
+  } catch {}
+}
+
+async function deployApp(appId, winId) {
+  const msgs = document.getElementById('edit-msgs-' + winId);
+  const spinner = document.createElement('div');
+  spinner.className = 'edit-spinner';
+  spinner.textContent = '🚀 Deploying...';
+  msgs.appendChild(spinner);
+  msgs.scrollTop = msgs.scrollHeight;
+  try {
+    const r = await fetch('/api/apps/' + appId + '/deploy', { method: 'POST' });
+    const d = await r.json();
+    spinner.remove();
+    const div = document.createElement('div');
+    div.className = 'edit-msg-agent';
+    div.textContent = d.ok ? '🚀 Deployed! ' + (d.url || '') : '❌ ' + (d.error || 'Fehler');
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  } catch (e) { spinner.remove(); }
 }
 
 async function historyWin(winId, appId) {
