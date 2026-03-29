@@ -192,22 +192,80 @@ function render() {
   el.innerHTML = html;
 }
 
-function renderMyApps(el) {
-  // Show user-created + installed-from-github apps
-  const myApps = allAppsData.filter(a => a.created || a.source);
-  if (!myApps.length) {
+async function renderMyApps(el) {
+  el.innerHTML = '<div class="empty"><p>⏳ Lade Apps von GitHub...</p></div>';
+
+  // Fetch GitHub repos + compare with local
+  let githubApps = [];
+  try {
+    const r = await fetch('/api/apps/github-sync');
+    const d = await r.json();
+    githubApps = d.repos || [];
+  } catch {}
+
+  // Merge: local created apps + GitHub repos (deduplicated)
+  const allMyApps = [];
+  const seenIds = new Set();
+
+  // 1. Local created apps (may or may not be on GitHub)
+  allAppsData.filter(a => a.created || a.source).forEach(a => {
+    seenIds.add(a.id);
+    const ghInfo = githubApps.find(g => g.appId === a.id);
+    allMyApps.push({ ...a, onGitHub: !!ghInfo, ghPrivate: ghInfo?.isPrivate });
+  });
+
+  // 2. GitHub repos not installed locally
+  githubApps.forEach(g => {
+    if (!seenIds.has(g.appId)) {
+      allMyApps.push({
+        id: g.appId,
+        name: g.appId,
+        icon: g.appId[0]?.toUpperCase() || '?',
+        color: '#333',
+        description: g.description || 'Auf GitHub: ' + g.repoName,
+        installed: false,
+        source: g.source,
+        onGitHub: true,
+        ghPrivate: g.isPrivate,
+        cloudOnly: true // Not installed locally
+      });
+    }
+  });
+
+  if (!allMyApps.length) {
     el.innerHTML = '<div class="empty"><p>Keine eigenen Apps</p><div class="hint">Erstelle eine App im Chat: "Baue mir eine XY App"</div></div>';
     return;
   }
-  let html = '<div class="app-grid">';
-  myApps.forEach(a => {
-    const status = AppActions.getStatus(a);
-    const actions = AppActions.renderButtons(a, {
-      onOpen: 'openAppInPulse',
-      showDeploy: true
-    });
+
+  let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+    '<span style="font-size:10px;color:var(--text-dim,#666);">' + allMyApps.length + ' Apps (' + githubApps.length + ' auf GitHub)</span>' +
+    '<button class="refresh-btn" onclick="setTab(\'myapps\')" style="font-size:10px;">↻ Aktualisieren</button></div>';
+  html += '<div class="app-grid">';
+
+  allMyApps.forEach(a => {
+    let badge = '', badgeClass = '';
+    if (a.cloudOnly) { badge = 'Nur auf GitHub'; badgeClass = 'badge-cloud'; }
+    else if (a.onGitHub) {
+      badge = a.ghPrivate ? 'Published (privat)' : 'Published';
+      badgeClass = 'badge-published';
+      if (a.installed === false) badge += ' · Ausgeblendet';
+    } else {
+      badge = 'Nur lokal'; badgeClass = 'badge-local';
+      if (a.installed === false) badge += ' · Ausgeblendet';
+    }
+
+    let actions = '';
+    if (a.cloudOnly) {
+      // Only on GitHub — show install button
+      actions += '<button class="install-btn" onclick="AppActions._uiInstall(\'' + esc(a.source) + '\', this)">Von GitHub installieren</button>';
+      actions += '<button class="action-btn danger" onclick="AppActions._uiDeleteRemote(\'' + esc(a.id) + '\', \'' + esc(a.name) + '\')">Von GitHub loeschen</button>';
+    } else {
+      // Use shared AppActions buttons
+      actions = AppActions.renderButtons(a, { onOpen: 'openAppInPulse', showDeploy: true });
+    }
+
     html += '<div class="app-card"><div class="app-icon" style="background:' + esc(a.color || '#1a2a3a') + ';">' + esc(a.icon || '?') + '</div>' +
-      '<div class="app-info"><div class="app-name">' + esc(a.name || a.id) + ' <span class="status-badge ' + status.badgeClass + '">' + status.badge + '</span></div>' +
+      '<div class="app-info"><div class="app-name">' + esc(a.name || a.id) + ' <span class="status-badge ' + badgeClass + '">' + badge + '</span></div>' +
       '<div class="app-desc">' + esc(a.description || '') + '</div>' +
       '<div class="app-actions" style="flex-wrap:wrap;">' + actions + '</div></div></div>';
   });

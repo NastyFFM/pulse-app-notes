@@ -2248,6 +2248,42 @@ if (window.PulseOS) {
     });
   }
 
+  // ── Sync GitHub Repos (list all pulse-app-* repos) ──
+  if (url === '/api/apps/github-sync' && req.method === 'GET') {
+    const profile = safeReadJSON(path.join(ROOT, 'data', 'profile.json'), '{}');
+    const githubUser = profile.github;
+    if (!githubUser) return jsonRes(res, { error: 'GitHub Username fehlt im Profil' }, 400);
+    const { execSync } = require('child_process');
+    try {
+      const output = execSync('gh repo list ' + githubUser + ' --json name,isPrivate,description -q \'.[] | select(.name | startswith("pulse-app-"))\'', { stdio: 'pipe', timeout: 15000 }).toString();
+      const repos = output.trim().split('\n').filter(Boolean).map(line => {
+        try { return JSON.parse(line); } catch { return null; }
+      }).filter(Boolean);
+
+      // Compare with locally installed apps
+      const appsData = safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}');
+      const localApps = appsData.apps || [];
+
+      const result = repos.map(repo => {
+        const appId = repo.name.replace(/^pulse-app-/, '');
+        const localApp = localApps.find(a => a.id === appId);
+        return {
+          appId,
+          repoName: repo.name,
+          isPrivate: repo.isPrivate,
+          description: repo.description || '',
+          source: 'https://github.com/' + githubUser + '/' + repo.name,
+          localStatus: localApp ? (localApp.installed === false ? 'hidden' : 'installed') : 'not-installed',
+          localApp: localApp || null
+        };
+      });
+
+      return jsonRes(res, { repos: result, githubUser });
+    } catch (e) {
+      return jsonRes(res, { error: 'GitHub Abfrage fehlgeschlagen: ' + (e.message || '').split('\n')[0] }, 500);
+    }
+  }
+
   // ── App Env Vars ──
   // ── Global Env Vars (data/.env) ──
   const globalEnvFile = path.join(ROOT, 'data', '.env');
