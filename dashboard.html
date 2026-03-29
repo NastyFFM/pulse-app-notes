@@ -2049,15 +2049,15 @@ function editWin(winId) {
   }
 }
 
-function renderEditActions(winId, appId) {
+async function renderEditActions(winId, appId) {
   const el = document.getElementById('edit-actions-' + winId);
   if (!el || !window.AppActions) return;
   const app = (state?.apps || []).find(a => a.id === appId);
   if (!app) return;
-  // Set up callback to refresh after action
+  await AppActions.checkDeployStatus();
   AppActions._onUpdate = async (id, action) => {
     await load(); render(); renderLauncher();
-    renderEditActions(winId, appId); // Re-render buttons
+    renderEditActions(winId, appId);
   };
   el.innerHTML = AppActions.renderButtons(app, { showDeploy: true });
 }

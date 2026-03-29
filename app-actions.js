@@ -6,6 +6,15 @@
 
 const AppActions = {
 
+  // Cached deploy status
+  _deployStatus: null,
+  async checkDeployStatus() {
+    if (this._deployStatus) return this._deployStatus;
+    try { const r = await fetch('/api/deploy-status'); this._deployStatus = await r.json(); }
+    catch { this._deployStatus = { railway: false, gh: true }; }
+    return this._deployStatus;
+  },
+
   // Publish app to GitHub via gh CLI
   async publish(appId, opts = {}) {
     const r = await fetch('/api/apps/' + appId + '/publish', {
@@ -110,8 +119,8 @@ const AppActions = {
       html += '<button class="action-btn" onclick="' + prefix + '._uiPublish(\'' + id + '\', this)">Update pushen</button>';
     }
 
-    // Deploy (Railway)
-    if (opts.showDeploy) {
+    // Deploy (Railway) — only if Railway CLI is available
+    if (opts.showDeploy && this._deployStatus?.railway) {
       html += '<button class="action-btn" onclick="' + prefix + '._uiDeploy(\'' + id + '\', this)">🚀 Deploy</button>';
     }
 
@@ -158,7 +167,16 @@ const AppActions = {
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Deploying...'; }
     const d = await this.deploy(appId);
     if (d.ok) {
-      if (btn) btn.textContent = '✅ ' + (d.url || 'Deployed');
+      const url = d.url || d.github || '';
+      if (btn) {
+        btn.textContent = '✅ Live';
+        if (url) {
+          btn.onclick = () => window.open(url, '_blank');
+          btn.title = url;
+          btn.style.cursor = 'pointer';
+          btn.disabled = false;
+        }
+      }
       if (this._onUpdate) this._onUpdate(appId, 'deployed');
     } else {
       alert(d.error || 'Deploy fehlgeschlagen');

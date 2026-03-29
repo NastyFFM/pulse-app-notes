@@ -2291,58 +2291,71 @@ if (window.PulseOS) {
     return jsonRes(res, vars);
   }
 
+  // ── Deploy Status Check ──
+  if (url === '/api/deploy-status' && req.method === 'GET') {
+    const { execSync } = require('child_process');
+    let hasRailway = false, railwayUser = '';
+    try { execSync('which railway', { stdio: 'pipe' }); hasRailway = true; } catch {}
+    if (hasRailway) { try { railwayUser = execSync('railway whoami 2>&1', { stdio: 'pipe', timeout: 5000 }).toString().trim(); } catch {} }
+    return jsonRes(res, { railway: hasRailway, railwayUser, gh: true });
+  }
+
   // ── App Deploy (Railway via gh + railway CLI) ──
   if (url.match(/^\/api\/apps\/[^/]+\/deploy$/) && req.method === 'POST') {
     const appId = url.split('/')[3];
     const profile = safeReadJSON(path.join(ROOT, 'data', 'profile.json'), '{}');
     const githubUser = profile.github;
-    if (!githubUser) return jsonRes(res, { error: 'GitHub Username fehlt im Profil' }, 400);
+    if (!githubUser) return jsonRes(res, { error: 'GitHub Username fehlt im Profil (data/profile.json → github)' }, 400);
 
     const repoName = 'pulse-app-' + appId;
     const appDir = resolveAppDir(appId);
     const { execSync } = require('child_process');
 
+    // Check Railway CLI first
+    let hasRailway = false;
+    try { execSync('which railway', { stdio: 'pipe' }); hasRailway = true; } catch {}
+    if (!hasRailway) {
+      return jsonRes(res, { error: 'Railway CLI nicht installiert. Installiere mit: npm i -g @railway/cli && railway login' }, 400);
+    }
+
     try {
       // 1. Ensure published to GitHub first
       const appsData = safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}');
       const app = (appsData.apps || []).find(a => a.id === appId);
+      const githubUrl = 'https://github.com/' + githubUser + '/' + repoName;
       if (!app?.source) {
         // Auto-publish first
-        execSync('cd /tmp && rm -rf .tmp-pub-' + appId + ' && mkdir .tmp-pub-' + appId);
-        execSync('cp -r ' + appDir + '/* /tmp/.tmp-pub-' + appId + '/');
-        execSync('cd /tmp/.tmp-pub-' + appId + ' && git init && git add -A && git commit -m "PulseOS deploy: ' + appId + '"', { stdio: 'pipe' });
+        const tmpDir = '/tmp/.tmp-pub-' + appId;
+        execSync('rm -rf ' + tmpDir + ' && mkdir -p ' + tmpDir);
+        execSync('cp -r ' + appDir + '/* ' + tmpDir + '/');
+        execSync('cd ' + tmpDir + ' && git init && git add -A && git commit -m "PulseOS deploy: ' + appId + '"', { stdio: 'pipe' });
         try {
-          execSync('gh repo create ' + githubUser + '/' + repoName + ' --private --source /tmp/.tmp-pub-' + appId + ' --push', { stdio: 'pipe', timeout: 30000 });
+          execSync('gh repo create ' + githubUser + '/' + repoName + ' --private --source ' + tmpDir + ' --push', { stdio: 'pipe', timeout: 30000 });
         } catch {
-          execSync('cd /tmp/.tmp-pub-' + appId + ' && git remote add origin https://github.com/' + githubUser + '/' + repoName + '.git 2>/dev/null; git push -f origin main 2>/dev/null || git push -f origin master 2>/dev/null || true', { stdio: 'pipe', timeout: 30000 });
+          execSync('cd ' + tmpDir + ' && git remote add origin ' + githubUrl + '.git 2>/dev/null; git push -f origin main 2>/dev/null || git push -f origin master 2>/dev/null || true', { stdio: 'pipe', timeout: 30000 });
         }
-        execSync('rm -rf /tmp/.tmp-pub-' + appId);
+        execSync('rm -rf ' + tmpDir);
         if (app) {
-          app.source = 'https://github.com/' + githubUser + '/' + repoName;
+          app.source = githubUrl;
           app.publishedAt = new Date().toISOString();
           fs.writeFileSync(path.join(ROOT, 'data', 'apps.json'), JSON.stringify(appsData, null, 2));
         }
       }
 
-      // 2. Railway deploy (if railway CLI available)
+      // 2. Railway deploy
       let railwayUrl = '';
       try {
-        execSync('which railway', { stdio: 'pipe' });
-        // Link to GitHub repo and deploy
-        try {
-          execSync('cd ' + appDir + ' && railway link 2>/dev/null || true', { stdio: 'pipe', timeout: 15000 });
-          const output = execSync('cd ' + appDir + ' && railway up --detach 2>&1', { stdio: 'pipe', timeout: 60000 }).toString();
-          const urlMatch = output.match(/https?:\/\/[^\s]+\.railway\.app[^\s]*/);
-          if (urlMatch) railwayUrl = urlMatch[0];
-        } catch (e) {
-          console.log('[deploy] Railway deploy output:', e.message?.substring(0, 200));
-        }
-      } catch {
-        // Railway CLI not found — just push to GitHub
-        console.log('[deploy] Railway CLI not found, only pushed to GitHub');
+        execSync('cd ' + appDir + ' && railway link 2>/dev/null || true', { stdio: 'pipe', timeout: 15000 });
+        const output = execSync('cd ' + appDir + ' && railway up --detach 2>&1', { stdio: 'pipe', timeout: 60000 }).toString();
+        const urlMatch = output.match(/https?:\/\/[^\s]+\.railway\.app[^\s]*/);
+        if (urlMatch) railwayUrl = urlMatch[0];
+      } catch (e) {
+        const errMsg = (e.stderr || e.message || '').toString().substring(0, 200);
+        console.log('[deploy] Railway error:', errMsg);
+        return jsonRes(res, { error: 'Railway Deploy fehlgeschlagen: ' + errMsg.split('\n')[0] }, 500);
       }
 
-      // 3. Set env vars on Railway if available
+      // 3. Set env vars on Railway
       const envFile = path.join(appDir, '.env');
       if (fs.existsSync(envFile)) {
         try {
