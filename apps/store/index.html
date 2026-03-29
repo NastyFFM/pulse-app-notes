@@ -208,6 +208,8 @@ function renderMyApps(el) {
     if (isHidden) { badge += ' · Ausgeblendet'; }
 
     let actions = '';
+    // Open button (always first)
+    if (a.installed !== false) actions += '<button class="action-btn" onclick="window.top.location.href=\'/app/' + esc(a.id) + '\'">Oeffnen</button>';
     // Publish / Update button (always visible)
     if (isLocal) actions += '<button class="install-btn" onclick="publishApp(\'' + esc(a.id) + '\', this)">Publish on GitHub</button>';
     if (isPublished) actions += '<button class="action-btn" onclick="publishApp(\'' + esc(a.id) + '\', this)">Update pushen</button>';
