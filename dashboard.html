@@ -2052,15 +2052,21 @@ function editWin(winId) {
 
 async function renderEditActions(winId, appId) {
   const el = document.getElementById('edit-actions-' + winId);
-  if (!el || !window.AppActions) return;
+  console.log('[edit] renderEditActions', winId, appId, 'el:', !!el, 'AppActions:', !!window.AppActions);
+  if (!el) { console.warn('[edit] edit-actions element not found for', winId); return; }
+  if (!window.AppActions) { console.warn('[edit] AppActions not loaded yet'); return; }
   const app = (state?.apps || []).find(a => a.id === appId);
-  if (!app) return;
-  await AppActions.checkDeployStatus();
+  if (!app) { console.warn('[edit] App not found in state:', appId); return; }
+  try {
+    await AppActions.checkDeployStatus();
+  } catch (e) { console.warn('[edit] checkDeployStatus failed:', e); }
   AppActions._onUpdate = async (id, action) => {
     await load(); render(); renderLauncher();
     renderEditActions(winId, appId);
   };
-  el.innerHTML = AppActions.renderButtons(app, { showDeploy: true });
+  const html = AppActions.renderButtons(app, { showDeploy: true });
+  console.log('[edit] buttons HTML length:', html.length);
+  el.innerHTML = html;
 }
 
 async function loadEditChat(winId, appId) {
