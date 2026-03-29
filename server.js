@@ -2295,10 +2295,11 @@ if (window.PulseOS) {
   if (url === '/api/deploy-status' && req.method === 'GET') {
     const { execSync } = require('child_process');
     let hasRailway = false, railwayUser = '', railwayLoggedIn = false;
-    try { execSync('which railway', { stdio: 'pipe' }); hasRailway = true; } catch {}
+    const railwayEnv = { ...process.env, PATH: process.env.PATH + ':/Users/chris.pohl/.bun/bin:/usr/local/bin:/opt/homebrew/bin' };
+    try { execSync('which railway', { stdio: 'pipe', env: railwayEnv }); hasRailway = true; } catch {}
     if (hasRailway) {
       try {
-        const who = execSync('railway whoami 2>&1', { stdio: 'pipe', timeout: 5000 }).toString().trim();
+        const who = execSync('railway whoami 2>&1', { stdio: 'pipe', timeout: 5000, env: railwayEnv }).toString().trim();
         if (who && !who.includes('not logged') && !who.includes('error')) { railwayLoggedIn = true; railwayUser = who; }
       } catch {}
     }
@@ -2308,7 +2309,9 @@ if (window.PulseOS) {
   // ── Railway Setup: Install CLI ──
   if (url === '/api/deploy-setup/install' && req.method === 'POST') {
     const { exec } = require('child_process');
-    exec('npm i -g @railway/cli 2>&1', { timeout: 60000 }, (err, stdout, stderr) => {
+    // Try bun (no sudo needed), fallback to npm
+    const installCmd = fs.existsSync('/Users/chris.pohl/.bun/bin/bun') ? 'bun install -g @railway/cli 2>&1' : 'sudo npm i -g @railway/cli 2>&1';
+    exec(installCmd, { timeout: 60000, env: { ...process.env, PATH: process.env.PATH + ':/Users/chris.pohl/.bun/bin' } }, (err, stdout, stderr) => {
       if (err) return jsonRes(res, { ok: false, error: (stderr || err.message).substring(0, 200) }, 500);
       jsonRes(res, { ok: true, output: stdout.substring(0, 200) });
     });
