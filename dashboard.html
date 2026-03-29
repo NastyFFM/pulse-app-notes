@@ -3690,6 +3690,10 @@ window.addEventListener('message', e => {
       });
     }).catch(() => {});
   }
+  if (e.data && e.data.type === 'open-app' && e.data.appId) {
+    const app = (state && state.apps || []).find(a => a.id === e.data.appId);
+    if (app) openApp(app);
+  }
   if (e.data && e.data.type === 'app-alert' && e.data.message) {
     addFeed(e.data.message, 'info');
     const ab = document.getElementById('agentText');
