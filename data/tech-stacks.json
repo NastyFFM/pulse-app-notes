@@ -22,12 +22,11 @@
           "command": "bun install -g @railway/cli"
         },
         {
-          "step": "paste-token",
-          "title": "API Token erstellen",
-          "url": "https://railway.com/account/tokens",
-          "instruction": "Klicke 'Create Token', gib einen Namen ein (z.B. PulseOS), kopiere den Token.",
-          "envVar": "RAILWAY_TOKEN",
-          "placeholder": "Token hier einfuegen..."
+          "step": "cli-login",
+          "title": "Bei Railway einloggen",
+          "command": "~/.bun/bin/railway login",
+          "instruction": "Der Login wird im Terminal ausgefuehrt. Bestaetige im Browser.",
+          "check": "railway whoami"
         }
       ]
     },

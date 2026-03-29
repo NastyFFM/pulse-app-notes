@@ -2434,12 +2434,13 @@ if (window.PulseOS) {
     const railwayEnv = { ...process.env, PATH: process.env.PATH + ':/Users/chris.pohl/.bun/bin:/usr/local/bin:/opt/homebrew/bin' };
     if (savedToken) railwayEnv.RAILWAY_TOKEN = savedToken;
     try { execSync('which railway', { stdio: 'pipe', env: railwayEnv }); hasRailway = true; } catch {}
-    if (hasRailway && savedToken) {
-      railwayLoggedIn = true; // Token exists = consider logged in
+    if (hasRailway) {
+      // Check CLI session login OR token
+      if (savedToken) railwayLoggedIn = true;
       try {
         const who = execSync('railway whoami', { stdio: 'pipe', timeout: 5000, env: railwayEnv }).toString().trim();
-        if (who) railwayUser = who;
-      } catch {} // whoami might fail for project-scoped tokens, still ok
+        if (who) { railwayLoggedIn = true; railwayUser = who; }
+      } catch {} // Not logged in via CLI either
     }
     return jsonRes(res, { railway: hasRailway, railwayLoggedIn, railwayUser, gh: true });
   }
