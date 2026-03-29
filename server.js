@@ -2371,54 +2371,44 @@ if (window.PulseOS) {
     return;
   }
 
-  // ── CLI Login (browserless — opens URL, waits for user to confirm) ──
+  // ── CLI Login (uses 'script' to create pseudo-TTY for interactive CLI) ──
   if (url === '/api/stacks/cli-login' && req.method === 'POST') {
     return readBody(req, b => {
       try {
-        const { command, check } = JSON.parse(b);
+        const { command } = JSON.parse(b);
         if (!command) return jsonRes(res, { error: 'command required' }, 400);
-        const { spawn: spawnProc } = require('child_process');
+        const { spawn: spawnProc, execSync: execSyncReq } = require('child_process');
         const extPath = process.env.PATH + ':/Users/chris.pohl/.bun/bin:/usr/local/bin:/opt/homebrew/bin';
-        const parts = command.split(' ');
-        const proc = spawnProc(parts[0], parts.slice(1), {
-          env: { ...process.env, PATH: extPath },
-          stdio: ['pipe', 'pipe', 'pipe']
+        // Use 'script' to allocate a pseudo-TTY (macOS built-in)
+        // This allows interactive CLI tools like 'railway login' to work
+        const tmpFile = '/tmp/railway-login-' + Date.now() + '.log';
+        const proc = spawnProc('script', ['-q', tmpFile, '/bin/bash', '-c', 'PATH="' + extPath + '" ' + command], {
+          env: { ...process.env, PATH: extPath, TERM: 'xterm-256color' },
+          stdio: ['pipe', 'pipe', 'pipe'],
+          detached: false
         });
         let output = '';
-        let loginUrl = null;
         let responded = false;
-        proc.stdout.on('data', d => {
-          output += d.toString();
-          // Parse login URL from output
-          const urlMatch = output.match(/https?:\/\/[^\s\n]+/);
-          if (urlMatch && !loginUrl) {
-            loginUrl = urlMatch[0];
-            // Send URL to client immediately so browser can open
-            if (!responded) {
-              responded = true;
-              // Don't end response yet — we'll send final status when process ends
-            }
-          }
-        });
+        proc.stdout.on('data', d => { output += d.toString(); });
         proc.stderr.on('data', d => { output += d.toString(); });
-        // Timeout after 120s
         const timeout = setTimeout(() => { proc.kill(); }, 120000);
         proc.on('close', code => {
           clearTimeout(timeout);
+          // Read output from script file
+          try { output = require('fs').readFileSync(tmpFile, 'utf8'); } catch {}
+          try { require('fs').unlinkSync(tmpFile); } catch {}
           if (!responded) {
             responded = true;
-            jsonRes(res, { ok: code === 0, loginUrl, output: output.substring(0, 300) });
+            jsonRes(res, { ok: code === 0, output: output.substring(0, 500) });
           }
         });
-        // If we find URL quickly, respond with it and let process continue
+        // Respond quickly — login happens in background, UI polls status
         setTimeout(() => {
-          if (!responded && loginUrl) {
+          if (!responded) {
             responded = true;
-            jsonRes(res, { ok: false, pending: true, loginUrl, message: 'Login im Browser bestaetigen' });
-          } else if (!responded) {
-            // No URL found yet, wait for process
+            jsonRes(res, { ok: false, pending: true, message: 'Login laeuft... Browser sollte sich oeffnen.' });
           }
-        }, 3000);
+        }, 5000);
       } catch (e) { jsonRes(res, { error: e.message }, 400); }
     });
     return;

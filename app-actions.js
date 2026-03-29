@@ -349,27 +349,27 @@ const AppActions = {
         // Handle cli-login step — open Terminal app + send command
         else if (step.step === 'cli-login') {
           container.querySelector('#wizard-cancel').onclick = () => resolve(null);
-          // Open Claude Terminal app in PulseOS
-          window.parent?.postMessage({ type: 'open-app', appId: 'claude-terminal' }, '*');
-          // Also try opening from top-level (if we're not in iframe)
-          if (window.openApp && window.state) {
-            const termApp = (state.apps || []).find(a => a.id === 'claude-terminal');
-            if (termApp) openApp(termApp);
-          }
-          // Send login command to terminal
-          setTimeout(() => {
-            fetch('/api/terminal/input', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: step.command + '\n' }) }).catch(() => {});
-          }, 1000);
-          // Update wizard status
+          // Start CLI login via server (opens browser automatically)
           const statusEl = container.querySelector('#wizard-status');
-          if (statusEl) statusEl.innerHTML = '🖥 Terminal geoeffnet — bestatige den Login im Browser<br><br><span style="font-size:9px;color:var(--text-dim,#666);">Das Terminal fuehrt den Login automatisch aus. Bestaetige im Browser-Tab.</span>';
+          if (statusEl) statusEl.innerHTML = '⏳ Starte Login... Browser oeffnet sich gleich.';
+
+          fetch('/api/stacks/cli-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: step.command, check: step.check }) })
+            .then(r => r.json()).then(d => {
+              if (d.ok) { resolve('ok'); return; }
+              if (statusEl) statusEl.innerHTML = '🔐 Bestatige den Login im geoeffneten Browser-Tab...<br><br><span style="font-size:9px;color:var(--text-dim,#666);">PulseOS wartet auf deine Bestaetigung.</span>';
+            }).catch(() => {});
+
           // Poll until logged in
           const poll = setInterval(async () => {
             try {
               const sr = await fetch('/api/stacks/status');
               const ss = await sr.json();
               const s = (ss.stacks || []).find(x => x.id === stackId);
-              if (s?.hasKeys || s?.ready) { clearInterval(poll); resolve('ok'); }
+              if (s?.ready) { clearInterval(poll); resolve('ok'); }
+              // Also check if railway whoami works now (CLI session login)
+              const wr = await fetch('/api/deploy-status');
+              const ws = await wr.json();
+              if (ws.railwayLoggedIn) { clearInterval(poll); resolve('ok'); }
             } catch {}
           }, 3000);
           setTimeout(() => { clearInterval(poll); resolve(null); }, 120000);
