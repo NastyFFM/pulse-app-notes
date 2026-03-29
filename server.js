@@ -2371,6 +2371,59 @@ if (window.PulseOS) {
     return;
   }
 
+  // ── CLI Login (browserless — opens URL, waits for user to confirm) ──
+  if (url === '/api/stacks/cli-login' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { command, check } = JSON.parse(b);
+        if (!command) return jsonRes(res, { error: 'command required' }, 400);
+        const { spawn: spawnProc } = require('child_process');
+        const extPath = process.env.PATH + ':/Users/chris.pohl/.bun/bin:/usr/local/bin:/opt/homebrew/bin';
+        const parts = command.split(' ');
+        const proc = spawnProc(parts[0], parts.slice(1), {
+          env: { ...process.env, PATH: extPath },
+          stdio: ['pipe', 'pipe', 'pipe']
+        });
+        let output = '';
+        let loginUrl = null;
+        let responded = false;
+        proc.stdout.on('data', d => {
+          output += d.toString();
+          // Parse login URL from output
+          const urlMatch = output.match(/https?:\/\/[^\s\n]+/);
+          if (urlMatch && !loginUrl) {
+            loginUrl = urlMatch[0];
+            // Send URL to client immediately so browser can open
+            if (!responded) {
+              responded = true;
+              // Don't end response yet — we'll send final status when process ends
+            }
+          }
+        });
+        proc.stderr.on('data', d => { output += d.toString(); });
+        // Timeout after 120s
+        const timeout = setTimeout(() => { proc.kill(); }, 120000);
+        proc.on('close', code => {
+          clearTimeout(timeout);
+          if (!responded) {
+            responded = true;
+            jsonRes(res, { ok: code === 0, loginUrl, output: output.substring(0, 300) });
+          }
+        });
+        // If we find URL quickly, respond with it and let process continue
+        setTimeout(() => {
+          if (!responded && loginUrl) {
+            responded = true;
+            jsonRes(res, { ok: false, pending: true, loginUrl, message: 'Login im Browser bestaetigen' });
+          } else if (!responded) {
+            // No URL found yet, wait for process
+          }
+        }, 3000);
+      } catch (e) { jsonRes(res, { error: e.message }, 400); }
+    });
+    return;
+  }
+
   // ── Deploy Status Check ──
   if (url === '/api/deploy-status' && req.method === 'GET') {
     const { execSync } = require('child_process');

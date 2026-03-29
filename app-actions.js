@@ -250,158 +250,152 @@ const AppActions = {
     await this._uiDeploy(appId, btn);
   },
 
-  // Generic stack onboarding wizard
-  async onboardStack(stackId, btn) {
-    // Load stack definition
+  // Generic stack onboarding wizard — renders inline in a container element
+  // container: DOM element to render wizard into (or null for modal)
+  async onboardStack(stackId, btn, container) {
     let stacks;
     try { const r = await fetch('/api/stacks'); stacks = await r.json(); } catch { return; }
     const stack = (stacks.stacks || []).find(s => s.id === stackId);
-    if (!stack) { alert('Stack "' + stackId + '" nicht gefunden'); return; }
+    if (!stack) return;
 
-    if (btn) { btn.disabled = true; btn.textContent = stack.icon + ' ' + stack.name + ' einrichten...'; }
+    // Find or create wizard container
+    if (!container) {
+      container = document.getElementById('onboarding-wizard');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'onboarding-wizard';
+        container.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100000;background:var(--bg-card,#151520);border:1px solid var(--border,#1e1e2e);border-radius:12px;padding:20px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.5);font-family:system-ui;color:var(--text,#e0e0e0);';
+        document.body.appendChild(container);
+      }
+    }
+
+    const steps = (stack.onboarding || []).filter(s => !s.auto); // non-auto steps for progress
+    const totalSteps = steps.length;
+    let currentStep = 0;
 
     for (const step of (stack.onboarding || [])) {
+      // Auto CLI install — no UI needed
       if (step.auto && step.command) {
-        // Auto-install CLI
-        if (btn) { btn.textContent = '⏳ ' + step.title + '...'; }
+        if (btn) btn.textContent = '⏳ ' + step.title + '...';
         try {
           const r = await fetch('/api/stacks/install-cli', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: step.command }) });
           const d = await r.json();
-          if (!d.ok) { alert(step.title + ' fehlgeschlagen: ' + (d.error || '')); if (btn) { btn.textContent = '🚀 Deploy'; btn.disabled = false; } return; }
-        } catch (e) { alert('Fehler: ' + e.message); if (btn) { btn.textContent = '🚀 Deploy'; btn.disabled = false; } return; }
+          if (!d.ok) { container.innerHTML = '<div style="color:#e74c3c;">' + step.title + ' fehlgeschlagen</div>'; return; }
+        } catch { return; }
         continue;
       }
 
-      if (step.step === 'account') {
-        // Open account page
-        window.open(step.url, '_blank');
-        const ready = confirm(stack.icon + ' ' + step.title + '\n\n' + step.instruction + '\n\nKlicke OK wenn du fertig bist.');
-        if (!ready) { if (btn) { btn.textContent = '🚀 Deploy'; btn.disabled = false; } return; }
-        continue;
-      }
+      currentStep++;
 
-      if (step.step === 'token' && step.envVar) {
-        // Check if key already exists
+      // Check if key already exists
+      if (step.envVar) {
         try {
           const env = await fetch('/api/env').then(r => r.json());
-          if (env[step.envVar]) continue; // Already have this key
+          if (env[step.envVar]) continue;
         } catch {}
-
-        // Open URL + prompt for key
-        if (step.url) window.open(step.url, '_blank');
-        const value = prompt(
-          stack.icon + ' ' + step.title + '\n\n' +
-          step.instruction + '\n\n' +
-          'Einfuegen:'
-        );
-        if (!value || !value.trim()) { if (btn) { btn.textContent = '🚀 Deploy'; btn.disabled = false; } return; }
-
-        // Save key
-        try {
-          await fetch('/api/stacks/save-key', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ envVar: step.envVar, value: value.trim() }) });
-        } catch {}
-        continue;
       }
 
-      if (step.step === 'project') {
-        window.open(step.url, '_blank');
-        confirm(stack.icon + ' ' + step.title + '\n\n' + step.instruction + '\n\nKlicke OK wenn du fertig bist.');
-        continue;
-      }
-    }
+      // Render wizard step
+      const result = await new Promise(resolve => {
+        let html = '<div style="font-size:14px;font-weight:600;margin-bottom:4px;">' + stack.icon + ' ' + stack.name + ' einrichten</div>';
+        html += '<div style="font-size:10px;color:var(--text-dim,#888);margin-bottom:12px;">Schritt ' + currentStep + '/' + totalSteps + '</div>';
+        html += '<div style="height:3px;background:var(--border,#1e1e2e);border-radius:2px;margin-bottom:16px;"><div style="height:100%;background:var(--teal,#4ecdc4);border-radius:2px;width:' + Math.round(currentStep / totalSteps * 100) + '%;"></div></div>';
+        html += '<div style="font-size:13px;font-weight:500;margin-bottom:6px;">' + (step.title || '') + '</div>';
+        html += '<div style="font-size:11px;color:var(--text-dim,#aaa);margin-bottom:12px;line-height:1.5;">' + (step.instruction || '') + '</div>';
 
-    if (btn) { btn.textContent = '✅ ' + stack.name + ' bereit!'; }
-    // Also save Railway token to legacy file for backward compat
-    if (stackId === 'railway') {
-      try {
-        const env = await fetch('/api/env').then(r => r.json());
-        if (env.RAILWAY_TOKEN) {
-          await fetch('/api/deploy-setup/save-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: env.RAILWAY_TOKEN }) });
+        if (step.url) {
+          html += '<a href="' + step.url + '" target="_blank" style="display:inline-block;margin-bottom:12px;padding:6px 12px;background:var(--teal,#4ecdc4);color:#000;border-radius:6px;text-decoration:none;font-size:11px;font-weight:600;">🔗 ' + (new URL(step.url).hostname) + ' oeffnen</a><br>';
         }
-      } catch {}
+
+        if (step.step === 'paste-token') {
+          html += '<input type="text" id="wizard-input" placeholder="' + (step.placeholder || 'Hier einfuegen...') + '" style="width:100%;padding:8px 10px;background:var(--bg,#0d0d14);border:1px solid var(--border,#1e1e2e);border-radius:6px;color:var(--text,#e0e0e0);font-size:12px;font-family:monospace;margin-bottom:12px;box-sizing:border-box;">';
+          html += '<div style="display:flex;gap:8px;">';
+          html += '<button id="wizard-next" style="flex:1;padding:8px;background:var(--teal,#4ecdc4);color:#000;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Weiter →</button>';
+          html += '<button id="wizard-cancel" style="padding:8px 12px;background:none;border:1px solid var(--border,#1e1e2e);color:var(--text-dim,#888);border-radius:6px;font-size:11px;cursor:pointer;">Abbrechen</button>';
+          html += '</div>';
+        } else if (step.step === 'account') {
+          html += '<div style="display:flex;gap:8px;">';
+          html += '<button id="wizard-next" style="flex:1;padding:8px;background:var(--teal,#4ecdc4);color:#000;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Fertig, weiter →</button>';
+          html += '<button id="wizard-cancel" style="padding:8px 12px;background:none;border:1px solid var(--border,#1e1e2e);color:var(--text-dim,#888);border-radius:6px;font-size:11px;cursor:pointer;">Abbrechen</button>';
+          html += '</div>';
+        } else if (step.step === 'cli-login') {
+          html += '<div id="wizard-status" style="text-align:center;padding:12px;font-size:11px;">⏳ Warte auf Login im Browser...</div>';
+          html += '<button id="wizard-cancel" style="width:100%;padding:8px;background:none;border:1px solid var(--border,#1e1e2e);color:var(--text-dim,#888);border-radius:6px;font-size:11px;cursor:pointer;">Abbrechen</button>';
+        }
+
+        container.innerHTML = html;
+        container.style.display = 'block';
+
+        // Open URL automatically for account steps
+        if (step.step === 'account' && step.url) {
+          window.open(step.url, '_blank');
+        }
+
+        // Handle paste-token step
+        if (step.step === 'paste-token') {
+          const nextBtn = container.querySelector('#wizard-next');
+          const input = container.querySelector('#wizard-input');
+          const cancelBtn = container.querySelector('#wizard-cancel');
+          nextBtn.onclick = () => { const v = input.value.trim(); if (v) resolve(v); else input.style.borderColor = '#e74c3c'; };
+          input.onkeydown = (e) => { if (e.key === 'Enter') nextBtn.click(); };
+          cancelBtn.onclick = () => resolve(null);
+          setTimeout(() => input.focus(), 100);
+        }
+        // Handle account step
+        else if (step.step === 'account') {
+          container.querySelector('#wizard-next').onclick = () => resolve('ok');
+          container.querySelector('#wizard-cancel').onclick = () => resolve(null);
+        }
+        // Handle cli-login step
+        else if (step.step === 'cli-login') {
+          container.querySelector('#wizard-cancel').onclick = () => resolve(null);
+          // Start CLI login process
+          fetch('/api/stacks/cli-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: step.command }) })
+            .then(r => r.json()).then(d => {
+              if (d.loginUrl) window.open(d.loginUrl, '_blank');
+              if (d.ok) resolve('ok');
+              else if (d.pending) {
+                // Poll until logged in
+                const poll = setInterval(async () => {
+                  try {
+                    const sr = await fetch('/api/stacks/status');
+                    const ss = await sr.json();
+                    const s = (ss.stacks || []).find(x => x.id === stackId);
+                    if (s?.ready) { clearInterval(poll); resolve('ok'); }
+                  } catch {}
+                }, 3000);
+                setTimeout(() => { clearInterval(poll); resolve(null); }, 120000);
+              } else resolve(null);
+            }).catch(() => resolve(null));
+        }
+      });
+
+      // User cancelled
+      if (result === null) {
+        container.style.display = 'none';
+        if (btn) { btn.textContent = '🚀 Deploy'; btn.disabled = false; }
+        return;
+      }
+
+      // Save key for paste-token steps
+      if (step.step === 'paste-token' && step.envVar && result) {
+        try {
+          await fetch('/api/stacks/save-key', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ envVar: step.envVar, value: result }) });
+        } catch {}
+      }
     }
+
+    // Done!
+    container.innerHTML = '<div style="text-align:center;padding:16px;"><div style="font-size:24px;margin-bottom:8px;">✅</div><div style="font-size:14px;font-weight:600;">' + stack.name + ' bereit!</div></div>';
+    setTimeout(() => { container.style.display = 'none'; }, 2000);
+
+    if (btn) { btn.textContent = '✅ ' + stack.name + ' bereit!'; btn.disabled = false; }
     this._deployStatus = null;
     if (this._onUpdate) this._onUpdate(null, 'stack-setup');
   },
 
-  async _uiSetupRailway(btn) {
-    const status = await this.checkDeployStatus();
-
-    // Step 1: Install Railway CLI if not present
-    if (!status.railway) {
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ Railway CLI installieren...'; }
-      try {
-        const r = await fetch('/api/deploy-setup/install', { method: 'POST' });
-        const d = await r.json();
-        if (!d.ok) {
-          alert('Installation fehlgeschlagen: ' + (d.error || 'Unbekannter Fehler'));
-          if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
-          return;
-        }
-        this._deployStatus = null;
-      } catch (e) {
-        alert('Fehler: ' + e.message);
-        if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
-        return;
-      }
-    }
-
-    // Step 2: Token-based login
-    this._deployStatus = null;
-    const status2 = await this.checkDeployStatus();
-    if (!status2.railwayLoggedIn) {
-      // Open Railway token page in browser
-      window.open('https://railway.com/account/tokens', '_blank');
-
-      // Show token input dialog
-      if (btn) { btn.textContent = '🔑 Token eingeben...'; }
-      const token = prompt(
-        '🚀 Railway Deploy einrichten\n\n' +
-        'Eine neue Seite wurde geoeffnet wo du einen API Token erstellen kannst.\n\n' +
-        'Schritte:\n' +
-        '1. Klicke auf "Create Token" auf railway.com\n' +
-        '2. Gib einen Namen ein (z.B. "PulseOS")\n' +
-        '3. Kopiere den Token\n' +
-        '4. Fuege ihn hier ein:\n'
-      );
-
-      if (!token || !token.trim()) {
-        if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
-        return;
-      }
-
-      // Save token on server
-      if (btn) { btn.textContent = '⏳ Token pruefen...'; }
-      try {
-        const r = await fetch('/api/deploy-setup/save-token', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: token.trim() })
-        });
-        const d = await r.json();
-        if (!d.ok) {
-          alert('Fehler: ' + (d.error || 'Konnte Token nicht speichern'));
-          if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
-          return;
-        }
-        // Token saved successfully
-        if (d.valid) {
-          if (btn) { btn.textContent = '✅ Railway bereit! (' + (d.user || 'OK') + ')'; }
-        } else {
-          if (btn) { btn.textContent = '✅ Token gespeichert'; }
-        }
-      } catch (e) {
-        alert('Fehler: ' + e.message);
-        if (btn) { btn.textContent = '🚀 Deploy einrichten'; btn.disabled = false; }
-        return;
-      }
-    }
-
-    // Refresh status + re-render all buttons
-    this._deployStatus = null;
-    await this.checkDeployStatus();
-    if (btn) { btn.disabled = false; }
-    if (this._onUpdate) this._onUpdate(null, 'railway-setup');
-  },
+  // Legacy — redirects to generic onboardStack
+  async _uiSetupRailway(btn) { return this.onboardStack('railway', btn); },
 
   async _uiInstall(sourceUrl, btn) {
     if (btn) { btn.disabled = true; btn.textContent = '⏳'; }

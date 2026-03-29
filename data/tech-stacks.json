@@ -8,7 +8,6 @@
       "requiredEnvVars": ["RAILWAY_TOKEN"],
       "cliTool": "@railway/cli",
       "cliBinary": "railway",
-      "cliCheck": "railway whoami",
       "onboarding": [
         {
           "step": "account",
@@ -17,18 +16,18 @@
           "instruction": "Erstelle einen Account oder logge dich ein bei Railway."
         },
         {
-          "step": "token",
+          "step": "cli",
+          "title": "CLI installieren",
+          "auto": true,
+          "command": "bun install -g @railway/cli"
+        },
+        {
+          "step": "paste-token",
           "title": "API Token erstellen",
           "url": "https://railway.com/account/tokens",
           "instruction": "Klicke 'Create Token', gib einen Namen ein (z.B. PulseOS), kopiere den Token.",
           "envVar": "RAILWAY_TOKEN",
           "placeholder": "Token hier einfuegen..."
-        },
-        {
-          "step": "cli",
-          "title": "CLI installieren",
-          "auto": true,
-          "command": "bun install -g @railway/cli"
         }
       ]
     },
@@ -46,13 +45,13 @@
           "instruction": "Erstelle einen Account oder logge dich ein."
         },
         {
-          "step": "project",
+          "step": "account",
           "title": "Neues Projekt erstellen",
           "url": "https://supabase.com/dashboard/new",
-          "instruction": "Erstelle ein neues Supabase Projekt. Wähle einen Namen und eine Region."
+          "instruction": "Erstelle ein neues Supabase Projekt. Waehle einen Namen und eine Region."
         },
         {
-          "step": "token",
+          "step": "paste-token",
           "title": "Project URL kopieren",
           "url": "https://supabase.com/dashboard/project/_/settings/api",
           "instruction": "Gehe zu Settings > API. Kopiere die 'Project URL'.",
@@ -60,9 +59,8 @@
           "placeholder": "https://xxx.supabase.co"
         },
         {
-          "step": "token",
+          "step": "paste-token",
           "title": "Anon Key kopieren",
-          "url": "https://supabase.com/dashboard/project/_/settings/api",
           "instruction": "Kopiere den 'anon public' Key von der gleichen Seite.",
           "envVar": "SUPABASE_ANON_KEY",
           "placeholder": "eyJhbGciOi..."
@@ -75,6 +73,8 @@
       "icon": "💳",
       "description": "Payments + Subscriptions",
       "requiredEnvVars": ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY"],
+      "cliTool": "stripe",
+      "cliBinary": "stripe",
       "onboarding": [
         {
           "step": "account",
@@ -83,7 +83,7 @@
           "instruction": "Erstelle einen Stripe Account oder logge dich ein."
         },
         {
-          "step": "token",
+          "step": "paste-token",
           "title": "Secret Key kopieren",
           "url": "https://dashboard.stripe.com/apikeys",
           "instruction": "Kopiere den 'Secret key' (beginnt mit sk_).",
@@ -91,9 +91,8 @@
           "placeholder": "sk_test_..."
         },
         {
-          "step": "token",
+          "step": "paste-token",
           "title": "Publishable Key kopieren",
-          "url": "https://dashboard.stripe.com/apikeys",
           "instruction": "Kopiere den 'Publishable key' (beginnt mit pk_).",
           "envVar": "STRIPE_PUBLISHABLE_KEY",
           "placeholder": "pk_test_..."
@@ -116,7 +115,7 @@
           "instruction": "Erstelle einen Vercel Account oder logge dich ein."
         },
         {
-          "step": "token",
+          "step": "paste-token",
           "title": "API Token erstellen",
           "url": "https://vercel.com/account/tokens",
           "instruction": "Klicke 'Create Token', kopiere den Token.",
