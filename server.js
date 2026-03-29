@@ -2537,9 +2537,11 @@ if (window.PulseOS) {
         const urlMatch = output.match(/https?:\/\/[^\s]+\.railway\.app[^\s]*/);
         if (urlMatch) railwayUrl = urlMatch[0];
       } catch (e) {
-        const errMsg = (e.stderr || e.message || '').toString().substring(0, 200);
+        const stderr = e.stderr ? e.stderr.toString() : '';
+        const stdout = e.stdout ? e.stdout.toString() : '';
+        const errMsg = (stderr || stdout || e.message || 'Unbekannter Fehler').substring(0, 300);
         console.log('[deploy] Railway error:', errMsg);
-        return jsonRes(res, { error: 'Railway Deploy fehlgeschlagen: ' + errMsg.split('\n')[0] }, 500);
+        return jsonRes(res, { error: 'Railway Deploy fehlgeschlagen: ' + errMsg }, 500);
       }
 
       // 3. Set env vars on Railway
