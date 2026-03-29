@@ -1,11 +1,3 @@
 {
-  "mcpServers": {
-    "pulseos": {
-      "command": "node",
-      "args": [".claude/servers/pulseos-mcp.js"],
-      "env": {
-        "PULSEOS_URL": "http://localhost:3000"
-      }
-    }
-  }
+  "enableAllProjectMcpServers": true
 }
