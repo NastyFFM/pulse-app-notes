@@ -1986,6 +1986,7 @@ function openApp(app, opts) {
     '<div class="win-titlebar" onmousedown="startDrag(event,\'' + winId + '\')" ontouchstart="startDrag(event,\'' + winId + '\')">' +
       '<div class="win-title"><span class="dot" style="background:' + app.color + '"></span>' + displayName + '</div>' +
       '<div class="win-btns">' +
+        '<button class="win-btn" onclick="refreshWin(\'' + winId + '\')" title="Neu laden">↻</button>' +
         '<button class="win-btn" onclick="historyWin(\'' + winId + '\',\'' + app.id + '\')" title="Versionen">h</button>' +
         '<button class="win-btn" onclick="editWin(\'' + winId + '\')" title="Anpassen">e</button>' +
         '<button class="win-btn" onclick="minimizeWin(\'' + winId + '\')" title="Minimize">-</button>' +
@@ -2325,6 +2326,12 @@ async function restoreVersion(appId, winId, timestamp) {
     if (win) { const iframe = win.el.querySelector('iframe'); if (iframe) { const base = iframe.src.split('?')[0]; iframe.src = base + '?_t=' + Date.now(); } }
     addFeed(appId + ': Version wiederhergestellt', 'mutation');
   }
+}
+
+function refreshWin(winId) {
+  const el = document.getElementById(winId);
+  const iframe = el?.querySelector('iframe');
+  if (iframe) { const base = iframe.src.split('?')[0]; iframe.src = base + '?_t=' + Date.now(); }
 }
 
 function minimizeWin(winId) {
