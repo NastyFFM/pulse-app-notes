@@ -137,9 +137,9 @@ const AppActions = {
           html += '<a href="https://railway.com/project/' + esc(app.railwayProjectId) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">🚂 Railway</a>';
         }
         if (app.vercelUrl) {
-          // Vercel dashboard: extract project name from URL (name-xxx.vercel.app → name)
-          const vercelProject = (app.vercelUrl.match(/https:\/\/([^.]+)/) || [])[1] || app.id;
-          const vercelTeam = app.vercelTeam || 'nastyffms-projects';
+          // Vercel dashboard: project name = app id (not the generated domain slug)
+          const vercelProject = app.vercelProject || app.id;
+          const vercelTeam = app.vercelTeam || '';
           html += '<a href="https://vercel.com/' + esc(vercelTeam) + '/' + esc(vercelProject) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">▲ Vercel</a>';
         }
         if (app.supabaseUrl) {
