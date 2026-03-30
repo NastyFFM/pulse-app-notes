@@ -2367,6 +2367,47 @@ if (window.PulseOS) {
         data.templates = data.templates.filter(t => t.id !== tpl.id);
         data.templates.push(tpl);
         fs.writeFileSync(templatesFile, JSON.stringify(data, null, 2));
+
+        // Auto-create missing stacks in tech-stacks.json
+        if (tpl.stacks && tpl.stacks.length) {
+          const knownStacks = {
+            cloudflare: { name: 'Cloudflare Pages', icon: '☁', description: 'Static Sites + Workers (Edge CDN)', url: 'https://dash.cloudflare.com/sign-up', tokenUrl: 'https://dash.cloudflare.com/profile/api-tokens', envVar: 'CLOUDFLARE_API_TOKEN' },
+            netlify: { name: 'Netlify', icon: '◆', description: 'Static Sites + Serverless Functions', url: 'https://app.netlify.com/signup', tokenUrl: 'https://app.netlify.com/user/applications#personal-access-tokens', envVar: 'NETLIFY_AUTH_TOKEN' },
+            fly: { name: 'Fly.io', icon: '🪁', description: 'Container Hosting (Global Edge)', url: 'https://fly.io/app/sign-up', tokenUrl: 'https://fly.io/user/personal_access_tokens', envVar: 'FLY_API_TOKEN' },
+            render: { name: 'Render', icon: '⬡', description: 'Web Services + Static Sites', url: 'https://dashboard.render.com/register', tokenUrl: 'https://dashboard.render.com/u/settings#api-keys', envVar: 'RENDER_API_KEY' },
+            'github-pages': { name: 'GitHub Pages', icon: '📄', description: 'Statische Seiten via GitHub', url: 'https://github.com', envVar: null }
+          };
+          const stacksFile = path.join(ROOT, 'data', 'tech-stacks.json');
+          const stacksData = safeReadJSON(stacksFile, '{"stacks":[]}');
+          const existingIds = (stacksData.stacks || []).map(s => s.id);
+          let stacksChanged = false;
+
+          tpl.stacks.forEach(rawId => {
+            const cleanId = rawId.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+            if (existingIds.includes(cleanId)) return;
+
+            const known = knownStacks[cleanId];
+            const envVar = known?.envVar || (cleanId.toUpperCase().replace(/-/g, '_') + '_TOKEN');
+            const newStack = {
+              id: cleanId,
+              name: known?.name || rawId,
+              icon: known?.icon || '☁',
+              description: known?.description || (rawId + ' Hosting'),
+              requiredEnvVars: envVar ? [envVar] : [],
+              onboarding: [
+                { step: 'account', title: (known?.name || rawId) + ' Account', url: known?.url || ('https://' + cleanId + '.com'), instruction: 'Account erstellen oder einloggen.' },
+                ...(envVar ? [{ step: 'paste-token', title: 'API Token', url: known?.tokenUrl || '', instruction: 'Erstelle einen API Token und fuege ihn hier ein.', envVar, placeholder: 'Token hier...' }] : [])
+              ]
+            };
+            stacksData.stacks.push(newStack);
+            existingIds.push(cleanId);
+            stacksChanged = true;
+            console.log('[templates] Auto-created stack:', cleanId);
+          });
+
+          if (stacksChanged) fs.writeFileSync(stacksFile, JSON.stringify(stacksData, null, 2));
+        }
+
         jsonRes(res, { ok: true, template: tpl });
       } catch (e) { jsonRes(res, { error: e.message }, 400); }
     });
