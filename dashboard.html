@@ -3531,9 +3531,9 @@ function renderChatMsg(msg) {
     }
     if (!txt) txt = 'Erledigt ✓';
   }
-  // Auto-open app if response contains a PulseOS app URL (only for new messages, not history)
+  // Auto-open app if response contains a PulseOS app URL (localhost or tunnel)
   if (!isUser && !chatHistoryRendering) {
-    const appUrlMatch = txt.match(/localhost:3000\/app\/([a-zA-Z0-9_-]+)/);
+    const appUrlMatch = txt.match(/(?:localhost:3000|\.lhr\.life|\.railway\.app)\/app\/([a-zA-Z0-9_-]+)/);
     if (appUrlMatch) {
       const urlAppId = appUrlMatch[1];
       const app = (state && state.apps || []).find(a => a.id === urlAppId);
@@ -3569,8 +3569,13 @@ function renderChatMarkdown(txt) {
   html = html.replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.2);padding:1px 4px;border-radius:3px;font-size:10px;">$1</code>');
   // Markdown links: [text](url)
   html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" style="color:var(--teal);text-decoration:underline;">$1</a>');
-  // Auto-link URLs (not already in an <a> tag)
-  html = html.replace(/(?<!href="|">)(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" style="color:var(--teal);text-decoration:underline;">$1</a>');
+  // PulseOS app URLs → inline "open" button (not external link)
+  html = html.replace(/(https?:\/\/[^\s<]*\/app\/([a-zA-Z0-9_-]+)\/?\*?\*?)/g, function(match, url, appId) {
+    const cleanUrl = url.replace(/\*+$/g, ''); // Remove trailing ** stars
+    return '<span onclick="const a=(state?.apps||[]).find(x=>x.id===\'' + appId + '\');if(a)openApp(a);" style="color:var(--teal);cursor:pointer;text-decoration:underline;">' + (appId) + ' öffnen</span>';
+  });
+  // Auto-link other URLs (not already in an <a> tag)
+  html = html.replace(/(?<!href="|">|onclick=")(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" style="color:var(--teal);text-decoration:underline;">$1</a>');
   return html;
 }
 
