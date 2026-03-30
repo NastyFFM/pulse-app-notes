@@ -119,8 +119,6 @@
       "icon": "▲",
       "description": "Frontend + Serverless Hosting",
       "requiredEnvVars": ["VERCEL_TOKEN"],
-      "cliTool": "vercel",
-      "cliBinary": "vercel",
       "onboarding": [
         {
           "step": "account",
