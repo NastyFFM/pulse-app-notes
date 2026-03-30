@@ -8087,11 +8087,12 @@ function copyInstall(repo, btn) {
 
         // For edit mode: add context about existing app
         let editContext = '';
+        let resolvedAppDir = '';
         if (editMode && editAppId) {
-          const appDir = resolveAppDir(editAppId);
+          resolvedAppDir = resolveAppDir(editAppId);
           try {
-            const indexHtml = fs.readFileSync(path.join(appDir, 'index.html'), 'utf8');
-            editContext = '\n\nDU MODIFIZIERST EINE BESTEHENDE APP: ' + editAppId + '\nAktuelle index.html (ersten 3000 Zeichen):\n```html\n' + indexHtml.substring(0, 3000) + '\n```\nÄndere NUR was der User verlangt. Behalte den Rest bei.\n';
+            const indexHtml = fs.readFileSync(path.join(resolvedAppDir, 'index.html'), 'utf8');
+            editContext = '\n\nDU MODIFIZIERST EINE BESTEHENDE APP: ' + editAppId + '\nApp-Verzeichnis: ' + resolvedAppDir + '\nAktuelle index.html (ersten 3000 Zeichen):\n```html\n' + indexHtml.substring(0, 3000) + '\n```\nÄndere NUR was der User verlangt. Behalte den Rest bei. Schreibe die geänderte Datei nach: ' + resolvedAppDir + '/index.html\n';
           } catch {}
         }
 
@@ -8103,7 +8104,8 @@ ${templateContent ? '\n--- TEMPLATE INSTRUKTIONEN ---\n' + templateContent + '\n
 
 REGELN:
 - Arbeite im Verzeichnis: ${ROOT}
-- Apps erstellen in: apps/<name>/index.html + apps/<name>/manifest.json + apps/<name>/data/
+- WICHTIG: Nutze den EXAKTEN App-Pfad aus dem Edit-Kontext oben (kann apps/ ODER userdata/apps/ sein)
+- Neue Apps erstellen in: ${USERDATA}/apps/<name>/index.html + manifest.json + data/
 
 APP-KONVENTION (PFLICHT):
 Jede App braucht diese 3 Dateien:
