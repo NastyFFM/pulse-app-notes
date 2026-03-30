@@ -2218,7 +2218,7 @@ async function sendEdit(winId) {
             // Reload iframe
             const win = document.getElementById(winId);
             const iframe = win?.querySelector('iframe');
-            if (iframe) iframe.src = iframe.src;
+            if (iframe) { const base = iframe.src.split('?')[0]; iframe.src = base + '?_t=' + Date.now(); }
           } else if (w.status === 'error') {
             clearInterval(pollEdit);
             spinner.remove();
@@ -2322,7 +2322,7 @@ async function restoreVersion(appId, winId, timestamp) {
   const d = await r.json();
   if (d.ok) {
     const win = openWindows.find(w => w.winId === winId);
-    if (win) { const iframe = win.el.querySelector('iframe'); if (iframe) iframe.src = iframe.src; }
+    if (win) { const iframe = win.el.querySelector('iframe'); if (iframe) { const base = iframe.src.split('?')[0]; iframe.src = base + '?_t=' + Date.now(); } }
     addFeed(appId + ': Version wiederhergestellt', 'mutation');
   }
 }
