@@ -2462,7 +2462,8 @@ if (window.PulseOS) {
       if (s.id === 'railway' && hasCli) {
         try { cliUser = execSync('railway whoami', { stdio: 'pipe', timeout: 5000, env: { ...process.env, PATH: extPath } }).toString().trim(); cliLoggedIn = true; } catch {}
       }
-      const ready = (hasKeys || cliLoggedIn) && hasCli;
+      // Ready = keys are set (CLI gets auto-installed at deploy time)
+      const ready = hasKeys || cliLoggedIn;
       return { id: s.id, name: s.name, icon: s.icon, description: s.description, ready, hasKeys, hasCli, cliLoggedIn, cliUser, missingKeys: ready ? [] : missingKeys };
     });
     return jsonRes(res, { stacks: status });
@@ -2611,7 +2612,7 @@ if (window.PulseOS) {
     const appsFile = path.join(ROOT, 'data', 'apps.json');
     const appsData = safeReadJSON(appsFile, '{"apps":[]}');
     const app = (appsData.apps || []).find(a => a.id === appId);
-    const deployStack = (app?.stacks || [])[0] || 'railway';
+    const deployStack = ((app?.stacks || [])[0] || 'railway').toLowerCase();
 
     // Load stack config
     const stacksData = safeReadJSON(path.join(ROOT, 'data', 'tech-stacks.json'), '{"stacks":[]}');

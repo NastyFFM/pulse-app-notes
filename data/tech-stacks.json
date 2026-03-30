@@ -5,13 +5,31 @@
       "name": "Railway",
       "icon": "🚂",
       "description": "Node.js/Next.js App Hosting",
-      "requiredEnvVars": ["RAILWAY_TOKEN"],
+      "requiredEnvVars": [
+        "RAILWAY_TOKEN"
+      ],
       "cliTool": "@railway/cli",
       "cliBinary": "railway",
       "onboarding": [
-        { "step": "account", "title": "Railway Account erstellen", "url": "https://railway.com/login", "instruction": "Erstelle einen Account oder logge dich ein bei Railway." },
-        { "step": "cli", "title": "CLI installieren", "auto": true, "command": "bun install -g @railway/cli" },
-        { "step": "cli-login", "title": "Bei Railway einloggen", "command": "~/.bun/bin/railway login", "instruction": "Der Login wird im Terminal ausgefuehrt. Bestaetige im Browser.", "check": "railway whoami" }
+        {
+          "step": "account",
+          "title": "Railway Account erstellen",
+          "url": "https://railway.com/login",
+          "instruction": "Erstelle einen Account oder logge dich ein bei Railway."
+        },
+        {
+          "step": "cli",
+          "title": "CLI installieren",
+          "auto": true,
+          "command": "bun install -g @railway/cli"
+        },
+        {
+          "step": "cli-login",
+          "title": "Bei Railway einloggen",
+          "command": "~/.bun/bin/railway login",
+          "instruction": "Der Login wird im Terminal ausgefuehrt. Bestaetige im Browser.",
+          "check": "railway whoami"
+        }
       ],
       "deploy": {
         "install": "bun install -g @railway/cli",
@@ -22,7 +40,9 @@
         "domainCommand": "railway domain ${serviceFlag} -p ${appPort} --json",
         "urlPattern": "https://pulse-app-${appId}-production.up.railway.app",
         "dashboardUrl": "https://railway.com/project/${projectId}",
-        "envMapping": { "RAILWAY_TOKEN": "RAILWAY_TOKEN" },
+        "envMapping": {
+          "RAILWAY_TOKEN": "RAILWAY_TOKEN"
+        },
         "needsScaffold": true
       }
     },
@@ -31,12 +51,38 @@
       "name": "Supabase",
       "icon": "⚡",
       "description": "Datenbank + Auth + Realtime",
-      "requiredEnvVars": ["SUPABASE_URL", "SUPABASE_ANON_KEY"],
+      "requiredEnvVars": [
+        "SUPABASE_URL",
+        "SUPABASE_ANON_KEY"
+      ],
       "onboarding": [
-        { "step": "account", "title": "Supabase Account erstellen", "url": "https://supabase.com/dashboard", "instruction": "Erstelle einen Account oder logge dich ein." },
-        { "step": "account", "title": "Neues Projekt erstellen", "url": "https://supabase.com/dashboard/new", "instruction": "Erstelle ein neues Supabase Projekt. Waehle einen Namen und eine Region." },
-        { "step": "paste-token", "title": "Project URL kopieren", "url": "https://supabase.com/dashboard/project/_/settings/api", "instruction": "Gehe zu Settings > API. Kopiere die 'Project URL'.", "envVar": "SUPABASE_URL", "placeholder": "https://xxx.supabase.co" },
-        { "step": "paste-token", "title": "Anon Key kopieren", "instruction": "Kopiere den 'anon public' Key von der gleichen Seite.", "envVar": "SUPABASE_ANON_KEY", "placeholder": "eyJhbGciOi..." }
+        {
+          "step": "account",
+          "title": "Supabase Account erstellen",
+          "url": "https://supabase.com/dashboard",
+          "instruction": "Erstelle einen Account oder logge dich ein."
+        },
+        {
+          "step": "account",
+          "title": "Neues Projekt erstellen",
+          "url": "https://supabase.com/dashboard/new",
+          "instruction": "Erstelle ein neues Supabase Projekt. Waehle einen Namen und eine Region."
+        },
+        {
+          "step": "paste-token",
+          "title": "Project URL kopieren",
+          "url": "https://supabase.com/dashboard/project/_/settings/api",
+          "instruction": "Gehe zu Settings > API. Kopiere die 'Project URL'.",
+          "envVar": "SUPABASE_URL",
+          "placeholder": "https://xxx.supabase.co"
+        },
+        {
+          "step": "paste-token",
+          "title": "Anon Key kopieren",
+          "instruction": "Kopiere den 'anon public' Key von der gleichen Seite.",
+          "envVar": "SUPABASE_ANON_KEY",
+          "placeholder": "eyJhbGciOi..."
+        }
       ]
     },
     {
@@ -44,11 +90,32 @@
       "name": "Stripe",
       "icon": "💳",
       "description": "Payments + Subscriptions",
-      "requiredEnvVars": ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY"],
+      "requiredEnvVars": [
+        "STRIPE_SECRET_KEY",
+        "STRIPE_PUBLISHABLE_KEY"
+      ],
       "onboarding": [
-        { "step": "account", "title": "Stripe Account erstellen", "url": "https://dashboard.stripe.com/register", "instruction": "Erstelle einen Stripe Account oder logge dich ein." },
-        { "step": "paste-token", "title": "Secret Key kopieren", "url": "https://dashboard.stripe.com/apikeys", "instruction": "Kopiere den 'Secret key' (beginnt mit sk_).", "envVar": "STRIPE_SECRET_KEY", "placeholder": "sk_test_..." },
-        { "step": "paste-token", "title": "Publishable Key kopieren", "instruction": "Kopiere den 'Publishable key' (beginnt mit pk_).", "envVar": "STRIPE_PUBLISHABLE_KEY", "placeholder": "pk_test_..." }
+        {
+          "step": "account",
+          "title": "Stripe Account erstellen",
+          "url": "https://dashboard.stripe.com/register",
+          "instruction": "Erstelle einen Stripe Account oder logge dich ein."
+        },
+        {
+          "step": "paste-token",
+          "title": "Secret Key kopieren",
+          "url": "https://dashboard.stripe.com/apikeys",
+          "instruction": "Kopiere den 'Secret key' (beginnt mit sk_).",
+          "envVar": "STRIPE_SECRET_KEY",
+          "placeholder": "sk_test_..."
+        },
+        {
+          "step": "paste-token",
+          "title": "Publishable Key kopieren",
+          "instruction": "Kopiere den 'Publishable key' (beginnt mit pk_).",
+          "envVar": "STRIPE_PUBLISHABLE_KEY",
+          "placeholder": "pk_test_..."
+        }
       ]
     },
     {
@@ -56,10 +123,24 @@
       "name": "Vercel",
       "icon": "▲",
       "description": "Frontend + Serverless Hosting",
-      "requiredEnvVars": ["VERCEL_TOKEN"],
+      "requiredEnvVars": [
+        "VERCEL_TOKEN"
+      ],
       "onboarding": [
-        { "step": "account", "title": "Vercel Account erstellen", "url": "https://vercel.com/signup", "instruction": "Erstelle einen Vercel Account oder logge dich ein." },
-        { "step": "paste-token", "title": "API Token erstellen", "url": "https://vercel.com/account/tokens", "instruction": "Klicke 'Create Token', kopiere den Token.", "envVar": "VERCEL_TOKEN", "placeholder": "Token hier einfuegen..." }
+        {
+          "step": "account",
+          "title": "Vercel Account erstellen",
+          "url": "https://vercel.com/signup",
+          "instruction": "Erstelle einen Vercel Account oder logge dich ein."
+        },
+        {
+          "step": "paste-token",
+          "title": "API Token erstellen",
+          "url": "https://vercel.com/account/tokens",
+          "instruction": "Klicke 'Create Token', kopiere den Token.",
+          "envVar": "VERCEL_TOKEN",
+          "placeholder": "Token hier einfuegen..."
+        }
       ],
       "deploy": {
         "install": "bun install -g vercel",
@@ -69,7 +150,9 @@
         "urlExtract": "Aliased:\\s*(https://[^\\s]+)",
         "urlPattern": "https://${appId}.vercel.app",
         "dashboardUrl": "https://vercel.com/${vercelTeam}/${appId}",
-        "envMapping": { "VERCEL_TOKEN": "VERCEL_TOKEN" }
+        "envMapping": {
+          "VERCEL_TOKEN": "VERCEL_TOKEN"
+        }
       }
     },
     {
@@ -77,10 +160,24 @@
       "name": "Cloudflare Pages",
       "icon": "☁",
       "description": "Static Sites + Workers (Edge CDN)",
-      "requiredEnvVars": ["CLOUDFLARE_API_TOKEN"],
+      "requiredEnvVars": [
+        "CLOUDFLARE_API_TOKEN"
+      ],
       "onboarding": [
-        { "step": "account", "title": "Cloudflare Pages Account", "url": "https://dash.cloudflare.com/sign-up", "instruction": "Account erstellen oder einloggen." },
-        { "step": "paste-token", "title": "API Token", "url": "https://dash.cloudflare.com/profile/api-tokens", "instruction": "Erstelle einen Token mit 'Cloudflare Pages:Edit' Permission.", "envVar": "CLOUDFLARE_API_TOKEN", "placeholder": "Token hier..." }
+        {
+          "step": "account",
+          "title": "Cloudflare Pages Account",
+          "url": "https://dash.cloudflare.com/sign-up",
+          "instruction": "Account erstellen oder einloggen."
+        },
+        {
+          "step": "paste-token",
+          "title": "API Token",
+          "url": "https://dash.cloudflare.com/profile/api-tokens",
+          "instruction": "Erstelle einen Token mit 'Cloudflare Pages:Edit' Permission.",
+          "envVar": "CLOUDFLARE_API_TOKEN",
+          "placeholder": "Token hier..."
+        }
       ],
       "deploy": {
         "install": "bun install -g wrangler",
@@ -89,7 +186,43 @@
         ],
         "urlPattern": "https://${appId}.pages.dev",
         "dashboardUrl": "https://dash.cloudflare.com/?to=/:account/pages/view/${appId}",
-        "envMapping": { "CLOUDFLARE_API_TOKEN": "CLOUDFLARE_API_TOKEN" }
+        "envMapping": {
+          "CLOUDFLARE_API_TOKEN": "CLOUDFLARE_API_TOKEN"
+        }
+      }
+    },
+    {
+      "id": "netlify",
+      "name": "Netlify",
+      "icon": "◆",
+      "description": "Static Sites + Serverless Functions",
+      "requiredEnvVars": [
+        "NETLIFY_AUTH_TOKEN"
+      ],
+      "onboarding": [
+        {
+          "step": "account",
+          "title": "Netlify Account",
+          "url": "https://app.netlify.com/signup",
+          "instruction": "Account erstellen oder einloggen."
+        },
+        {
+          "step": "paste-token",
+          "title": "API Token",
+          "url": "https://app.netlify.com/user/applications#personal-access-tokens",
+          "instruction": "Erstelle einen API Token und fuege ihn hier ein.",
+          "envVar": "NETLIFY_AUTH_TOKEN",
+          "placeholder": "Token hier..."
+        }
+      ],
+      "deploy": {
+        "install": "bun install -g netlify-cli",
+        "cliBinary": "netlify",
+        "commands": [
+          "netlify deploy --prod --dir=. --auth=${NETLIFY_AUTH_TOKEN}"
+        ],
+        "urlPattern": "https://${appId}.netlify.app",
+        "dashboardUrl": "https://app.netlify.com"
       }
     }
   ]
