@@ -17,8 +17,22 @@ const USERDATA = process.env.USERDATA ? path.resolve(process.env.USERDATA) : pat
 // Resolve app path: userdata/apps/ first (user apps), then apps/ (system apps)
 function resolveAppDir(appId) {
   const userApp = path.join(USERDATA, 'apps', appId);
+  const sysApp = path.join(ROOT, 'apps', appId);
+  const userExists = fs.existsSync(path.join(userApp, 'index.html'));
+  const sysExists = fs.existsSync(path.join(sysApp, 'index.html'));
+  // If both exist, prefer the one with the newer index.html
+  if (userExists && sysExists) {
+    try {
+      const userMtime = fs.statSync(path.join(userApp, 'index.html')).mtimeMs;
+      const sysMtime = fs.statSync(path.join(sysApp, 'index.html')).mtimeMs;
+      return sysMtime > userMtime ? sysApp : userApp;
+    } catch {}
+  }
+  if (userExists) return userApp;
+  if (sysExists) return sysApp;
+  // Fallback: check directory existence
   if (fs.existsSync(userApp)) return userApp;
-  return path.join(ROOT, 'apps', appId);
+  return sysApp;
 }
 
 // Check if an app is a user app
