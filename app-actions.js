@@ -139,7 +139,8 @@ const AppActions = {
         if (app.vercelUrl) {
           // Vercel dashboard: extract project name from URL (name-xxx.vercel.app → name)
           const vercelProject = (app.vercelUrl.match(/https:\/\/([^.]+)/) || [])[1] || app.id;
-          html += '<a href="https://vercel.com/~/projects/' + esc(vercelProject) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">▲ Vercel</a>';
+          const vercelTeam = app.vercelTeam || 'nastyffms-projects';
+          html += '<a href="https://vercel.com/' + esc(vercelTeam) + '/' + esc(vercelProject) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">▲ Vercel</a>';
         }
         if (app.supabaseUrl) {
           html += '<a href="' + esc(app.supabaseUrl.replace('.supabase.co', '.supabase.com/project/')) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">⚡ Supabase</a>';

@@ -2609,8 +2609,17 @@ if (window.PulseOS) {
               const urls = probeOut.match(/https:\/\/[^\s"]+\.vercel\.app/g) || [];
               vercelUrl = urls.find(u => !u.match(/-[a-z0-9]{9}-/)) || urls[0] || '';
             }
+            // Extract vercel team slug from deployment URL (name-hash-TEAM.vercel.app)
+            let vercelTeam = '';
+            const teamMatch = probeOut.match(/https:\/\/[^.]*-([a-z0-9-]+)\.vercel\.app/);
+            if (teamMatch) vercelTeam = teamMatch[1];
+            // Also try from "Aliased" line project name
+            const inspectMatch = probeOut.match(/vercel\.com\/([^/]+)\/([^/]+)/);
+            if (inspectMatch) { vercelTeam = inspectMatch[1]; }
+
             if (appForStack) {
               appForStack.vercelUrl = vercelUrl || appForStack.vercelUrl;
+              if (vercelTeam) appForStack.vercelTeam = vercelTeam;
               appForStack.deployedAt = new Date().toISOString();
               fs.writeFileSync(appsFileForStack, JSON.stringify(appsDataForStack, null, 2));
             }
@@ -2651,9 +2660,17 @@ if (window.PulseOS) {
           vercelUrl = urls.find(u => !u.match(/-[a-z0-9]{9}-/)) || urls[0] || '';
         }
 
+        // Extract vercel team slug
+        let vercelTeam = vercelScope || '';
+        if (!vercelTeam) {
+          const inspectMatch = output.match(/vercel\.com\/([^/]+)\/([^/]+)/);
+          if (inspectMatch) vercelTeam = inspectMatch[1];
+        }
+
         // Save to app data
         if (appForStack) {
           appForStack.vercelUrl = vercelUrl || appForStack.vercelUrl;
+          if (vercelTeam) appForStack.vercelTeam = vercelTeam;
           appForStack.deployedAt = new Date().toISOString();
           fs.writeFileSync(appsFileForStack, JSON.stringify(appsDataForStack, null, 2));
         }
@@ -2997,7 +3014,7 @@ http.createServer((req, res) => {
       const appsData = safeReadJSON(appsFile, '{"apps":[]}');
       const app = (appsData.apps || []).find(a => a.id === appId);
       if (!app) return jsonRes(res, { error: 'App not found' }, 404);
-      const allowed = ['template', 'stacks', 'description', 'icon', 'color', 'name'];
+      const allowed = ['template', 'stacks', 'description', 'icon', 'color', 'name', 'vercelTeam', 'vercelUrl', 'railwayProjectId', 'railwayUrl'];
       allowed.forEach(k => { if (updates[k] !== undefined) app[k] = updates[k]; });
       fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
       jsonRes(res, { ok: true, app: { id: app.id, template: app.template, stacks: app.stacks } });
