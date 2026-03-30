@@ -2884,6 +2884,22 @@ http.createServer((req, res) => {
     return;
   }
 
+  // ── Update app metadata (template, stacks, etc.) ──
+  if (url.match(/^\/api\/apps\/[^/]+\/meta$/) && req.method === 'PUT') {
+    const appId = url.split('/')[3];
+    return readBody(req, b => {
+      const updates = JSON.parse(b);
+      const appsFile = path.join(ROOT, 'data', 'apps.json');
+      const appsData = safeReadJSON(appsFile, '{"apps":[]}');
+      const app = (appsData.apps || []).find(a => a.id === appId);
+      if (!app) return jsonRes(res, { error: 'App not found' }, 404);
+      const allowed = ['template', 'stacks', 'description', 'icon', 'color', 'name'];
+      allowed.forEach(k => { if (updates[k] !== undefined) app[k] = updates[k]; });
+      fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+      jsonRes(res, { ok: true, app: { id: app.id, template: app.template, stacks: app.stacks } });
+    });
+  }
+
   // ── App Hide (soft uninstall — remove from launcher, keep files) ──
   if (url.match(/^\/api\/apps\/[^/]+\/hide$/) && req.method === 'POST') {
     const appId = url.split('/')[3];

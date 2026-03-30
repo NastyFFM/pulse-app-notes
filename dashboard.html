@@ -1997,7 +1997,7 @@ function openApp(app, opts) {
     '<div class="edit-panel" id="edit-' + winId + '" style="display:none;" data-appid="' + app.id + '">' +
       '<div class="edit-msgs" id="edit-msgs-' + winId + '"><div class="edit-welcome">Was moechtest du aendern?</div></div>' +
       '<div class="edit-controls">' +
-        '<select class="edit-template" id="edit-tpl-' + winId + '"><option value="frontend">Laden...</option></select>' +
+        '<select class="edit-template" id="edit-tpl-' + winId + '" onchange="saveTemplateChoice(\'' + winId + '\', this.value)"><option value="frontend">Laden...</option></select>' +
         '<button class="edit-action-btn" onclick="showCreateTemplate(\'' + winId + '\')" title="Neues Template">+</button>' +
         '<button class="edit-action-btn" onclick="toggleEnvVars(\'' + winId + '\')">⚙ Env</button>' +
       '</div>' +
@@ -2083,6 +2083,27 @@ async function loadTemplateDropdown(winId) {
     console.error('loadTemplateDropdown error:', e);
     select.innerHTML = '<option value="frontend">PulseOS Frontend</option>';
   }
+}
+
+async function saveTemplateChoice(winId, templateId) {
+  const editPanel = document.getElementById('edit-' + winId);
+  const appId = editPanel?.dataset?.appid;
+  if (!appId || !templateId) return;
+  // Get template stacks
+  let stacks = [];
+  try {
+    const r = await fetch('/api/templates');
+    const data = await r.json();
+    const tpl = (data.templates || []).find(t => t.id === templateId);
+    if (tpl) stacks = tpl.stacks || [];
+  } catch {}
+  // Save to app
+  try {
+    await fetch('/api/apps/' + appId + '/meta', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ template: templateId, stacks })
+    });
+  } catch (e) { console.error('saveTemplateChoice error:', e); }
 }
 
 function showCreateTemplate(winId) {
