@@ -35,6 +35,26 @@
       "id": "saas-starter",
       "author": "user",
       "createdAt": "2026-03-30T14:29:57.002Z"
+    },
+    {
+      "name": "TestTemplate",
+      "description": "allgemeine beschreibung",
+      "stacks": [],
+      "instructions": "",
+      "id": "testtemplate",
+      "author": "user",
+      "createdAt": "2026-03-30T14:46:27.699Z"
+    },
+    {
+      "name": "vercel",
+      "description": "einfaches game auf vercel",
+      "stacks": [
+        "vercel"
+      ],
+      "instructions": "",
+      "id": "vercel",
+      "author": "user",
+      "createdAt": "2026-03-30T15:46:45.014Z"
     }
   ]
 }

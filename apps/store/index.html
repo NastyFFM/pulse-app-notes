@@ -41,6 +41,20 @@ body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:var(-
 .badge-local { background:#f59e0b; color:#000; }
 .badge-cloud { background:#6366f1; color:#fff; }
 .badge-hidden { background:#666; color:#fff; }
+.badge-deployed { background:#06b6d4; color:#000; }
+
+/* Accounts Tab */
+.stack-list { display:flex; flex-direction:column; gap:8px; }
+.stack-card { background:var(--bg-card, #151520); border:1px solid var(--border, #1e1e2e); border-radius:10px; padding:14px 16px; display:flex; align-items:center; gap:12px; }
+.stack-card:hover { border-color:var(--teal, #4ecdc4); }
+.stack-icon { font-size:22px; width:36px; text-align:center; }
+.stack-info { flex:1; }
+.stack-name { font-size:13px; font-weight:600; }
+.stack-desc { font-size:10px; color:var(--text-dim, #888); margin-top:2px; }
+.stack-status { font-size:10px; font-weight:600; padding:3px 8px; border-radius:5px; }
+.stack-ready { background:#22c55e; color:#000; }
+.stack-missing { background:#333; color:#888; }
+.stack-actions { display:flex; gap:6px; }
 .action-btn { background:none; border:1px solid var(--border, #1e1e2e); color:var(--text-dim, #aaa); padding:3px 8px; border-radius:5px; font-size:9px; cursor:pointer; }
 .action-btn:hover { border-color:var(--teal, #4ecdc4); color:var(--text, #e0e0e0); }
 .action-btn.danger { border-color:#e74c3c; color:#e74c3c; }
@@ -67,6 +81,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:var(-
   <button class="tab" onclick="setTab('contacts')">Von Kontakten</button>
   <button class="tab" onclick="setTab('installed')">Installiert</button>
   <button class="tab" onclick="setTab('myapps')">Meine Apps</button>
+  <button class="tab" onclick="setTab('accounts')">Accounts</button>
 </div>
 <div class="content" id="content"></div>
 <div class="add-source">
@@ -162,6 +177,7 @@ function setTab(tab) {
 function render() {
   const el = document.getElementById('content');
   if (activeTab === 'myapps') { renderMyApps(el); return; }
+  if (activeTab === 'accounts') { renderAccounts(el); return; }
 
   const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
   let allApps = [];
@@ -244,8 +260,12 @@ async function renderMyApps(el) {
 
   allMyApps.forEach(a => {
     let badge = '', badgeClass = '';
+    const isDeployed = !!(a.railwayUrl || a.vercelUrl);
     if (a.cloudOnly) { badge = 'Nur auf GitHub'; badgeClass = 'badge-cloud'; }
-    else if (a.onGitHub) {
+    else if (isDeployed) {
+      badge = 'Live'; badgeClass = 'badge-deployed';
+      if (a.installed === false) badge += ' · Ausgeblendet';
+    } else if (a.onGitHub) {
       badge = a.ghPrivate ? 'Published (privat)' : 'Published';
       badgeClass = 'badge-published';
       if (a.installed === false) badge += ' · Ausgeblendet';
@@ -271,6 +291,87 @@ async function renderMyApps(el) {
   });
   html += '</div>';
   el.innerHTML = html;
+}
+
+async function renderAccounts(el) {
+  el.innerHTML = '<div class="empty"><p>Lade Stack-Status...</p></div>';
+
+  let stacks = [], stackStatus = [];
+  try { const r = await fetch('/api/stacks'); stacks = (await r.json()).stacks || []; } catch {}
+  try { const r = await fetch('/api/stacks/status'); stackStatus = (await r.json()).stacks || []; } catch {}
+
+  const dashboardUrls = {
+    railway: 'https://railway.com/dashboard',
+    supabase: 'https://supabase.com/dashboard',
+    stripe: 'https://dashboard.stripe.com',
+    vercel: 'https://vercel.com/dashboard'
+  };
+
+  let html = '<div class="section"><div class="section-title">Deine Tech-Stack Accounts <span class="count">' + stacks.length + '</span></div>';
+  html += '<div class="stack-list">';
+
+  stacks.forEach(stack => {
+    const status = stackStatus.find(s => s.id === stack.id) || {};
+    const ready = status.ready;
+    const missing = status.missingKeys || [];
+    const dashUrl = dashboardUrls[stack.id] || '';
+
+    html += '<div class="stack-card">';
+    html += '<div class="stack-icon">' + esc(stack.icon || '') + '</div>';
+    html += '<div class="stack-info">';
+    html += '<div class="stack-name">' + esc(stack.name) + '</div>';
+    html += '<div class="stack-desc">' + esc(stack.description || '') + '</div>';
+    if (ready) {
+      const info = status.cliUser ? 'Eingeloggt als ' + esc(status.cliUser.replace(/[^a-zA-Z0-9@._-]/g, '')) : 'Alle Keys gesetzt';
+      html += '<div style="font-size:9px;color:var(--teal,#4ecdc4);margin-top:3px;">' + info + (status.hasCli ? ' · CLI installiert' : '') + '</div>';
+    } else if (missing.length) {
+      html += '<div style="font-size:9px;color:#f59e0b;margin-top:3px;">Fehlt: ' + missing.join(', ') + '</div>';
+    }
+    html += '</div>';
+    html += '<div class="stack-actions">';
+    if (ready) {
+      html += '<span class="stack-status stack-ready">Bereit</span>';
+      if (dashUrl) html += '<a href="' + dashUrl + '" target="_blank" class="action-btn" style="text-decoration:none;">Dashboard</a>';
+    } else {
+      html += '<span class="stack-status stack-missing">Nicht eingerichtet</span>';
+      html += '<button class="install-btn" onclick="setupStack(\'' + esc(stack.id) + '\', this)">Einrichten</button>';
+    }
+    html += '</div></div>';
+  });
+
+  html += '</div></div>';
+
+  // Deployed Apps overview
+  const deployedApps = allAppsData.filter(a => a.railwayUrl || a.vercelUrl);
+  if (deployedApps.length) {
+    html += '<div class="section"><div class="section-title">Deployments <span class="count">' + deployedApps.length + '</span></div>';
+    html += '<div class="stack-list">';
+    deployedApps.forEach(a => {
+      const url = a.railwayUrl || a.vercelUrl || '';
+      const deployed = a.deployedAt ? new Date(a.deployedAt).toLocaleString('de-DE') : '';
+      html += '<div class="stack-card">';
+      html += '<div class="stack-icon" style="background:' + esc(a.color || '#333') + ';width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;">' + esc(a.icon || '?') + '</div>';
+      html += '<div class="stack-info">';
+      html += '<div class="stack-name">' + esc(a.name || a.id) + '</div>';
+      html += '<div class="stack-desc">' + esc(url) + '</div>';
+      if (deployed) html += '<div style="font-size:9px;color:var(--text-dim,#666);margin-top:2px;">Deployed: ' + deployed + '</div>';
+      html += '</div>';
+      html += '<div class="stack-actions">';
+      html += '<a href="' + esc(url) + '" target="_blank" class="install-btn" style="text-decoration:none;">Oeffnen</a>';
+      if (a.railwayProjectId) html += '<a href="https://railway.com/project/' + esc(a.railwayProjectId) + '" target="_blank" class="action-btn" style="text-decoration:none;">🚂 Railway</a>';
+      html += '</div></div>';
+    });
+    html += '</div></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+async function setupStack(stackId, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  await AppActions.onboardStack(stackId, btn);
+  // Re-render after setup
+  renderAccounts(document.getElementById('content'));
 }
 
 function openAppInPulse(appId) {

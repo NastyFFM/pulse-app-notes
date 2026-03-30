@@ -90,10 +90,11 @@ const AppActions = {
     const isPublished = !!app.source;
     const isHidden = app.installed === false;
     const isLocal = !app.source;
-    let badge = isPublished ? 'Published' : 'Nur lokal';
-    let badgeClass = isPublished ? 'badge-published' : 'badge-local';
+    const isDeployed = !!(app.railwayUrl || app.vercelUrl);
+    let badge = isDeployed ? 'Live' : isPublished ? 'Published' : 'Nur lokal';
+    let badgeClass = isDeployed ? 'badge-deployed' : isPublished ? 'badge-published' : 'badge-local';
     if (isHidden) badge += ' · Ausgeblendet';
-    return { isPublished, isHidden, isLocal, badge, badgeClass };
+    return { isPublished, isHidden, isLocal, isDeployed, badge, badgeClass };
   },
 
   // Render action buttons HTML for an app
@@ -119,9 +120,19 @@ const AppActions = {
       html += '<button class="action-btn" onclick="' + prefix + '._uiPublish(\'' + id + '\', this)">Update pushen</button>';
     }
 
-    // Deploy
+    // Deploy + Deploy-Links
     if (opts.showDeploy) {
-      html += '<button class="action-btn" onclick="' + prefix + '._uiSmartDeploy(\'' + id + '\', this)">🚀 Deploy</button>';
+      const isDeployed = !!(app.railwayUrl || app.vercelUrl);
+      if (isDeployed) {
+        const liveUrl = app.railwayUrl || app.vercelUrl;
+        html += '<a href="' + esc(liveUrl) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">🟢 Live</a>';
+        if (app.railwayProjectId) {
+          html += '<a href="https://railway.com/project/' + esc(app.railwayProjectId) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">🚂 Dashboard</a>';
+        }
+        html += '<button class="action-btn" onclick="' + prefix + '._uiSmartDeploy(\'' + id + '\', this)">↻ Redeploy</button>';
+      } else {
+        html += '<button class="action-btn" onclick="' + prefix + '._uiSmartDeploy(\'' + id + '\', this)">🚀 Deploy</button>';
+      }
     }
 
     // Hide / Unhide
@@ -164,20 +175,7 @@ const AppActions = {
   },
 
   async _uiDeploy(appId, btn) {
-    // Check env vars first
-    try {
-      const env = await this.getEnv(appId);
-      const hasEnv = Object.keys(env).length > 0;
-      if (!hasEnv) {
-        const setEnv = confirm('Keine Environment Variables gesetzt.\n\nMoechtest du welche hinzufuegen?\n(z.B. DATABASE_URL, API_KEY)\n\nKlicke OK um den Env-Editor zu oeffnen, oder Abbrechen um ohne zu deployen.');
-        if (setEnv) {
-          // Find and open the env editor in the edit panel
-          const envPanel = document.querySelector('[id^="edit-env-"]');
-          if (envPanel) { envPanel.style.display = 'block'; return; }
-        }
-      }
-    } catch {}
-
+    // Stack keys are checked in onboarding (via _uiSmartDeploy), no per-app env check needed
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Deploying...'; }
     const d = await this.deploy(appId);
     if (d.ok) {
@@ -227,26 +225,32 @@ const AppActions = {
     }
   },
 
-  // Smart Deploy: checks stacks, runs onboarding if needed, then deploys
+  // Smart Deploy: checks stacks dynamically based on app.stacks, runs onboarding if needed
   async _uiSmartDeploy(appId, btn) {
-    // 1. Check which stacks are ready
+    // 1. Determine which deploy stack this app needs
+    let appData;
+    try { const r = await fetch('/api/apps'); const d = await r.json(); appData = (d.apps || []).find(a => a.id === appId); } catch {}
+    const requiredStacks = appData?.stacks?.length ? appData.stacks : ['railway']; // default: railway
+    const deployStack = requiredStacks.find(s => s === 'railway' || s === 'vercel') || 'railway';
+
+    // 2. Check if required stack is ready
     let stackStatus;
     try { const r = await fetch('/api/stacks/status'); stackStatus = await r.json(); } catch { stackStatus = { stacks: [] }; }
-    const railway = (stackStatus.stacks || []).find(s => s.id === 'railway');
+    const stack = (stackStatus.stacks || []).find(s => s.id === deployStack);
 
-    // 2. If Railway not ready → run onboarding
-    if (!railway || !railway.ready) {
-      await this.onboardStack('railway', btn);
+    // 3. If not ready → run onboarding
+    if (!stack || !stack.ready) {
+      await this.onboardStack(deployStack, btn);
       // Re-check
       try { const r = await fetch('/api/stacks/status'); stackStatus = await r.json(); } catch {}
-      const railwayNow = (stackStatus.stacks || []).find(s => s.id === 'railway');
-      if (!railwayNow?.ready) {
+      const stackNow = (stackStatus.stacks || []).find(s => s.id === deployStack);
+      if (!stackNow?.ready) {
         if (btn) { btn.textContent = '🚀 Deploy'; btn.disabled = false; }
         return;
       }
     }
 
-    // 3. Deploy
+    // 4. Deploy
     await this._uiDeploy(appId, btn);
   },
 

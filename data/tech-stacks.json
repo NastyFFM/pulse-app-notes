@@ -28,7 +28,22 @@
           "instruction": "Der Login wird im Terminal ausgefuehrt. Bestaetige im Browser.",
           "check": "railway whoami"
         }
-      ]
+      ],
+      "deploy": {
+        "cli": [
+          "railway init -n pulse-app-<appId> --json",
+          "railway up -p <projectId> --detach",
+          "railway domain --json"
+        ],
+        "mcp": [
+          "create_project(name: pulse-app-<appId>)",
+          "create_service(projectId)",
+          "set_variables(PORT, etc.)",
+          "deploy(projectId, serviceId)",
+          "generate_domain(serviceId)"
+        ],
+        "api": "POST /api/apps/<appId>/deploy"
+      }
     },
     {
       "id": "supabase",

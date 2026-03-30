@@ -90,6 +90,10 @@ function safeReadJSON(file, fallback) {
 
 // --- App HTML with injected modifier overlay ---
 function appHtmlRes(res, file, appId) {
+  if (!fs.existsSync(file)) {
+    res.writeHead(404, { 'Content-Type': 'text/html' });
+    return res.end('<html><body style="background:#0d0d14;color:#888;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="text-align:center;"><h2 style="color:#e0e0e0;">App wird erstellt...</h2><p>Die App "' + (appId || '') + '" hat noch keine index.html.</p></div></body></html>');
+  }
   let html = fs.readFileSync(file, 'utf8');
   // Inject SSE blocker BEFORE any app scripts to prevent connection exhaustion
   // Apps in iframes don't need their own SSE — the dashboard handles updates
@@ -2108,7 +2112,7 @@ const server = http.createServer(async (req, res) => {
   if (url === '/api/apps/create' && req.method === 'POST') {
     return readBody(req, b => {
       try {
-        const { name, description, icon, color } = JSON.parse(b);
+        const { name, description, icon, color, template, stacks } = JSON.parse(b);
         if (!name) { res.writeHead(400); return res.end(JSON.stringify({ error: 'name required' })); }
         const appId = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
         // Check both dirs for existing app
@@ -2183,7 +2187,10 @@ if (window.PulseOS) {
         const appsFile = path.join(ROOT, 'data', 'apps.json');
         const appsData = safeReadJSON(appsFile, '{"apps":[]}');
         const apps = appsData.apps || [];
-        apps.push({ id: appId, name, icon: appIcon, color: appColor, description: description || '', installed: true, created: true, position: apps.length });
+        const appEntry = { id: appId, name, icon: appIcon, color: appColor, description: description || '', installed: true, created: true, position: apps.length };
+        if (template) appEntry.template = template;
+        if (stacks && stacks.length) appEntry.stacks = stacks;
+        apps.push(appEntry);
         if (appsData.apps) appsData.apps = apps;
         fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
         invalidateAgentContextCache();
@@ -2406,7 +2413,14 @@ if (window.PulseOS) {
       const missingKeys = (s.requiredEnvVars || []).filter(v => !env[v]);
       let hasCli = true;
       if (s.cliBinary) { try { execSync('which ' + s.cliBinary, { stdio: 'pipe', env: { ...process.env, PATH: extPath } }); } catch { hasCli = false; } }
-      return { id: s.id, name: s.name, icon: s.icon, ready: hasKeys && hasCli, hasKeys, hasCli, missingKeys };
+      // For Railway: also check CLI session login (not just token)
+      let cliLoggedIn = false;
+      let cliUser = '';
+      if (s.id === 'railway' && hasCli) {
+        try { cliUser = execSync('railway whoami', { stdio: 'pipe', timeout: 5000, env: { ...process.env, PATH: extPath } }).toString().trim(); cliLoggedIn = true; } catch {}
+      }
+      const ready = (hasKeys || cliLoggedIn) && hasCli;
+      return { id: s.id, name: s.name, icon: s.icon, description: s.description, ready, hasKeys, hasCli, cliLoggedIn, cliUser, missingKeys: ready ? [] : missingKeys };
     });
     return jsonRes(res, { stacks: status });
   }
@@ -2560,8 +2574,13 @@ if (window.PulseOS) {
     if (!hasRailway) {
       return jsonRes(res, { error: 'Railway CLI nicht installiert. Klicke "Deploy einrichten" um es zu installieren.' }, 400);
     }
+    // Accept either token file OR CLI session login (railway whoami)
     if (!railwayToken) {
-      return jsonRes(res, { error: 'Railway Token fehlt. Klicke "Deploy einrichten" um dich anzumelden.' }, 400);
+      let cliLoggedIn = false;
+      try { execSync('railway whoami', { stdio: 'pipe', timeout: 5000, env: railwayEnv }); cliLoggedIn = true; } catch {}
+      if (!cliLoggedIn) {
+        return jsonRes(res, { error: 'Railway Token fehlt. Klicke "Deploy einrichten" um dich anzumelden.' }, 400);
+      }
     }
 
     try {
@@ -2588,13 +2607,180 @@ if (window.PulseOS) {
         }
       }
 
-      // 2. Railway deploy (with token env)
+      // 1b. Auto-scaffold deploy files for vanilla apps (no server.js/package.json)
+      const hasServerJs = fs.existsSync(path.join(appDir, 'server.js'));
+      const hasPackageJson = fs.existsSync(path.join(appDir, 'package.json'));
+      const scaffolded = [];
+      if (!hasServerJs) {
+        const serverCode = `const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const PORT = process.env.PORT || 3000;
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
+http.createServer((req, res) => {
+  const url = req.url.split('?')[0];
+  // Data API
+  if (url.startsWith('/app/${appId}/api/')) {
+    const file = url.split('/api/')[1].replace(/[^a-z0-9-]/g, '');
+    const fp = path.join(__dirname, 'data', file + '.json');
+    if (req.method === 'GET') { try { res.end(fs.readFileSync(fp)); } catch { res.end('{}'); } return; }
+    if (req.method === 'PUT') { let b=''; req.on('data',c=>b+=c); req.on('end',()=>{ try{fs.mkdirSync(path.join(__dirname,'data'),{recursive:true});}catch{} fs.writeFileSync(fp,b); res.end('{"ok":true}'); }); return; }
+  }
+  // Static files
+  let fp = path.join(__dirname, url === '/' ? 'index.html' : url.replace(/^\\//, ''));
+  try { const d = fs.readFileSync(fp); res.writeHead(200, {'Content-Type': MIME[path.extname(fp)] || 'application/octet-stream'}); res.end(d); }
+  catch { res.writeHead(404); res.end('Not found'); }
+}).listen(PORT, () => console.log('Listening on ' + PORT));
+`;
+        fs.writeFileSync(path.join(appDir, 'server.js'), serverCode);
+        scaffolded.push('server.js');
+      }
+      if (!hasPackageJson) {
+        fs.writeFileSync(path.join(appDir, 'package.json'), JSON.stringify({
+          name: repoName, version: '1.0.0', private: true,
+          scripts: { start: 'node server.js' }
+        }, null, 2));
+        scaffolded.push('package.json');
+      }
+      if (!fs.existsSync(path.join(appDir, 'railway.json'))) {
+        fs.writeFileSync(path.join(appDir, 'railway.json'), JSON.stringify({
+          build: { builder: 'NIXPACKS' },
+          deploy: { startCommand: 'node server.js', healthcheckPath: '/', restartPolicyType: 'ON_FAILURE', restartPolicyMaxRetries: 3 }
+        }, null, 2));
+        scaffolded.push('railway.json');
+      }
+      if (scaffolded.length) console.log('[deploy] Auto-scaffolded for ' + appId + ':', scaffolded.join(', '));
+
+      // 2. Railway: Create project + deploy (no interactive `railway link` needed)
       let railwayUrl = '';
+      let projectId = app?.railwayProjectId || '';
+      let serviceId = '';
       try {
-        execSync('cd ' + appDir + ' && railway link 2>/dev/null || true', { stdio: 'pipe', timeout: 15000, env: railwayEnv });
-        const output = execSync('cd ' + appDir + ' && railway up --detach 2>&1', { stdio: 'pipe', timeout: 60000, env: railwayEnv }).toString();
+        // 2a. Detect workspace ID (needed for railway init)
+        let workspaceId = '';
+        try {
+          const listOut = execSync('railway list --json 2>&1', { stdio: 'pipe', timeout: 15000, env: railwayEnv }).toString();
+          const projects = JSON.parse(listOut);
+          const arr = Array.isArray(projects) ? projects : projects.projects || [];
+          // Check if project already exists
+          const existing = arr.find(p => p.name === repoName);
+          if (existing) {
+            projectId = existing.id;
+            // Extract service ID if available
+            const svcEdges = existing.services?.edges || [];
+            if (svcEdges.length > 0) serviceId = svcEdges[0].node.id;
+          }
+          // Get workspace ID from any project
+          if (arr.length > 0 && arr[0].workspace?.id) workspaceId = arr[0].workspace.id;
+        } catch (listErr) {
+          console.log('[deploy] railway list error:', (listErr.message || '').substring(0, 200));
+        }
+
+        // 2b. Create Railway project if not exists
+        if (!projectId) {
+          try {
+            const wsFlag = workspaceId ? ' --workspace ' + workspaceId : '';
+            const initOut = execSync('cd ' + appDir + ' && railway init -n ' + repoName + wsFlag + ' --json 2>&1', { stdio: 'pipe', timeout: 20000, env: railwayEnv }).toString();
+            console.log('[deploy] railway init output:', initOut);
+            // Extract project ID from JSON (may have non-JSON prefix lines)
+            const jsonLine = initOut.split('\n').find(l => l.startsWith('{'));
+            if (jsonLine) { try { projectId = JSON.parse(jsonLine).id; } catch {} }
+            if (!projectId) {
+              const idMatch = initOut.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/);
+              if (idMatch) projectId = idMatch[0];
+            }
+          } catch (initErr) {
+            const initMsg = (initErr.stderr || initErr.stdout || '').toString();
+            console.log('[deploy] railway init error:', initMsg.substring(0, 200));
+          }
+        }
+
+        if (!projectId) {
+          return jsonRes(res, { error: 'Railway Projekt konnte nicht erstellt werden. Versuche es manuell: railway init -n ' + repoName }, 500);
+        }
+
+        // 2c. Deploy with explicit project ID + environment + service
+        const svcFlag = serviceId ? ' -s ' + serviceId : '';
+        const upCmd = 'cd ' + appDir + ' && railway up --detach -p ' + projectId + ' -e production' + svcFlag + ' 2>&1';
+        console.log('[deploy] running:', upCmd);
+        const output = execSync(upCmd, { stdio: 'pipe', timeout: 120000, env: railwayEnv }).toString();
+        console.log('[deploy] railway up output:', output.substring(0, 500));
+
+        // Extract service ID from build logs URL
+        if (!serviceId) {
+          const svcMatch = output.match(/service\/([0-9a-f-]{36})/);
+          if (svcMatch) serviceId = svcMatch[1];
+        }
+
         const urlMatch = output.match(/https?:\/\/[^\s]+\.railway\.app[^\s]*/);
         if (urlMatch) railwayUrl = urlMatch[0];
+
+        // 2d. Generate public domain — write railway link config directly, then generate domain
+        {
+          // Detect app port from manifest or server.js
+          let appPort = 3000;
+          try {
+            const manifest = JSON.parse(fs.readFileSync(path.join(appDir, 'manifest.json'), 'utf8'));
+            if (manifest.port) appPort = manifest.port;
+          } catch {}
+          try {
+            const srvContent = fs.readFileSync(path.join(appDir, 'server.js'), 'utf8');
+            const portMatch = srvContent.match(/PORT\s*\|\|\s*(\d+)/);
+            if (portMatch) appPort = parseInt(portMatch[1]);
+          } catch {}
+
+          // Write link config directly into ~/.railway/config.json (avoids interactive railway link)
+          let envId = '';
+          try {
+            const listOut = execSync('railway list --json 2>&1', { stdio: 'pipe', timeout: 10000, env: railwayEnv }).toString();
+            const projects = JSON.parse(listOut);
+            const proj = (Array.isArray(projects) ? projects : []).find(p => p.id === projectId);
+            if (proj) {
+              const envEdge = (proj.environments?.edges || [])[0];
+              if (envEdge) envId = envEdge.node.id;
+            }
+          } catch {}
+
+          const railwayConfigPath = path.join(require('os').homedir(), '.railway', 'config.json');
+          try {
+            let railwayConfig = {};
+            try { railwayConfig = JSON.parse(fs.readFileSync(railwayConfigPath, 'utf8')); } catch {}
+            if (!railwayConfig.projects) railwayConfig.projects = {};
+            railwayConfig.projects[appDir] = {
+              projectPath: appDir,
+              name: repoName,
+              project: projectId,
+              environment: envId || '',
+              environmentName: 'production',
+              service: serviceId || null
+            };
+            fs.writeFileSync(railwayConfigPath, JSON.stringify(railwayConfig, null, 2));
+            console.log('[deploy] Wrote railway link config for', appDir);
+          } catch (cfgErr) {
+            console.log('[deploy] Failed to write railway config:', cfgErr.message);
+          }
+
+          // Now generate domain (railway domain reads from ~/.railway/config.json)
+          try {
+            const domainFlag = (serviceId ? ' -s ' + serviceId : '') + ' -p ' + appPort;
+            const domainOut = execSync('cd ' + appDir + ' && railway domain' + domainFlag + ' --json 2>&1', { stdio: 'pipe', timeout: 15000, env: railwayEnv }).toString();
+            console.log('[deploy] railway domain output:', domainOut.substring(0, 300));
+            try {
+              const d = JSON.parse(domainOut);
+              if (d.domain) railwayUrl = d.domain.startsWith('http') ? d.domain : 'https://' + d.domain;
+            } catch {
+              const domainUrlMatch = domainOut.match(/https?:\/\/[^\s"]+\.railway\.app[^\s"]*/);
+              if (domainUrlMatch) railwayUrl = domainUrlMatch[0];
+            }
+          } catch (domErr) {
+            console.log('[deploy] railway domain failed:', (domErr.stderr || domErr.message || '').toString().substring(0, 200));
+            // Fallback URL
+            if (!railwayUrl) {
+              railwayUrl = 'https://' + repoName + '-production.up.railway.app';
+              console.log('[deploy] using fallback URL:', railwayUrl);
+            }
+          }
+        }
       } catch (e) {
         const stderr = e.stderr ? e.stderr.toString() : '';
         const stdout = e.stdout ? e.stdout.toString() : '';
@@ -2605,16 +2791,26 @@ if (window.PulseOS) {
 
       // 3. Set env vars on Railway
       const envFile = path.join(appDir, '.env');
-      if (fs.existsSync(envFile)) {
+      if (fs.existsSync(envFile) && projectId) {
         try {
           const envContent = fs.readFileSync(envFile, 'utf8');
-          envContent.split('\n').filter(l => l.includes('=')).forEach(line => {
-            try { execSync('cd ' + appDir + ' && railway variables set "' + line.trim() + '" 2>/dev/null', { stdio: 'pipe', timeout: 10000, env: railwayEnv }); } catch {}
-          });
+          const vars = envContent.split('\n').filter(l => l.includes('=') && !l.startsWith('#')).map(l => l.trim()).filter(Boolean);
+          if (vars.length > 0) {
+            const varArgs = vars.map(v => '"' + v + '"').join(' ');
+            try { execSync('cd ' + appDir + ' && railway variables set ' + varArgs + ' -p ' + projectId + ' 2>/dev/null', { stdio: 'pipe', timeout: 15000, env: railwayEnv }); } catch {}
+          }
         } catch {}
       }
 
-      jsonRes(res, { ok: true, url: railwayUrl || 'https://github.com/' + githubUser + '/' + repoName, github: 'https://github.com/' + githubUser + '/' + repoName });
+      // Save deployment info to app data
+      if (app && (railwayUrl || projectId)) {
+        app.railwayProjectId = projectId || app.railwayProjectId;
+        app.railwayUrl = railwayUrl || app.railwayUrl;
+        app.deployedAt = new Date().toISOString();
+        fs.writeFileSync(path.join(ROOT, 'data', 'apps.json'), JSON.stringify(appsData, null, 2));
+      }
+
+      jsonRes(res, { ok: true, url: railwayUrl || githubUrl, github: githubUrl, projectId });
     } catch (e) {
       console.error('[deploy] Error:', e.message);
       jsonRes(res, { error: 'Deploy fehlgeschlagen: ' + e.message.split('\n')[0] }, 500);
@@ -7797,18 +7993,19 @@ function copyInstall(repo, btn) {
           createdBy: 'user'
         };
 
-        // Load template: first try JSON templates, fallback to .md files
+        // Load template: prefer .md file (more detailed), fallback to JSON instructions
         let templateContent = '';
         if (template) {
-          try {
-            const tplData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'templates.json'), 'utf8'));
-            const tpl = (tplData.templates || []).find(t => t.id === template);
-            if (tpl) templateContent = tpl.instructions || '';
-          } catch {}
-          // Fallback to .md file
+          // 1. Try .md file first (has full deploy instructions etc.)
+          const tplFile = path.join(ROOT, 'data', 'templates', template + '.md');
+          try { templateContent = fs.readFileSync(tplFile, 'utf8'); } catch {}
+          // 2. Fallback to JSON instructions
           if (!templateContent) {
-            const tplFile = path.join(ROOT, 'data', 'templates', template + '.md');
-            try { templateContent = fs.readFileSync(tplFile, 'utf8'); } catch {}
+            try {
+              const tplData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'templates.json'), 'utf8'));
+              const tpl = (tplData.templates || []).find(t => t.id === template);
+              if (tpl) templateContent = tpl.instructions || '';
+            } catch {}
           }
         }
 

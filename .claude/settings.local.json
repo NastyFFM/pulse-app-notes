@@ -49,7 +49,8 @@
       "Bash(/usr/local/bin/node --version)",
       "Read(//Users/chris.pohl/**)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\(''''mcpServers'''',{}\\), indent=2\\)\\)\")",
-      "mcp__pulseos__pulseos"
+      "mcp__pulseos__pulseos",
+      "Bash(python3 -c \"import sys,json; print\\(json.dumps\\(json.load\\(sys.stdin\\), indent=2\\)\\)\")"
     ]
   }
 }

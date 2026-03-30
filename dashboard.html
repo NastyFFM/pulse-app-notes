@@ -2056,11 +2056,19 @@ function editWin(winId) {
 async function loadTemplateDropdown(winId) {
   const select = document.getElementById('edit-tpl-' + winId);
   if (!select) return;
+  // Get the app's saved template
+  const editPanel = document.getElementById('edit-' + winId);
+  const appId = editPanel?.dataset?.appid || '';
+  let savedTemplate = 'frontend';
+  if (appId) {
+    const appObj = (allApps || []).find(a => a.id === appId);
+    if (appObj?.template) savedTemplate = appObj.template;
+  }
   try {
     const r = await fetch('/api/templates');
     const data = await r.json();
     select.innerHTML = (data.templates || []).map(t =>
-      '<option value="' + t.id + '">' + (t.icon || '') + ' ' + t.name + '</option>'
+      '<option value="' + t.id + '"' + (t.id === savedTemplate ? ' selected' : '') + '>' + (t.icon || '') + ' ' + t.name + '</option>'
     ).join('');
   } catch {
     select.innerHTML = '<option value="frontend">PulseOS Frontend</option>';

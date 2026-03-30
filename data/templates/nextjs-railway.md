@@ -9,6 +9,7 @@ apps/<name>/
 ├── manifest.json          ← PulseOS Metadaten + Graph-Ports
 ├── package.json           ← Next.js Dependencies
 ├── next.config.js         ← Next.js Config
+├── railway.json           ← Railway Deploy-Config (PFLICHT fuer Deploy)
 ├── app/
 │   ├── layout.tsx         ← Root Layout
 │   ├── page.tsx           ← Hauptseite
@@ -37,6 +38,19 @@ apps/<name>/
 }
 ```
 
+## railway.json (PFLICHT fuer Railway Deploy)
+```json
+{
+  "build": { "builder": "NIXPACKS" },
+  "deploy": {
+    "startCommand": "npm run start",
+    "healthcheckPath": "/",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  }
+}
+```
+
 ## index.html (PulseOS Wrapper)
 ```html
 <!DOCTYPE html>
@@ -50,9 +64,7 @@ apps/<name>/
 <iframe id="app" style="display:none;" src=""></iframe>
 <script src="/sdk.js"></script>
 <script>
-// PulseOS startet den Next.js Dev-Server automatisch
-// Der iframe zeigt die Next.js App
-const port = 3100; // Aus manifest.json
+const port = 3100;
 async function checkServer() {
   try {
     const r = await fetch('http://localhost:' + port);
@@ -66,7 +78,6 @@ async function checkServer() {
   } catch {}
   setTimeout(checkServer, 2000);
 }
-// Request server start
 fetch('/api/apps/APP_ID/start', { method: 'POST' }).then(() => checkServer());
 PulseOS.onInput('data', function(data) { });
 PulseOS.onDataChanged(function() { });
@@ -82,7 +93,7 @@ PulseOS.onDataChanged(function() { });
   "scripts": {
     "dev": "next dev -p 3100",
     "build": "next build",
-    "start": "next start -p 3100"
+    "start": "next start -p ${PORT:-3100}"
   },
   "dependencies": {
     "next": "^14",
@@ -92,11 +103,40 @@ PulseOS.onDataChanged(function() { });
 }
 ```
 
-## Railway Deploy
-- App wird auf GitHub als `pulse-app-<name>` Repo gepusht
-- Railway wird automatisch ans Repo connected
-- Jeder Push deployed automatisch
-- Environment Variables werden ueber den Env-Vars Editor gesetzt
+## Deployment auf Railway
+
+### Option 1: Via Railway MCP Tools (bevorzugt)
+
+Wenn du Zugriff auf Railway MCP Tools hast, nutze diese Reihenfolge:
+
+1. **Projekt erstellen:** `create_project` mit name `pulse-app-<appId>`
+2. **Service erstellen:** `create_service` im neuen Projekt
+3. **Env Vars setzen:** `set_variables` — mindestens `PORT=3100`
+4. **Deploy ausloesen:** `deploy` — Code aus dem App-Verzeichnis
+5. **Domain generieren:** `generate_domain` — oeffentliche Railway-URL
+6. **URL zurueckgeben** an den User
+
+### Option 2: Via Railway CLI
+
+```bash
+cd apps/<name>/
+railway init -n pulse-app-<name> --json   # Projekt erstellen, gibt JSON mit ID zurueck
+railway up -p <projectId> --detach         # Deploy mit expliziter Project-ID
+railway domain --json                       # Domain generieren
+```
+
+### Option 3: Via PulseOS Deploy-API
+
+```
+POST /api/apps/<appId>/deploy
+```
+Macht automatisch: GitHub-Repo erstellen → Railway-Projekt erstellen → Deploy → Domain.
+
+### WICHTIG fuer Deploy
+- `railway.json` MUSS im App-Verzeichnis liegen
+- `package.json` scripts.start MUSS `${PORT:-3100}` nutzen (Railway setzt PORT dynamisch)
+- Keine hardcodierten Ports im Server-Code — immer `process.env.PORT || 3100`
+- Daten in `data/` werden NICHT deployed — nutze eine Datenbank oder Railway Volumes
 
 ## Regeln
 - MUSS auch lokal laufen (via npm run dev)
