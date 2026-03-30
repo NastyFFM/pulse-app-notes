@@ -2371,9 +2371,9 @@ if (window.PulseOS) {
         // Auto-create missing stacks in tech-stacks.json
         if (tpl.stacks && tpl.stacks.length) {
           const knownStacks = {
-            cloudflare: { name: 'Cloudflare Pages', icon: '☁', description: 'Static Sites + Workers (Edge CDN)', url: 'https://dash.cloudflare.com/sign-up', tokenUrl: 'https://dash.cloudflare.com/profile/api-tokens', envVar: 'CLOUDFLARE_API_TOKEN' },
-            netlify: { name: 'Netlify', icon: '◆', description: 'Static Sites + Serverless Functions', url: 'https://app.netlify.com/signup', tokenUrl: 'https://app.netlify.com/user/applications#personal-access-tokens', envVar: 'NETLIFY_AUTH_TOKEN' },
-            fly: { name: 'Fly.io', icon: '🪁', description: 'Container Hosting (Global Edge)', url: 'https://fly.io/app/sign-up', tokenUrl: 'https://fly.io/user/personal_access_tokens', envVar: 'FLY_API_TOKEN' },
+            cloudflare: { name: 'Cloudflare Pages', icon: '☁', description: 'Static Sites + Workers (Edge CDN)', url: 'https://dash.cloudflare.com/sign-up', tokenUrl: 'https://dash.cloudflare.com/profile/api-tokens', envVar: 'CLOUDFLARE_API_TOKEN', deploy: { install: 'bun install -g wrangler', commands: ['wrangler pages deploy . --project-name=${appId} --commit-dirty=true'], urlPattern: 'https://${appId}.pages.dev', dashboardUrl: 'https://dash.cloudflare.com', envMapping: { CLOUDFLARE_API_TOKEN: 'CLOUDFLARE_API_TOKEN' } } },
+            netlify: { name: 'Netlify', icon: '◆', description: 'Static Sites + Serverless Functions', url: 'https://app.netlify.com/signup', tokenUrl: 'https://app.netlify.com/user/applications#personal-access-tokens', envVar: 'NETLIFY_AUTH_TOKEN', deploy: { install: 'bun install -g netlify-cli', cliBinary: 'netlify', commands: ['netlify deploy --prod --dir=. --auth=${NETLIFY_AUTH_TOKEN}'], urlPattern: 'https://${appId}.netlify.app', dashboardUrl: 'https://app.netlify.com' } },
+            fly: { name: 'Fly.io', icon: '🪁', description: 'Container Hosting (Global Edge)', url: 'https://fly.io/app/sign-up', tokenUrl: 'https://fly.io/user/personal_access_tokens', envVar: 'FLY_API_TOKEN', deploy: { install: 'curl -L https://fly.io/install.sh | sh', commands: ['fly deploy --now'], urlPattern: 'https://${appId}.fly.dev', dashboardUrl: 'https://fly.io/apps/${appId}', needsScaffold: true } },
             render: { name: 'Render', icon: '⬡', description: 'Web Services + Static Sites', url: 'https://dashboard.render.com/register', tokenUrl: 'https://dashboard.render.com/u/settings#api-keys', envVar: 'RENDER_API_KEY' },
             'github-pages': { name: 'GitHub Pages', icon: '📄', description: 'Statische Seiten via GitHub', url: 'https://github.com', envVar: null }
           };
@@ -2399,6 +2399,8 @@ if (window.PulseOS) {
                 ...(envVar ? [{ step: 'paste-token', title: 'API Token', url: known?.tokenUrl || '', instruction: 'Erstelle einen API Token und fuege ihn hier ein.', envVar, placeholder: 'Token hier...' }] : [])
               ]
             };
+            if (known?.deploy) newStack.deploy = known.deploy;
+            if (known?.deploy?.cliBinary) newStack.cliBinary = known.deploy.cliBinary;
             stacksData.stacks.push(newStack);
             existingIds.push(cleanId);
             stacksChanged = true;
@@ -2593,7 +2595,7 @@ if (window.PulseOS) {
     });
   }
 
-  // ── App Deploy (dynamic: Railway or Vercel based on app.stacks) ──
+  // ── App Deploy (generic: reads deploy.commands from stack config) ──
   if (url.match(/^\/api\/apps\/[^/]+\/deploy$/) && req.method === 'POST') {
     const appId = url.split('/')[3];
     const profile = safeReadJSON(path.join(ROOT, 'data', 'profile.json'), '{}');
@@ -2606,376 +2608,205 @@ if (window.PulseOS) {
     const extPath = process.env.PATH + ':/Users/chris.pohl/.bun/bin:/usr/local/bin:/opt/homebrew/bin';
 
     // Determine deploy stack from app data
-    const appsFileForStack = path.join(ROOT, 'data', 'apps.json');
-    const appsDataForStack = safeReadJSON(appsFileForStack, '{"apps":[]}');
-    const appForStack = (appsDataForStack.apps || []).find(a => a.id === appId);
-    const deployStack = (appForStack?.stacks || [])[0] || 'railway';
+    const appsFile = path.join(ROOT, 'data', 'apps.json');
+    const appsData = safeReadJSON(appsFile, '{"apps":[]}');
+    const app = (appsData.apps || []).find(a => a.id === appId);
+    const deployStack = (app?.stacks || [])[0] || 'railway';
 
-    // ── VERCEL DEPLOY ──
-    if (deployStack === 'vercel') {
-      const env = readGlobalEnv();
-      const vercelToken = env.VERCEL_TOKEN || '';
-      if (!vercelToken) return jsonRes(res, { error: 'VERCEL_TOKEN fehlt. Richte Vercel im Accounts-Tab ein.' }, 400);
+    // Load stack config
+    const stacksData = safeReadJSON(path.join(ROOT, 'data', 'tech-stacks.json'), '{"stacks":[]}');
+    const stack = (stacksData.stacks || []).find(s => s.id === deployStack);
+    if (!stack) return jsonRes(res, { error: 'Stack "' + deployStack + '" nicht gefunden in tech-stacks.json' }, 400);
+    if (!stack.deploy?.commands?.length) return jsonRes(res, { error: 'Stack "' + deployStack + '" hat keine deploy.commands konfiguriert' }, 400);
 
-      // Auto-scaffold for vanilla apps
-      if (!fs.existsSync(path.join(appDir, 'package.json'))) {
-        fs.writeFileSync(path.join(appDir, 'package.json'), JSON.stringify({ name: repoName, version: '1.0.0', private: true }, null, 2));
-      }
+    // ── GENERIC DEPLOY (reads deploy.commands from stack config) ──
 
-      try {
-        // Auto-detect Vercel scope — try deploy first, parse scope from error if needed
-        let vercelScope = '';
+    // Check required env vars
+    const globalEnv = readGlobalEnv();
+    const missingVars = (stack.requiredEnvVars || []).filter(v => !globalEnv[v]);
+    // For Railway: also accept CLI login
+    if (deployStack === 'railway' && missingVars.includes('RAILWAY_TOKEN')) {
+      try { execSync('railway whoami', { stdio: 'pipe', timeout: 5000, env: { ...process.env, PATH: extPath } }); missingVars.splice(missingVars.indexOf('RAILWAY_TOKEN'), 1); } catch {}
+    }
+    if (missingVars.length) return jsonRes(res, { error: 'Fehlende Keys fuer ' + stack.name + ': ' + missingVars.join(', ') + '. Richte den Stack im Accounts-Tab ein.' }, 400);
+
+    // Install CLI if needed
+    if (stack.deploy.install && stack.cliBinary) {
+      try { execSync('which ' + stack.cliBinary, { stdio: 'pipe', env: { ...process.env, PATH: extPath } }); } catch {
         try {
-          const probeOut = execSync('cd ' + appDir + ' && vercel deploy --prod --yes --token ' + vercelToken + ' 2>&1', { stdio: 'pipe', timeout: 30000, env: { ...process.env, PATH: extPath } }).toString();
-          // If it worked without scope, extract URL and return early
-          if (probeOut.includes('"status":"ok"') || probeOut.includes('vercel.app')) {
-            console.log('[deploy:vercel] deployed without scope for', appId);
-            let vercelUrl = '';
-            // Extract the aliased (production) URL — not the deployment-hash URL
-            const aliasMatch = probeOut.match(/Aliased:\s*(https:\/\/[^\s]+)/);
-            if (aliasMatch) vercelUrl = aliasMatch[1];
-            // Fallback: JSON deployment URL
-            if (!vercelUrl) {
-              try {
-                const jsonStart = probeOut.indexOf('{');
-                if (jsonStart >= 0) {
-                  const j = JSON.parse(probeOut.substring(jsonStart));
-                  vercelUrl = j.deployment?.url || '';
-                  if (vercelUrl && !vercelUrl.startsWith('http')) vercelUrl = 'https://' + vercelUrl;
-                }
-              } catch {}
-            }
-            // Fallback: any vercel.app URL that's NOT a deployment hash
-            if (!vercelUrl) {
-              const urls = probeOut.match(/https:\/\/[^\s"]+\.vercel\.app/g) || [];
-              vercelUrl = urls.find(u => !u.match(/-[a-z0-9]{9}-/)) || urls[0] || '';
-            }
-            // Extract vercel team slug from deployment URL (name-hash-TEAM.vercel.app)
-            let vercelTeam = '';
-            const teamMatch = probeOut.match(/https:\/\/[^.]*-([a-z0-9-]+)\.vercel\.app/);
-            if (teamMatch) vercelTeam = teamMatch[1];
-            // Also try from "Aliased" line project name
-            const inspectMatch = probeOut.match(/vercel\.com\/([^/]+)\/([^/]+)/);
-            if (inspectMatch) { vercelTeam = inspectMatch[1]; }
-
-            if (appForStack) {
-              appForStack.vercelUrl = vercelUrl || appForStack.vercelUrl;
-              if (vercelTeam) appForStack.vercelTeam = vercelTeam;
-              appForStack.deployedAt = new Date().toISOString();
-              fs.writeFileSync(appsFileForStack, JSON.stringify(appsDataForStack, null, 2));
-            }
-            return jsonRes(res, { ok: true, url: vercelUrl, provider: 'vercel' });
-          }
-        } catch (probeErr) {
-          // Parse scope from error hint
-          const probeMsg = (probeErr.stdout || probeErr.stderr || '').toString();
-          const scopeMatch = probeMsg.match(/"name"\s*:\s*"([^"]+)"/);
-          if (scopeMatch) vercelScope = scopeMatch[1];
-          // Also try: --scope <name> from the "next" array
-          const cmdMatch = probeMsg.match(/--scope\s+(\S+)/);
-          if (cmdMatch && !vercelScope) vercelScope = cmdMatch[1];
+          console.log('[deploy] Installing CLI:', stack.deploy.install);
+          execSync(stack.deploy.install, { stdio: 'pipe', timeout: 60000, env: { ...process.env, PATH: extPath } });
+        } catch (installErr) {
+          return jsonRes(res, { error: 'CLI Installation fehlgeschlagen: ' + (installErr.message || '').substring(0, 200) }, 500);
         }
-
-        const scopeFlag = vercelScope ? ' --scope ' + vercelScope : '';
-        const vercelCmd = 'cd ' + appDir + ' && vercel deploy --prod --yes --token ' + vercelToken + scopeFlag + ' 2>&1';
-        console.log('[deploy:vercel] running for', appId, 'scope:', vercelScope || 'auto');
-        const output = execSync(vercelCmd, { stdio: 'pipe', timeout: 120000, env: { ...process.env, PATH: extPath } }).toString();
-        console.log('[deploy:vercel] output:', output.substring(0, 500));
-
-        // Extract the aliased (production) URL
-        let vercelUrl = '';
-        const aliasMatch = output.match(/Aliased:\s*(https:\/\/[^\s]+)/);
-        if (aliasMatch) vercelUrl = aliasMatch[1];
-        if (!vercelUrl) {
-          try {
-            const jsonStart = output.indexOf('{');
-            if (jsonStart >= 0) {
-              const j = JSON.parse(output.substring(jsonStart));
-              vercelUrl = j.deployment?.url || '';
-              if (vercelUrl && !vercelUrl.startsWith('http')) vercelUrl = 'https://' + vercelUrl;
-            }
-          } catch {}
-        }
-        if (!vercelUrl) {
-          const urls = output.match(/https:\/\/[^\s"]+\.vercel\.app/g) || [];
-          vercelUrl = urls.find(u => !u.match(/-[a-z0-9]{9}-/)) || urls[0] || '';
-        }
-
-        // Extract vercel team slug
-        let vercelTeam = vercelScope || '';
-        if (!vercelTeam) {
-          const inspectMatch = output.match(/vercel\.com\/([^/]+)\/([^/]+)/);
-          if (inspectMatch) vercelTeam = inspectMatch[1];
-        }
-
-        // Save to app data
-        if (appForStack) {
-          appForStack.vercelUrl = vercelUrl || appForStack.vercelUrl;
-          if (vercelTeam) appForStack.vercelTeam = vercelTeam;
-          appForStack.deployedAt = new Date().toISOString();
-          fs.writeFileSync(appsFileForStack, JSON.stringify(appsDataForStack, null, 2));
-        }
-
-        return jsonRes(res, { ok: true, url: vercelUrl, provider: 'vercel' });
-      } catch (e) {
-        const errMsg = (e.stderr || e.stdout || e.message || '').toString().substring(0, 300);
-        console.log('[deploy:vercel] error:', errMsg);
-        return jsonRes(res, { error: 'Vercel Deploy fehlgeschlagen: ' + errMsg }, 500);
       }
     }
 
-    // ── RAILWAY DEPLOY (default) ──
-    // Check Railway CLI + Token
-    const tokenFile = path.join(ROOT, 'data', 'railway-token');
-    let railwayToken = '';
-    try { railwayToken = fs.readFileSync(tokenFile, 'utf8').trim(); } catch {}
-    const railwayEnv = { ...process.env, PATH: process.env.PATH + ':/Users/chris.pohl/.bun/bin:/usr/local/bin:/opt/homebrew/bin' };
-    if (railwayToken) railwayEnv.RAILWAY_TOKEN = railwayToken;
-    let hasRailway = false;
-    try { execSync('which railway', { stdio: 'pipe', env: railwayEnv }); hasRailway = true; } catch {}
-    if (!hasRailway) {
-      return jsonRes(res, { error: 'Railway CLI nicht installiert. Klicke "Deploy einrichten" um es zu installieren.' }, 400);
-    }
-    // Accept either token file OR CLI session login (railway whoami)
-    if (!railwayToken) {
-      let cliLoggedIn = false;
-      try { execSync('railway whoami', { stdio: 'pipe', timeout: 5000, env: railwayEnv }); cliLoggedIn = true; } catch {}
-      if (!cliLoggedIn) {
-        return jsonRes(res, { error: 'Railway Token fehlt. Klicke "Deploy einrichten" um dich anzumelden.' }, 400);
+    // Auto-scaffold for stacks that need a server (Railway, Fly, etc.)
+    if (stack.deploy.needsScaffold) {
+      if (!fs.existsSync(path.join(appDir, 'server.js'))) {
+        fs.writeFileSync(path.join(appDir, 'server.js'), `const http = require('http');\nconst fs = require('fs');\nconst path = require('path');\nconst PORT = process.env.PORT || 3000;\nconst MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml' };\nhttp.createServer((req, res) => {\n  const url = req.url.split('?')[0];\n  if (url.startsWith('/app/${appId}/api/')) {\n    const file = url.split('/api/')[1].replace(/[^a-z0-9-]/g, '');\n    const fp = path.join(__dirname, 'data', file + '.json');\n    if (req.method === 'GET') { try { res.end(fs.readFileSync(fp)); } catch { res.end('{}'); } return; }\n    if (req.method === 'PUT') { let b=''; req.on('data',c=>b+=c); req.on('end',()=>{ try{fs.mkdirSync(path.join(__dirname,'data'),{recursive:true});}catch{} fs.writeFileSync(fp,b); res.end('{\"ok\":true}'); }); return; }\n  }\n  let fp = path.join(__dirname, url === '/' ? 'index.html' : url.replace(/^\\//, ''));\n  try { const d = fs.readFileSync(fp); res.writeHead(200, {'Content-Type': MIME[path.extname(fp)] || 'application/octet-stream'}); res.end(d); }\n  catch { res.writeHead(404); res.end('Not found'); }\n}).listen(PORT, () => console.log('Listening on ' + PORT));\n`);
+        console.log('[deploy] Auto-scaffolded server.js for', appId);
+      }
+      if (!fs.existsSync(path.join(appDir, 'package.json'))) {
+        fs.writeFileSync(path.join(appDir, 'package.json'), JSON.stringify({ name: repoName, version: '1.0.0', private: true, scripts: { start: 'node server.js' } }, null, 2));
+      }
+      if (!fs.existsSync(path.join(appDir, 'railway.json'))) {
+        fs.writeFileSync(path.join(appDir, 'railway.json'), JSON.stringify({ build: { builder: 'NIXPACKS' }, deploy: { startCommand: 'node server.js', healthcheckPath: '/', restartPolicyType: 'ON_FAILURE', restartPolicyMaxRetries: 3 } }, null, 2));
       }
     }
 
-    try {
-      // 1. Ensure published to GitHub first
-      const appsData = safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}');
-      const app = (appsData.apps || []).find(a => a.id === appId);
-      const githubUrl = 'https://github.com/' + githubUser + '/' + repoName;
-      if (!app?.source) {
-        // Auto-publish first
+    // Auto-publish to GitHub
+    const githubUrl = 'https://github.com/' + githubUser + '/' + repoName;
+    if (!app?.source) {
+      try {
         const tmpDir = '/tmp/.tmp-pub-' + appId;
         execSync('rm -rf ' + tmpDir + ' && mkdir -p ' + tmpDir);
         execSync('cp -r ' + appDir + '/* ' + tmpDir + '/');
         execSync('cd ' + tmpDir + ' && git init && git add -A && git commit -m "PulseOS deploy: ' + appId + '"', { stdio: 'pipe' });
-        try {
-          execSync('gh repo create ' + githubUser + '/' + repoName + ' --private --source ' + tmpDir + ' --push', { stdio: 'pipe', timeout: 30000 });
-        } catch {
-          execSync('cd ' + tmpDir + ' && git remote add origin ' + githubUrl + '.git 2>/dev/null; git push -f origin main 2>/dev/null || git push -f origin master 2>/dev/null || true', { stdio: 'pipe', timeout: 30000 });
-        }
+        try { execSync('gh repo create ' + githubUser + '/' + repoName + ' --private --source ' + tmpDir + ' --push', { stdio: 'pipe', timeout: 30000 }); }
+        catch { execSync('cd ' + tmpDir + ' && git remote add origin ' + githubUrl + '.git 2>/dev/null; git push -f origin main 2>/dev/null || git push -f origin master 2>/dev/null || true', { stdio: 'pipe', timeout: 30000 }); }
         execSync('rm -rf ' + tmpDir);
-        if (app) {
-          app.source = githubUrl;
-          app.publishedAt = new Date().toISOString();
-          fs.writeFileSync(path.join(ROOT, 'data', 'apps.json'), JSON.stringify(appsData, null, 2));
-        }
-      }
+        if (app) { app.source = githubUrl; app.publishedAt = new Date().toISOString(); fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2)); }
+      } catch (pubErr) { console.log('[deploy] GitHub publish error:', (pubErr.message || '').substring(0, 200)); }
+    }
 
-      // 1b. Auto-scaffold deploy files for vanilla apps (no server.js/package.json)
-      const hasServerJs = fs.existsSync(path.join(appDir, 'server.js'));
-      const hasPackageJson = fs.existsSync(path.join(appDir, 'package.json'));
-      const scaffolded = [];
-      if (!hasServerJs) {
-        const serverCode = `const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const PORT = process.env.PORT || 3000;
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
-http.createServer((req, res) => {
-  const url = req.url.split('?')[0];
-  // Data API
-  if (url.startsWith('/app/${appId}/api/')) {
-    const file = url.split('/api/')[1].replace(/[^a-z0-9-]/g, '');
-    const fp = path.join(__dirname, 'data', file + '.json');
-    if (req.method === 'GET') { try { res.end(fs.readFileSync(fp)); } catch { res.end('{}'); } return; }
-    if (req.method === 'PUT') { let b=''; req.on('data',c=>b+=c); req.on('end',()=>{ try{fs.mkdirSync(path.join(__dirname,'data'),{recursive:true});}catch{} fs.writeFileSync(fp,b); res.end('{"ok":true}'); }); return; }
-  }
-  // Static files
-  let fp = path.join(__dirname, url === '/' ? 'index.html' : url.replace(/^\\//, ''));
-  try { const d = fs.readFileSync(fp); res.writeHead(200, {'Content-Type': MIME[path.extname(fp)] || 'application/octet-stream'}); res.end(d); }
-  catch { res.writeHead(404); res.end('Not found'); }
-}).listen(PORT, () => console.log('Listening on ' + PORT));
-`;
-        fs.writeFileSync(path.join(appDir, 'server.js'), serverCode);
-        scaffolded.push('server.js');
-      }
-      if (!hasPackageJson) {
-        fs.writeFileSync(path.join(appDir, 'package.json'), JSON.stringify({
-          name: repoName, version: '1.0.0', private: true,
-          scripts: { start: 'node server.js' }
-        }, null, 2));
-        scaffolded.push('package.json');
-      }
-      if (!fs.existsSync(path.join(appDir, 'railway.json'))) {
-        fs.writeFileSync(path.join(appDir, 'railway.json'), JSON.stringify({
-          build: { builder: 'NIXPACKS' },
-          deploy: { startCommand: 'node server.js', healthcheckPath: '/', restartPolicyType: 'ON_FAILURE', restartPolicyMaxRetries: 3 }
-        }, null, 2));
-        scaffolded.push('railway.json');
-      }
-      if (scaffolded.length) console.log('[deploy] Auto-scaffolded for ' + appId + ':', scaffolded.join(', '));
+    // Build env for deploy commands — merge global env vars
+    const deployEnv = { ...process.env, PATH: extPath };
+    (stack.requiredEnvVars || []).forEach(v => { if (globalEnv[v]) deployEnv[v] = globalEnv[v]; });
+    // Railway special: also check token file and CLI config
+    if (deployStack === 'railway') {
+      try { const t = fs.readFileSync(path.join(ROOT, 'data', 'railway-token'), 'utf8').trim(); if (t) deployEnv.RAILWAY_TOKEN = t; } catch {}
+    }
 
-      // 2. Railway: Create project + deploy (no interactive `railway link` needed)
-      let railwayUrl = '';
-      let projectId = app?.railwayProjectId || '';
-      let serviceId = '';
-      try {
-        // 2a. Detect workspace ID (needed for railway init)
-        let workspaceId = '';
+    // Execute deploy commands with variable substitution
+    try {
+      // Build variable context for substitution
+      const vars = { appId, appDir, repoName, githubUser, ...globalEnv };
+      // Railway-specific: detect workspace + project IDs
+      if (deployStack === 'railway') {
         try {
-          const listOut = execSync('railway list --json 2>&1', { stdio: 'pipe', timeout: 15000, env: railwayEnv }).toString();
+          const listOut = execSync('railway list --json 2>&1', { stdio: 'pipe', timeout: 15000, env: deployEnv }).toString();
           const projects = JSON.parse(listOut);
-          const arr = Array.isArray(projects) ? projects : projects.projects || [];
-          // Check if project already exists
+          const arr = Array.isArray(projects) ? projects : [];
           const existing = arr.find(p => p.name === repoName);
           if (existing) {
-            projectId = existing.id;
-            // Extract service ID if available
+            vars.projectId = existing.id;
             const svcEdges = existing.services?.edges || [];
-            if (svcEdges.length > 0) serviceId = svcEdges[0].node.id;
+            if (svcEdges.length > 0) vars.serviceId = svcEdges[0].node.id;
           }
-          // Get workspace ID from any project
-          if (arr.length > 0 && arr[0].workspace?.id) workspaceId = arr[0].workspace.id;
-        } catch (listErr) {
-          console.log('[deploy] railway list error:', (listErr.message || '').substring(0, 200));
-        }
-
-        // 2b. Create Railway project if not exists
-        if (!projectId) {
-          try {
-            const wsFlag = workspaceId ? ' --workspace ' + workspaceId : '';
-            const initOut = execSync('cd ' + appDir + ' && railway init -n ' + repoName + wsFlag + ' --json 2>&1', { stdio: 'pipe', timeout: 20000, env: railwayEnv }).toString();
-            console.log('[deploy] railway init output:', initOut);
-            // Extract project ID from JSON (may have non-JSON prefix lines)
-            const jsonLine = initOut.split('\n').find(l => l.startsWith('{'));
-            if (jsonLine) { try { projectId = JSON.parse(jsonLine).id; } catch {} }
-            if (!projectId) {
-              const idMatch = initOut.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/);
-              if (idMatch) projectId = idMatch[0];
-            }
-          } catch (initErr) {
-            const initMsg = (initErr.stderr || initErr.stdout || '').toString();
-            console.log('[deploy] railway init error:', initMsg.substring(0, 200));
-          }
-        }
-
-        if (!projectId) {
-          return jsonRes(res, { error: 'Railway Projekt konnte nicht erstellt werden. Versuche es manuell: railway init -n ' + repoName }, 500);
-        }
-
-        // 2c. Deploy with explicit project ID + environment + service
-        const svcFlag = serviceId ? ' -s ' + serviceId : '';
-        const upCmd = 'cd ' + appDir + ' && railway up --detach -p ' + projectId + ' -e production' + svcFlag + ' 2>&1';
-        console.log('[deploy] running:', upCmd);
-        const output = execSync(upCmd, { stdio: 'pipe', timeout: 120000, env: railwayEnv }).toString();
-        console.log('[deploy] railway up output:', output.substring(0, 500));
-
-        // Extract service ID from build logs URL
-        if (!serviceId) {
-          const svcMatch = output.match(/service\/([0-9a-f-]{36})/);
-          if (svcMatch) serviceId = svcMatch[1];
-        }
-
-        const urlMatch = output.match(/https?:\/\/[^\s]+\.railway\.app[^\s]*/);
-        if (urlMatch) railwayUrl = urlMatch[0];
-
-        // 2d. Generate public domain — write railway link config directly, then generate domain
-        {
-          // Detect app port from manifest or server.js
-          let appPort = 3000;
-          try {
-            const manifest = JSON.parse(fs.readFileSync(path.join(appDir, 'manifest.json'), 'utf8'));
-            if (manifest.port) appPort = manifest.port;
-          } catch {}
-          try {
-            const srvContent = fs.readFileSync(path.join(appDir, 'server.js'), 'utf8');
-            const portMatch = srvContent.match(/PORT\s*\|\|\s*(\d+)/);
-            if (portMatch) appPort = parseInt(portMatch[1]);
-          } catch {}
-
-          // Write link config directly into ~/.railway/config.json (avoids interactive railway link)
-          let envId = '';
-          try {
-            const listOut = execSync('railway list --json 2>&1', { stdio: 'pipe', timeout: 10000, env: railwayEnv }).toString();
-            const projects = JSON.parse(listOut);
-            const proj = (Array.isArray(projects) ? projects : []).find(p => p.id === projectId);
-            if (proj) {
-              const envEdge = (proj.environments?.edges || [])[0];
-              if (envEdge) envId = envEdge.node.id;
-            }
-          } catch {}
-
-          const railwayConfigPath = path.join(require('os').homedir(), '.railway', 'config.json');
-          try {
-            let railwayConfig = {};
-            try { railwayConfig = JSON.parse(fs.readFileSync(railwayConfigPath, 'utf8')); } catch {}
-            if (!railwayConfig.projects) railwayConfig.projects = {};
-            railwayConfig.projects[appDir] = {
-              projectPath: appDir,
-              name: repoName,
-              project: projectId,
-              environment: envId || '',
-              environmentName: 'production',
-              service: serviceId || null
-            };
-            fs.writeFileSync(railwayConfigPath, JSON.stringify(railwayConfig, null, 2));
-            console.log('[deploy] Wrote railway link config for', appDir);
-          } catch (cfgErr) {
-            console.log('[deploy] Failed to write railway config:', cfgErr.message);
-          }
-
-          // Now generate domain (railway domain reads from ~/.railway/config.json)
-          try {
-            const domainFlag = (serviceId ? ' -s ' + serviceId : '') + ' -p ' + appPort;
-            const domainOut = execSync('cd ' + appDir + ' && railway domain' + domainFlag + ' --json 2>&1', { stdio: 'pipe', timeout: 15000, env: railwayEnv }).toString();
-            console.log('[deploy] railway domain output:', domainOut.substring(0, 300));
-            try {
-              const d = JSON.parse(domainOut);
-              if (d.domain) railwayUrl = d.domain.startsWith('http') ? d.domain : 'https://' + d.domain;
-            } catch {
-              const domainUrlMatch = domainOut.match(/https?:\/\/[^\s"]+\.railway\.app[^\s"]*/);
-              if (domainUrlMatch) railwayUrl = domainUrlMatch[0];
-            }
-          } catch (domErr) {
-            console.log('[deploy] railway domain failed:', (domErr.stderr || domErr.message || '').toString().substring(0, 200));
-            // Fallback URL
-            if (!railwayUrl) {
-              railwayUrl = 'https://' + repoName + '-production.up.railway.app';
-              console.log('[deploy] using fallback URL:', railwayUrl);
-            }
-          }
-        }
-      } catch (e) {
-        const stderr = e.stderr ? e.stderr.toString() : '';
-        const stdout = e.stdout ? e.stdout.toString() : '';
-        const errMsg = (stderr || stdout || e.message || 'Unbekannter Fehler').substring(0, 300);
-        console.log('[deploy] Railway error:', errMsg);
-        return jsonRes(res, { error: 'Railway Deploy fehlgeschlagen: ' + errMsg }, 500);
-      }
-
-      // 3. Set env vars on Railway
-      const envFile = path.join(appDir, '.env');
-      if (fs.existsSync(envFile) && projectId) {
-        try {
-          const envContent = fs.readFileSync(envFile, 'utf8');
-          const vars = envContent.split('\n').filter(l => l.includes('=') && !l.startsWith('#')).map(l => l.trim()).filter(Boolean);
-          if (vars.length > 0) {
-            const varArgs = vars.map(v => '"' + v + '"').join(' ');
-            try { execSync('cd ' + appDir + ' && railway variables set ' + varArgs + ' -p ' + projectId + ' 2>/dev/null', { stdio: 'pipe', timeout: 15000, env: railwayEnv }); } catch {}
-          }
+          if (arr.length > 0 && arr[0].workspace?.id) vars.workspaceId = arr[0].workspace.id;
         } catch {}
+        if (!vars.projectId) vars.projectId = app?.railwayProjectId || '';
+      }
+      // Vercel-specific: scope detection
+      if (deployStack === 'vercel') {
+        vars.scopeFlag = '';
+      }
+      vars.serviceFlag = vars.serviceId ? '-s ' + vars.serviceId : '';
+      vars.appPort = '3000';
+      try { const m = JSON.parse(fs.readFileSync(path.join(appDir, 'manifest.json'), 'utf8')); if (m.port) vars.appPort = '' + m.port; } catch {}
+
+      let allOutput = '';
+      for (const cmd of stack.deploy.commands) {
+        const resolved = cmd.replace(/\$\{(\w+)\}/g, (_, k) => vars[k] || '');
+        console.log('[deploy:' + deployStack + '] $', resolved);
+        try {
+          const out = execSync('cd ' + appDir + ' && ' + resolved + ' 2>&1', { stdio: 'pipe', timeout: 120000, env: deployEnv }).toString();
+          allOutput += out + '\n';
+          console.log('[deploy:' + deployStack + '] output:', out.substring(0, 300));
+          // Extract IDs from output for subsequent commands
+          const idMatch = out.match(/"id"\s*:\s*"([0-9a-f-]{36})"/);
+          if (idMatch && !vars.projectId) vars.projectId = idMatch[1];
+          const svcMatch = out.match(/service\/([0-9a-f-]{36})/);
+          if (svcMatch && !vars.serviceId) { vars.serviceId = svcMatch[1]; vars.serviceFlag = '-s ' + svcMatch[1]; }
+        } catch (cmdErr) {
+          const errOut = (cmdErr.stdout || cmdErr.stderr || '').toString();
+          allOutput += errOut + '\n';
+          console.log('[deploy:' + deployStack + '] cmd error:', errOut.substring(0, 300));
+          // For Vercel: parse scope from error and retry
+          if (deployStack === 'vercel' && errOut.includes('missing_scope')) {
+            const scopeMatch = errOut.match(/--scope\s+(\S+)/);
+            if (scopeMatch) {
+              vars.scopeFlag = '--scope ' + scopeMatch[1];
+              vars.vercelTeam = scopeMatch[1];
+              const retryCmd = cmd.replace(/\$\{(\w+)\}/g, (_, k) => vars[k] || '');
+              const retryOut = execSync('cd ' + appDir + ' && ' + retryCmd + ' 2>&1', { stdio: 'pipe', timeout: 120000, env: deployEnv }).toString();
+              allOutput += retryOut + '\n';
+              console.log('[deploy:' + deployStack + '] retry output:', retryOut.substring(0, 300));
+            }
+          }
+        }
       }
 
-      // Save deployment info to app data
-      if (app && (railwayUrl || projectId)) {
-        app.railwayProjectId = projectId || app.railwayProjectId;
-        app.railwayUrl = railwayUrl || app.railwayUrl;
+      // Railway: write link config + generate domain
+      if (deployStack === 'railway' && vars.projectId) {
+        try {
+          const listOut = execSync('railway list --json 2>&1', { stdio: 'pipe', timeout: 10000, env: deployEnv }).toString();
+          const proj = JSON.parse(listOut).find(p => p.id === vars.projectId);
+          const envId = proj?.environments?.edges?.[0]?.node?.id || '';
+          const cfgPath = path.join(require('os').homedir(), '.railway', 'config.json');
+          let cfg = {}; try { cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8')); } catch {}
+          if (!cfg.projects) cfg.projects = {};
+          cfg.projects[appDir] = { projectPath: appDir, name: repoName, project: vars.projectId, environment: envId, environmentName: 'production', service: vars.serviceId || null };
+          fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
+        } catch {}
+        // Generate domain
+        if (stack.deploy.domainCommand) {
+          try {
+            const domCmd = stack.deploy.domainCommand.replace(/\$\{(\w+)\}/g, (_, k) => vars[k] || '');
+            const domOut = execSync('cd ' + appDir + ' && ' + domCmd + ' 2>&1', { stdio: 'pipe', timeout: 15000, env: deployEnv }).toString();
+            allOutput += domOut;
+          } catch {}
+        }
+      }
+
+      // Extract deploy URL from output
+      let deployUrl = '';
+      // Try custom urlExtract pattern first
+      if (stack.deploy.urlExtract) {
+        const re = new RegExp(stack.deploy.urlExtract);
+        const m = allOutput.match(re);
+        if (m) deployUrl = m[1] || m[0];
+      }
+      // Try common patterns
+      if (!deployUrl) {
+        const urlMatch = allOutput.match(/Aliased:\s*(https:\/\/[^\s]+)/) || allOutput.match(/https:\/\/[^\s"]+\.(pages\.dev|vercel\.app|railway\.app|fly\.dev|netlify\.app)[^\s"]*/);
+        if (urlMatch) deployUrl = urlMatch[1] || urlMatch[0];
+      }
+      // Fallback: urlPattern from stack config
+      if (!deployUrl && stack.deploy.urlPattern) {
+        deployUrl = stack.deploy.urlPattern.replace(/\$\{(\w+)\}/g, (_, k) => vars[k] || '');
+      }
+
+      // Build dashboard URL
+      let dashboardUrl = '';
+      if (stack.deploy.dashboardUrl) {
+        dashboardUrl = stack.deploy.dashboardUrl.replace(/\$\{(\w+)\}/g, (_, k) => vars[k] || '');
+      }
+      // Vercel: extract team from output
+      if (deployStack === 'vercel') {
+        const teamMatch = allOutput.match(/vercel\.com\/([^/\s]+)\/([^/\s]+)/);
+        if (teamMatch) { vars.vercelTeam = teamMatch[1]; dashboardUrl = 'https://vercel.com/' + teamMatch[1] + '/' + appId; }
+      }
+
+      // Save to app data
+      if (app) {
+        app.deployUrl = deployUrl || app.deployUrl;
+        app.deployDashboardUrl = dashboardUrl || app.deployDashboardUrl;
+        app.deployProvider = deployStack;
         app.deployedAt = new Date().toISOString();
-        fs.writeFileSync(path.join(ROOT, 'data', 'apps.json'), JSON.stringify(appsData, null, 2));
+        // Also save provider-specific fields for backwards compat
+        if (deployStack === 'railway' && vars.projectId) { app.railwayProjectId = vars.projectId; app.railwayUrl = deployUrl || app.railwayUrl; }
+        if (deployStack === 'vercel') { app.vercelUrl = deployUrl || app.vercelUrl; if (vars.vercelTeam) app.vercelTeam = vars.vercelTeam; }
+        fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
       }
 
-      jsonRes(res, { ok: true, url: railwayUrl || githubUrl, github: githubUrl, projectId });
+      jsonRes(res, { ok: true, url: deployUrl, dashboardUrl, provider: deployStack, github: githubUrl });
     } catch (e) {
-      console.error('[deploy] Error:', e.message);
-      jsonRes(res, { error: 'Deploy fehlgeschlagen: ' + e.message.split('\n')[0] }, 500);
+      const errMsg = (e.stderr || e.stdout || e.message || '').toString().substring(0, 300);
+      console.error('[deploy:' + deployStack + '] Error:', errMsg);
+      jsonRes(res, { error: 'Deploy fehlgeschlagen (' + stack.name + '): ' + errMsg }, 500);
     }
     return;
   }

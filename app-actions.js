@@ -126,22 +126,23 @@ const AppActions = {
       html += '<button class="action-btn" onclick="' + prefix + '._uiPublish(\'' + id + '\', this)">Update pushen</button>';
     }
 
-    // Deploy + Deploy-Links (dynamic per provider)
+    // Deploy + Deploy-Links (generic — reads deployUrl + deployDashboardUrl)
     if (opts.showDeploy) {
-      const isDeployed = !!(app.railwayUrl || app.vercelUrl);
+      const isDeployed = !!(app.deployUrl || app.railwayUrl || app.vercelUrl);
       if (isDeployed) {
-        const liveUrl = app.railwayUrl || app.vercelUrl;
+        const liveUrl = app.deployUrl || app.railwayUrl || app.vercelUrl;
         html += '<a href="' + esc(liveUrl) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">🟢 Live</a>';
-        // Provider dashboards — show all that apply
-        if (app.railwayProjectId) {
+        // Generic dashboard link (set by deploy endpoint)
+        if (app.deployDashboardUrl) {
+          const providerIcon = ({ railway: '🚂', vercel: '▲', cloudflare: '☁', netlify: '◆', fly: '🪁' })[app.deployProvider] || '🔗';
+          html += '<a href="' + esc(app.deployDashboardUrl) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">' + providerIcon + ' Dashboard</a>';
+        }
+        // Backwards compat: old Railway/Vercel specific links
+        if (!app.deployDashboardUrl && app.railwayProjectId) {
           html += '<a href="https://railway.com/project/' + esc(app.railwayProjectId) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">🚂 Railway</a>';
         }
-        if (app.vercelUrl && app.vercelTeam) {
-          const vercelProject = app.vercelProject || app.id;
-          html += '<a href="https://vercel.com/' + esc(app.vercelTeam) + '/' + esc(vercelProject) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">▲ Vercel</a>';
-        }
-        if (app.supabaseUrl) {
-          html += '<a href="' + esc(app.supabaseUrl.replace('.supabase.co', '.supabase.com/project/')) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">⚡ Supabase</a>';
+        if (!app.deployDashboardUrl && app.vercelUrl && app.vercelTeam) {
+          html += '<a href="https://vercel.com/' + esc(app.vercelTeam) + '/' + esc(app.id) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">▲ Vercel</a>';
         }
         html += '<button class="action-btn" onclick="' + prefix + '._uiSmartDeploy(\'' + id + '\', this)">↻ Redeploy</button>';
         html += '<button class="action-btn danger" onclick="' + prefix + '._uiUndeploy(\'' + id + '\', \'' + name + '\', this)">Undeploy</button>';
