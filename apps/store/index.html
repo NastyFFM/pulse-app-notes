@@ -359,6 +359,7 @@ async function renderAccounts(el) {
       html += '<div class="stack-actions">';
       html += '<a href="' + esc(url) + '" target="_blank" class="install-btn" style="text-decoration:none;">Oeffnen</a>';
       if (a.railwayProjectId) html += '<a href="https://railway.com/project/' + esc(a.railwayProjectId) + '" target="_blank" class="action-btn" style="text-decoration:none;">🚂 Railway</a>';
+      if (a.vercelUrl) { const vp = (a.vercelUrl.match(/https:\/\/([^.]+)/) || [])[1] || a.id; html += '<a href="https://vercel.com/~/projects/' + esc(vp) + '" target="_blank" class="action-btn" style="text-decoration:none;">▲ Vercel</a>'; }
       html += '</div></div>';
     });
     html += '</div></div>';
