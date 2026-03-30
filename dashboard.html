@@ -3531,6 +3531,15 @@ function renderChatMsg(msg) {
     }
     if (!txt) txt = 'Erledigt ✓';
   }
+  // Auto-open app if response contains a PulseOS app URL (only for new messages, not history)
+  if (!isUser && !chatHistoryRendering) {
+    const appUrlMatch = txt.match(/localhost:3000\/app\/([a-zA-Z0-9_-]+)/);
+    if (appUrlMatch) {
+      const urlAppId = appUrlMatch[1];
+      const app = (state && state.apps || []).find(a => a.id === urlAppId);
+      if (app) openApp(app);
+    }
+  }
   const isProactive = !isUser && /^[\u2600-\u26FF\u{1F300}-\u{1F9FF}]/u.test(txt);
   const sourceIcon = msg.source === 'telegram' ? '\u2708' : '\u25b8';
   const fromLabel = isUser ? (userProfile?.name || 'Du') : (msg.source === 'webrtc' ? (msg.senderName || 'Peer') : msg.source === 'pulseos' ? 'PulseOS' : 'ClaudeOS');
@@ -3540,7 +3549,7 @@ function renderChatMsg(msg) {
   div.innerHTML = '<span style="font-size:14px;flex-shrink:0;width:20px;text-align:center;">' + sourceIcon + '</span>' +
     '<div style="max-width:220px;padding:6px 10px;border-radius:8px;font-size:11px;' + bgStyle + '">' +
     '<div style="font-size:9px;opacity:0.6;margin-bottom:2px;">' + fromLabel + ' <span style="opacity:0.5;">' + (msg.source || '') + '</span></div>' +
-    '<div style="white-space:pre-wrap;word-break:break-word;">' + escapeHtml(txt) + '</div></div>';
+    '<div style="white-space:pre-wrap;word-break:break-word;">' + renderChatMarkdown(txt) + '</div></div>';
   // Insert before typing indicator so it always stays at the bottom
   const typing = document.getElementById('typingIndicator');
   if (typing) msgs.insertBefore(div, typing);
@@ -3549,6 +3558,21 @@ function renderChatMsg(msg) {
 }
 
 function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function renderChatMarkdown(txt) {
+  let html = escapeHtml(txt);
+  // Bold: **text**
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Italic: *text*
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Inline code: `text`
+  html = html.replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.2);padding:1px 4px;border-radius:3px;font-size:10px;">$1</code>');
+  // Markdown links: [text](url)
+  html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" style="color:var(--teal);text-decoration:underline;">$1</a>');
+  // Auto-link URLs (not already in an <a> tag)
+  html = html.replace(/(?<!href="|">)(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" style="color:var(--teal);text-decoration:underline;">$1</a>');
+  return html;
+}
 
 // Legacy compat
 function renderSystemChatMessage(msg) {
