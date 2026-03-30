@@ -35,6 +35,12 @@ const AppActions = {
     return r.json();
   },
 
+  // Undeploy — delete Railway project
+  async undeploy(appId) {
+    const r = await fetch('/api/apps/' + appId + '/deploy', { method: 'DELETE' });
+    return r.json();
+  },
+
   // Hide app (soft uninstall — remove from launcher, keep files)
   async hide(appId) {
     const r = await fetch('/api/apps/' + appId + '/hide', { method: 'POST' });
@@ -130,6 +136,7 @@ const AppActions = {
           html += '<a href="https://railway.com/project/' + esc(app.railwayProjectId) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">🚂 Dashboard</a>';
         }
         html += '<button class="action-btn" onclick="' + prefix + '._uiSmartDeploy(\'' + id + '\', this)">↻ Redeploy</button>';
+        html += '<button class="action-btn danger" onclick="' + prefix + '._uiUndeploy(\'' + id + '\', \'' + name + '\', this)">Undeploy</button>';
       } else {
         html += '<button class="action-btn" onclick="' + prefix + '._uiSmartDeploy(\'' + id + '\', this)">🚀 Deploy</button>';
       }
@@ -193,6 +200,19 @@ const AppActions = {
     } else {
       alert(d.error || 'Deploy fehlgeschlagen');
       if (btn) { btn.textContent = '🚀 Deploy'; btn.disabled = false; }
+    }
+  },
+
+  async _uiUndeploy(appId, appName, btn) {
+    if (!confirm('Railway-Projekt fuer "' + appName + '" loeschen?\n\nDie App wird offline genommen. Code bleibt lokal und auf GitHub.')) return;
+    if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+    const d = await this.undeploy(appId);
+    if (d.ok) {
+      if (btn) btn.textContent = '✅ Entfernt';
+      if (this._onUpdate) this._onUpdate(appId, 'undeployed');
+    } else {
+      alert(d.error || 'Undeploy fehlgeschlagen');
+      if (btn) { btn.textContent = 'Undeploy'; btn.disabled = false; }
     }
   },
 

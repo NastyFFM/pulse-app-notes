@@ -2818,6 +2818,72 @@ http.createServer((req, res) => {
     return;
   }
 
+  // ── Undeploy (delete Railway project via GraphQL API) ──
+  if (url.match(/^\/api\/apps\/[^/]+\/deploy$/) && req.method === 'DELETE') {
+    const appId = url.split('/')[3];
+    const appsFile = path.join(ROOT, 'data', 'apps.json');
+    const appsData = safeReadJSON(appsFile, '{"apps":[]}');
+    const app = (appsData.apps || []).find(a => a.id === appId);
+    const projectId = app?.railwayProjectId;
+    if (!projectId) return jsonRes(res, { error: 'Kein Railway-Projekt fuer diese App' }, 400);
+
+    // Get access token from ~/.railway/config.json
+    let accessToken = '';
+    try {
+      const cfg = JSON.parse(fs.readFileSync(path.join(require('os').homedir(), '.railway', 'config.json'), 'utf8'));
+      accessToken = cfg.user?.accessToken || '';
+    } catch {}
+    // Fallback: token file
+    if (!accessToken) { try { accessToken = fs.readFileSync(path.join(ROOT, 'data', 'railway-token'), 'utf8').trim(); } catch {} }
+    if (!accessToken) return jsonRes(res, { error: 'Kein Railway-Token gefunden' }, 400);
+
+    // Delete via Railway GraphQL API
+    const https = require('https');
+    const body = JSON.stringify({ query: 'mutation { projectDelete(id: "' + projectId + '") }' });
+    const gqlReq = https.request({
+      hostname: 'backboard.railway.com', path: '/graphql/v2', method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+    }, gqlRes => {
+      let data = '';
+      gqlRes.on('data', c => data += c);
+      gqlRes.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          if (result.data?.projectDelete) {
+            console.log('[undeploy] Deleted Railway project:', projectId, 'for', appId);
+
+            // Clean up app data
+            if (app) {
+              delete app.railwayProjectId;
+              delete app.railwayUrl;
+              delete app.deployedAt;
+              fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+            }
+
+            // Remove from ~/.railway/config.json
+            const appDir = resolveAppDir(appId);
+            try {
+              const railwayConfigPath = path.join(require('os').homedir(), '.railway', 'config.json');
+              const cfg = JSON.parse(fs.readFileSync(railwayConfigPath, 'utf8'));
+              if (cfg.projects?.[appDir]) { delete cfg.projects[appDir]; fs.writeFileSync(railwayConfigPath, JSON.stringify(cfg, null, 2)); }
+            } catch {}
+
+            broadcast('dashboard', { type: 'app-undeployed', appId });
+            jsonRes(res, { ok: true, message: 'Railway-Projekt geloescht: ' + appId });
+          } else {
+            const errMsg = JSON.stringify(result.errors || result);
+            console.log('[undeploy] GraphQL error:', errMsg.substring(0, 300));
+            jsonRes(res, { error: 'Railway-Projekt loeschen fehlgeschlagen: ' + errMsg.substring(0, 200) }, 500);
+          }
+        } catch (e) { jsonRes(res, { error: 'Antwort-Fehler: ' + e.message }, 500); }
+      });
+    });
+    gqlReq.on('error', e => jsonRes(res, { error: 'Netzwerk-Fehler: ' + e.message }, 500));
+    gqlReq.write(body);
+    gqlReq.end();
+    return;
+  }
+
   // ── App Hide (soft uninstall — remove from launcher, keep files) ──
   if (url.match(/^\/api\/apps\/[^/]+\/hide$/) && req.method === 'POST') {
     const appId = url.split('/')[3];
