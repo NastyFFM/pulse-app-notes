@@ -3111,11 +3111,19 @@ NICHT im Chat sondern NUR in PulseOS (Dashboard):
 - Spiele spielen → Link zur App senden
 - Visuelle Apps nutzen → Link senden
 
-WICHTIG: Wenn der User etwas will das besser in PulseOS geht:
+WICHTIG — Links je nach Quelle unterschiedlich senden:
+
+Wenn Nachricht von TELEGRAM kommt (kein [Dashboard] prefix):
 1. Pruefe Tunnel-Status: GET /api/tunnel
-2. Wenn url vorhanden → sende den Link: "[tunnel-url]/app/[appId]/"
-3. Wenn kein Tunnel → sende: "Oeffne http://localhost:3000/app/[appId]/"
-4. Erklaere kurz warum PulseOS besser ist fuer diese Aktion
+2. Wenn tunnel url vorhanden → sende den TUNNEL-Link: [tunnel-url]/app/[appId]/
+3. Wenn kein Tunnel → sage dem User er soll den Tunnel starten oder localhost nutzen
+4. NIEMALS localhost-Links an Telegram senden (nicht erreichbar!)
+5. Links OHNE Markdown-Sterne senden — NICHT **url** sondern einfach url
+
+Wenn Nachricht von DASHBOARD kommt ([Dashboard] prefix):
+1. Sende den localhost-Link: http://localhost:3000/app/[appId]/
+2. Das Dashboard erkennt den Link und oeffnet die App automatisch als Fenster
+3. Kein Tunnel noetig — der User ist bereits in PulseOS
 
 ## Regeln
 1. Kurz antworten — Telegram-Format
