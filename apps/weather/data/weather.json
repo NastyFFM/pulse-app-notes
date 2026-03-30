@@ -1,3 +1,114 @@
 {
-  "cities": []
+  "cities": [
+    {
+      "id": 1774726776861,
+      "city": "Köln",
+      "country": "Deutschland",
+      "admin": "Nordrhein-Westfalen",
+      "lat": 50.93333,
+      "lon": 6.95,
+      "updated": "2026-03-28T19:39:39.235Z",
+      "current": {
+        "temp": 6,
+        "feels": 2,
+        "humidity": 72,
+        "wmo": 0,
+        "wind": 14,
+        "windDir": "NW"
+      },
+      "forecast": [
+        {
+          "day": "So",
+          "wmo": 55,
+          "hi": 12,
+          "lo": 4
+        },
+        {
+          "day": "Mo",
+          "wmo": 63,
+          "hi": 10,
+          "lo": 6
+        },
+        {
+          "day": "Di",
+          "wmo": 51,
+          "hi": 10,
+          "lo": 2
+        },
+        {
+          "day": "Mi",
+          "wmo": 3,
+          "hi": 10,
+          "lo": 2
+        },
+        {
+          "day": "Do",
+          "wmo": 3,
+          "hi": 13,
+          "lo": 0
+        },
+        {
+          "day": "Fr",
+          "wmo": 51,
+          "hi": 11,
+          "lo": 7
+        }
+      ]
+    },
+    {
+      "id": 1774726787598,
+      "city": "Frankfurt",
+      "country": "Deutschland",
+      "admin": "Bayern",
+      "lat": 49.68333,
+      "lon": 10.53333,
+      "updated": "2026-03-28T19:39:49.155Z",
+      "current": {
+        "temp": 0,
+        "feels": -3,
+        "humidity": 98,
+        "wmo": 71,
+        "wind": 8,
+        "windDir": "W"
+      },
+      "forecast": [
+        {
+          "day": "So",
+          "wmo": 3,
+          "hi": 8,
+          "lo": 0
+        },
+        {
+          "day": "Mo",
+          "wmo": 80,
+          "hi": 6,
+          "lo": 1
+        },
+        {
+          "day": "Di",
+          "wmo": 85,
+          "hi": 8,
+          "lo": 1
+        },
+        {
+          "day": "Mi",
+          "wmo": 3,
+          "hi": 10,
+          "lo": 0
+        },
+        {
+          "day": "Do",
+          "wmo": 3,
+          "hi": 12,
+          "lo": 1
+        },
+        {
+          "day": "Fr",
+          "wmo": 3,
+          "hi": 14,
+          "lo": 1
+        }
+      ]
+    }
+  ]
 }

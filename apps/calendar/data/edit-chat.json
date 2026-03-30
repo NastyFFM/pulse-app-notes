@@ -1,0 +1,14 @@
+{
+  "messages": [
+    {
+      "from": "user",
+      "text": "wenn ich auf einen tag klicke soll eine tagesansicht erscheinen und alle meine termiine in einer art inspector panel. fur detailiertes editing",
+      "time": "2026-03-29T11:35:01.564Z"
+    },
+    {
+      "from": "agent",
+      "text": "Calendar-App um Day Inspector Panel erweitert: Klick auf Tag öffnet rechts ein Inspector-Panel mit allen Terminen des Tages. Jeder Termin ist aufklappbar und editierbar (Titel, Von/Bis-Zeit, Ort, Notizen, Farbe, Löschen). Neuen Termin direkt im Panel hinzufügen.",
+      "time": "2026-03-29T11:36:46.669Z"
+    }
+  ]
+}

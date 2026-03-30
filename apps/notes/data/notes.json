@@ -32,6 +32,13 @@
       "content": "Test vom PulseOS Agent",
       "created": "2026-03-24T12:00:00.000Z",
       "updated": "2026-03-24T12:00:00.000Z"
+    },
+    {
+      "id": "note-test-27032026",
+      "title": "Testnotiz",
+      "content": "Erstellt via Telegram am 27.03.2026",
+      "created": "2026-03-27T13:58:00.000Z",
+      "updated": "2026-03-27T13:58:00.000Z"
     }
   ]
 }

@@ -61,7 +61,15 @@ server.tool(
       switch (params.action) {
         case 'list_apps': {
           const data = await api('GET', '/api/apps');
-          result = (data.apps || []).map(a => ({ id: a.id, name: a.name, icon: a.icon, description: a.description, installed: a.installed !== false }));
+          // Also fetch app-registry for manifests with skills
+          let registry = { apps: [] };
+          try { registry = await api('GET', '/api/app-registry'); } catch {}
+          const regMap = {};
+          (registry.apps || []).forEach(a => { if (a.manifest) regMap[a.id] = a.manifest; });
+          result = (data.apps || []).map(a => {
+            const m = regMap[a.id] || {};
+            return { id: a.id, name: a.name, icon: a.icon, description: a.description, installed: a.installed !== false, skills: m.skills || [], inputs: m.inputs || [], outputs: m.outputs || [] };
+          });
           break;
         }
         case 'read': {

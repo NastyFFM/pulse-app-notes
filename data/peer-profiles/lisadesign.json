@@ -1,0 +1,29 @@
+{
+  "schema": "pulse-profile/1.1",
+  "name": "Lisa Chen",
+  "handle": "lisadesign",
+  "avatar": "🎨",
+  "bio": "UX Designer & Creative Coder. Making the web beautiful.",
+  "github": "lisadesign",
+  "twitter": "lisadesigns",
+  "website": "https://lisa.design",
+  "pulseos": true,
+  "claudeos": false,
+  "githubPages": "https://lisadesign.github.io",
+  "publicApps": [
+    { "id": "color-palette", "name": "Color Palette", "icon": "🎨", "description": "KI-generierte Farbpaletten", "color": "#a855f7" },
+    { "id": "mood-board", "name": "Mood Board", "icon": "📌", "description": "Visuelles Brainstorming", "color": "#ec4899" },
+    { "id": "font-explorer", "name": "Font Explorer", "icon": "Aa", "description": "Google Fonts Browser", "color": "#6366f1" }
+  ],
+  "pages": [
+    { "slug": "portfolio", "title": "Portfolio", "type": "gallery", "items": [
+      { "title": "PulseOS Redesign", "desc": "Dashboard UX Konzept", "image": "🖥️", "link": "" },
+      { "title": "AI Art Generator", "desc": "Stable Diffusion Frontend", "image": "🎨", "link": "" },
+      { "title": "Mobile Banking App", "desc": "Fintech UI Design", "image": "📱", "link": "" },
+      { "title": "E-Commerce Platform", "desc": "Headless CMS + Shopify", "image": "🛒", "link": "" }
+    ], "updated": "2026-03-26T14:00:00Z" },
+    { "slug": "inspiration", "title": "Design Inspiration", "type": "blog", "content": "## Design Trends 2026\n\nDieses Jahr sehe ich viel:\n- Glasmorphism 2.0\n- AI-generierte Layouts\n- Micro-interactions mit Physics\n- Dark Mode als Default\n\nMein Favorit: Die Kombination aus AI-generierten Assets und handgemachtem Layout.", "updated": "2026-03-24T09:00:00Z" }
+  ],
+  "roomId": "pulse-lisa-test",
+  "updated": "2026-03-26T14:00:00Z"
+}

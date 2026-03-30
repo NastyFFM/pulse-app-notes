@@ -2,6 +2,167 @@
   "feeds": [
     {
       "schema": "pulse-profile/1.1",
+      "name": "Lisa Chen",
+      "handle": "lisadesign",
+      "avatar": "🎨",
+      "bio": "UX Designer & Creative Coder. Making the web beautiful.",
+      "github": "lisadesign",
+      "twitter": "lisadesigns",
+      "website": "https://lisa.design",
+      "pulseos": true,
+      "claudeos": false,
+      "githubPages": "https://lisadesign.github.io",
+      "publicApps": [
+        {
+          "id": "color-palette",
+          "name": "Color Palette",
+          "icon": "🎨",
+          "description": "KI-generierte Farbpaletten",
+          "color": "#a855f7"
+        },
+        {
+          "id": "mood-board",
+          "name": "Mood Board",
+          "icon": "📌",
+          "description": "Visuelles Brainstorming",
+          "color": "#ec4899"
+        },
+        {
+          "id": "font-explorer",
+          "name": "Font Explorer",
+          "icon": "Aa",
+          "description": "Google Fonts Browser",
+          "color": "#6366f1"
+        }
+      ],
+      "pages": [
+        {
+          "slug": "portfolio",
+          "title": "Portfolio",
+          "type": "gallery",
+          "items": [
+            {
+              "title": "PulseOS Redesign",
+              "desc": "Dashboard UX Konzept",
+              "image": "🖥️",
+              "link": ""
+            },
+            {
+              "title": "AI Art Generator",
+              "desc": "Stable Diffusion Frontend",
+              "image": "🎨",
+              "link": ""
+            },
+            {
+              "title": "Mobile Banking App",
+              "desc": "Fintech UI Design",
+              "image": "📱",
+              "link": ""
+            },
+            {
+              "title": "E-Commerce Platform",
+              "desc": "Headless CMS + Shopify",
+              "image": "🛒",
+              "link": ""
+            }
+          ],
+          "updated": "2026-03-26T14:00:00Z"
+        },
+        {
+          "slug": "inspiration",
+          "title": "Design Inspiration",
+          "type": "blog",
+          "content": "## Design Trends 2026\n\nDieses Jahr sehe ich viel:\n- Glasmorphism 2.0\n- AI-generierte Layouts\n- Micro-interactions mit Physics\n- Dark Mode als Default\n\nMein Favorit: Die Kombination aus AI-generierten Assets und handgemachtem Layout.",
+          "updated": "2026-03-24T09:00:00Z"
+        }
+      ],
+      "roomId": "pulse-lisa-test",
+      "updated": "2026-03-26T14:00:00Z"
+    },
+    {
+      "schema": "pulse-profile/1.1",
+      "name": "Max Müller",
+      "handle": "maxcoder",
+      "avatar": "🧑‍💻",
+      "bio": "Full-Stack Developer aus Berlin. React, Node.js, AI.",
+      "github": "maxcoder",
+      "twitter": "maxcodes",
+      "website": "https://maxcoder.dev",
+      "pulseos": true,
+      "claudeos": true,
+      "githubPages": "https://maxcoder.github.io",
+      "publicApps": [
+        {
+          "id": "recipe-finder",
+          "name": "Recipe Finder",
+          "icon": "🍳",
+          "description": "Rezepte suchen mit KI",
+          "color": "#ef4444"
+        },
+        {
+          "id": "workout-tracker",
+          "name": "Workout Tracker",
+          "icon": "💪",
+          "description": "Training tracken und analysieren",
+          "color": "#22c55e"
+        }
+      ],
+      "pages": [
+        {
+          "slug": "about",
+          "title": "About Me",
+          "type": "blog",
+          "content": "Hi! Ich bin Max, Fullstack-Dev aus Berlin.\n\n## Aktuelles Projekt\nIch arbeite gerade an einem AI-powered Fitness Tracker.\n\n## Interessen\n- Machine Learning\n- WebRTC\n- Climbing",
+          "updated": "2026-03-27T10:00:00Z"
+        },
+        {
+          "slug": "travel",
+          "title": "Reisetagebuch",
+          "type": "gallery",
+          "items": [
+            {
+              "title": "Japan 2025",
+              "desc": "2 Wochen Tokyo, Kyoto, Osaka",
+              "image": "🇯🇵",
+              "link": ""
+            },
+            {
+              "title": "Island",
+              "desc": "Nordlichter und heiße Quellen",
+              "image": "🇮🇸",
+              "link": ""
+            },
+            {
+              "title": "Portugal",
+              "desc": "Surfen an der Algarve",
+              "image": "🇵🇹",
+              "link": ""
+            }
+          ],
+          "updated": "2026-03-20T15:00:00Z"
+        },
+        {
+          "slug": "music",
+          "title": "Meine Playlists",
+          "type": "list",
+          "items": [
+            {
+              "title": "Coding Flow",
+              "desc": "Lo-fi beats zum Programmieren"
+            },
+            {
+              "title": "Morning Run",
+              "desc": "Upbeat tracks für den Morgen"
+            }
+          ],
+          "updated": "2026-03-25T08:00:00Z"
+        }
+      ],
+      "roomId": "pulse-max-test",
+      "updated": "2026-03-27T10:00:00Z"
+    },
+    {
+      "schema": "pulse-profile/1.1",
       "name": "Chris",
       "handle": "nastycoder",
       "avatar": "🧑‍💻",
@@ -56,7 +217,7 @@
       ],
       "inviteApps": [],
       "roomId": "pulse-5093113b",
-      "updated": "2026-03-27T21:20:59.315Z",
+      "updated": "2026-03-28T15:34:39.857Z",
       "pages": [
         {
           "id": "page-mn9cjh9n",
@@ -74,5 +235,5 @@
       "isSelf": true
     }
   ],
-  "lastUpdated": "2026-03-27T21:20:59.753Z"
+  "lastUpdated": "2026-03-28T15:34:40.122Z"
 }

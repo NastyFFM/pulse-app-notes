@@ -160,7 +160,7 @@
       "description": "Kanban Board für Projekte und Tasks",
       "installed": true,
       "position": 12,
-      "visibility": "private",
+      "visibility": "public",
       "allowedUsers": []
     },
     {
@@ -206,30 +206,9 @@
       "created": true,
       "position": 16,
       "visibility": "public",
-      "allowedUsers": []
-    },
-    {
-      "id": "countdown",
-      "name": "Countdown",
-      "icon": "C",
-      "color": "#1a2a3a",
-      "description": "",
-      "installed": true,
-      "created": true,
-      "position": 17,
-      "visibility": "private",
-      "allowedUsers": []
-    },
-    {
-      "id": "clock",
-      "name": "Analog Clock",
-      "icon": "🕐",
-      "color": "#1a2a3d",
-      "description": "Analoge Uhr mit digitalem Display",
-      "installed": true,
-      "source": "https://github.com/NastyFFM/pulse-app-clock",
-      "installedAt": "2026-03-24T04:05:18.136Z",
-      "position": 20
+      "allowedUsers": [],
+      "source": "https://github.com/NastyFFM/pulse-app-habit-tracker",
+      "publishedAt": "2026-03-29T12:11:17.174Z"
     },
     {
       "id": "asteroids",
@@ -237,7 +216,7 @@
       "icon": "☄️",
       "color": "#000814",
       "description": "Neon Asteroids mit Glow-Effekten und Partikel-Explosionen",
-      "installed": true,
+      "installed": false,
       "created": true,
       "position": 21,
       "visibility": "private",
@@ -249,7 +228,7 @@
       "icon": "E",
       "color": "#1a2a3a",
       "description": "",
-      "installed": true,
+      "installed": false,
       "created": true,
       "position": 20
     },
@@ -263,7 +242,9 @@
       "created": true,
       "position": 22,
       "visibility": "private",
-      "allowedUsers": []
+      "allowedUsers": [],
+      "source": "https://github.com/NastyFFM/pulse-app-voidrunner",
+      "publishedAt": "2026-03-29T16:01:46.658Z"
     },
     {
       "id": "neonstrike",
@@ -275,7 +256,9 @@
       "created": true,
       "position": 23,
       "visibility": "private",
-      "allowedUsers": []
+      "allowedUsers": [],
+      "source": "https://github.com/NastyFFM/pulse-app-neonstrike",
+      "publishedAt": "2026-03-29T12:18:52.833Z"
     },
     {
       "id": "pages",
@@ -338,19 +321,44 @@
       "created": true,
       "position": 29,
       "visibility": "private",
+      "allowedUsers": [],
+      "source": "https://github.com/NastyFFM/pulse-app-pomodoro",
+      "publishedAt": "2026-03-29T10:36:35.806Z"
+    },
+    {
+      "id": "graph-morning-briefing",
+      "name": "morning-briefing",
+      "icon": "⚡",
+      "color": "#6366f1",
+      "description": "Graph: Notes → Notification",
+      "installed": false,
+      "created": true,
+      "position": 32,
+      "visibility": "private",
       "allowedUsers": []
     },
     {
-      "id": "quiz",
-      "name": "Quiz",
-      "icon": "?",
-      "color": "#1a1a3d",
-      "description": "Wissens-Quiz mit Kategorien, Timer und Highscores",
+      "id": "graph-habit-review",
+      "name": "habit-review",
+      "icon": "⚡",
+      "color": "#6366f1",
+      "description": "Graph: Habits → Calendar → Chat → Chat",
       "installed": true,
       "created": true,
-      "position": 30,
-      "visibility": "public",
+      "position": 34,
+      "visibility": "private",
       "allowedUsers": []
+    },
+    {
+      "id": "countdown",
+      "name": "Countdown",
+      "icon": "⏱",
+      "color": "#1a2a3d",
+      "description": "Countdown-Timer für 1-60 Minuten mit Start/Stop/Reset",
+      "installed": true,
+      "source": "https://github.com/NastyFFM/pulse-app-countdown",
+      "installedAt": "2026-03-29T17:09:18.220Z",
+      "position": 31
     }
   ]
 }

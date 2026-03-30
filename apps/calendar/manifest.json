@@ -8,5 +8,9 @@
   "outputs": [{"id":"today-events","desc":"Termine für heute"},{"id":"all-events","desc":"Alle Termine"}],
   "pulseSubscriptions": [],
   "visibility": "public",
-  "allowedUsers": []
+  "allowedUsers": [],
+  "skills": [
+    { "id": "add-event", "name": "Termin erstellen", "description": "Erstellt einen neuen Kalender-Termin", "action": "write", "dataFile": "calendar" },
+    { "id": "list-events", "name": "Termine anzeigen", "description": "Zeigt alle Termine", "action": "read", "dataFile": "calendar" }
+  ]
 }

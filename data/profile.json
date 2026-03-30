@@ -12,6 +12,35 @@
   "github": "NastyFFM",
   "twitter": "",
   "website": "",
-  "lastPublished": "2026-03-25T18:20:19.746Z",
-  "pagesUrl": "https://NastyFFM.github.io"
+  "lastPublished": "2026-03-29T09:40:26.968Z",
+  "pagesUrl": "https://NastyFFM.github.io",
+  "pages": [
+    {
+      "slug": "about",
+      "title": "Über mich",
+      "type": "blog",
+      "content": "Hallo! Ich bin Chris, Developer aus Frankfurt. Ich baue PulseOS — ein agentic Operating System mit KI-nativer Architektur.\n\n## Was ich mache\n- PulseOS Development\n- WebRTC & P2P Systeme\n- AI Agent Architecture\n\n## Stack\nVanilla JS, Node.js, WebRTC, Claude API",
+      "updated": "2026-03-28T12:00:00Z"
+    },
+    {
+      "slug": "projects",
+      "title": "Projekte",
+      "type": "gallery",
+      "items": [
+        {
+          "title": "PulseOS",
+          "desc": "Browser-based Agentic OS",
+          "image": "",
+          "link": "https://github.com/NastyFFM/PulseOS"
+        },
+        {
+          "title": "ClaudeOS",
+          "desc": "Telegram AI Relay",
+          "image": "",
+          "link": "https://github.com/NastyFFM/claude-telegram-relay"
+        }
+      ],
+      "updated": "2026-03-28T12:00:00Z"
+    }
+  ]
 }

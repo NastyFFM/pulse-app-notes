@@ -1,0 +1,39 @@
+{
+  "id": "worker-mnbsowhn8p3m",
+  "task": "Modifiziere die App \"habit-tracker\": railway up",
+  "status": "error",
+  "model": "sonnet",
+  "pid": 93886,
+  "progress": "Fehler: Railway Token ungültig",
+  "log": [
+    {
+      "time": "2026-03-29T13:28:42.875Z",
+      "type": "start",
+      "text": "Worker gestartet: Modifiziere die App \"habit-tracker\": railway up"
+    },
+    {
+      "time": "2026-03-29T13:29:00.000Z",
+      "type": "info",
+      "text": "App-Struktur geprüft: railway.json, package.json, server.js vorhanden"
+    },
+    {
+      "time": "2026-03-29T13:29:15.000Z",
+      "type": "info",
+      "text": "Railway Token gefunden in data/railway-token: 1ce0ee0f-9ffb-4021-b93a-09805c94bc20"
+    },
+    {
+      "time": "2026-03-29T13:29:30.000Z",
+      "type": "error",
+      "text": "Railway CLI meldet: Invalid RAILWAY_TOKEN. Der gespeicherte Token ist abgelaufen oder ungültig."
+    },
+    {
+      "time": "2026-03-29T13:29:35.000Z",
+      "type": "error",
+      "text": "railway up --detach fehlgeschlagen: Unauthorized. Please login with `railway login`"
+    }
+  ],
+  "result": "Deploy fehlgeschlagen: Railway Token ungültig. Bitte neuen Token unter railway.app/account/tokens erstellen und über das PulseOS Railway-Setup eingeben (Deploy-Button in der App oder /api/deploy/setup-railway).",
+  "startedAt": "2026-03-29T13:28:42.875Z",
+  "finishedAt": "2026-03-29T13:29:35.000Z",
+  "createdBy": "user"
+}

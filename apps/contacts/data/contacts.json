@@ -15,15 +15,15 @@
       "roomId": "pulse-5093113b",
       "createdAt": "2026-03-18T22:44:20.728Z",
       "updatedAt": "2026-03-24T03:13:37.311Z",
-      "lastSeen": "2026-03-27T22:14:52.000Z",
+      "lastSeen": "2026-03-30T11:15:53.973Z",
       "role": "",
       "email": "",
       "github": "NastyFFM",
       "twitter": "",
       "website": "",
-      "lastPublished": "2026-03-25T18:20:19.746Z",
+      "lastPublished": "2026-03-29T09:40:26.968Z",
       "pagesUrl": "https://NastyFFM.github.io",
-      "peerId": "hGmjO9fafHUKXb9jAAvQ",
+      "peerId": "GtfVF6k2-SXUxFF4AA63",
       "pulseos": true,
       "claudeos": true,
       "capabilities": [
@@ -32,6 +32,35 @@
         "clipboard",
         "agent-relay",
         "graphs"
+      ],
+      "pages": [
+        {
+          "slug": "about",
+          "title": "Über mich",
+          "type": "blog",
+          "content": "Hallo! Ich bin Chris, Developer aus Frankfurt. Ich baue PulseOS — ein agentic Operating System mit KI-nativer Architektur.\n\n## Was ich mache\n- PulseOS Development\n- WebRTC & P2P Systeme\n- AI Agent Architecture\n\n## Stack\nVanilla JS, Node.js, WebRTC, Claude API",
+          "updated": "2026-03-28T12:00:00Z"
+        },
+        {
+          "slug": "projects",
+          "title": "Projekte",
+          "type": "gallery",
+          "items": [
+            {
+              "title": "PulseOS",
+              "desc": "Browser-based Agentic OS",
+              "image": "",
+              "link": "https://github.com/NastyFFM/PulseOS"
+            },
+            {
+              "title": "ClaudeOS",
+              "desc": "Telegram AI Relay",
+              "image": "",
+              "link": "https://github.com/NastyFFM/claude-telegram-relay"
+            }
+          ],
+          "updated": "2026-03-28T12:00:00Z"
+        }
       ]
     },
     {
@@ -53,8 +82,8 @@
       "type": "peer",
       "pulseos": false,
       "claudeos": false,
-      "lastSeen": "2026-03-28T11:50:36.296Z",
-      "peerId": "p9yqBQR8oSolal60AAzJ",
+      "lastSeen": "2026-03-28T12:47:38.064Z",
+      "peerId": "A6GCGBg_TeZ0Uv9zAAz3",
       "guestId": "guest-mn9e72agjx7r"
     },
     {
@@ -84,8 +113,8 @@
       "handle": "flip-guest",
       "id": "peer-flip-guest",
       "type": "peer",
-      "peerId": "0KpAA5i6AZ6alaeAAAzL",
-      "lastSeen": "2026-03-28T11:50:55.471Z",
+      "peerId": "xaUbZU29yGggnqyKAA0h",
+      "lastSeen": "2026-03-28T16:42:30.899Z",
       "firstSeen": "2026-03-28T11:24:25.149Z"
     },
     {
@@ -94,10 +123,10 @@
       "handle": "safari-guest",
       "id": "peer-safari-guest",
       "type": "peer",
-      "peerId": "JmTBzZF8l4C56Z17AAy1",
-      "lastSeen": "2026-03-28T11:50:35.971Z",
+      "peerId": "Vog_pDAlh5w7sWuJAA65",
+      "lastSeen": "2026-03-30T11:13:58.021Z",
       "firstSeen": "2026-03-28T11:33:39.206Z"
     }
   ],
-  "updatedAt": "2026-03-28T11:50:55.471Z"
+  "updatedAt": "2026-03-30T11:15:53.973Z"
 }

@@ -1,0 +1,31 @@
+{
+  "schema": "pulse-profile/1.1",
+  "name": "Max Müller",
+  "handle": "maxcoder",
+  "avatar": "🧑‍💻",
+  "bio": "Full-Stack Developer aus Berlin. React, Node.js, AI.",
+  "github": "maxcoder",
+  "twitter": "maxcodes",
+  "website": "https://maxcoder.dev",
+  "pulseos": true,
+  "claudeos": true,
+  "githubPages": "https://maxcoder.github.io",
+  "publicApps": [
+    { "id": "recipe-finder", "name": "Recipe Finder", "icon": "🍳", "description": "Rezepte suchen mit KI", "color": "#ef4444" },
+    { "id": "workout-tracker", "name": "Workout Tracker", "icon": "💪", "description": "Training tracken und analysieren", "color": "#22c55e" }
+  ],
+  "pages": [
+    { "slug": "about", "title": "About Me", "type": "blog", "content": "Hi! Ich bin Max, Fullstack-Dev aus Berlin.\n\n## Aktuelles Projekt\nIch arbeite gerade an einem AI-powered Fitness Tracker.\n\n## Interessen\n- Machine Learning\n- WebRTC\n- Climbing", "updated": "2026-03-27T10:00:00Z" },
+    { "slug": "travel", "title": "Reisetagebuch", "type": "gallery", "items": [
+      { "title": "Japan 2025", "desc": "2 Wochen Tokyo, Kyoto, Osaka", "image": "🇯🇵", "link": "" },
+      { "title": "Island", "desc": "Nordlichter und heiße Quellen", "image": "🇮🇸", "link": "" },
+      { "title": "Portugal", "desc": "Surfen an der Algarve", "image": "🇵🇹", "link": "" }
+    ], "updated": "2026-03-20T15:00:00Z" },
+    { "slug": "music", "title": "Meine Playlists", "type": "list", "items": [
+      { "title": "Coding Flow", "desc": "Lo-fi beats zum Programmieren" },
+      { "title": "Morning Run", "desc": "Upbeat tracks für den Morgen" }
+    ], "updated": "2026-03-25T08:00:00Z" }
+  ],
+  "roomId": "pulse-max-test",
+  "updated": "2026-03-27T10:00:00Z"
+}

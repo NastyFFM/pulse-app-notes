@@ -1,11 +1,28 @@
 {
   "tasks": [
     {
+      "id": "task-1774648155727",
+      "text": "qwfqwf",
+      "priority": "low",
+      "done": false,
+      "created": "2026-03-27T21:49:15.727Z"
+    },
+    {
+      "id": "task-1774462526173",
+      "text": "DAs ist ein Test",
+      "priority": "low",
+      "done": false,
+      "created": "2026-03-25T18:15:26.173Z",
+      "updated": "2026-03-29T14:54:40.057Z"
+    },
+    {
       "id": "task-1774010577367",
       "title": "Praesentation fuer Montag vorbereiten",
       "status": "open",
       "priority": "normal",
-      "created": "2026-03-20T12:42:57.365Z"
+      "created": "2026-03-20T12:42:57.365Z",
+      "done": true,
+      "updated": "2026-03-29T14:54:42.784Z"
     }
   ]
 }

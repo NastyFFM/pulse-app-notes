@@ -41,13 +41,27 @@
       "text": "qwdqw",
       "source": "webrtc",
       "time": "2026-03-28T11:51:46.492Z"
+    },
+    {
+      "id": "m-1774699557886",
+      "from": "agent",
+      "text": "Dualband",
+      "source": "webrtc",
+      "time": "2026-03-28T12:05:57.886Z"
+    },
+    {
+      "id": "m-1774699564148",
+      "from": "agent",
+      "text": "Der Qwdqwd 2025 WLAN-Repeater ist ein 1200 Mbit/s Dualband-Verstärker, der für 2,4 GHz und 5 GHz Netzwerke entwickelt wurde, um die WLAN-Reichweite zu erhöhen und tote Zonen zu beseitigen. Er ist kompatibe",
+      "source": "webrtc",
+      "time": "2026-03-28T12:06:04.148Z"
     }
   ],
   "unread": 0,
   "created": "2026-03-28T11:33:39.236Z",
   "lastMessage": {
-    "text": "qwdqw",
+    "text": "Der Qwdqwd 2025 WLAN-Repeater ist ein 1200 Mbit/s Dualband-Verstärker, der für 2,4 GHz und 5 GHz Net",
     "from": "agent",
-    "time": "2026-03-28T11:51:46.492Z"
+    "time": "2026-03-28T12:06:04.148Z"
   }
 }

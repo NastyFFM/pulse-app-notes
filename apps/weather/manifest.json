@@ -1,12 +1,14 @@
 {
   "name": "Weather",
-  "icon": "W",
+  "icon": "🌤️",
   "color": "#1a2a3d",
-  "description": "Wetter-Anzeige",
-  "nodeType": null,
-  "inputs": [{"id":"data","desc":"Beliebige Daten empfangen"}],
-  "outputs": [{"id":"cities","desc":"Alle Städte mit aktuellem Wetter"},{"id":"forecast","desc":"Wettervorhersage"}],
-  "pulseSubscriptions": [],
-  "visibility": "public",
-  "allowedUsers": []
+  "description": "Echtzeitwetter via Open-Meteo API – Städte hinzufügen, 7-Tage-Vorhersage",
+  "inputs": [
+    { "id": "data", "desc": "Stadt-Name zum automatischen Hinzufügen" }
+  ],
+  "outputs": [
+    { "id": "cities", "desc": "Alle Städte mit aktuellem Wetter" }
+  ],
+  "dataFiles": ["weather"],
+  "pulseSubscriptions": []
 }

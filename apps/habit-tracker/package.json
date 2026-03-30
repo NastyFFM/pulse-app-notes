@@ -1,0 +1,11 @@
+{
+  "name": "pulse-app-habit-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Habit Tracker - PulseOS App",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {}
+}

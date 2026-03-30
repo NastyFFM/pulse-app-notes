@@ -1,0 +1,28 @@
+{
+  "habits": [
+    {
+      "id": "habit-1",
+      "name": "Meditation",
+      "icon": "🧘",
+      "color": "#6366f1",
+      "completions": [],
+      "createdAt": "2026-03-01"
+    },
+    {
+      "id": "habit-2",
+      "name": "Sport",
+      "icon": "🏃",
+      "color": "#10b981",
+      "completions": [],
+      "createdAt": "2026-03-01"
+    },
+    {
+      "id": "habit-3",
+      "name": "Lesen",
+      "icon": "📚",
+      "color": "#f59e0b",
+      "completions": [],
+      "createdAt": "2026-03-01"
+    }
+  ]
+}

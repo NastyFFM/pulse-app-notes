@@ -1,1 +1,17 @@
-{ "pages": [] }
+{
+  "pages": [
+    {
+      "id": "page-mn9cjh9n",
+      "title": "Neue Seite",
+      "slug": "neue-seite",
+      "type": "blog",
+      "visibility": "public",
+      "content": "summer beach",
+      "media": [
+        "https://voca-land.sgp1.cdn.digitaloceanspaces.com/43844/1652589460330/8a553ed693545535545dd4654eac6e0f56d2c2825b203271ed02fbe25d98f57d.jpg"
+      ],
+      "created": "2026-03-27T20:21:03.659Z",
+      "updated": "2026-03-27T20:22:25.380Z"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Habit Tracker",
+  "icon": "H",
+  "color": "#1a2e1a",
+  "description": "Gewohnheiten täglich tracken mit Streak und Jahres-Grid",
+  "inputs": [
+    { "id": "habit-add", "desc": "Neue Gewohnheit hinzufügen (name, color)" }
+  ],
+  "outputs": [
+    { "id": "streak-update", "desc": "Streak-Änderung einer Gewohnheit (id, name, streak)" }
+  ],
+  "dataFiles": ["habits"],
+  "pulseSubscriptions": [],
+  "railwayReady": true,
+  "port": 3100
+}

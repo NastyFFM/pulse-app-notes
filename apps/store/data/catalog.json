@@ -32,11 +32,11 @@
           "color": "#1a2a3a"
         },
         {
-          "id": "weather",
-          "name": "Weather",
-          "icon": "W",
-          "description": "Wetter-Anzeige",
-          "installUrl": "NastyFFM/pulse-app-weather",
+          "id": "kanban",
+          "name": "Kanban",
+          "icon": "▦",
+          "description": "Kanban Board für Projekte und Tasks",
+          "installUrl": "NastyFFM/pulse-app-kanban",
           "color": "#1a2a3a"
         },
         {
@@ -52,5 +52,5 @@
       "isSelf": true
     }
   ],
-  "lastUpdated": "2026-03-27T20:38:33.556Z"
+  "lastUpdated": "2026-03-29T17:09:00.307Z"
 }

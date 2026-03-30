@@ -1,3 +1,31 @@
 {
-  "enableAllProjectMcpServers": true
+  "enableAllProjectMcpServers": true,
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$TOOL_INPUT\" | grep -q 'apps/'; then APP_ID=$(echo \"$TOOL_INPUT\" | grep -o 'apps/[^/]*' | head -1 | cut -d/ -f2); curl -s -X POST http://localhost:3000/api/notify-change -H 'Content-Type: application/json' -d \"{\\\"appId\\\":\\\"$APP_ID\\\",\\\"file\\\":\\\"index.html\\\"}\" 2>/dev/null; fi",
+            "if": "Write(apps/**)",
+            "async": true,
+            "statusMessage": "PulseOS Live-Update"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$TOOL_INPUT\" | grep -q 'apps/'; then APP_ID=$(echo \"$TOOL_INPUT\" | grep -o 'apps/[^/]*' | head -1 | cut -d/ -f2); curl -s -X POST http://localhost:3000/api/notify-change -H 'Content-Type: application/json' -d \"{\\\"appId\\\":\\\"$APP_ID\\\",\\\"file\\\":\\\"index.html\\\"}\" 2>/dev/null; fi",
+            "if": "Edit(apps/**)",
+            "async": true,
+            "statusMessage": "PulseOS Live-Update"
+          }
+        ]
+      }
+    ]
+  }
 }

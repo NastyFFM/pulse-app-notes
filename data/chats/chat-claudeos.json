@@ -13,13 +13,405 @@
       "text": "Hallo ClaudeOS!",
       "source": "dashboard",
       "time": "2026-03-27T13:43:51.928Z"
+    },
+    {
+      "id": "m-1774722292872",
+      "from": "user",
+      "text": "baue mir eine Pomodoro Timer App",
+      "source": "dashboard",
+      "time": "2026-03-28T18:24:52.872Z"
+    },
+    {
+      "id": "m-1774722292877",
+      "from": "user",
+      "text": "baue mir eine Pomodoro Timer App",
+      "source": "dashboard",
+      "time": "2026-03-28T18:24:52.874Z"
+    },
+    {
+      "id": "m-1774722292921",
+      "from": "agent",
+      "text": "Ich starte einen Worker der das baut. Du kannst den Fortschritt in der Workers-App verfolgen. [ACTION:worker-started:worker-mnantx9ik7op]",
+      "source": "pulseos",
+      "time": "2026-03-28T18:24:52.920Z"
+    },
+    {
+      "id": "m-1774722345012",
+      "from": "user",
+      "text": "wie viele apps habe ich installiert?",
+      "source": "dashboard",
+      "time": "2026-03-28T18:25:45.012Z"
+    },
+    {
+      "id": "m-1774722345020",
+      "from": "user",
+      "text": "wie viele apps habe ich installiert?",
+      "source": "dashboard",
+      "time": "2026-03-28T18:25:45.016Z"
+    },
+    {
+      "id": "m-1774723060663",
+      "from": "user",
+      "text": "baue mir eine Quiz App",
+      "source": "dashboard",
+      "time": "2026-03-28T18:37:40.663Z"
+    },
+    {
+      "id": "m-1774723060671",
+      "from": "user",
+      "text": "baue mir eine Quiz App",
+      "source": "dashboard",
+      "time": "2026-03-28T18:37:40.666Z"
+    },
+    {
+      "id": "m-1774723060742",
+      "from": "agent",
+      "text": "Ich starte einen Worker der das baut. Du kannst den Fortschritt in der Workers-App verfolgen. [ACTION:worker-started:worker-mnaoadpwe1mh]",
+      "source": "pulseos",
+      "time": "2026-03-28T18:37:40.741Z"
+    },
+    {
+      "id": "m-wdone-1774723274234",
+      "from": "agent",
+      "source": "pulseos",
+      "time": "2026-03-28T18:41:14.234Z",
+      "text": "Worker fertig: Quiz App erstellt: apps/quiz/ mit index.html, manifest.json, data/quiz.json. Features: 20 Fragen in "
+    },
+    {
+      "id": "m-1774726419937",
+      "from": "user",
+      "text": "baue mir eine Wetter App",
+      "source": "dashboard",
+      "time": "2026-03-28T19:33:39.938Z"
+    },
+    {
+      "id": "m-1774726419952",
+      "from": "user",
+      "text": "baue mir eine Wetter App",
+      "source": "dashboard",
+      "time": "2026-03-28T19:33:39.948Z"
+    },
+    {
+      "id": "m-1774726420029",
+      "from": "agent",
+      "text": "Ich starte einen Worker der das baut. Du kannst den Fortschritt in der Workers-App verfolgen. [ACTION:worker-started:worker-mnaqadrqvko3]",
+      "source": "pulseos",
+      "time": "2026-03-28T19:33:40.028Z"
+    },
+    {
+      "id": "m-wdone-1774726521866",
+      "from": "agent",
+      "source": "pulseos",
+      "time": "2026-03-28T19:35:21.866Z",
+      "text": "Worker fertig: Wetter-App neu gebaut. Features: Echtzeitwetter via Open-Meteo (kostenlos, kein API-Key), Städtesuch"
+    },
+    {
+      "id": "m-1774726740996",
+      "from": "user",
+      "text": "öfnne wetter",
+      "source": "dashboard",
+      "time": "2026-03-28T19:39:00.996Z"
+    },
+    {
+      "id": "m-1774726741015",
+      "from": "user",
+      "text": "öfnne wetter",
+      "source": "dashboard",
+      "time": "2026-03-28T19:39:00.999Z"
+    },
+    {
+      "id": "m-1774727196645",
+      "from": "user",
+      "text": "erstelle eine Habit Tracker App",
+      "source": "dashboard",
+      "time": "2026-03-28T19:46:36.645Z"
+    },
+    {
+      "id": "m-1774727196651",
+      "from": "user",
+      "text": "erstelle eine Habit Tracker App",
+      "source": "dashboard",
+      "time": "2026-03-28T19:46:36.648Z"
+    },
+    {
+      "id": "m-1774727196740",
+      "from": "agent",
+      "text": "Ich starte einen Worker der das baut. Du kannst den Fortschritt in der Workers-App verfolgen. [ACTION:worker-started:worker-mnaqr12mj9bo]",
+      "source": "pulseos",
+      "time": "2026-03-28T19:46:36.739Z"
+    },
+    {
+      "id": "m-wdone-1774727307908",
+      "from": "agent",
+      "source": "pulseos",
+      "time": "2026-03-28T19:48:27.908Z",
+      "text": "Worker fertig: Habit Tracker App erstellt: apps/habit-tracker/ mit index.html, manifest.json und data/habits.json. "
+    },
+    {
+      "id": "m-wdone-1774727538473",
+      "from": "agent",
+      "source": "pulseos",
+      "time": "2026-03-28T19:52:18.473Z",
+      "text": "Worker fertig: Stopwatch App erstellt: apps/stopwatch/ mit Start/Stop/Runde/Reset, Runden-Liste mit Schnellste/Lang"
+    },
+    {
+      "id": "m-wdone-1774784210007",
+      "from": "agent",
+      "source": "pulseos",
+      "time": "2026-03-29T11:36:50.007Z",
+      "text": "Worker fertig: Calendar-App um Day Inspector Panel erweitert: Klick auf Tag öffnet rechts ein Inspector-Panel mit a"
+    },
+    {
+      "id": "m-1774784246718",
+      "from": "user",
+      "text": "was habe ich gerade gemacht?",
+      "source": "dashboard",
+      "time": "2026-03-29T11:37:26.718Z"
+    },
+    {
+      "id": "m-1774784246727",
+      "from": "user",
+      "text": "was habe ich gerade gemacht?",
+      "source": "dashboard",
+      "time": "2026-03-29T11:37:26.725Z"
+    },
+    {
+      "id": "m-1774784482099",
+      "from": "user",
+      "text": "was habe ich gerade gemacht?",
+      "source": "dashboard",
+      "time": "2026-03-29T11:41:22.099Z"
+    },
+    {
+      "id": "m-1774784482115",
+      "from": "user",
+      "text": "was habe ich gerade gemacht?",
+      "source": "dashboard",
+      "time": "2026-03-29T11:41:22.104Z"
+    },
+    {
+      "id": "m-wdone-1774790826576",
+      "from": "agent",
+      "source": "pulseos",
+      "time": "2026-03-29T13:27:06.576Z",
+      "text": "Worker fertig: Railway Token gespeichert. habit-tracker mit package.json, server.js (standalone Node HTTP-Server mi"
+    },
+    {
+      "id": "m-wdone-1774791210142",
+      "from": "agent",
+      "source": "pulseos",
+      "time": "2026-03-29T13:33:30.142Z",
+      "text": "Worker fertig: Deploy fehlgeschlagen: Railway Token ungültig. Bitte neuen Token unter railway.app/account/tokens er"
+    },
+    {
+      "id": "m-1774805383374",
+      "from": "user",
+      "text": "Was steht in meinen Notizen?",
+      "source": "dashboard",
+      "time": "2026-03-29T17:29:43.374Z"
+    },
+    {
+      "id": "m-1774805383382",
+      "from": "user",
+      "text": "Was steht in meinen Notizen?",
+      "source": "dashboard",
+      "time": "2026-03-29T17:29:43.378Z"
+    },
+    {
+      "id": "m-1774805481610",
+      "from": "user",
+      "text": "Was steht in meinen Notizen?",
+      "source": "dashboard",
+      "time": "2026-03-29T17:31:21.610Z"
+    },
+    {
+      "id": "m-1774805481616",
+      "from": "user",
+      "text": "Was steht in meinen Notizen?",
+      "source": "dashboard",
+      "time": "2026-03-29T17:31:21.614Z"
+    },
+    {
+      "id": "m-1774805948689",
+      "from": "user",
+      "text": "benutzt du den mcp server von pulseos?",
+      "source": "dashboard",
+      "time": "2026-03-29T17:39:08.689Z"
+    },
+    {
+      "id": "m-1774805948714",
+      "from": "user",
+      "text": "benutzt du den mcp server von pulseos?",
+      "source": "dashboard",
+      "time": "2026-03-29T17:39:08.698Z"
+    },
+    {
+      "id": "m-1774806773086",
+      "from": "user",
+      "text": "siehst du jetzt einen",
+      "source": "dashboard",
+      "time": "2026-03-29T17:52:53.086Z"
+    },
+    {
+      "id": "m-1774806773097",
+      "from": "user",
+      "text": "siehst du jetzt einen",
+      "source": "dashboard",
+      "time": "2026-03-29T17:52:53.092Z"
+    },
+    {
+      "id": "m-1774806936374",
+      "from": "user",
+      "text": "starte dich neu",
+      "source": "dashboard",
+      "time": "2026-03-29T17:55:36.374Z"
+    },
+    {
+      "id": "m-1774806936391",
+      "from": "user",
+      "text": "starte dich neu",
+      "source": "dashboard",
+      "time": "2026-03-29T17:55:36.380Z"
+    },
+    {
+      "id": "m-1774807021393",
+      "from": "user",
+      "text": "Benutze den pulseos MCP Server um mir meine Notizen zu zeigen",
+      "source": "dashboard",
+      "time": "2026-03-29T17:57:01.393Z"
+    },
+    {
+      "id": "m-1774807021410",
+      "from": "user",
+      "text": "Benutze den pulseos MCP Server um mir meine Notizen zu zeigen",
+      "source": "dashboard",
+      "time": "2026-03-29T17:57:01.399Z"
+    },
+    {
+      "id": "m-1774807874003",
+      "from": "user",
+      "text": "Benutze den pulseos MCP Server um mir meine Notizen zu zeigen",
+      "source": "dashboard",
+      "time": "2026-03-29T18:11:14.003Z"
+    },
+    {
+      "id": "m-1774807874010",
+      "from": "user",
+      "text": "Benutze den pulseos MCP Server um mir meine Notizen zu zeigen",
+      "source": "dashboard",
+      "time": "2026-03-29T18:11:14.007Z"
+    },
+    {
+      "id": "m-1774808169004",
+      "from": "user",
+      "text": "test",
+      "source": "dashboard",
+      "time": "2026-03-29T18:16:09.004Z"
+    },
+    {
+      "id": "m-1774808169014",
+      "from": "user",
+      "text": "test",
+      "source": "dashboard",
+      "time": "2026-03-29T18:16:09.009Z"
+    },
+    {
+      "id": "m-1774809149690",
+      "from": "user",
+      "text": "Benutze das pulseos_list_apps Tool",
+      "source": "dashboard",
+      "time": "2026-03-29T18:32:29.690Z"
+    },
+    {
+      "id": "m-1774809149700",
+      "from": "user",
+      "text": "Benutze das pulseos_list_apps Tool",
+      "source": "dashboard",
+      "time": "2026-03-29T18:32:29.696Z"
+    },
+    {
+      "id": "m-1774810205688",
+      "from": "user",
+      "text": "Welche PulseOS MCP Tools hast du?",
+      "source": "dashboard",
+      "time": "2026-03-29T18:50:05.688Z"
+    },
+    {
+      "id": "m-1774810205699",
+      "from": "user",
+      "text": "Welche PulseOS MCP Tools hast du?",
+      "source": "dashboard",
+      "time": "2026-03-29T18:50:05.693Z"
+    },
+    {
+      "id": "m-1774811943299",
+      "from": "user",
+      "text": "welche mcp tools hast du",
+      "source": "dashboard",
+      "time": "2026-03-29T19:19:03.299Z"
+    },
+    {
+      "id": "m-1774811943435",
+      "from": "user",
+      "text": "welche mcp tools hast du",
+      "source": "dashboard",
+      "time": "2026-03-29T19:19:03.368Z"
+    },
+    {
+      "id": "m-1774812141090",
+      "from": "user",
+      "text": "öffne notes",
+      "source": "dashboard",
+      "time": "2026-03-29T19:22:21.090Z"
+    },
+    {
+      "id": "m-1774859646798",
+      "from": "user",
+      "text": "das ist ein test",
+      "source": "dashboard",
+      "time": "2026-03-30T08:34:06.798Z"
+    },
+    {
+      "id": "m-1774859646911",
+      "from": "user",
+      "text": "das ist ein test",
+      "source": "dashboard",
+      "time": "2026-03-30T08:34:06.857Z"
+    },
+    {
+      "id": "m-1774867923538",
+      "from": "user",
+      "text": "Zeig mir meine PulseOS Apps mit dem pulseos Tool",
+      "source": "dashboard",
+      "time": "2026-03-30T10:52:03.538Z"
+    },
+    {
+      "id": "m-1774867923663",
+      "from": "user",
+      "text": "Zeig mir meine PulseOS Apps mit dem pulseos Tool",
+      "source": "dashboard",
+      "time": "2026-03-30T10:52:03.604Z"
+    },
+    {
+      "id": "m-1774867963003",
+      "from": "user",
+      "text": "genehmigt",
+      "source": "dashboard",
+      "time": "2026-03-30T10:52:43.003Z"
+    },
+    {
+      "id": "m-1774867963130",
+      "from": "user",
+      "text": "genehmigt",
+      "source": "dashboard",
+      "time": "2026-03-30T10:52:43.069Z"
     }
   ],
   "unread": 0,
   "created": "2026-03-27T00:00:00.000Z",
   "lastMessage": {
-    "text": "Hallo ClaudeOS!",
+    "text": "genehmigt",
     "from": "user",
-    "time": "2026-03-27T13:43:51.928Z"
+    "time": "2026-03-30T10:52:43.069Z"
   }
 }

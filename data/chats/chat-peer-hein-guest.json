@@ -1322,14 +1322,182 @@
       "text": "qwd",
       "source": "webrtc",
       "time": "2026-03-28T11:50:41.835Z"
+    },
+    {
+      "id": "m-1774699450416",
+      "from": "user",
+      "text": "qwd",
+      "source": "dashboard",
+      "time": "2026-03-28T12:04:10.416Z"
+    },
+    {
+      "id": "m-1774699452126",
+      "from": "agent",
+      "text": "qwd",
+      "source": "webrtc",
+      "time": "2026-03-28T12:04:12.126Z"
+    },
+    {
+      "id": "m-1774699454225",
+      "from": "agent",
+      "text": "r2t3",
+      "source": "webrtc",
+      "time": "2026-03-28T12:04:14.225Z"
+    },
+    {
+      "id": "m-1774699468984",
+      "from": "agent",
+      "text": "kuf",
+      "source": "webrtc",
+      "time": "2026-03-28T12:04:28.984Z"
+    },
+    {
+      "id": "m-1774699488356",
+      "from": "agent",
+      "text": "letzte nachricht",
+      "source": "webrtc",
+      "time": "2026-03-28T12:04:48.356Z"
+    },
+    {
+      "id": "m-1774699518713",
+      "from": "agent",
+      "text": "wer",
+      "source": "webrtc",
+      "time": "2026-03-28T12:05:18.713Z"
+    },
+    {
+      "id": "m-1774699548821",
+      "from": "agent",
+      "text": "qwdqwe",
+      "source": "webrtc",
+      "time": "2026-03-28T12:05:48.821Z"
+    },
+    {
+      "id": "m-1774699568996",
+      "from": "agent",
+      "text": "Der Qwdqwd 2025 WLAN-Repeater ist ein 1200 Mbit/s Dualband-Verstärker, der für 2,4 GHz und 5 GHz Netzwerke entwickelt wurde, um die WLAN-Reichweite zu erhöhen und tote Zonen zu beseitigen. Er ist kompatibe",
+      "source": "webrtc",
+      "time": "2026-03-28T12:06:08.996Z"
+    },
+    {
+      "id": "m-1774700670797",
+      "from": "agent",
+      "text": "asfaf",
+      "source": "webrtc",
+      "time": "2026-03-28T12:24:30.797Z"
+    },
+    {
+      "id": "m-1774700677830",
+      "from": "agent",
+      "text": "wefwf",
+      "source": "webrtc",
+      "time": "2026-03-28T12:24:37.830Z"
+    },
+    {
+      "id": "m-1774700683065",
+      "from": "agent",
+      "text": "wefwef",
+      "source": "webrtc",
+      "time": "2026-03-28T12:24:43.065Z"
+    },
+    {
+      "id": "m-1774700683473",
+      "from": "agent",
+      "text": "dsav",
+      "source": "webrtc",
+      "time": "2026-03-28T12:24:43.473Z"
+    },
+    {
+      "id": "m-1774700683930",
+      "from": "agent",
+      "text": "vdssdv",
+      "source": "webrtc",
+      "time": "2026-03-28T12:24:43.930Z"
+    },
+    {
+      "id": "m-1774700688817",
+      "from": "agent",
+      "text": "dsv",
+      "source": "webrtc",
+      "time": "2026-03-28T12:24:48.817Z"
+    },
+    {
+      "id": "m-1774700693953",
+      "from": "agent",
+      "text": "f",
+      "source": "webrtc",
+      "time": "2026-03-28T12:24:53.953Z"
+    },
+    {
+      "id": "m-1774700696662",
+      "from": "agent",
+      "text": "f",
+      "source": "webrtc",
+      "time": "2026-03-28T12:24:56.662Z"
+    },
+    {
+      "id": "m-1774700700203",
+      "from": "agent",
+      "text": "f",
+      "source": "webrtc",
+      "time": "2026-03-28T12:25:00.203Z"
+    },
+    {
+      "id": "m-1774700706161",
+      "from": "agent",
+      "text": "11",
+      "source": "webrtc",
+      "time": "2026-03-28T12:25:06.161Z"
+    },
+    {
+      "id": "m-1774700712759",
+      "from": "agent",
+      "text": "r",
+      "source": "webrtc",
+      "time": "2026-03-28T12:25:12.759Z"
+    },
+    {
+      "id": "m-1774700716572",
+      "from": "agent",
+      "text": "wefwef",
+      "source": "webrtc",
+      "time": "2026-03-28T12:25:16.572Z"
+    },
+    {
+      "id": "m-1774700720731",
+      "from": "agent",
+      "text": "wefwef",
+      "source": "webrtc",
+      "time": "2026-03-28T12:25:20.731Z"
+    },
+    {
+      "id": "m-1774700724304",
+      "from": "agent",
+      "text": "wef",
+      "source": "webrtc",
+      "time": "2026-03-28T12:25:24.304Z"
+    },
+    {
+      "id": "m-1774702062601",
+      "from": "agent",
+      "text": "dqw",
+      "source": "webrtc",
+      "time": "2026-03-28T12:47:42.601Z"
+    },
+    {
+      "id": "m-1774702066047",
+      "from": "agent",
+      "text": "wefewfe",
+      "source": "webrtc",
+      "time": "2026-03-28T12:47:46.047Z"
     }
   ],
   "unread": 0,
   "created": "2026-03-27T15:02:08.688Z",
   "lastMessage": {
-    "text": "qwd",
+    "text": "wefewfe",
     "from": "agent",
-    "time": "2026-03-28T11:50:41.835Z"
+    "time": "2026-03-28T12:47:46.047Z"
   },
   "claudeEnabled": false
 }

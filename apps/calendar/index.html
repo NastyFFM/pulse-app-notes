@@ -10,7 +10,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-.header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface)}
+.header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);flex-shrink:0}
 .header-left{display:flex;align-items:center;gap:12px}
 .header-title{font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
 .month-label{font-size:15px;font-weight:600;color:var(--text)}
@@ -19,32 +19,79 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
 .nav-btn.today{color:var(--teal);border-color:rgba(78,205,196,.2)}
 .nav-btn.today:hover{background:rgba(78,205,196,.1)}
 
-.calendar{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:8px}
+/* Main layout: calendar + inspector side by side */
+.main{flex:1;display:flex;overflow:hidden}
+
+.calendar{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:8px;transition:all .25s}
 .weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;padding:4px 0}
 .weekday{text-align:center;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;padding:4px}
 .days{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;flex:1}
 .day{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:6px;cursor:pointer;min-height:60px;transition:all .15s;position:relative;overflow:hidden}
 .day:hover{border-color:rgba(78,205,196,.2);background:rgba(78,205,196,.02)}
-.day.other-month{opacity:.3}
+.day.other-month{opacity:.3;pointer-events:none}
 .day.today{border-color:var(--teal);background:rgba(78,205,196,.05)}
+.day.selected{border-color:var(--teal);background:rgba(78,205,196,.08);box-shadow:0 0 0 1px rgba(78,205,196,.3)}
 .day-num{font-size:11px;font-weight:500;color:var(--dim)}
 .day.today .day-num{color:var(--teal);font-weight:700}
+.day.selected .day-num{color:var(--teal)}
 .day-events{margin-top:4px;display:flex;flex-direction:column;gap:2px}
 .day-event{font-size:9px;color:var(--text);background:rgba(78,205,196,.1);border-left:2px solid var(--teal);padding:1px 4px;border-radius:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* Modal */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center}
-.modal-overlay.active{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;width:320px;max-width:90vw}
-.modal h3{font-size:13px;font-weight:600;margin-bottom:14px;color:var(--teal)}
-.modal label{display:block;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;margin-top:10px}
-.modal input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font:12px var(--font);padding:6px 8px;border-radius:4px;outline:none}
-.modal input:focus{border-color:var(--teal)}
-.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
-.modal-btn{border:none;padding:5px 14px;border-radius:4px;font:11px/1 var(--font);cursor:pointer;font-weight:500}
-.modal-btn.primary{background:var(--teal);color:var(--bg)}
-.modal-btn.secondary{background:rgba(255,255,255,.06);color:var(--dim)}
-.modal-btn:hover{opacity:.9}
+/* Inspector Panel */
+.inspector{width:0;overflow:hidden;border-left:1px solid transparent;background:var(--surface);display:flex;flex-direction:column;transition:width .25s,border-color .25s;flex-shrink:0}
+.inspector.open{width:280px;border-left-color:var(--border)}
+
+.insp-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;white-space:nowrap}
+.insp-date{font-size:12px;font-weight:600;color:var(--teal)}
+.insp-close{background:none;border:none;color:var(--dim);cursor:pointer;font:16px var(--font);padding:2px 6px;border-radius:3px;transition:all .15s;line-height:1}
+.insp-close:hover{background:rgba(255,255,255,.08);color:var(--text)}
+
+.insp-body{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+.insp-body::-webkit-scrollbar{width:4px}
+.insp-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+
+.insp-add-btn{display:flex;align-items:center;gap:6px;padding:7px 10px;background:rgba(78,205,196,.08);border:1px dashed rgba(78,205,196,.3);border-radius:5px;color:var(--teal);font:11px var(--font);cursor:pointer;transition:all .15s;text-align:left;white-space:nowrap}
+.insp-add-btn:hover{background:rgba(78,205,196,.15);border-color:rgba(78,205,196,.6)}
+
+.insp-empty{color:var(--dim);font-size:11px;padding:12px 0;text-align:center;white-space:nowrap}
+
+/* Event card in inspector */
+.ev-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:5px;overflow:hidden;transition:border-color .15s}
+.ev-card:hover{border-color:rgba(78,205,196,.2)}
+.ev-card.editing{border-color:rgba(78,205,196,.4)}
+
+.ev-card-head{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer}
+.ev-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0}
+.ev-title-display{flex:1;font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev-time-badge{font-size:10px;color:var(--dim);background:rgba(255,255,255,.05);padding:1px 5px;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.ev-toggle{font-size:10px;color:var(--dim);transition:transform .2s;flex-shrink:0}
+.ev-card.editing .ev-toggle{transform:rotate(180deg)}
+
+/* Edit form inside card */
+.ev-edit-form{padding:8px 10px 10px;border-top:1px solid var(--border);display:none;flex-direction:column;gap:6px}
+.ev-card.editing .ev-edit-form{display:flex}
+.ev-field{display:flex;flex-direction:column;gap:2px}
+.ev-field label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.ev-field input,.ev-field textarea,.ev-field select{background:var(--bg);border:1px solid var(--border);color:var(--text);font:11px var(--font);padding:5px 7px;border-radius:3px;outline:none;width:100%}
+.ev-field input:focus,.ev-field textarea:focus,.ev-field select:focus{border-color:var(--teal)}
+.ev-field textarea{resize:vertical;min-height:52px;line-height:1.5}
+.ev-form-row{display:flex;gap:6px}
+.ev-form-row .ev-field{flex:1}
+.ev-actions{display:flex;gap:6px;margin-top:2px}
+.ev-save-btn{flex:1;background:var(--teal);border:none;color:var(--bg);font:11px var(--font);padding:5px 8px;border-radius:3px;cursor:pointer;font-weight:600}
+.ev-save-btn:hover{opacity:.9}
+.ev-del-btn{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);font:11px var(--font);padding:5px 8px;border-radius:3px;cursor:pointer}
+.ev-del-btn:hover{background:rgba(239,68,68,.2)}
+
+/* Add-event inline form */
+.add-form{background:rgba(78,205,196,.04);border:1px solid rgba(78,205,196,.2);border-radius:5px;padding:10px;display:none;flex-direction:column;gap:6px}
+.add-form.open{display:flex}
+.add-form-title{font-size:10px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.add-form input{background:var(--bg);border:1px solid var(--border);color:var(--text);font:11px var(--font);padding:5px 7px;border-radius:3px;outline:none;width:100%}
+.add-form input:focus{border-color:var(--teal)}
+.add-form-actions{display:flex;gap:6px;margin-top:2px}
+.add-save-btn{flex:1;background:var(--teal);border:none;color:var(--bg);font:11px var(--font);padding:5px 8px;border-radius:3px;cursor:pointer;font-weight:600}
+.add-cancel-btn{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--dim);font:11px var(--font);padding:5px 8px;border-radius:3px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -61,27 +108,22 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
   </div>
 </div>
 
-<div class="calendar">
-  <div class="weekdays">
-    <div class="weekday">Mo</div><div class="weekday">Di</div><div class="weekday">Mi</div>
-    <div class="weekday">Do</div><div class="weekday">Fr</div><div class="weekday">Sa</div><div class="weekday">So</div>
-  </div>
-  <div class="days" id="daysGrid"></div>
-</div>
-
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <h3>Neuer Termin</h3>
-    <label>Datum</label>
-    <input type="date" id="eventDate">
-    <label>Titel</label>
-    <input type="text" id="eventTitle" placeholder="Termin-Titel...">
-    <label>Uhrzeit</label>
-    <input type="time" id="eventTime">
-    <div class="modal-actions">
-      <button class="modal-btn secondary" onclick="closeModal()">Abbrechen</button>
-      <button class="modal-btn primary" onclick="saveEvent()">Speichern</button>
+<div class="main">
+  <div class="calendar">
+    <div class="weekdays">
+      <div class="weekday">Mo</div><div class="weekday">Di</div><div class="weekday">Mi</div>
+      <div class="weekday">Do</div><div class="weekday">Fr</div><div class="weekday">Sa</div><div class="weekday">So</div>
     </div>
+    <div class="days" id="daysGrid"></div>
+  </div>
+
+  <!-- Inspector Panel -->
+  <div class="inspector" id="inspector">
+    <div class="insp-header">
+      <span class="insp-date" id="inspDate"></span>
+      <button class="insp-close" onclick="closeInspector()" title="Schließen">✕</button>
+    </div>
+    <div class="insp-body" id="inspBody"></div>
   </div>
 </div>
 
@@ -89,8 +131,10 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
 const DATA_URL = '/app/calendar/api/calendar';
 let events = [];
 let currentYear, currentMonth;
+let selectedDate = null;
 
-const MONTHS = ['Januar','Februar','Maerz','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const WEEKDAYS_LONG = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 
 function init() {
   const now = new Date();
@@ -105,6 +149,7 @@ async function loadEvents() {
     if (r.ok) { const d = await r.json(); events = d.events || []; }
   } catch { events = []; }
   render();
+  if (selectedDate) renderInspector(selectedDate);
 }
 
 function render() {
@@ -112,25 +157,27 @@ function render() {
   const grid = document.getElementById('daysGrid');
   const firstDay = new Date(currentYear, currentMonth, 1);
   const lastDay = new Date(currentYear, currentMonth + 1, 0);
-  let startDow = firstDay.getDay(); // 0=Sun
-  startDow = startDow === 0 ? 6 : startDow - 1; // convert to Mon=0
+  let startDow = firstDay.getDay();
+  startDow = startDow === 0 ? 6 : startDow - 1;
 
   const today = new Date();
   const todayStr = fmt(today.getFullYear(), today.getMonth() + 1, today.getDate());
 
   let html = '';
-  // Previous month days
   const prevLast = new Date(currentYear, currentMonth, 0).getDate();
   for (let i = startDow - 1; i >= 0; i--) {
     const d = prevLast - i;
     html += '<div class="day other-month"><span class="day-num">' + d + '</span></div>';
   }
-  // Current month days
   for (let d = 1; d <= lastDay.getDate(); d++) {
     const dateStr = fmt(currentYear, currentMonth + 1, d);
     const isToday = dateStr === todayStr;
+    const isSelected = dateStr === selectedDate;
     const dayEvents = events.filter(e => e.date === dateStr);
-    html += '<div class="day' + (isToday ? ' today' : '') + '" onclick="openModal(\'' + dateStr + '\')">';
+    let cls = 'day';
+    if (isToday) cls += ' today';
+    if (isSelected) cls += ' selected';
+    html += '<div class="' + cls + '" onclick="selectDay(\'' + dateStr + '\')">';
     html += '<span class="day-num">' + d + '</span>';
     if (dayEvents.length) {
       html += '<div class="day-events">';
@@ -141,14 +188,166 @@ function render() {
     }
     html += '</div>';
   }
-  // Fill remaining cells
   const totalCells = startDow + lastDay.getDate();
   const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
   for (let d = 1; d <= remaining; d++) {
     html += '<div class="day other-month"><span class="day-num">' + d + '</span></div>';
   }
-
   grid.innerHTML = html;
+}
+
+function selectDay(dateStr) {
+  selectedDate = dateStr;
+  render();
+  openInspector(dateStr);
+}
+
+function openInspector(dateStr) {
+  document.getElementById('inspector').classList.add('open');
+  renderInspector(dateStr);
+}
+
+function closeInspector() {
+  selectedDate = null;
+  document.getElementById('inspector').classList.remove('open');
+  render();
+}
+
+function renderInspector(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dateObj = new Date(y, m - 1, d);
+  const label = WEEKDAYS_LONG[dateObj.getDay()] + ', ' + d + '. ' + MONTHS[m - 1] + ' ' + y;
+  document.getElementById('inspDate').textContent = label;
+
+  const dayEvents = events.filter(e => e.date === dateStr).sort((a,b) => (a.time||'').localeCompare(b.time||''));
+  const body = document.getElementById('inspBody');
+
+  let html = '';
+
+  // Add-event button
+  html += '<button class="insp-add-btn" onclick="toggleAddForm()">＋ Neuer Termin</button>';
+
+  // Inline add form
+  html += `<div class="add-form" id="addForm">
+    <div class="add-form-title">Neuer Termin</div>
+    <input type="text" id="newTitle" placeholder="Titel..." onkeydown="if(event.key==='Enter')saveNewEvent()">
+    <div style="display:flex;gap:6px">
+      <input type="time" id="newTimeStart" style="flex:1">
+      <input type="time" id="newTimeEnd" style="flex:1" placeholder="Ende">
+    </div>
+    <input type="text" id="newLocation" placeholder="Ort (optional)">
+    <div class="add-form-actions">
+      <button class="add-cancel-btn" onclick="toggleAddForm()">Abbrechen</button>
+      <button class="add-save-btn" onclick="saveNewEvent()">Speichern</button>
+    </div>
+  </div>`;
+
+  if (dayEvents.length === 0) {
+    html += '<div class="insp-empty">Keine Termine</div>';
+  } else {
+    dayEvents.forEach(ev => {
+      const evId = esc(ev.id);
+      const timeLabel = ev.timeEnd ? (ev.time + ' – ' + ev.timeEnd) : (ev.time || '');
+      html += `<div class="ev-card" id="card-${evId}">
+        <div class="ev-card-head" onclick="toggleEditCard('${evId}')">
+          <span class="ev-dot" style="${ev.color ? 'background:'+esc(ev.color) : ''}"></span>
+          <span class="ev-title-display">${esc(ev.title)}</span>
+          ${timeLabel ? '<span class="ev-time-badge">' + esc(timeLabel) + '</span>' : ''}
+          <span class="ev-toggle">▾</span>
+        </div>
+        <div class="ev-edit-form">
+          <div class="ev-field"><label>Titel</label>
+            <input type="text" id="et-title-${evId}" value="${esc(ev.title)}" placeholder="Titel...">
+          </div>
+          <div class="ev-form-row">
+            <div class="ev-field"><label>Von</label>
+              <input type="time" id="et-time-${evId}" value="${esc(ev.time||'')}">
+            </div>
+            <div class="ev-field"><label>Bis</label>
+              <input type="time" id="et-timeend-${evId}" value="${esc(ev.timeEnd||'')}">
+            </div>
+          </div>
+          <div class="ev-field"><label>Ort</label>
+            <input type="text" id="et-loc-${evId}" value="${esc(ev.location||'')}" placeholder="Ort...">
+          </div>
+          <div class="ev-field"><label>Notizen</label>
+            <textarea id="et-notes-${evId}" placeholder="Notizen...">${esc(ev.notes||'')}</textarea>
+          </div>
+          <div class="ev-form-row">
+            <div class="ev-field"><label>Farbe</label>
+              <input type="color" id="et-color-${evId}" value="${ev.color||'#4ecdc4'}" style="height:28px;padding:2px 4px;cursor:pointer">
+            </div>
+          </div>
+          <div class="ev-actions">
+            <button class="ev-save-btn" onclick="saveEditEvent('${evId}')">Speichern</button>
+            <button class="ev-del-btn" onclick="deleteEvent('${evId}')">Löschen</button>
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+
+  body.innerHTML = html;
+}
+
+function toggleEditCard(evId) {
+  const card = document.getElementById('card-' + evId);
+  if (card) card.classList.toggle('editing');
+}
+
+function toggleAddForm() {
+  const form = document.getElementById('addForm');
+  if (!form) return;
+  form.classList.toggle('open');
+  if (form.classList.contains('open')) {
+    setTimeout(() => { const el = document.getElementById('newTitle'); if (el) el.focus(); }, 50);
+  }
+}
+
+function saveNewEvent() {
+  const title = (document.getElementById('newTitle')?.value || '').trim();
+  if (!title || !selectedDate) return;
+  const time = document.getElementById('newTimeStart')?.value || '';
+  const timeEnd = document.getElementById('newTimeEnd')?.value || '';
+  const location = (document.getElementById('newLocation')?.value || '').trim();
+  events.push({
+    id: 'ev-' + Date.now(),
+    date: selectedDate,
+    title,
+    time,
+    timeEnd,
+    location,
+    notes: '',
+    color: '',
+    created: new Date().toISOString()
+  });
+  saveData();
+  render();
+  renderInspector(selectedDate);
+}
+
+function saveEditEvent(evId) {
+  const ev = events.find(e => e.id === evId);
+  if (!ev) return;
+  const title = (document.getElementById('et-title-' + evId)?.value || '').trim();
+  if (!title) return;
+  ev.title = title;
+  ev.time = document.getElementById('et-time-' + evId)?.value || '';
+  ev.timeEnd = document.getElementById('et-timeend-' + evId)?.value || '';
+  ev.location = document.getElementById('et-loc-' + evId)?.value || '';
+  ev.notes = document.getElementById('et-notes-' + evId)?.value || '';
+  ev.color = document.getElementById('et-color-' + evId)?.value || '';
+  ev.updated = new Date().toISOString();
+  saveData();
+  render();
+  renderInspector(selectedDate);
+}
+
+function deleteEvent(evId) {
+  events = events.filter(e => e.id !== evId);
+  saveData();
+  render();
+  renderInspector(selectedDate);
 }
 
 function fmt(y, m, d) {
@@ -166,29 +365,6 @@ function goToday() {
   const now = new Date();
   currentYear = now.getFullYear();
   currentMonth = now.getMonth();
-  render();
-}
-
-function openModal(dateStr) {
-  document.getElementById('eventDate').value = dateStr;
-  document.getElementById('eventTitle').value = '';
-  document.getElementById('eventTime').value = '';
-  document.getElementById('modal').classList.add('active');
-  setTimeout(() => document.getElementById('eventTitle').focus(), 50);
-}
-
-function closeModal() {
-  document.getElementById('modal').classList.remove('active');
-}
-
-function saveEvent() {
-  const date = document.getElementById('eventDate').value;
-  const title = document.getElementById('eventTitle').value.trim();
-  const time = document.getElementById('eventTime').value;
-  if (!date || !title) return;
-  events.push({ id: 'ev-' + Date.now(), date, title, time, created: new Date().toISOString() });
-  saveData();
-  closeModal();
   render();
 }
 
