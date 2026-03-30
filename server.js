@@ -8104,13 +8104,12 @@ ${templateContent ? '\n--- TEMPLATE INSTRUKTIONEN ---\n' + templateContent + '\n
 
 REGELN:
 - Arbeite im Verzeichnis: ${ROOT}
-- WICHTIG: Nutze den EXAKTEN App-Pfad aus dem Edit-Kontext oben (kann apps/ ODER userdata/apps/ sein)
-- Neue Apps erstellen in: ${USERDATA}/apps/<name>/index.html + manifest.json + data/
+${resolvedAppDir ? '- KRITISCH: Die App liegt in: ' + resolvedAppDir + ' — schreibe ALLE Dateien dorthin, NICHT nach apps/' + editAppId + '/!' : '- Neue Apps erstellen in: ' + USERDATA + '/apps/<name>/'}
 
 APP-KONVENTION (PFLICHT):
 Jede App braucht diese 3 Dateien:
-1. apps/<name>/index.html — Vanilla HTML/CSS/JS, KEINE Frameworks
-2. apps/<name>/manifest.json:
+1. ${resolvedAppDir || USERDATA + '/apps/<name>'}/index.html — Vanilla HTML/CSS/JS, KEINE Frameworks
+2. ${resolvedAppDir || USERDATA + '/apps/<name>'}/manifest.json:
    {"name":"App Name","icon":"X","color":"#hex","description":"Was die App tut",
     "inputs":[{"id":"input-name","desc":"Was dieser Input empfängt"}],
     "outputs":[{"id":"output-name","desc":"Was dieser Output liefert"}],
