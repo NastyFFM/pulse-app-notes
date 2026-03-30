@@ -2056,21 +2056,31 @@ function editWin(winId) {
 async function loadTemplateDropdown(winId) {
   const select = document.getElementById('edit-tpl-' + winId);
   if (!select) return;
-  // Get the app's saved template
-  const editPanel = document.getElementById('edit-' + winId);
-  const appId = editPanel?.dataset?.appid || '';
-  let savedTemplate = 'frontend';
-  if (appId) {
-    const appObj = (allApps || []).find(a => a.id === appId);
-    if (appObj?.template) savedTemplate = appObj.template;
-  }
   try {
+    // Get the app's saved template
+    const editPanel = document.getElementById('edit-' + winId);
+    const appId = editPanel?.dataset?.appid || '';
+    let savedTemplate = 'frontend';
+    if (appId) {
+      try {
+        const appsRes = await fetch('/api/apps');
+        const appsData = await appsRes.json();
+        const appObj = (appsData.apps || []).find(a => a.id === appId);
+        if (appObj?.template) savedTemplate = appObj.template;
+      } catch {}
+    }
     const r = await fetch('/api/templates');
     const data = await r.json();
-    select.innerHTML = (data.templates || []).map(t =>
-      '<option value="' + t.id + '"' + (t.id === savedTemplate ? ' selected' : '') + '>' + (t.icon || '') + ' ' + t.name + '</option>'
-    ).join('');
-  } catch {
+    const tpls = data.templates || [];
+    if (tpls.length) {
+      select.innerHTML = tpls.map(t =>
+        '<option value="' + t.id + '"' + (t.id === savedTemplate ? ' selected' : '') + '>' + (t.icon || '') + ' ' + t.name + '</option>'
+      ).join('');
+    } else {
+      select.innerHTML = '<option value="frontend">PulseOS Frontend</option>';
+    }
+  } catch (e) {
+    console.error('loadTemplateDropdown error:', e);
     select.innerHTML = '<option value="frontend">PulseOS Frontend</option>';
   }
 }
