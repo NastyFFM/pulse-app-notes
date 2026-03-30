@@ -136,11 +136,9 @@ const AppActions = {
         if (app.railwayProjectId) {
           html += '<a href="https://railway.com/project/' + esc(app.railwayProjectId) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">🚂 Railway</a>';
         }
-        if (app.vercelUrl) {
-          // Vercel dashboard: project name = app id (not the generated domain slug)
+        if (app.vercelUrl && app.vercelTeam) {
           const vercelProject = app.vercelProject || app.id;
-          const vercelTeam = app.vercelTeam || '';
-          html += '<a href="https://vercel.com/' + esc(vercelTeam) + '/' + esc(vercelProject) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">▲ Vercel</a>';
+          html += '<a href="https://vercel.com/' + esc(app.vercelTeam) + '/' + esc(vercelProject) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">▲ Vercel</a>';
         }
         if (app.supabaseUrl) {
           html += '<a href="' + esc(app.supabaseUrl.replace('.supabase.co', '.supabase.com/project/')) + '" target="_blank" class="action-btn" style="text-decoration:none;display:inline-block;">⚡ Supabase</a>';
