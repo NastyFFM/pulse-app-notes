@@ -2552,7 +2552,7 @@ if (window.PulseOS) {
     });
   }
 
-  // ── App Deploy (Railway via gh + railway CLI) ──
+  // ── App Deploy (dynamic: Railway or Vercel based on app.stacks) ──
   if (url.match(/^\/api\/apps\/[^/]+\/deploy$/) && req.method === 'POST') {
     const appId = url.split('/')[3];
     const profile = safeReadJSON(path.join(ROOT, 'data', 'profile.json'), '{}');
@@ -2562,7 +2562,111 @@ if (window.PulseOS) {
     const repoName = 'pulse-app-' + appId;
     const appDir = resolveAppDir(appId);
     const { execSync } = require('child_process');
+    const extPath = process.env.PATH + ':/Users/chris.pohl/.bun/bin:/usr/local/bin:/opt/homebrew/bin';
 
+    // Determine deploy stack from app data
+    const appsFileForStack = path.join(ROOT, 'data', 'apps.json');
+    const appsDataForStack = safeReadJSON(appsFileForStack, '{"apps":[]}');
+    const appForStack = (appsDataForStack.apps || []).find(a => a.id === appId);
+    const deployStack = (appForStack?.stacks || [])[0] || 'railway';
+
+    // ── VERCEL DEPLOY ──
+    if (deployStack === 'vercel') {
+      const env = readGlobalEnv();
+      const vercelToken = env.VERCEL_TOKEN || '';
+      if (!vercelToken) return jsonRes(res, { error: 'VERCEL_TOKEN fehlt. Richte Vercel im Accounts-Tab ein.' }, 400);
+
+      // Auto-scaffold for vanilla apps
+      if (!fs.existsSync(path.join(appDir, 'package.json'))) {
+        fs.writeFileSync(path.join(appDir, 'package.json'), JSON.stringify({ name: repoName, version: '1.0.0', private: true }, null, 2));
+      }
+
+      try {
+        // Auto-detect Vercel scope — try deploy first, parse scope from error if needed
+        let vercelScope = '';
+        try {
+          const probeOut = execSync('cd ' + appDir + ' && vercel deploy --prod --yes --token ' + vercelToken + ' 2>&1', { stdio: 'pipe', timeout: 30000, env: { ...process.env, PATH: extPath } }).toString();
+          // If it worked without scope, extract URL and return early
+          if (probeOut.includes('"status":"ok"') || probeOut.includes('vercel.app')) {
+            console.log('[deploy:vercel] deployed without scope for', appId);
+            let vercelUrl = '';
+            // Extract the aliased (production) URL — not the deployment-hash URL
+            const aliasMatch = probeOut.match(/Aliased:\s*(https:\/\/[^\s]+)/);
+            if (aliasMatch) vercelUrl = aliasMatch[1];
+            // Fallback: JSON deployment URL
+            if (!vercelUrl) {
+              try {
+                const jsonStart = probeOut.indexOf('{');
+                if (jsonStart >= 0) {
+                  const j = JSON.parse(probeOut.substring(jsonStart));
+                  vercelUrl = j.deployment?.url || '';
+                  if (vercelUrl && !vercelUrl.startsWith('http')) vercelUrl = 'https://' + vercelUrl;
+                }
+              } catch {}
+            }
+            // Fallback: any vercel.app URL that's NOT a deployment hash
+            if (!vercelUrl) {
+              const urls = probeOut.match(/https:\/\/[^\s"]+\.vercel\.app/g) || [];
+              vercelUrl = urls.find(u => !u.match(/-[a-z0-9]{9}-/)) || urls[0] || '';
+            }
+            if (appForStack) {
+              appForStack.vercelUrl = vercelUrl || appForStack.vercelUrl;
+              appForStack.deployedAt = new Date().toISOString();
+              fs.writeFileSync(appsFileForStack, JSON.stringify(appsDataForStack, null, 2));
+            }
+            return jsonRes(res, { ok: true, url: vercelUrl, provider: 'vercel' });
+          }
+        } catch (probeErr) {
+          // Parse scope from error hint
+          const probeMsg = (probeErr.stdout || probeErr.stderr || '').toString();
+          const scopeMatch = probeMsg.match(/"name"\s*:\s*"([^"]+)"/);
+          if (scopeMatch) vercelScope = scopeMatch[1];
+          // Also try: --scope <name> from the "next" array
+          const cmdMatch = probeMsg.match(/--scope\s+(\S+)/);
+          if (cmdMatch && !vercelScope) vercelScope = cmdMatch[1];
+        }
+
+        const scopeFlag = vercelScope ? ' --scope ' + vercelScope : '';
+        const vercelCmd = 'cd ' + appDir + ' && vercel deploy --prod --yes --token ' + vercelToken + scopeFlag + ' 2>&1';
+        console.log('[deploy:vercel] running for', appId, 'scope:', vercelScope || 'auto');
+        const output = execSync(vercelCmd, { stdio: 'pipe', timeout: 120000, env: { ...process.env, PATH: extPath } }).toString();
+        console.log('[deploy:vercel] output:', output.substring(0, 500));
+
+        // Extract the aliased (production) URL
+        let vercelUrl = '';
+        const aliasMatch = output.match(/Aliased:\s*(https:\/\/[^\s]+)/);
+        if (aliasMatch) vercelUrl = aliasMatch[1];
+        if (!vercelUrl) {
+          try {
+            const jsonStart = output.indexOf('{');
+            if (jsonStart >= 0) {
+              const j = JSON.parse(output.substring(jsonStart));
+              vercelUrl = j.deployment?.url || '';
+              if (vercelUrl && !vercelUrl.startsWith('http')) vercelUrl = 'https://' + vercelUrl;
+            }
+          } catch {}
+        }
+        if (!vercelUrl) {
+          const urls = output.match(/https:\/\/[^\s"]+\.vercel\.app/g) || [];
+          vercelUrl = urls.find(u => !u.match(/-[a-z0-9]{9}-/)) || urls[0] || '';
+        }
+
+        // Save to app data
+        if (appForStack) {
+          appForStack.vercelUrl = vercelUrl || appForStack.vercelUrl;
+          appForStack.deployedAt = new Date().toISOString();
+          fs.writeFileSync(appsFileForStack, JSON.stringify(appsDataForStack, null, 2));
+        }
+
+        return jsonRes(res, { ok: true, url: vercelUrl, provider: 'vercel' });
+      } catch (e) {
+        const errMsg = (e.stderr || e.stdout || e.message || '').toString().substring(0, 300);
+        console.log('[deploy:vercel] error:', errMsg);
+        return jsonRes(res, { error: 'Vercel Deploy fehlgeschlagen: ' + errMsg }, 500);
+      }
+    }
+
+    // ── RAILWAY DEPLOY (default) ──
     // Check Railway CLI + Token
     const tokenFile = path.join(ROOT, 'data', 'railway-token');
     let railwayToken = '';
