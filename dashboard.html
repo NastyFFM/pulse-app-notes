@@ -1530,7 +1530,15 @@ function connectSSE() {
         handleTunnelSSE(msg);
         return;
       }
-      if (msg.type === 'app-data-changed' && msg.appId) {
+      if (msg.type === 'app-html-changed' && msg.appId) {
+        // App HTML was edited by worker — force iframe reload with cache-bust
+        openWindows.filter(w => w.appId === msg.appId && !w.closed).forEach(w => {
+          const iframe = w.el.querySelector('iframe');
+          if (iframe) { const base = iframe.src.split('?')[0]; iframe.src = base + '?_t=' + Date.now(); }
+        });
+        const appName = (state.apps || []).find(a => a.id === msg.appId)?.name || msg.appId;
+        addFeed(appName + ': App aktualisiert', 'mutation');
+      } else if (msg.type === 'app-data-changed' && msg.appId) {
         // Forward to open app iframes so they auto-reload
         openWindows.filter(w => w.appId === msg.appId && !w.closed).forEach(w => {
           try { w.el.querySelector('iframe').contentWindow.postMessage({ type: 'data-changed', appId: msg.appId, file: msg.file }, '*'); } catch {}

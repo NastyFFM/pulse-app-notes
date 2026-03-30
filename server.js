@@ -8220,6 +8220,12 @@ STARTE JETZT mit der Aufgabe.`;
           } catch (e) { console.error('[worker-completion]', e.message); }
           delete activeWorkers[proc.pid];
           broadcast('dashboard', { type: 'worker-update', workerId: id, status: workerStatus });
+          // If this was an edit-mode worker, broadcast app-html-changed so iframes reload
+          if (editAppId && workerStatus === 'done') {
+            broadcast('dashboard', { type: 'app-html-changed', appId: editAppId, time: Date.now() });
+            // Also broadcast to the app's own SSE channel
+            broadcast(editAppId, { type: 'change', file: 'index.html', time: Date.now() });
+          }
           console.log('[worker-' + id + '] Finished (code ' + code + ')');
         });
 
