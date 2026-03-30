@@ -2341,6 +2341,54 @@ if (window.PulseOS) {
     });
   }
 
+  // ── Template CRUD API ──
+  const templatesFile = path.join(ROOT, 'data', 'templates.json');
+  if (url === '/api/templates' && req.method === 'GET') {
+    const data = safeReadJSON(templatesFile, '{"templates":[]}');
+    return jsonRes(res, data);
+  }
+  if (url === '/api/templates' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const tpl = JSON.parse(b);
+        if (!tpl.name) return jsonRes(res, { error: 'name required' }, 400);
+        const data = safeReadJSON(templatesFile, '{"templates":[]}');
+        tpl.id = tpl.id || tpl.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        tpl.author = tpl.author || 'user';
+        tpl.createdAt = new Date().toISOString();
+        // Prevent duplicate IDs
+        data.templates = data.templates.filter(t => t.id !== tpl.id);
+        data.templates.push(tpl);
+        fs.writeFileSync(templatesFile, JSON.stringify(data, null, 2));
+        jsonRes(res, { ok: true, template: tpl });
+      } catch (e) { jsonRes(res, { error: e.message }, 400); }
+    });
+  }
+  const tplMatch = url.match(/^\/api\/templates\/([a-zA-Z0-9_-]+)$/);
+  if (tplMatch && req.method === 'PUT') {
+    return readBody(req, b => {
+      try {
+        const update = JSON.parse(b);
+        const data = safeReadJSON(templatesFile, '{"templates":[]}');
+        const idx = data.templates.findIndex(t => t.id === tplMatch[1]);
+        if (idx < 0) return jsonRes(res, { error: 'Template not found' }, 404);
+        if (data.templates[idx].builtin && update.instructions) data.templates[idx].instructions = update.instructions;
+        else Object.assign(data.templates[idx], update);
+        data.templates[idx].updatedAt = new Date().toISOString();
+        fs.writeFileSync(templatesFile, JSON.stringify(data, null, 2));
+        jsonRes(res, { ok: true, template: data.templates[idx] });
+      } catch (e) { jsonRes(res, { error: e.message }, 400); }
+    });
+  }
+  if (tplMatch && req.method === 'DELETE') {
+    const data = safeReadJSON(templatesFile, '{"templates":[]}');
+    const tpl = data.templates.find(t => t.id === tplMatch[1]);
+    if (tpl?.builtin) return jsonRes(res, { error: 'Cannot delete builtin template' }, 400);
+    data.templates = data.templates.filter(t => t.id !== tplMatch[1]);
+    fs.writeFileSync(templatesFile, JSON.stringify(data, null, 2));
+    return jsonRes(res, { ok: true });
+  }
+
   // ── Tech-Stack Registry + Status ──
   if (url === '/api/stacks' && req.method === 'GET') {
     const stacksFile = path.join(ROOT, 'data', 'tech-stacks.json');
@@ -7749,11 +7797,19 @@ function copyInstall(repo, btn) {
           createdBy: 'user'
         };
 
-        // Load template if specified
+        // Load template: first try JSON templates, fallback to .md files
         let templateContent = '';
         if (template) {
-          const tplFile = path.join(ROOT, 'data', 'templates', template + '.md');
-          try { templateContent = fs.readFileSync(tplFile, 'utf8'); } catch {}
+          try {
+            const tplData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'templates.json'), 'utf8'));
+            const tpl = (tplData.templates || []).find(t => t.id === template);
+            if (tpl) templateContent = tpl.instructions || '';
+          } catch {}
+          // Fallback to .md file
+          if (!templateContent) {
+            const tplFile = path.join(ROOT, 'data', 'templates', template + '.md');
+            try { templateContent = fs.readFileSync(tplFile, 'utf8'); } catch {}
+          }
         }
 
         // For edit mode: add context about existing app

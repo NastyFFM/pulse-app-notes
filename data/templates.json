@@ -1,0 +1,40 @@
+{
+  "templates": [
+    {
+      "id": "frontend",
+      "name": "PulseOS Frontend",
+      "description": "Vanilla HTML/CSS/JS App — einfach, schnell, kein Build-Schritt",
+      "icon": "🌐",
+      "author": "pulseos",
+      "builtin": true,
+      "stacks": [],
+      "instructions": "# PulseOS Frontend App Template\n\nDu erstellst/modifizierst eine PulseOS Frontend-App (Vanilla HTML/CSS/JS).\n\n## Pflicht-Dateien\n```\napps/<name>/\n├── index.html        ← UI (vanilla HTML/CSS/JS, alles in einer Datei)\n├── manifest.json     ← Metadaten + Graph-Ports\n└── data/\n    └── <name>.json   ← App-Daten\n```\n\n## manifest.json\n```json\n{\"name\":\"App Name\",\"icon\":\"X\",\"color\":\"#hex\",\"description\":\"Was die App tut\",\"inputs\":[{\"id\":\"data\",\"desc\":\"Daten empfangen\"}],\"outputs\":[{\"id\":\"result\",\"desc\":\"Ergebnis senden\"}],\"dataFiles\":[\"state\"],\"pulseSubscriptions\":[]}\n```\n\n## SDK (PFLICHT in index.html)\n```html\n<script src=\"/sdk.js\"></script>\n<script>\nPulseOS.onInput('data', function(data) { /* empfangen */ });\nPulseOS.emit('result', data);\nPulseOS.onDataChanged(function() { loadData(); });\n</script>\n```\n\n## Daten-API\n- Lesen: fetch('/app/<name>/api/<file>').then(r => r.json())\n- Schreiben: fetch('/app/<name>/api/<file>', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)})\n\n## CSS-Variablen\nbody { background: var(--bg, #0d1117); color: var(--text, #c9d1d9); font-family: system-ui; margin: 0; padding: 16px; }\nWeitere: var(--bg-card), var(--bg-card-hover), var(--text-dim), var(--teal), var(--border), var(--accent)\n\n## Regeln\n- Alles in EINER index.html Datei\n- Kein npm, keine node_modules, keine Build-Tools\n- Kein Framework\n- Responsive Design"
+    },
+    {
+      "id": "nextjs-railway",
+      "name": "Next.js + Railway",
+      "description": "Full-Stack App mit Next.js, deploybar auf Railway",
+      "icon": "🚂",
+      "author": "pulseos",
+      "builtin": true,
+      "stacks": [
+        "railway"
+      ],
+      "instructions": "# Next.js + Railway App Template\n\nDu erstellst eine Next.js App die auf Railway deployed werden kann.\nDie App MUSS auch lokal in PulseOS laufen und das PulseOS App-Paradigma erfuellen.\n\n## Projektstruktur\napps/<name>/: manifest.json, package.json, next.config.js, app/ (layout.tsx, page.tsx, globals.css, api/), public/, data/<name>.json, index.html (PulseOS Wrapper)\n\n## manifest.json: type: 'nextjs', port: 3100\n\n## index.html = PulseOS Wrapper der Next.js im iframe laedt\n\n## package.json: next ^14, react ^18, scripts: dev/build/start auf port 3100\n\n## Regeln: Lokal lauffaehig, manifest mit inputs/outputs, PulseOS Data-API, TypeScript bevorzugt, Tailwind erlaubt"
+    },
+    {
+      "name": "SaaS Starter",
+      "description": "Next.js + Supabase + Stripe",
+      "icon": "💼",
+      "stacks": [
+        "railway",
+        "supabase",
+        "stripe"
+      ],
+      "instructions": "Full-Stack SaaS mit Auth und Payments",
+      "id": "saas-starter",
+      "author": "user",
+      "createdAt": "2026-03-30T14:29:57.002Z"
+    }
+  ]
+}

@@ -1997,7 +1997,8 @@ function openApp(app, opts) {
     '<div class="edit-panel" id="edit-' + winId + '" style="display:none;" data-appid="' + app.id + '">' +
       '<div class="edit-msgs" id="edit-msgs-' + winId + '"><div class="edit-welcome">Was moechtest du aendern?</div></div>' +
       '<div class="edit-controls">' +
-        '<select class="edit-template" id="edit-tpl-' + winId + '"><option value="frontend">PulseOS Frontend</option><option value="nextjs-railway">Next.js + Railway</option></select>' +
+        '<select class="edit-template" id="edit-tpl-' + winId + '"><option value="frontend">Laden...</option></select>' +
+        '<button class="edit-action-btn" onclick="showCreateTemplate(\'' + winId + '\')" title="Neues Template">+</button>' +
         '<button class="edit-action-btn" onclick="toggleEnvVars(\'' + winId + '\')">⚙ Env</button>' +
       '</div>' +
       '<div class="edit-app-actions" id="edit-actions-' + winId + '"></div>' +
@@ -2046,9 +2047,35 @@ function editWin(winId) {
   if (!isOpen) {
     const appId = panel.dataset.appid;
     loadEditChat(winId, appId);
+    loadTemplateDropdown(winId);
     renderEditActions(winId, appId);
     document.getElementById('edit-inp-' + winId)?.focus();
   }
+}
+
+async function loadTemplateDropdown(winId) {
+  const select = document.getElementById('edit-tpl-' + winId);
+  if (!select) return;
+  try {
+    const r = await fetch('/api/templates');
+    const data = await r.json();
+    select.innerHTML = (data.templates || []).map(t =>
+      '<option value="' + t.id + '">' + (t.icon || '') + ' ' + t.name + '</option>'
+    ).join('');
+  } catch {
+    select.innerHTML = '<option value="frontend">PulseOS Frontend</option>';
+  }
+}
+
+function showCreateTemplate(winId) {
+  const name = prompt('Neues Template erstellen:\n\nName:');
+  if (!name) return;
+  const stacks = prompt('Benoetigte Stacks (kommasepariert, z.B. railway,supabase):\n(leer lassen fuer Frontend-only)') || '';
+  const desc = prompt('Beschreibung:') || '';
+  fetch('/api/templates', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, description: desc, stacks: stacks ? stacks.split(',').map(s => s.trim()) : [], instructions: '' })
+  }).then(() => loadTemplateDropdown(winId)).catch(() => {});
 }
 
 async function renderEditActions(winId, appId) {

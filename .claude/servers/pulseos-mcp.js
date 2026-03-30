@@ -34,7 +34,9 @@ const ACTIONS = {
   get_context: 'PulseOS Kontext: Apps, APIs, aktuelle Aktivitaet',
   send_chat: 'Nachricht ans Dashboard senden (braucht message)',
   create_app: 'Neue App erstellen (braucht name)',
-  get_tunnel: 'Aktuelle Tunnel/Share-URL abrufen (fuer externe Zugriffe)'
+  get_tunnel: 'Aktuelle Tunnel/Share-URL abrufen (fuer externe Zugriffe)',
+  list_templates: 'Alle verfuegbaren App-Templates auflisten',
+  create_template: 'Neues App-Template erstellen (braucht name, optional: stacks, instructions)'
 };
 
 const server = new McpServer({ name: 'pulseos', version: '2.0.0' });
@@ -117,6 +119,15 @@ server.tool(
         }
         case 'get_tunnel': {
           result = await api('GET', '/api/tunnel');
+          break;
+        }
+        case 'list_templates': {
+          result = await api('GET', '/api/templates');
+          break;
+        }
+        case 'create_template': {
+          if (!params.name) return { content: [{ type: 'text', text: 'Fehler: name ist Pflicht' }] };
+          result = await api('POST', '/api/templates', { name: params.name, description: params.description || '', stacks: params.stacks || [], instructions: params.instructions || '' });
           break;
         }
         default:
