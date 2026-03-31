@@ -8141,7 +8141,7 @@ function copyInstall(repo, btn) {
           resolvedAppDir = resolveAppDir(editAppId);
           try {
             const indexHtml = fs.readFileSync(path.join(resolvedAppDir, 'index.html'), 'utf8');
-            editContext = '\n\nDU MODIFIZIERST EINE BESTEHENDE APP: ' + editAppId + '\nApp-Verzeichnis: ' + resolvedAppDir + '\nAktuelle index.html (ersten 3000 Zeichen):\n```html\n' + indexHtml.substring(0, 3000) + '\n```\nÄndere NUR was der User verlangt. Behalte den Rest bei. Schreibe die geänderte Datei nach: ' + resolvedAppDir + '/index.html\n';
+            editContext = '\n\nDU MODIFIZIERST EINE BESTEHENDE APP: ' + editAppId + '\nDatei: ' + resolvedAppDir + '/index.html (' + indexHtml.length + ' Zeichen)\n\nWICHTIG: Nutze das Edit-Tool (nicht Write!) um nur die relevanten Stellen zu aendern. Lies die Datei zuerst mit Read, dann aendere NUR was noetig ist mit Edit. NIEMALS die ganze Datei neu schreiben!\n';
           } catch {}
         }
 
