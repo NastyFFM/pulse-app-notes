@@ -20,17 +20,26 @@ function resolveAppDir(appId) {
   const sysApp = path.join(ROOT, 'apps', appId);
   const userExists = fs.existsSync(path.join(userApp, 'index.html'));
   const sysExists = fs.existsSync(path.join(sysApp, 'index.html'));
-  // If both exist, prefer the one with the newer index.html
+  // If both exist, sync: copy newer index.html to the preferred dir (userdata)
+  // This keeps data/ files intact while ensuring latest code is served
   if (userExists && sysExists) {
     try {
       const userMtime = fs.statSync(path.join(userApp, 'index.html')).mtimeMs;
       const sysMtime = fs.statSync(path.join(sysApp, 'index.html')).mtimeMs;
-      return sysMtime > userMtime ? sysApp : userApp;
+      if (sysMtime > userMtime) {
+        // Worker edited apps/ copy — sync to userdata/
+        fs.copyFileSync(path.join(sysApp, 'index.html'), path.join(userApp, 'index.html'));
+        // Also sync manifest if newer
+        try {
+          if (fs.statSync(path.join(sysApp, 'manifest.json')).mtimeMs > fs.statSync(path.join(userApp, 'manifest.json')).mtimeMs) {
+            fs.copyFileSync(path.join(sysApp, 'manifest.json'), path.join(userApp, 'manifest.json'));
+          }
+        } catch {}
+      }
     } catch {}
+    return userApp; // Always prefer userdata when both exist (has data/ files)
   }
   if (userExists) return userApp;
-  if (sysExists) return sysApp;
-  // Fallback: check directory existence
   if (fs.existsSync(userApp)) return userApp;
   return sysApp;
 }
