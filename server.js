@@ -2588,8 +2588,9 @@ if (window.PulseOS) {
       if (s.id === 'railway' && hasCli) {
         try { cliUser = execSync('railway whoami', { stdio: 'pipe', timeout: 5000, env: { ...process.env, PATH: extPath } }).toString().trim(); cliLoggedIn = true; } catch {}
       }
-      // Ready = keys are set (CLI gets auto-installed at deploy time)
-      const ready = hasKeys || cliLoggedIn;
+      // Ready = keys are set OR CLI logged in. But stacks with NO config at all are NOT ready.
+      const hasAnyConfig = (s.requiredEnvVars || []).length > 0 || s.cliBinary || (s.deploy && s.deploy.commands);
+      const ready = hasAnyConfig ? (hasKeys || cliLoggedIn) : false;
       return { id: s.id, name: s.name, icon: s.icon, description: s.description, ready, hasKeys, hasCli, cliLoggedIn, cliUser, missingKeys: ready ? [] : missingKeys };
     });
     return jsonRes(res, { stacks: status });
@@ -8204,7 +8205,7 @@ function copyInstall(repo, btn) {
   if (url === '/api/workers' && req.method === 'POST') {
     return readBody(req, b => {
       try {
-        const { task, model, maxDuration, appId: editAppId, template, editMode } = JSON.parse(b);
+        const { task, model, maxDuration, appId: editAppId, template, editMode, setupStack } = JSON.parse(b);
         if (!task) return jsonRes(res, { error: 'task required' }, 400);
 
         const id = 'worker-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
@@ -8275,8 +8276,62 @@ function copyInstall(repo, btn) {
           } catch {}
         }
 
+        // Setup-Stack Agent: special interactive prompt
+        let workerPrompt;
+        if (setupStack) {
+          const stacksFile2 = path.join(ROOT, 'data', 'tech-stacks.json');
+          const stackData2 = safeReadJSON(stacksFile2, '{"stacks":[]}');
+          const stackInfo = (stackData2.stacks || []).find(s => s.id === setupStack);
+          workerPrompt = `Du bist der PulseOS Setup-Agent. Richte den Service "${setupStack}" ein.
+
+INTERAKTION MIT DEM USER (WICHTIG):
+Du kommunizierst ueber den Edit-Chat der App "${editAppId}".
+
+So sendest du eine Nachricht an den User:
+1. Lies den aktuellen Chat: curl -s http://localhost:3000/app/${editAppId}/api/edit-chat
+2. Fuege deine Nachricht zum messages-Array hinzu (from: "agent")
+3. Schreibe zurueck: curl -X PUT http://localhost:3000/app/${editAppId}/api/edit-chat -H 'Content-Type: application/json' -d '<ganzes JSON mit allen messages>'
+
+So wartest du auf eine Antwort:
+1. Merke dir die Anzahl der messages
+2. Poll alle 3 Sekunden: curl -s http://localhost:3000/app/${editAppId}/api/edit-chat
+3. Wenn eine neue message mit from:"user" erscheint, ist das die Antwort
+4. Timeout: 2 Minuten, danach abbrechen
+
+AKTUELLER STACK: ${JSON.stringify(stackInfo || {id: setupStack, name: setupStack}, null, 2)}
+
+DEINE AUFGABE:
+1. Pruefe ob der Service bereits eingerichtet ist: curl -s http://localhost:3000/api/stacks/status | Suche nach id="${setupStack}"
+2. Wenn ready: Melde im Chat "✅ ${setupStack} ist bereits eingerichtet!" und beende.
+3. Wenn nicht ready:
+   a. Sende dem User einen Link zur Account-Erstellung (du kennst die gaengigen Services!)
+   b. Frage nach dem API-Token/Key — erklaere WO man ihn findet
+   c. Wenn der User den Token schickt, speichere ihn:
+      curl -X POST http://localhost:3000/api/stacks/save-key -H 'Content-Type: application/json' -d '{"envVar":"ENV_VAR_NAME","value":"der-token"}'
+   d. Aktualisiere den Stack mit requiredEnvVars und deploy-Config:
+      curl -X PUT http://localhost:3000/api/stacks/${setupStack} -H 'Content-Type: application/json' -d '{...}'
+4. Pruefe nochmal /api/stacks/status und melde Erfolg
+
+BEKANNTE SERVICES UND IHRE ANFORDERUNGEN:
+- Vercel: VERCEL_TOKEN, Account: https://vercel.com/signup, Token: https://vercel.com/account/tokens
+- Railway: RAILWAY_TOKEN, Account: https://railway.com, CLI: @railway/cli
+- Supabase: SUPABASE_URL + SUPABASE_ANON_KEY, Account: https://supabase.com/dashboard
+- Stripe: STRIPE_SECRET_KEY + STRIPE_PUBLISHABLE_KEY, Account: https://dashboard.stripe.com
+- Fly.io: FLY_API_TOKEN, Account: https://fly.io/app/sign-up, Token: https://fly.io/user/personal_access_tokens
+- Cloudflare: CLOUDFLARE_API_TOKEN, Account: https://dash.cloudflare.com, Token: https://dash.cloudflare.com/profile/api-tokens
+- Netlify: NETLIFY_AUTH_TOKEN, Account: https://app.netlify.com, Token: https://app.netlify.com/user/applications
+- Firebase: FIREBASE_TOKEN, CLI: firebase-tools, Login: firebase login
+- PlanetScale: PLANETSCALE_TOKEN, Account: https://planetscale.com
+- Neon: NEON_API_KEY, Account: https://neon.tech
+- Turso: TURSO_AUTH_TOKEN, Account: https://turso.tech, CLI: turso
+
+Fuer unbekannte Services: Frage den User nach der Website und dem Token.
+
+Arbeitsverzeichnis: ${ROOT}
+`;
+        } else {
         // Build system prompt for worker
-        const workerPrompt = `Du bist ein PulseOS Worker-Agent. Deine Aufgabe:
+        workerPrompt = `Du bist ein PulseOS Worker-Agent. Deine Aufgabe:
 
 ${task}${editContext}${stageInfo}
 ${templateContent ? '\n--- TEMPLATE INSTRUKTIONEN ---\n' + templateContent + '\n--- ENDE TEMPLATE ---\n' : ''}
@@ -8335,6 +8390,7 @@ Füge die neue App in data/apps.json ein (im "apps" Array):
 {"id":"<name>","name":"App Name","icon":"X","color":"#hex","description":"...","installed":true,"created":true,"position":20,"visibility":"private","allowedUsers":[]}
 
 STARTE JETZT mit der Aufgabe.`;
+        } // end else (non-setup worker)
 
         const claudePath = process.env.CLAUDE_PATH || '/Users/chris.pohl/.bun/bin/claude';
         const modelFlag = workerData.model || 'sonnet'; // claude CLI accepts: haiku, sonnet, opus

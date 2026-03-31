@@ -2154,6 +2154,18 @@ function editWin(winId) {
     loadTemplateDropdown(winId);
     renderEditActions(winId, appId);
     document.getElementById('edit-inp-' + winId)?.focus();
+    // SSE listener for live edit-chat updates (agent writes to chat)
+    if (!panel._sseSetup) {
+      panel._sseSetup = true;
+      const chatSSE = new EventSource('/sse/' + appId);
+      chatSSE.onmessage = (e) => {
+        try {
+          const d = JSON.parse(e.data);
+          if (d.type === 'change' && d.file === 'edit-chat.json') loadEditChat(winId, appId);
+        } catch {}
+      };
+      panel._chatSSE = chatSSE;
+    }
   }
 }
 

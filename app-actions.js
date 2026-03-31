@@ -259,8 +259,17 @@ window.AppActions = {
     // 1. Determine which deploy stack this app needs
     let appData;
     try { const r = await fetch('/api/apps'); const d = await r.json(); appData = (d.apps || []).find(a => a.id === appId); } catch {}
-    const requiredStacks = appData?.stacks?.length ? appData.stacks : ['railway'];
-    const deployStack = requiredStacks[0] || 'railway'; // Use first stack from template
+    // Get stacks from template (more reliable than app.stacks)
+    let requiredStacks = appData?.stacks?.length ? appData.stacks : [];
+    if (!requiredStacks.length && appData?.template) {
+      try {
+        const tplR = await fetch('/api/templates').then(r => r.json());
+        const tpl = (tplR.templates || []).find(t => t.id === appData.template);
+        if (tpl?.stacks?.length) requiredStacks = tpl.stacks;
+      } catch {}
+    }
+    if (!requiredStacks.length) requiredStacks = ['railway'];
+    const deployStack = requiredStacks[0];
 
     // 2. Check if required stack is ready
     let stackStatus;
@@ -502,6 +511,8 @@ window.AppActions = {
           '<select id="pub-tpl-select" class="pub-select">' +
             templates.map(t => '<option value="'+t.id+'"'+(t.id===(app.template||'frontend')?' selected':'')+'>'+esc((t.icon||'')+' '+t.name)+'</option>').join('') +
           '</select>' +
+          '<button class="pub-btn small" onclick="AppActions._uiCreateTemplate()" title="Neues Template" style="margin-left:4px;">+</button>' +
+          '<button class="pub-btn small danger" onclick="AppActions._uiDeleteTemplate()" title="Template loeschen" style="margin-left:2px;">×</button>' +
         '</div>' +
         '<div id="pub-stacks"></div>' +
         '<div class="pub-section-body" id="pub-deploy"></div>' +
@@ -576,7 +587,8 @@ window.AppActions = {
     const el = document.getElementById('pub-stacks');
     if (!el) return;
     if (!requiredStacks.length) {
-      el.innerHTML = '<div class="pub-hint">Keine externen Services noetig (Frontend-only)</div>';
+      el.innerHTML = '<div class="pub-hint">Keine externen Services</div>' +
+        '<button class="pub-btn small" onclick="AppActions._uiCreateStack()" style="margin-top:6px;">+ Service hinzufuegen</button>';
       return;
     }
     el.innerHTML = requiredStacks.map(sId => {
@@ -586,7 +598,7 @@ window.AppActions = {
       const label = sId.charAt(0).toUpperCase() + sId.slice(1);
       const action = ready
         ? '<span class="pub-stack-ready">Bereit</span>'
-        : '<button class="pub-btn small" onclick="AppActions.onboardStack(\'' + sId.replace(/'/g,'&#39;') + '\', this)">Einrichten</button>';
+        : '<button class="pub-btn small" onclick="AppActions._uiSetupStack(\'' + sId.replace(/'/g,'&#39;') + '\')">Einrichten</button>';
       return '<div class="pub-stack-row">' + icon + ' <span>' + label + '</span>' + action +
         ' <button class="pub-btn small danger" onclick="AppActions._uiRemoveStack(\'' + sId.replace(/'/g,'&#39;') + '\')" title="Entfernen" style="padding:2px 6px;">×</button></div>';
     }).join('');
@@ -608,6 +620,51 @@ window.AppActions = {
         });
       }
     } catch (e) { console.error('[stack] remove failed:', e); }
+    const overlay = document.getElementById('pub-panel-overlay');
+    if (overlay && overlay.dataset.appid) this.showPublishingPanel(overlay.dataset.appid);
+  },
+
+  async _uiSetupStack(stackId) {
+    const overlay = document.getElementById('pub-panel-overlay');
+    const appId = overlay?.dataset?.appid;
+    if (!appId) return;
+    // Close publishing panel
+    overlay.remove();
+    // Open app window + edit panel
+    const win = (typeof openWindows !== 'undefined' ? openWindows : []).find(w => w.appId === appId);
+    if (win && typeof editWin === 'function') editWin(win.winId);
+    // Start setup worker
+    try {
+      await fetch('/api/workers', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task: 'Richte den Service "' + stackId + '" ein.', model: 'sonnet', appId, editMode: false, setupStack: stackId })
+      });
+    } catch (e) { console.error('[setup] worker start failed:', e); }
+  },
+
+  async _uiCreateTemplate() {
+    const name = prompt('Neues Template erstellen:\n\nName:');
+    if (!name) return;
+    try {
+      await fetch('/api/templates', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, icon: '📦', stacks: [], instructions: '' })
+      });
+    } catch {}
+    const overlay = document.getElementById('pub-panel-overlay');
+    if (overlay && overlay.dataset.appid) this.showPublishingPanel(overlay.dataset.appid);
+  },
+
+  async _uiDeleteTemplate() {
+    const tplSelect = document.getElementById('pub-tpl-select');
+    if (!tplSelect) return;
+    const tplId = tplSelect.value;
+    if (!confirm('Template "' + tplId + '" loeschen?')) return;
+    try {
+      const r = await fetch('/api/templates/' + tplId, { method: 'DELETE' });
+      const d = await r.json();
+      if (!d.ok) { alert(d.error || 'Fehler'); return; }
+    } catch {}
     const overlay = document.getElementById('pub-panel-overlay');
     if (overlay && overlay.dataset.appid) this.showPublishingPanel(overlay.dataset.appid);
   },
