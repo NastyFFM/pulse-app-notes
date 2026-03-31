@@ -2206,11 +2206,14 @@ async function sendEdit(winId) {
     if (d.ok && d.worker) {
       // Poll worker status
       const workerId = d.worker.id;
+      // Safety timeout: clear spinner after 5 min max
+      const pollTimeout = setTimeout(() => { clearInterval(pollEdit); try { spinner.remove(); } catch {} }, 300000);
       const pollEdit = setInterval(async () => {
         try {
           const wr = await fetch('/api/workers/' + workerId);
           const w = await wr.json();
           if (w.status === 'done') {
+            clearTimeout(pollTimeout);
             clearInterval(pollEdit);
             spinner.remove();
             const agentDiv = document.createElement('div');
@@ -2229,6 +2232,7 @@ async function sendEdit(winId) {
             const iframe = win?.querySelector('iframe');
             if (iframe) { const base = iframe.src.split('?')[0]; iframe.src = base + '?_t=' + Date.now(); }
           } else if (w.status === 'error') {
+            clearTimeout(pollTimeout);
             clearInterval(pollEdit);
             spinner.remove();
             const errDiv = document.createElement('div');
