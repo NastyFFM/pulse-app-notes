@@ -921,6 +921,20 @@ function saveGraph(projectId, graph) {
 }
 
 function resolveOutput(appId, outputId) {
+  // Check if app is deployed — try fetching from remote API first
+  const appsData = safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}');
+  const appMeta = (appsData.apps || []).find(a => a.id === appId);
+  const deployUrl = appMeta?.deployUrl || appMeta?.railwayUrl || appMeta?.vercelUrl;
+  if (deployUrl) {
+    try {
+      const url = deployUrl.replace(/\/$/, '') + '/api/' + outputId;
+      const { execSync } = require('child_process');
+      const result = execSync('curl -sf --max-time 5 "' + url + '"', { stdio: 'pipe', timeout: 6000 }).toString();
+      const remoteData = JSON.parse(result);
+      if (remoteData) return remoteData;
+    } catch {} // Fallback to local data
+  }
+
   let data = null;
   for (const base of [path.join(ROOT, 'apps'), path.join(ROOT, 'userdata', 'apps')]) {
     const dataDir = path.join(base, appId, 'data');
@@ -1151,6 +1165,18 @@ async function routeOutput(projectId, fromAppId, outputName, data) {
 async function sendInputToApp(appId, inputName, data) {
   const manifest = loadManifest(appId);
   const action = { type: 'graph-input', inputName, data };
+
+  // Check if app is deployed — send input to remote API
+  const appsData = safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}');
+  const appMeta = (appsData.apps || []).find(a => a.id === appId);
+  const deployUrl = appMeta?.deployUrl || appMeta?.railwayUrl || appMeta?.vercelUrl;
+  if (deployUrl) {
+    try {
+      const url = deployUrl.replace(/\/$/, '') + '/api/graph-input';
+      const { execSync } = require('child_process');
+      execSync('curl -sf --max-time 5 -X POST -H "Content-Type: application/json" -d \'' + JSON.stringify({ inputName, data }).replace(/'/g, "'\\''") + '\' "' + url + '"', { stdio: 'pipe', timeout: 6000 });
+    } catch {} // Also broadcast locally as fallback
+  }
 
   if (manifest && manifest.type === 'node' && runningProcesses.has(appId)) {
     await proxyToNodeApp(appId, 'POST', '/api/action', action);
@@ -8148,17 +8174,42 @@ function copyInstall(repo, btn) {
           createdBy: 'user'
         };
 
+        // Auto-detect template and stage for progressive building
+        let detectedStage = 1;
+        let stageInfo = '';
+        if (editMode && editAppId) {
+          const appDir = resolveAppDir(editAppId);
+          const hasPackageJson = fs.existsSync(path.join(appDir, 'package.json'));
+          const hasNextConfig = fs.existsSync(path.join(appDir, 'next.config.js')) || fs.existsSync(path.join(appDir, 'next.config.mjs'));
+          const hasSupabase = fs.existsSync(path.join(appDir, 'lib', 'supabase.ts')) || fs.existsSync(path.join(appDir, 'supabase'));
+          const hasStripe = fs.existsSync(path.join(appDir, 'lib', 'stripe.ts')) || fs.existsSync(path.join(appDir, 'stripe'));
+          if (hasStripe) detectedStage = 5;
+          else if (hasSupabase) detectedStage = 4;
+          else if (hasPackageJson && hasNextConfig) detectedStage = 3;
+          else detectedStage = 1;
+        }
+        // Auto-select full-stack template based on task keywords
+        const taskLower = (task || '').toLowerCase();
+        const upgradeKeywords = ['deploy', 'vercel', 'railway', 'netlify', 'online', 'web-app', 'webapp', 'user', 'auth', 'login', 'registrier', 'supabase', 'payment', 'bezahl', 'stripe', 'saas', 'subscription', 'admin', 'dashboard', 'monetarisier'];
+        let effectiveTemplate = template;
+        if (!effectiveTemplate && upgradeKeywords.some(k => taskLower.includes(k))) {
+          effectiveTemplate = 'full-stack';
+          const stages = { 1: 'PulseOS Frontend', 3: 'Deployed Web-App', 4: 'With Users (Supabase)', 5: 'SaaS (Stripe)' };
+          const nextStages = { 1: 3, 3: 4, 4: 5, 5: 5 };
+          stageInfo = '\n\nPROGRESSIVE BUILDING:\nAktuelle Stufe: ' + detectedStage + ' (' + (stages[detectedStage] || 'Frontend') + ')\nNaechste Stufe: ' + nextStages[detectedStage] + ' (' + (stages[nextStages[detectedStage]] || '') + ')\nFuehre NUR den Upgrade zur naechsten Stufe durch. Bestehenden Code behalten, nur erweitern.\n';
+        }
+
         // Load template: prefer .md file (more detailed), fallback to JSON instructions
         let templateContent = '';
-        if (template) {
+        if (effectiveTemplate) {
           // 1. Try .md file first (has full deploy instructions etc.)
-          const tplFile = path.join(ROOT, 'data', 'templates', template + '.md');
+          const tplFile = path.join(ROOT, 'data', 'templates', effectiveTemplate + '.md');
           try { templateContent = fs.readFileSync(tplFile, 'utf8'); } catch {}
           // 2. Fallback to JSON instructions
           if (!templateContent) {
             try {
               const tplData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'templates.json'), 'utf8'));
-              const tpl = (tplData.templates || []).find(t => t.id === template);
+              const tpl = (tplData.templates || []).find(t => t.id === effectiveTemplate);
               if (tpl) templateContent = tpl.instructions || '';
             } catch {}
           }
@@ -8178,7 +8229,7 @@ function copyInstall(repo, btn) {
         // Build system prompt for worker
         const workerPrompt = `Du bist ein PulseOS Worker-Agent. Deine Aufgabe:
 
-${task}${editContext}
+${task}${editContext}${stageInfo}
 ${templateContent ? '\n--- TEMPLATE INSTRUKTIONEN ---\n' + templateContent + '\n--- ENDE TEMPLATE ---\n' : ''}
 
 REGELN:

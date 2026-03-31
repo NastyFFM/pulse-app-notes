@@ -2081,7 +2081,8 @@ function openApp(app, opts) {
   w.style.zIndex = ++nextZ;
 
   // Use deployedUrl if available (external deployed app), fallback to local
-  const iframeSrc = app.deployedUrl ? app.deployedUrl : (contextId ? '/app/' + app.id + '/?contextId=' + contextId : '/app/' + app.id + '/');
+  const deployUrl = app.deployedUrl || app.deployUrl || app.railwayUrl || app.vercelUrl;
+  const iframeSrc = deployUrl ? deployUrl : (contextId ? '/app/' + app.id + '/?contextId=' + contextId : '/app/' + app.id + '/');
   const displayName = titleSuffix ? app.name + ' — ' + titleSuffix : app.name;
 
   w.innerHTML =

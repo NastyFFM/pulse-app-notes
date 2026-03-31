@@ -585,10 +585,47 @@ window.AppActions = {
     if (!el) return;
     const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     const id = esc(app.id);
+    let html = '';
     if (status.isDeployed) {
-      el.innerHTML = '<button class="pub-btn" onclick="AppActions._uiSmartDeploy(\'' + id + '\', this)">↻ Redeploy</button>';
+      html += '<button class="pub-btn" onclick="AppActions._uiSmartDeploy(\'' + id + '\', this)">↻ Redeploy</button>';
     } else {
-      el.innerHTML = '<button class="pub-btn primary" onclick="AppActions._uiSmartDeploy(\'' + id + '\', this)">🚀 Deploy</button>';
+      html += '<button class="pub-btn primary" onclick="AppActions._uiSmartDeploy(\'' + id + '\', this)">🚀 Deploy</button>';
+    }
+    // Progressive upgrade buttons
+    const hasStacks = app.stacks && app.stacks.length > 0;
+    const isDeployed = status.isDeployed;
+    const hasAuth = (app.stacks || []).includes('supabase');
+    const hasPayment = (app.stacks || []).includes('stripe');
+    html += '<div class="pub-hint" style="margin-top:8px;">Progressive Upgrades:</div>';
+    if (!isDeployed) {
+      html += '<button class="pub-btn small" onclick="AppActions._uiUpgrade(\'' + id + '\', \'deploy\', this)">🌐 Als Web-App deployen</button>';
+    }
+    if (!hasAuth) {
+      html += '<button class="pub-btn small" onclick="AppActions._uiUpgrade(\'' + id + '\', \'auth\', this)">👤 User-Management hinzufuegen</button>';
+    }
+    if (!hasPayment) {
+      html += '<button class="pub-btn small" onclick="AppActions._uiUpgrade(\'' + id + '\', \'payments\', this)">💳 Monetarisierung</button>';
+    }
+    el.innerHTML = html;
+  },
+
+  async _uiUpgrade(appId, upgradeType, btn) {
+    const tasks = {
+      'deploy': 'Konvertiere diese App zu Next.js und mache sie deploy-ready fuer Vercel. Behalte die gesamte Logik und das Design.',
+      'auth': 'Fuege Supabase User-Management hinzu: Login, Register, Session, Admin-Dashboard. Migriere die Daten zu Supabase Tables.',
+      'payments': 'Fuege Stripe Payment-Integration hinzu: Subscription-Plaene (Free/Pro/Enterprise), Checkout, Billing-Portal, Revenue Dashboard.'
+    };
+    if (!tasks[upgradeType]) return;
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Worker startet...'; }
+    try {
+      const r = await fetch('/api/workers', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task: tasks[upgradeType], model: 'sonnet', appId, template: 'full-stack', editMode: true })
+      });
+      const d = await r.json();
+      if (d.id && btn) btn.textContent = '✅ Worker laeuft: ' + d.id;
+    } catch (e) {
+      if (btn) { btn.textContent = 'Fehler'; setTimeout(() => { btn.textContent = '↻'; btn.disabled = false; }, 2000); }
     }
   },
 

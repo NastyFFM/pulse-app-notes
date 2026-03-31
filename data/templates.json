@@ -11,6 +11,16 @@
       "instructions": "# PulseOS Frontend App Template\n\nDu erstellst/modifizierst eine PulseOS Frontend-App (Vanilla HTML/CSS/JS).\n\n## Pflicht-Dateien\n```\napps/<name>/\n├── index.html        ← UI (vanilla HTML/CSS/JS, alles in einer Datei)\n├── manifest.json     ← Metadaten + Graph-Ports\n└── data/\n    └── <name>.json   ← App-Daten\n```\n\n## manifest.json\n```json\n{\"name\":\"App Name\",\"icon\":\"X\",\"color\":\"#hex\",\"description\":\"Was die App tut\",\"inputs\":[{\"id\":\"data\",\"desc\":\"Daten empfangen\"}],\"outputs\":[{\"id\":\"result\",\"desc\":\"Ergebnis senden\"}],\"dataFiles\":[\"state\"],\"pulseSubscriptions\":[]}\n```\n\n## SDK (PFLICHT in index.html)\n```html\n<script src=\"/sdk.js\"></script>\n<script>\nPulseOS.onInput('data', function(data) { /* empfangen */ });\nPulseOS.emit('result', data);\nPulseOS.onDataChanged(function() { loadData(); });\n</script>\n```\n\n## Daten-API\n- Lesen: fetch('/app/<name>/api/<file>').then(r => r.json())\n- Schreiben: fetch('/app/<name>/api/<file>', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)})\n\n## CSS-Variablen\nbody { background: var(--bg, #0d1117); color: var(--text, #c9d1d9); font-family: system-ui; margin: 0; padding: 16px; }\nWeitere: var(--bg-card), var(--bg-card-hover), var(--text-dim), var(--teal), var(--border), var(--accent)\n\n## Regeln\n- Alles in EINER index.html Datei\n- Kein npm, keine node_modules, keine Build-Tools\n- Kein Framework\n- Responsive Design"
     },
     {
+      "id": "full-stack",
+      "name": "Full-Stack SaaS",
+      "description": "Progressive: Frontend → Next.js → Auth → SaaS. Erkennt automatisch die aktuelle Stufe und baut weiter.",
+      "icon": "🏗️",
+      "author": "pulseos",
+      "builtin": true,
+      "stacks": ["vercel", "supabase", "stripe", "cloudflare"],
+      "instructions": "→ data/templates/full-stack.md"
+    },
+    {
       "id": "nextjs-railway",
       "name": "Next.js + Railway",
       "description": "Full-Stack App mit Next.js, deploybar auf Railway",
