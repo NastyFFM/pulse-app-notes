@@ -2499,7 +2499,7 @@ if (window.PulseOS) {
         const data = safeReadJSON(templatesFile, '{"templates":[]}');
         const idx = data.templates.findIndex(t => t.id === tplMatch[1]);
         if (idx < 0) return jsonRes(res, { error: 'Template not found' }, 404);
-        if (data.templates[idx].builtin && update.instructions) data.templates[idx].instructions = update.instructions;
+        if (data.templates[idx].builtin) { if (update.instructions) data.templates[idx].instructions = update.instructions; if (update.stacks) data.templates[idx].stacks = update.stacks; }
         else Object.assign(data.templates[idx], update);
         data.templates[idx].updatedAt = new Date().toISOString();
         fs.writeFileSync(templatesFile, JSON.stringify(data, null, 2));
@@ -2521,6 +2521,30 @@ if (window.PulseOS) {
     const stacksFile = path.join(ROOT, 'data', 'tech-stacks.json');
     const stacks = safeReadJSON(stacksFile, '{"stacks":[]}');
     return jsonRes(res, stacks);
+  }
+  if (url === '/api/stacks' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const stack = JSON.parse(b);
+        if (!stack.name) return jsonRes(res, { error: 'name required' }, 400);
+        stack.id = stack.id || stack.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const stacksFile = path.join(ROOT, 'data', 'tech-stacks.json');
+        const data = safeReadJSON(stacksFile, '{"stacks":[]}');
+        if ((data.stacks || []).some(s => s.id === stack.id)) {
+          return jsonRes(res, { error: 'Stack existiert bereits: ' + stack.id }, 400);
+        }
+        const newStack = {
+          id: stack.id, name: stack.name, icon: stack.icon || '📦',
+          description: stack.description || '',
+          requiredEnvVars: stack.envVars || [],
+          onboarding: (stack.envVars || []).map(v => ({ type: 'paste-token', label: v + ' eingeben', envVar: v, placeholder: v })),
+          deploy: stack.deploy || {}
+        };
+        data.stacks.push(newStack);
+        fs.writeFileSync(stacksFile, JSON.stringify(data, null, 2));
+        jsonRes(res, { ok: true, stack: newStack });
+      } catch (e) { jsonRes(res, { error: e.message }, 500); }
+    });
   }
   if (url === '/api/stacks/status' && req.method === 'GET') {
     const stacksFile = path.join(ROOT, 'data', 'tech-stacks.json');

@@ -472,6 +472,7 @@ window.AppActions = {
     const currentTpl = templates.find(t => t.id === (app.template || 'frontend')) || templates[0];
     const requiredStacks = currentTpl?.stacks || [];
 
+    overlay.dataset.appid = appId;
     overlay.innerHTML = '<div class="modal-box pub-panel" style="width:480px;">' +
       '<div class="pub-header">' +
         '<div class="pub-app-icon" style="background:' + esc(app.color||'#333') + ';">' + esc(app.icon||'?') + '</div>' +
@@ -578,6 +579,44 @@ window.AppActions = {
         : '<button class="pub-btn small" onclick="AppActions.onboardStack(\'' + sId.replace(/'/g,'&#39;') + '\', this)">Einrichten</button>';
       return '<div class="pub-stack-row">' + icon + ' <span>' + label + '</span>' + action + '</div>';
     }).join('');
+    el.innerHTML += '<button class="pub-btn small" onclick="AppActions._uiCreateStack()" style="margin-top:6px;">+ Neuen Stack</button>';
+  },
+
+  async _uiCreateStack() {
+    const name = prompt('Neuen Tech-Stack erstellen:\n\nName (z.B. "Firebase", "PlanetScale"):');
+    if (!name) return;
+    const envVars = prompt('Benoetigte Env-Variablen (kommasepariert):\nz.B. FIREBASE_API_KEY,FIREBASE_PROJECT_ID') || '';
+    const icon = prompt('Icon (Emoji):', '📦') || '📦';
+    try {
+      const r = await fetch('/api/stacks', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, icon, envVars: envVars ? envVars.split(',').map(s => s.trim()).filter(Boolean) : [] })
+      });
+      const d = await r.json();
+      if (!d.ok) { alert('Fehler: ' + (d.error || 'Unbekannt')); return; }
+      // Add new stack to currently selected template
+      const tplSelect = document.getElementById('pub-tpl-select');
+      if (tplSelect) {
+        const tplId = tplSelect.value;
+        const stackId = d.stack.id;
+        try {
+          const tplR = await fetch('/api/templates').then(r => r.json());
+          const tpl = (tplR.templates || []).find(t => t.id === tplId);
+          if (tpl) {
+            const stacks = [...(tpl.stacks || []), stackId];
+            await fetch('/api/templates/' + tplId, {
+              method: 'PUT', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...tpl, stacks })
+            });
+          }
+        } catch(e) { console.error('[stack] template update failed:', e); }
+      }
+      // Refresh panel
+      const overlay = document.getElementById('pub-panel-overlay');
+      if (overlay && overlay.dataset.appid) {
+        this.showPublishingPanel(overlay.dataset.appid);
+      }
+    } catch (e) { alert('Fehler: ' + e.message); }
   },
 
   _renderPubDeploy(app, status) {

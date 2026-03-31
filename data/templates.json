@@ -17,8 +17,15 @@
       "icon": "🏗️",
       "author": "pulseos",
       "builtin": true,
-      "stacks": ["vercel", "supabase", "stripe", "cloudflare"],
-      "instructions": "→ data/templates/full-stack.md"
+      "stacks": [
+        "vercel",
+        "supabase",
+        "stripe",
+        "cloudflare",
+        "qwdqwd"
+      ],
+      "instructions": "→ data/templates/full-stack.md",
+      "updatedAt": "2026-03-31T16:19:32.774Z"
     },
     {
       "id": "nextjs-railway",
