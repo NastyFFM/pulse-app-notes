@@ -197,8 +197,21 @@ function appHtmlRes(res, file, appId) {
   }
 })();
 </script>`;
+  // Auto-reload: poll file hash every 3s, reload if changed
+  const autoReload = `<script>
+(function(){
+  if (window.parent === window) return; // Only in iframe
+  var lastHash = '';
+  setInterval(function(){
+    fetch('/api/apps/${appId}/hash').then(function(r){return r.json()}).then(function(d){
+      if (lastHash && d.hash && d.hash !== lastHash) { location.reload(); }
+      if (d.hash) lastHash = d.hash;
+    }).catch(function(){});
+  }, 3000);
+})();
+</script>`;
   html = html.replace('<head>', '<head>' + ssePatch);
-  html = html.replace('</body>', getModifierOverlay(appId) + '\n</body>');
+  html = html.replace('</body>', autoReload + getModifierOverlay(appId) + '\n</body>');
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache, no-store, must-revalidate' });
   res.end(html);
 }
@@ -2899,6 +2912,19 @@ if (window.PulseOS) {
     gqlReq.write(body);
     gqlReq.end();
     return;
+  }
+
+  // ── App file hash (for auto-reload polling) ──
+  if (url.match(/^\/api\/apps\/[^/]+\/hash$/) && req.method === 'GET') {
+    const appId = url.split('/')[3];
+    const appDir = resolveAppDir(appId);
+    const file = path.join(appDir, 'index.html');
+    try {
+      const stat = fs.statSync(file);
+      return jsonRes(res, { hash: stat.mtimeMs.toString(36) + '-' + stat.size.toString(36) });
+    } catch {
+      return jsonRes(res, { hash: '' });
+    }
   }
 
   // ── Update app metadata (template, stacks, etc.) ──
