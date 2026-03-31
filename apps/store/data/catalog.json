@@ -38,19 +38,11 @@
           "description": "Kanban Board für Projekte und Tasks",
           "installUrl": "NastyFFM/pulse-app-kanban",
           "color": "#1a2a3a"
-        },
-        {
-          "id": "habit-tracker",
-          "name": "Habit Tracker",
-          "icon": "H",
-          "description": "Gewohnheiten tracken mit Streak-Grid",
-          "installUrl": "NastyFFM/pulse-app-habit-tracker",
-          "color": "#1a2a3a"
         }
       ],
       "lastFetched": null,
       "isSelf": true
     }
   ],
-  "lastUpdated": "2026-03-29T17:09:00.307Z"
+  "lastUpdated": "2026-03-31T09:09:28.878Z"
 }

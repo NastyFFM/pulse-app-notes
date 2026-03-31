@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndmgdyen02x",
+  "task": "Modifiziere die App \"streamflix\": nutze eine öffentliche api ohne anmeldung.",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 1507,
+  "progress": "rmat zurück; die neue `normalizeInvidious()`-Funktion konvertiert es ins Piped-Format, damit der Rest der App unverändert funktioniert\n- Beide APIs sind **vollständig öffentlich**, kein API-Key nötig",
+  "log": [
+    {
+      "time": "2026-03-30T20:09:40.262Z",
+      "type": "start",
+      "text": "Worker gestartet"
+    },
+    {
+      "time": "2026-03-30T20:12:00.000Z",
+      "type": "done",
+      "text": "Invidious API als Fallback hinzugefügt. Piped wird zuerst versucht, dann 7 Invidious-Instanzen."
+    }
+  ],
+  "result": "StreamFlix nutzt jetzt Piped-Instanzen (primär) + 7 Invidious-Instanzen als Fallback. Beide APIs sind öffentlich und erfordern keinen API-Key. Invidious-Antworten werden ins Piped-Format normalisiert.",
+  "startedAt": "2026-03-30T20:09:40.262Z",
+  "finishedAt": "2026-03-30T20:12:00.000Z",
+  "createdBy": "user"
+}

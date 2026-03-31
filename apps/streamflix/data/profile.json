@@ -1,0 +1,25 @@
+{
+  "region": "DE",
+  "language": "de",
+  "genres": [
+    "Science & Technology",
+    "Film & Animation"
+  ],
+  "contentType": "all",
+  "onboardingDone": true,
+  "savedCategories": [
+    {
+      "name": "ariana baborie",
+      "query": "ariana baborie"
+    }
+  ],
+  "myList": [],
+  "ratings": [
+    {
+      "videoId": "gkyG3uYh1XU",
+      "title": "Harald Schmidt Show - Kölscher Klüngel",
+      "rating": 5,
+      "ratedAt": "2026-03-30T21:41:43.841Z"
+    }
+  ]
+}

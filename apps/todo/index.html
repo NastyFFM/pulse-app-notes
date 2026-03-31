@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FINAL_TEST</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--surface:var(--bg-surface, #111118);--dim:var(--text-dim, rgba(255,255,255,.4));--muted:rgba(255,255,255,.12);--green:#4ade80;--font:'IBM Plex Mono',monospace}
+body{background:#1a0a2e;color:var(--text);font:14px/1.5 var(--font);min-height:100vh;display:flex;flex-direction:column;padding:16px;max-width:480px;margin:0 auto}
+
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.title{font-size:15px;font-weight:600;color:var(--green)}
+.clear-btn{font:9px var(--font);color:var(--dim);background:none;border:1px solid var(--border);padding:3px 8px;border-radius:4px;cursor:pointer}
+.clear-btn:hover{color:#ef4444;border-color:rgba(239,68,68,.3)}
+
+.add-row{display:flex;gap:8px;margin-bottom:16px}
+.add-input{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);font:13px var(--font);padding:8px 12px;border-radius:6px;outline:none}
+.add-input:focus{border-color:rgba(74,222,128,.4)}
+.add-input::placeholder{color:var(--muted)}
+.add-btn{background:var(--green);color:var(--bg, #0d0d14);border:none;padding:8px 14px;border-radius:6px;font:600 12px var(--font);cursor:pointer;flex-shrink:0}
+.add-btn:hover{opacity:.9}
+
+.list{display:flex;flex-direction:column;gap:4px}
+.item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s;user-select:none}
+.item:hover{border-color:rgba(255,255,255,.1)}
+.item.done{opacity:.45}
+.item.done .item-text{text-decoration:line-through;color:var(--dim)}
+.check{width:18px;height:18px;border-radius:4px;border:2px solid rgba(255,255,255,.2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.item.done .check{background:var(--green);border-color:var(--green)}
+.check-icon{display:none;color:var(--bg, #0d0d14);font-size:11px;font-weight:700}
+.item.done .check-icon{display:block}
+.item-text{flex:1;font-size:13px}
+.del-btn{background:none;border:none;color:rgba(255,255,255,.15);cursor:pointer;font-size:14px;opacity:0;transition:.1s;padding:0 2px;flex-shrink:0}
+.item:hover .del-btn{opacity:1}
+.del-btn:hover{color:#ef4444}
+
+.empty{text-align:center;padding:32px;color:var(--muted);font-size:12px}
+.stats{margin-top:12px;font-size:10px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="title">✓ Todo</span>
+  <button class="clear-btn" onclick="clearDone()">Erledigte löschen</button>
+</div>
+
+<div class="add-row">
+  <input class="add-input" id="addInput" placeholder="Neues Todo..." onkeydown="if(event.key==='Enter')addItem()">
+  <button class="add-btn" onclick="addItem()">+ Add</button>
+</div>
+
+<div class="list" id="list"></div>
+<div class="stats" id="stats"></div>
+
+<script src="/sdk.js"></script>
+<script>
+let items = [];
+
+async function loadData() {
+  try {
+    const r = await fetch('/app/todo/api/todo');
+    const d = await r.json();
+    items = d.items || [];
+    render();
+  } catch { render(); }
+}
+
+function save() {
+  fetch('/app/todo/api/todo', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({items})});
+}
+
+function render() {
+  const list = document.getElementById('list');
+  const stats = document.getElementById('stats');
+  if (!items.length) {
+    list.innerHTML = '<div class="empty">Keine Todos. Füge eines hinzu!</div>';
+    stats.textContent = '';
+    return;
+  }
+  list.innerHTML = items.map((it,i) => `
+    <div class="item${it.done?' done':''}" onclick="toggle(${i})">
+      <div class="check"><span class="check-icon">✓</span></div>
+      <span class="item-text">${esc(it.text)}</span>
+      <button class="del-btn" onclick="event.stopPropagation();del(${i})">×</button>
+    </div>`).join('');
+  const done = items.filter(i=>i.done).length;
+  stats.textContent = `${done}/${items.length} erledigt`;
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function addItem() {
+  const inp = document.getElementById('addInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  items.push({text, done:false, id:Date.now()});
+  inp.value = '';
+  save(); render();
+}
+
+function toggle(i) { items[i].done = !items[i].done; save(); render(); }
+function del(i) { items.splice(i,1); save(); render(); }
+function clearDone() { items = items.filter(i=>!i.done); save(); render(); }
+
+PulseOS.onDataChanged(loadData);
+loadData();
+</script>
+</body>
+</html>

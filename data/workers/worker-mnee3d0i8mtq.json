@@ -1,0 +1,24 @@
+{
+  "id": "worker-mnee3d0i8mtq",
+  "task": "Modifiziere die App \"files\": jetzt geht die file broswer app gar nicht mehr",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 49109,
+  "progress": "ently produced an empty list\n\nThe fix: use `/api/apps` as the primary source (it has all proper `name`/`icon`/`color` fields), with `/api/app-registry` as fallback (with correct manifest flattening).",
+  "log": [
+    {
+      "time": "2026-03-31T09:03:21.762Z",
+      "type": "start",
+      "text": "Worker gestartet: Modifiziere die App \"files\": jetzt geht die file broswer app gar nicht mehr"
+    },
+    {
+      "time": "2026-03-31T09:05:00.000Z",
+      "type": "done",
+      "text": "Fix: init() nutzt jetzt /api/apps als primaere Quelle. Fallback auf /api/app-registry. App-Liste laedt wieder korrekt."
+    }
+  ],
+  "result": "Fixed: init() now uses /api/apps as primary source (has proper name/icon/color). Fallback to /api/app-registry. App list loads correctly again.",
+  "startedAt": "2026-03-31T09:03:21.762Z",
+  "finishedAt": "2026-03-31T09:05:00.000Z",
+  "createdBy": "user"
+}

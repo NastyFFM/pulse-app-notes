@@ -209,6 +209,183 @@ The `widgets/context-view.js` widget provides universal reactive UI for any JSON
 - Optional `schema.json` for UI hints (field types, badge colors, layout)
 - Usage: `ContextView.init({ el, appId, dataFile, schema, readOnly })`
 
+## MCP Server
+
+PulseOS hat einen eigenen MCP Server (`.claude/servers/pulseos-mcp.js`) der alle Apps und Daten als Claude-Tools exponiert. Nutzt die offizielle `@modelcontextprotocol/sdk`.
+
+### Registrierung
+- **Projekt-Level:** Automatisch geladen wenn Claude Code im PulseOS-Verzeichnis arbeitet
+- **User-Level:** Global via `claude mcp add -s user pulseos ...` (für ClaudeOS/Telegram)
+
+### Universelles `pulseos` Meta-Tool
+Ein einziges Tool mit `action` Parameter statt vieler einzelner Tools:
+
+| Action | Beschreibung | Parameter |
+|--------|-------------|-----------|
+| `list_apps` | Alle installierten Apps | — |
+| `read` | App-Daten lesen | `app`, `dataFile` |
+| `write` | App-Daten schreiben + Live-Update | `app`, `dataFile`, `payload` |
+| `search` | Apps nach Name suchen | `query` |
+| `run_graph` | Graph-Workflow ausführen | `graphId` |
+| `list_graphs` | Alle Graphen auflisten | — |
+| `get_context` | PulseOS Kontext + Aktivität | — |
+| `send_chat` | Nachricht ans Dashboard | `message` |
+| `create_app` | Neue App erstellen | `name`, `description`, `icon`, `color` |
+| `get_tunnel` | Tunnel/Share-URL abrufen | — |
+| `list_templates` | Deployment-Templates auflisten | — |
+| `create_template` | Neues Template erstellen | `name`, `stacks`, `instructions` |
+
+### Routing Guidelines
+Der MCP Server und `/api/agent-context` enthalten Routing-Guidelines:
+- **Telegram/Chat:** Daten lesen/schreiben, Graphen, Status — bei UI-Aktionen Tunnel-Link senden
+- **PulseOS Dashboard:** Apps direkt als Fenster öffnen, Deploy/Publish über Store/Editor
+
+## Template System
+
+Templates steuern wie Apps gebaut und deployed werden. Sie sind dynamisch erstellbar — von Menschen UND KI.
+
+### Architektur
+```
+data/templates.json          – Template-Registry (JSON, CRUD via API)
+data/templates/frontend.md   – Builtin: Vanilla HTML/CSS/JS
+data/templates/nextjs-railway.md – Builtin: Next.js + Railway
+```
+
+### Template-Felder
+```json
+{
+  "id": "saas-starter",
+  "name": "SaaS Starter",
+  "description": "Next.js + Supabase + Stripe",
+  "icon": "💼",
+  "author": "chris",
+  "stacks": ["railway", "supabase", "stripe"],
+  "instructions": "... Worker-Instruktionen ..."
+}
+```
+
+### Template API
+- `GET /api/templates` — Alle Templates auflisten
+- `POST /api/templates` — Neues Template erstellen
+- `PUT /api/templates/:id` — Template bearbeiten
+- `DELETE /api/templates/:id` — Löschen (nur nicht-builtin)
+
+### Template im App-Editor
+- Dynamischer Dropdown lädt Templates von `/api/templates`
+- "+" Button erstellt neue Templates inline
+- Worker lädt Template-Instruktionen und wendet sie an
+- Auto-Erkennung: Worker schlägt passendes Template vor basierend auf User-Anfrage
+
+## Deployment System
+
+### Tech-Stack Registry (`data/tech-stacks.json`)
+Definiert verfügbare Deployment-Plattformen mit Onboarding-Schritten:
+
+| Stack | Icon | Beschreibung | Auth-Methode |
+|-------|------|-------------|-------------|
+| Railway | 🚂 | Node.js/Next.js Hosting | CLI Login oder Token |
+| Supabase | ⚡ | Datenbank + Auth | Token (URL + Key) |
+| Stripe | 💳 | Payments | Token (Secret + Publishable Key) |
+| Vercel | ▲ | Frontend Hosting | Token |
+| Cloudflare | ☁️ | Static Sites / Workers | Token |
+| Netlify | 🌐 | Static Hosting | Token |
+
+### Onboarding-Wizard
+Wenn ein Stack nicht eingerichtet ist, führt ein Inline-Wizard den User durch:
+1. Account erstellen (URL öffnet sich automatisch)
+2. CLI installieren (automatisch via `bun install -g`)
+3. Token/Key eingeben (Inline-Textfeld, PulseOS setzt Variablennamen)
+
+### Globale .env (`data/.env`)
+Alle Service-Keys zentral gespeichert. PulseOS vergibt Variablennamen automatisch:
+- `GET /api/env` — Alle Env-Vars lesen
+- `PUT /api/env` — Env-Vars setzen
+
+### Deploy-Flow
+1. User klickt "🚀 Deploy" im App-Editor oder Store
+2. PulseOS prüft ob benötigte Stacks ready sind
+3. Falls nicht → Onboarding-Wizard startet
+4. App wird auf GitHub published (via `gh` CLI)
+5. Railway-Projekt wird erstellt + Code deployed
+6. URL wird angezeigt
+
+## Worker-Agent System
+
+Workers sind Hintergrund-Prozesse die Apps bauen oder modifizieren.
+
+### API
+- `POST /api/workers` — Worker starten mit `{ task, model, template, appId, editMode }`
+- `GET /api/workers` — Alle Worker + Status
+- `GET /api/workers/:id` — Worker-Details + Log
+- `DELETE /api/workers/:id` — Worker stoppen
+
+### Chat → Worker Integration
+- "Erstelle eine Fitness-App" im Chat → Worker startet automatisch
+- Worker-Badge in Topbar zeigt laufende Worker
+- Server-seitige Fertigmeldung im Chat wenn Worker done
+
+### App-Builder Konventionen
+Worker erstellt Apps die sofort das PulseOS-Paradigma erfüllen:
+- `manifest.json` mit inputs/outputs/dataFiles
+- PulseOS SDK Integration (`onInput`, `emit`, `onDataChanged`)
+- CSS-Variablen statt hardcodierte Farben
+- Registrierung in `data/apps.json`
+
+## App Lifecycle (Store)
+
+### Publish
+- `POST /api/apps/:id/publish` — Erstellt GitHub Repo `pulse-app-{id}` via `gh` CLI
+- Kein Token nötig — nutzt bestehende `gh` Authentifizierung
+
+### Install
+- `POST /api/apps/install` — Klont von GitHub via `gh repo clone`
+- Unterstützt private Repos (gh ist authentifiziert)
+- Hidden Apps werden bei Re-Install automatisch unhidden
+
+### Hide/Unhide
+- `POST /api/apps/:id/hide` — Entfernt aus Launcher, Dateien bleiben
+- `POST /api/apps/:id/unhide` — Wieder im Launcher anzeigen
+
+### GitHub Sync
+- `GET /api/apps/github-sync` — Listet alle `pulse-app-*` Repos
+- Vergleicht mit lokalen Apps (installed/hidden/not-installed)
+- Store "Meine Apps" Tab zeigt auch nicht-installierte GitHub-Apps
+
+## Hooks
+
+Konfiguriert in `.claude/settings.json`:
+- **PostToolUse auf Write/Edit:** Auto-SSE-Broadcast wenn App-Dateien (`apps/**`) geändert werden
+- Apps im Browser refreshen automatisch nach Code-Änderungen
+
+## Skills als App-Features
+
+Apps können Skills in ihrem `manifest.json` deklarieren:
+```json
+{
+  "skills": [
+    { "id": "add-note", "name": "Notiz erstellen", "action": "write", "dataFile": "notes" },
+    { "id": "list-notes", "name": "Notizen auflisten", "action": "read", "dataFile": "notes" }
+  ]
+}
+```
+
+Skills werden über MCP `list_apps` mit zurückgegeben und sind im Graph-Editor als Nodes nutzbar.
+
+## WebRTC P2P Chat
+
+### Externer Chat-Client
+- Gehostet auf GitHub Pages: `nastyffm.github.io/chat/`
+- Verbindet über Socket.io Signaling Server (Railway)
+- WebRTC DataChannel für Nachrichten
+
+### Peer-Typen
+- 🟢 PulseOS + ClaudeOS — volles Feature-Set
+- 🔵 PulseOS (ohne ClaudeOS) — Chat + App-Share
+- ⚪ Gast (Webchat) — nur Chat
+
+### ClaudeOS-Toggle
+Pro Peer-Chat kann ClaudeOS aktiviert werden — Gast-Nachrichten werden an ClaudeOS weitergeleitet, Antworten zurück an den Gast.
+
 ## Context Engine (In Entwicklung)
 
 **WICHTIG:** PulseOS wird zu einer einheitlichen Context-Architektur umgebaut. Lies `CONTEXT-ENGINE-PLAN.md` für den vollständigen Plan und aktuellen Status.

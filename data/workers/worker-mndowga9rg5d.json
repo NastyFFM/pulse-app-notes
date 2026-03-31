@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndowga9rg5d",
+  "task": "Modifiziere die App \"streamflix\": dont show the video in the header. just show the thumbnail scaled to fit",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 7107,
+  "progress": "Fertig",
+  "log": [
+    {
+      "time": "2026-03-30T21:18:09.009Z",
+      "type": "start",
+      "text": "Worker gestartet: Modifiziere die App \"streamflix\": dont show the video in the header. just show t"
+    },
+    {
+      "time": "2026-03-30T21:18:30.000Z",
+      "type": "done",
+      "text": "Hero-Video iframe ausgeblendet, Thumbnail (hero-bg) bleibt mit background-size: cover sichtbar"
+    }
+  ],
+  "result": "Hero-Video im Header ausgeblendet. Das Thumbnail wird jetzt als cover-skaliertes Hintergrundbild angezeigt.",
+  "startedAt": "2026-03-30T21:18:09.009Z",
+  "finishedAt": "2026-03-30T21:18:30.000Z",
+  "createdBy": "user"
+}

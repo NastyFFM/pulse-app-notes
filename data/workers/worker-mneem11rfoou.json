@@ -1,0 +1,24 @@
+{
+  "id": "worker-mneem11rfoou",
+  "task": "Ändere die Überschrift von Files zu Datei-Explorer",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 50651,
+  "progress": "Starte...",
+  "log": [
+    {
+      "time": "2026-03-31T09:17:52.719Z",
+      "type": "start",
+      "text": "Worker gestartet: Ändere die Überschrift von Files zu Datei-Explorer"
+    },
+    {
+      "time": "2026-03-31T09:18:15.390Z",
+      "type": "done",
+      "text": "Worker beendet (Code 0)"
+    }
+  ],
+  "result": "Aufgabe abgeschlossen",
+  "startedAt": "2026-03-31T09:17:52.719Z",
+  "finishedAt": "2026-03-31T09:18:15.390Z",
+  "createdBy": "user"
+}

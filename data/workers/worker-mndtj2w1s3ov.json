@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndtj2w1s3ov",
+  "task": "Ändere Titel zu FINAL_TEST",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 21296,
+  "progress": "Fertig",
+  "log": [
+    {
+      "time": "2026-03-30T23:27:43.201Z",
+      "type": "start",
+      "text": "Worker gestartet: Ändere Titel zu FINAL_TEST"
+    },
+    {
+      "time": "2026-03-31T00:00:00.000Z",
+      "type": "done",
+      "text": "Titel in apps/todo/index.html zu FINAL_TEST geändert"
+    }
+  ],
+  "result": "Titel in apps/todo/index.html von TESTXYZ zu FINAL_TEST geändert.",
+  "startedAt": "2026-03-30T23:27:43.201Z",
+  "finishedAt": "2026-03-31T00:00:00.000Z",
+  "createdBy": "user"
+}

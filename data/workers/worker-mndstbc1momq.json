@@ -1,0 +1,29 @@
+{
+  "id": "worker-mndstbc1momq",
+  "task": "Baue mir eine Bookmark-App zum Links sammeln mit Tags und Suche",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 18358,
+  "progress": "est.json`** — Input: `add-bookmark`, Output: `bookmark-opened`\n- **`data/bookmarks.json`** — 2 Beispiel-Bookmarks\n\nApp ist in `data/apps.json` registriert und direkt über den App-Launcher erreichbar.",
+  "log": [
+    {
+      "time": "2026-03-30T23:07:41.089Z",
+      "type": "start",
+      "text": "Worker gestartet: Baue mir eine Bookmark-App zum Links sammeln mit Tags und Suche"
+    },
+    {
+      "time": "2026-03-31T00:00:00.000Z",
+      "type": "progress",
+      "text": "Erstelle apps/bookmarks/index.html, manifest.json, data/bookmarks.json"
+    },
+    {
+      "time": "2026-03-31T00:01:00.000Z",
+      "type": "done",
+      "text": "Bookmark-App erfolgreich erstellt und in apps.json registriert"
+    }
+  ],
+  "result": "Bookmark-App erstellt: apps/bookmarks/ mit index.html, manifest.json, data/bookmarks.json. Features: Links hinzufügen/bearbeiten/löschen, Tag-Filter, Volltextsuche, Favicon-Anzeige, Keyboard-Shortcuts (Cmd+K = Suche, Cmd+N = Neu). PulseOS SDK integriert.",
+  "startedAt": "2026-03-30T23:07:41.089Z",
+  "finishedAt": "2026-03-31T00:01:00.000Z",
+  "createdBy": "user"
+}

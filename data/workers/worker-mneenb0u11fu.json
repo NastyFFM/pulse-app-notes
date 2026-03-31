@@ -1,0 +1,24 @@
+{
+  "id": "worker-mneenb0u11fu",
+  "task": "Modifiziere die App \"files\": schreibe diese app nochmal suaber. es sind viele fehler drin. die files werden nicht angezeigt, keine detils werden angezeigt alles ist leer",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 50848,
+  "progress": "K eingebunden**: `<script src=\"/sdk.js\"></script>` + `PulseOS.onDataChanged(init)` für Live-Updates.\n\n6. **Bessere Fehlerbehandlung**: Fehlermeldungen werden im UI angezeigt statt still zu scheitern.",
+  "log": [
+    {
+      "time": "2026-03-31T09:18:52.302Z",
+      "type": "start",
+      "text": "Worker gestartet"
+    },
+    {
+      "time": "2026-03-31T09:19:10.000Z",
+      "type": "done",
+      "text": "Files App bereinigt: onclick-Handlers repariert, manifest.json-Fetch korrigiert, API-Listing-Bug behoben, HTML-Preview-URL gefixt"
+    }
+  ],
+  "result": "Files App sauber neu geschrieben. Fixes: (1) onclick verwendet jetzt JSON.stringify statt manuellem Escaping, (2) manifest.json wird direkt als statische Datei gefetcht, (3) API-Listing-Endpoint entfernt (existiert nicht im Server), stattdessen dataFiles aus manifest.json genutzt, (4) index.html-Fetch ohne trailing slash, (5) SDK eingebunden, (6) bessere Fehlerbehandlung",
+  "startedAt": "2026-03-31T09:18:52.302Z",
+  "finishedAt": "2026-03-31T09:19:10.000Z",
+  "createdBy": "user"
+}

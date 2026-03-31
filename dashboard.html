@@ -1687,7 +1687,7 @@ function renderAppGrid() {
   // Show first 9 pinned apps on home screen (including Settings)
   const shown = apps.slice(0, 9);
   grid.innerHTML = shown.map(app =>
-    '<div class="app-item" onclick="openApp(state.apps.find(a=>a.id===\'' + app.id + '\'))">' +
+    '<div class="app-item" onclick="const a=state.apps.find(x=>x.id===\'' + app.id + '\');if(a)openApp(a);else console.warn(\'App not found:\',\'' + app.id + '\')">' +
     '<div class="app-icon" style="background:' + app.color + '">' + app.icon + '</div>' +
     '<div class="app-name">' + app.name + '</div></div>'
   ).join('');

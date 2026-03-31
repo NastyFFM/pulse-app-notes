@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndoo1csv5kl",
+  "task": "Modifiziere die App \"streamflix\": nein. es lädt nicht. aber was funktioniert: wenn ich eine kachel anklicke und dann play drücke gibt es einen fullscreen button und das ist perfekt. nur im header werden keine videos abgespielt",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 6559,
+  "progress": "vents` wird zurückgesetzt.\n\n**Einschränkung:** Wenn die externen APIs (Piped/Invidious) nicht laden, gibt es keine Video-IDs → kein Inline-Video möglich. Das ist nicht anders lösbar ohne API-Zugriff.",
+  "log": [
+    {
+      "time": "2026-03-30T21:11:36.412Z",
+      "type": "start",
+      "text": "Worker gestartet"
+    },
+    {
+      "time": "2026-03-30T21:14:00.000Z",
+      "type": "done",
+      "text": "Hero-Video-Preview eingebaut: gemutetes Autoplay-Video im Hintergrund, Abspielen-Button spielt mit Ton und öffnet Fullscreen"
+    }
+  ],
+  "result": "Hero-Section spielt jetzt Videos ab: (1) Wenn API-Daten laden, läuft das aktuelle Hero-Video automatisch gemuted im Hintergrund (Netflix-Stil). (2) Der 'Abspielen'-Button spielt das Video mit Ton und öffnet Fullscreen — genau wie bei den Kacheln.",
+  "startedAt": "2026-03-30T21:11:36.412Z",
+  "finishedAt": "2026-03-30T21:14:00.000Z",
+  "createdBy": "user"
+}

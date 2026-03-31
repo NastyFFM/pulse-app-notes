@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndw8p0ngw5j",
+  "task": "Modifiziere die App \"files\": wenn ein md file oder html file in der preview angezeigt wird sol er user die möglichkeit haben zwischen code ansicht und render ansicht zu wählen",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 30310,
+  "progress": "Fertig",
+  "log": [
+    {
+      "time": "2026-03-31T00:43:37.511Z",
+      "type": "start",
+      "text": "Worker gestartet"
+    },
+    {
+      "time": "2026-03-31T00:44:10.000Z",
+      "type": "info",
+      "text": "Feature bereits vollständig implementiert: Code/Render-Toggle für .html und .md Dateien vorhanden"
+    }
+  ],
+  "result": "Feature war bereits vollständig implementiert. Die Files-App zeigt bei .html und .md Dateien einen Code/Render-Toggle (Zeilen 78-81 in index.html). Der Toggle wechselt zwischen Code-Ansicht (Plaintext) und Render-Ansicht (iframe). Keine Änderungen nötig.",
+  "startedAt": "2026-03-31T00:43:37.511Z",
+  "finishedAt": "2026-03-31T00:44:10.000Z",
+  "createdBy": "user"
+}

@@ -1,0 +1,2235 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreamFlix</title>
+<script src="/sdk.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0a0a;
+    color: #fff;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ─── ONBOARDING ─────────────────────────────────────────────────────────── */
+  #onboarding {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #0a0a0a;
+    z-index: 300;
+    overflow-y: auto;
+  }
+  .ob-wrap {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+  }
+  .ob-logo {
+    font-size: 42px;
+    font-weight: 900;
+    color: #09c414;
+    letter-spacing: -2px;
+    margin-bottom: 8px;
+  }
+  .ob-tagline {
+    color: #777;
+    font-size: 15px;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+  .ob-card {
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 32px;
+    width: 100%;
+    max-width: 560px;
+  }
+  .ob-step {
+    display: none;
+  }
+  .ob-step.active {
+    display: block;
+  }
+  .ob-step-label {
+    font-size: 12px;
+    color: #09c414;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .ob-title {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .ob-subtitle {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+  .ob-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .ob-option {
+    background: #1a1a1a;
+    border: 2px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 14px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .ob-option:hover {
+    border-color: #555;
+    background: #222;
+  }
+  .ob-option.selected {
+    border-color: #09c414;
+    background: rgba(9, 196, 20,0.1);
+  }
+  .ob-option .ob-icon {
+    font-size: 28px;
+    margin-bottom: 6px;
+  }
+  .ob-option .ob-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ddd;
+  }
+  .ob-option .ob-sub {
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
+  }
+  .ob-lang-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+  .ob-lang {
+    background: #1a1a1a;
+    border: 2px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 12px 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .ob-lang:hover { border-color: #555; background: #222; }
+  .ob-lang.selected { border-color: #09c414; background: rgba(9,196,20,0.1); }
+  .ob-lang .ob-flag { font-size: 24px; margin-bottom: 4px; }
+  .ob-lang .ob-lang-name { font-size: 12px; font-weight: 600; color: #ddd; }
+  .ob-lang .ob-region { font-size: 11px; color: #555; }
+  .ob-progress {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  .ob-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #333;
+    transition: all 0.2s;
+  }
+  .ob-dot.active { background: #09c414; transform: scale(1.3); }
+  .ob-dot.done { background: #555; }
+  .ob-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .ob-btn {
+    padding: 12px 28px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .ob-btn-primary {
+    background: #09c414;
+    color: #fff;
+  }
+  .ob-btn-primary:hover { background: #07a810; }
+  .ob-btn-primary:disabled { background: #444; color: #666; cursor: not-allowed; }
+  .ob-btn-secondary {
+    background: transparent;
+    color: #888;
+    border: 1px solid #333;
+  }
+  .ob-btn-secondary:hover { color: #ccc; border-color: #555; }
+  .ob-skip {
+    color: #555;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .ob-skip:hover { color: #888; }
+  .ob-summary {
+    background: #1a1a1a;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .ob-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #222;
+    font-size: 14px;
+  }
+  .ob-summary-row:last-child { border-bottom: none; }
+  .ob-summary-row .key { color: #888; }
+  .ob-summary-row .val { color: #fff; font-weight: 600; }
+  .ob-loading-step {
+    text-align: center;
+    padding: 20px 0;
+  }
+  .ob-spinner {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .ob-spinner span {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #09c414;
+    animation: obBounce 0.8s infinite alternate;
+  }
+  .ob-spinner span:nth-child(2) { animation-delay: 0.15s; }
+  .ob-spinner span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes obBounce {
+    from { transform: translateY(0); opacity: 0.5; }
+    to { transform: translateY(-10px); opacity: 1; }
+  }
+  .ob-loading-msg { color: #888; font-size: 14px; margin-bottom: 8px; }
+  .ob-loading-detail { color: #555; font-size: 12px; }
+  .ob-error-box {
+    background: rgba(9,196,20,0.1);
+    border: 1px solid rgba(9,196,20,0.3);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .ob-error-box.visible { display: block; }
+  .ob-error-box p { color: #ff6b6b; font-size: 14px; margin-bottom: 8px; }
+  .ob-error-box small { color: #888; font-size: 12px; }
+
+  /* ─── NAVBAR ─────────────────────────────────────────────────────────────── */
+  .navbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, transparent 100%);
+    transition: background 0.3s;
+  }
+  .navbar-main {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px;
+    gap: 32px;
+  }
+  .navbar-thumbs {
+    display: flex;
+    gap: 6px;
+    padding: 0 24px 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .navbar-thumbs::-webkit-scrollbar { display: none; }
+  .navbar-thumb {
+    flex-shrink: 0;
+    width: 80px;
+    height: 45px;
+    border-radius: 4px;
+    object-fit: cover;
+    cursor: pointer;
+    opacity: 0.7;
+    border: 2px solid transparent;
+    transition: opacity 0.2s, border-color 0.2s;
+  }
+  .navbar-thumb:hover { opacity: 1; border-color: #09c414; }
+  .navbar-thumb.active { opacity: 1; border-color: #09c414; }
+  .navbar.scrolled { background: rgba(10,10,10,0.98); }
+  .logo {
+    font-size: 28px;
+    font-weight: 900;
+    color: #09c414;
+    letter-spacing: -1px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .nav-links {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+  }
+  .nav-link {
+    color: #ccc;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+  .nav-link:hover, .nav-link.active { color: #fff; }
+  .nav-link.active { font-weight: 600; }
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-left: auto;
+  }
+  .profile-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s;
+  }
+  .profile-btn:hover { background: rgba(255,255,255,0.2); }
+  .refresh-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s;
+  }
+  .refresh-btn:hover { background: rgba(255,255,255,0.2); }
+
+  /* ─── HERO ───────────────────────────────────────────────────────────────── */
+  .hero {
+    position: relative;
+    height: 70vh;
+    min-height: 400px;
+    overflow: hidden;
+    background: #0a0a0a;
+  }
+  .hero-video {
+    display: none;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    z-index: 1;
+  }
+  .hero-video.playing { display: block; }
+
+  /* Single background layer */
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center 30%;
+    background-color: #141414;
+    transition: opacity 0.7s ease;
+  }
+  .hero-bg img.hero-thumb {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 30%;
+    display: block;
+    transition: opacity 0.7s ease;
+  }
+  /* Dark gradient overlays so text stays readable */
+  .hero-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 55%, rgba(0,0,0,0.1) 100%),
+      linear-gradient(to top,   rgba(10,10,10,1) 0%, rgba(10,10,10,0.3) 35%, transparent 100%);
+  }
+
+  .hero-progress {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 3px;
+    background: rgba(255,255,255,0.12);
+    z-index: 3;
+  }
+  .hero-progress-bar {
+    height: 100%;
+    background: #09c414;
+    width: 0%;
+    transition: width linear;
+  }
+  .hero-content {
+    position: absolute;
+    bottom: 72px; left: 48px;
+    max-width: 480px;
+    z-index: 2;
+    transition: opacity 0.5s ease;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center; gap: 6px;
+    background: #09c414; color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 3px;
+    margin-bottom: 12px;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  .hero-title {
+    font-size: clamp(22px, 3.5vw, 44px);
+    font-weight: 800; line-height: 1.1;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  }
+  .hero-meta {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 10px;
+    font-size: 13px; color: #aaa;
+  }
+  .hero-views { color: #09c414; font-weight: 600; }
+  .hero-desc {
+    font-size: 14px; color: #ccc; line-height: 1.5;
+    margin-bottom: 18px;
+    display: -webkit-box; -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .hero-actions { display: flex; gap: 12px; }
+  .btn-play {
+    display: flex; align-items: center; gap: 8px;
+    background: #fff; color: #000;
+    border: none; padding: 11px 26px; border-radius: 4px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-play:hover { background: rgba(255,255,255,0.85); }
+  .btn-info {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(109,109,110,0.65); color: #fff;
+    border: none; padding: 11px 26px; border-radius: 4px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-info:hover { background: rgba(109,109,110,0.45); }
+  .hero-dots {
+    position: absolute; bottom: 18px; right: 48px;
+    display: flex; gap: 6px; z-index: 3;
+  }
+  .hero-dot {
+    width: 8px; height: 4px; border-radius: 2px;
+    background: rgba(255,255,255,0.35); cursor: pointer; transition: all 0.2s;
+  }
+  .hero-dot.active { background: #09c414; width: 24px; }
+
+  /* ─── CONTENT ────────────────────────────────────────────────────────────── */
+  .content {
+    position: relative; z-index: 2;
+    padding: 0 24px 80px; margin-top: -40px;
+  }
+  .row { margin-bottom: 32px; }
+  .row-title {
+    font-size: 18px; font-weight: 700;
+    margin-bottom: 12px; color: #e5e5e5;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .row-title .count { font-size: 12px; color: #777; font-weight: 400; }
+  .cards-scroll {
+    display: flex; gap: 8px; overflow-x: auto;
+    padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: #555 transparent;
+  }
+  .cards-scroll::-webkit-scrollbar { height: 4px; }
+  .cards-scroll::-webkit-scrollbar-track { background: transparent; }
+  .cards-scroll::-webkit-scrollbar-thumb { background: #555; border-radius: 2px; }
+  .card {
+    flex-shrink: 0; width: 220px; cursor: pointer;
+    border-radius: 4px; overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s; position: relative;
+  }
+  .card:hover { transform: scale(1.05); box-shadow: 0 8px 32px rgba(0,0,0,0.8); z-index: 10; }
+  .card-thumb {
+    width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: #1a1a1a;
+  }
+  .card-thumb-placeholder {
+    width: 100%; aspect-ratio: 16/9;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    display: flex; align-items: center; justify-content: center; font-size: 40px;
+  }
+  .card-info { padding: 8px 10px; background: #141414; }
+  .card-title {
+    font-size: 13px; font-weight: 600; color: #e5e5e5;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; line-height: 1.3; margin-bottom: 4px;
+  }
+  .card-channel { font-size: 11px; color: #777; }
+  .card-views { font-size: 11px; color: #09c414; margin-top: 2px; }
+  .card-rank {
+    position: absolute; top: 8px; left: 8px;
+    background: #09c414; color: #fff;
+    font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 3px; line-height: 1.4;
+  }
+
+  /* ─── LOADING ────────────────────────────────────────────────────────────── */
+  .loading-screen {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100vh; gap: 20px;
+  }
+  .netflix-loader { display: flex; gap: 6px; }
+  .netflix-loader span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #09c414; animation: bounce 0.8s infinite alternate;
+  }
+  .netflix-loader span:nth-child(2) { animation-delay: 0.15s; }
+  .netflix-loader span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce {
+    from { transform: translateY(0); opacity: 0.6; }
+    to { transform: translateY(-12px); opacity: 1; }
+  }
+  .loading-text { color: #777; font-size: 14px; }
+
+  /* ─── ERROR ──────────────────────────────────────────────────────────────── */
+  .error-banner {
+    background: rgba(9,196,20,0.15); border: 1px solid rgba(9,196,20,0.3);
+    color: #ff6b6b; padding: 12px 20px; border-radius: 6px;
+    margin: 20px 24px; font-size: 14px; display: none;
+  }
+  .error-banner.visible { display: block; }
+
+  /* ─── VIDEO MODAL ────────────────────────────────────────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85); z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #141414; border-radius: 8px;
+    width: 90vw; max-width: 900px; max-height: 90vh; overflow-y: auto; position: relative;
+  }
+  .modal-close {
+    position: absolute; top: 12px; right: 16px;
+    background: rgba(0,0,0,0.7); border: none; color: #fff;
+    font-size: 20px; width: 36px; height: 36px; border-radius: 50%;
+    cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center;
+  }
+  .modal-video { width: 100%; aspect-ratio: 16/9; border-radius: 8px 8px 0 0; background: #000; display: none; }
+  .modal-video.active { display: block; }
+  .modal-poster {
+    width: 100%; aspect-ratio: 16/9; border-radius: 8px 8px 0 0; background: #111;
+    position: relative; cursor: pointer; overflow: hidden;
+  }
+  .modal-poster-img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .modal-poster-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .modal-poster:hover .modal-poster-overlay { background: rgba(0,0,0,0.15); }
+  .modal-play-btn {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: rgba(9,196,20,0.92); display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: #fff; transition: transform 0.2s, background 0.2s;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  }
+  .modal-poster:hover .modal-play-btn { transform: scale(1.1); background: #09c414; }
+  .modal-body { padding: 20px 24px; }
+  .modal-title { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+  .modal-meta {
+    display: flex; gap: 16px; color: #aaa; font-size: 13px;
+    margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .modal-meta .views { color: #09c414; font-weight: 600; }
+  .modal-desc { color: #ccc; font-size: 14px; line-height: 1.6; }
+  .modal-yt-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 14px; background: transparent; color: #888;
+    border: 1px solid #444; padding: 7px 14px; border-radius: 4px;
+    text-decoration: none; font-size: 12px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .modal-yt-link:hover { color: #ccc; border-color: #777; }
+
+  /* ─── CATEGORY PILLS ─────────────────────────────────────────────────────── */
+  .category-pills {
+    display: flex; gap: 8px; padding: 16px 24px 0;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .category-pills::-webkit-scrollbar { display: none; }
+  .pill {
+    flex-shrink: 0; padding: 6px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.2); color: #ccc;
+    background: transparent; transition: all 0.2s;
+  }
+  .pill:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
+  .pill.active { background: #09c414; border-color: #09c414; color: #fff; }
+
+  /* ─── SEARCH ─────────────────────────────────────────────────────────────── */
+  .search-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .search-input {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 7px 36px 7px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    width: 220px;
+    transition: all 0.2s;
+    outline: none;
+  }
+  .search-input::placeholder { color: #777; }
+  .search-input:focus { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); width: 280px; }
+  .search-clear {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    color: #777; cursor: pointer; font-size: 16px; display: none;
+  }
+  .search-clear.visible { display: block; }
+  .search-results-section {
+    background: #0f0f0f;
+    border-top: 2px solid #09c414;
+    margin: 0 0 8px;
+    padding: 20px 24px;
+    display: none;
+  }
+  .search-results-section.visible { display: block; }
+  .search-results-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .search-results-title { font-size: 18px; font-weight: 700; color: #e5e5e5; }
+  .search-close-btn {
+    background: rgba(255,255,255,0.1); border: none; color: #ccc;
+    padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 13px;
+  }
+  .search-close-btn:hover { background: rgba(255,255,255,0.2); }
+  .search-loading { color: #777; font-size: 14px; padding: 20px 0; }
+
+  /* ─── SIMILAR ─────────────────────────────────────────────────────────────── */
+  .modal-similar { padding: 0 24px 20px; }
+  .modal-similar-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #e5e5e5; }
+  .modal-similar-scroll {
+    display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;
+    scrollbar-width: thin; scrollbar-color: #555 transparent;
+  }
+  .modal-similar-scroll .card { width: 180px; }
+
+  /* ─── MY LIST BUTTON ON CARDS ───────────────────────────────────────────── */
+  .card { position: relative; }
+  .card-list-btn {
+    position: absolute; top: 8px; right: 8px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(0,0,0,0.75); border: 2px solid rgba(255,255,255,0.6);
+    color: #fff; font-size: 16px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; opacity: 0; transition: opacity 0.2s, background 0.2s;
+    z-index: 5;
+  }
+  .card:hover .card-list-btn { opacity: 1; }
+  .card-list-btn.in-list { background: #09c414; border-color: #09c414; }
+
+  /* ─── SAVED CATEGORY PILL ────────────────────────────────────────────────── */
+  .pill-saved {
+    flex-shrink: 0; display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px 6px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: 1px solid rgba(9,196,20,0.5); color: #09c414;
+    background: rgba(9,196,20,0.08); transition: all 0.2s;
+  }
+  .pill-saved:hover { background: rgba(9,196,20,0.15); }
+  .pill-saved.active { background: #09c414; color: #fff; border-color: #09c414; }
+  .pill-saved-del {
+    background: none; border: none; color: inherit; font-size: 14px;
+    cursor: pointer; padding: 0 2px; line-height: 1; opacity: 0.7;
+    transition: opacity 0.15s;
+  }
+  .pill-saved-del:hover { opacity: 1; }
+  .save-cat-btn {
+    background: rgba(9,196,20,0.15); border: 1px solid rgba(9,196,20,0.5);
+    color: #09c414; padding: 5px 14px; border-radius: 4px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.2s;
+  }
+  .save-cat-btn:hover { background: rgba(9,196,20,0.25); }
+  .save-cat-btn.saved { background: rgba(9,196,20,0.3); color: #ff6b6b; cursor: default; }
+
+  /* ─── RATING MODAL ───────────────────────────────────────────────────────── */
+  .rating-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.8); z-index: 250;
+    align-items: center; justify-content: center;
+  }
+  .rating-overlay.open { display: flex; }
+  .rating-card {
+    background: #1a1a1a; border: 1px solid #333; border-radius: 12px;
+    padding: 28px 32px; max-width: 400px; width: 90%; text-align: center;
+  }
+  .rating-title { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+  .rating-sub { color: #888; font-size: 13px; margin-bottom: 20px; }
+  .rating-stars { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+  .rating-star {
+    font-size: 32px; cursor: pointer; transition: transform 0.1s;
+    filter: grayscale(1) opacity(0.4);
+  }
+  .rating-star:hover, .rating-star.lit { filter: none; transform: scale(1.15); }
+  .rating-actions { display: flex; gap: 12px; justify-content: center; }
+  .rating-btn {
+    padding: 10px 24px; border-radius: 6px; font-size: 14px;
+    font-weight: 700; cursor: pointer; border: none; transition: all 0.2s;
+  }
+  .rating-btn-primary { background: #09c414; color: #fff; }
+  .rating-btn-primary:hover { background: #07a810; }
+  .rating-btn-primary:disabled { background: #444; color: #666; cursor: default; }
+  .rating-btn-secondary { background: transparent; color: #888; border: 1px solid #444; }
+  .rating-btn-secondary:hover { color: #ccc; border-color: #666; }
+
+  /* ─── SKELETON ───────────────────────────────────────────────────────────── */
+  .skeleton {
+    background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+  }
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── ONBOARDING ─────────────────────────────────────────────────────────── -->
+<div id="onboarding">
+  <div class="ob-wrap">
+    <div class="ob-logo">StreamFlix</div>
+    <div class="ob-tagline">Dein persönlicher Streaming-Feed</div>
+
+    <div class="ob-progress">
+      <div class="ob-dot active" id="obDot0"></div>
+      <div class="ob-dot" id="obDot1"></div>
+      <div class="ob-dot" id="obDot2"></div>
+      <div class="ob-dot" id="obDot3"></div>
+    </div>
+
+    <div class="ob-card">
+      <!-- Step 0: Welcome / Language -->
+      <div class="ob-step active" id="obStep0">
+        <div class="ob-step-label">Schritt 1 von 3</div>
+        <div class="ob-title">Willkommen bei StreamFlix 🎬</div>
+        <div class="ob-subtitle">Wähle deine Region &amp; Sprache — wir suchen dann die passenden Inhalte für dich.</div>
+        <div class="ob-lang-grid" id="obLangGrid">
+          <div class="ob-lang selected" data-region="DE" data-lang="de" onclick="selectLang(this)">
+            <div class="ob-flag">🇩🇪</div>
+            <div class="ob-lang-name">Deutsch</div>
+            <div class="ob-region">Deutschland</div>
+          </div>
+          <div class="ob-lang" data-region="AT" data-lang="de" onclick="selectLang(this)">
+            <div class="ob-flag">🇦🇹</div>
+            <div class="ob-lang-name">Deutsch</div>
+            <div class="ob-region">Österreich</div>
+          </div>
+          <div class="ob-lang" data-region="CH" data-lang="de" onclick="selectLang(this)">
+            <div class="ob-flag">🇨🇭</div>
+            <div class="ob-lang-name">Deutsch</div>
+            <div class="ob-region">Schweiz</div>
+          </div>
+          <div class="ob-lang" data-region="US" data-lang="en" onclick="selectLang(this)">
+            <div class="ob-flag">🇺🇸</div>
+            <div class="ob-lang-name">English</div>
+            <div class="ob-region">USA</div>
+          </div>
+          <div class="ob-lang" data-region="GB" data-lang="en" onclick="selectLang(this)">
+            <div class="ob-flag">🇬🇧</div>
+            <div class="ob-lang-name">English</div>
+            <div class="ob-region">UK</div>
+          </div>
+          <div class="ob-lang" data-region="FR" data-lang="fr" onclick="selectLang(this)">
+            <div class="ob-flag">🇫🇷</div>
+            <div class="ob-lang-name">Français</div>
+            <div class="ob-region">France</div>
+          </div>
+          <div class="ob-lang" data-region="ES" data-lang="es" onclick="selectLang(this)">
+            <div class="ob-flag">🇪🇸</div>
+            <div class="ob-lang-name">Español</div>
+            <div class="ob-region">España</div>
+          </div>
+          <div class="ob-lang" data-region="JP" data-lang="ja" onclick="selectLang(this)">
+            <div class="ob-flag">🇯🇵</div>
+            <div class="ob-lang-name">日本語</div>
+            <div class="ob-region">Japan</div>
+          </div>
+          <div class="ob-lang" data-region="KR" data-lang="ko" onclick="selectLang(this)">
+            <div class="ob-flag">🇰🇷</div>
+            <div class="ob-lang-name">한국어</div>
+            <div class="ob-region">Korea</div>
+          </div>
+          <div class="ob-lang" data-region="BR" data-lang="pt" onclick="selectLang(this)">
+            <div class="ob-flag">🇧🇷</div>
+            <div class="ob-lang-name">Português</div>
+            <div class="ob-region">Brasil</div>
+          </div>
+          <div class="ob-lang" data-region="IN" data-lang="hi" onclick="selectLang(this)">
+            <div class="ob-flag">🇮🇳</div>
+            <div class="ob-lang-name">हिन्दी</div>
+            <div class="ob-region">India</div>
+          </div>
+          <div class="ob-lang" data-region="TR" data-lang="tr" onclick="selectLang(this)">
+            <div class="ob-flag">🇹🇷</div>
+            <div class="ob-lang-name">Türkçe</div>
+            <div class="ob-region">Türkiye</div>
+          </div>
+        </div>
+        <div class="ob-actions">
+          <span class="ob-skip" onclick="skipOnboarding()">Überspringen</span>
+          <button class="ob-btn ob-btn-primary" onclick="goStep(1)">Weiter →</button>
+        </div>
+      </div>
+
+      <!-- Step 1: Genre Preferences -->
+      <div class="ob-step" id="obStep1">
+        <div class="ob-step-label">Schritt 2 von 3</div>
+        <div class="ob-title">Was schaust du gerne? 🎭</div>
+        <div class="ob-subtitle">Wähle deine Lieblings-Kategorien (mehrere möglich).</div>
+        <div class="ob-grid" id="obGenreGrid">
+          <div class="ob-option" data-genre="Music" onclick="toggleGenre(this)">
+            <div class="ob-icon">🎵</div>
+            <div class="ob-label">Musik</div>
+          </div>
+          <div class="ob-option" data-genre="Gaming" onclick="toggleGenre(this)">
+            <div class="ob-icon">🎮</div>
+            <div class="ob-label">Gaming</div>
+          </div>
+          <div class="ob-option" data-genre="Sports" onclick="toggleGenre(this)">
+            <div class="ob-icon">⚽</div>
+            <div class="ob-label">Sport</div>
+          </div>
+          <div class="ob-option" data-genre="News" onclick="toggleGenre(this)">
+            <div class="ob-icon">📰</div>
+            <div class="ob-label">News</div>
+          </div>
+          <div class="ob-option" data-genre="Science & Technology" onclick="toggleGenre(this)">
+            <div class="ob-icon">🔬</div>
+            <div class="ob-label">Tech & Wissen</div>
+          </div>
+          <div class="ob-option" data-genre="Film & Animation" onclick="toggleGenre(this)">
+            <div class="ob-icon">🎬</div>
+            <div class="ob-label">Film & Serien</div>
+          </div>
+          <div class="ob-option" data-genre="Comedy" onclick="toggleGenre(this)">
+            <div class="ob-icon">😂</div>
+            <div class="ob-label">Comedy</div>
+          </div>
+          <div class="ob-option" data-genre="Trending" onclick="toggleGenre(this)">
+            <div class="ob-icon">🔥</div>
+            <div class="ob-label">Trending</div>
+          </div>
+          <div class="ob-option" data-genre="Travel & Events" onclick="toggleGenre(this)">
+            <div class="ob-icon">✈️</div>
+            <div class="ob-label">Reise</div>
+          </div>
+          <div class="ob-option" data-genre="People & Blogs" onclick="toggleGenre(this)">
+            <div class="ob-icon">👤</div>
+            <div class="ob-label">Vlogs</div>
+          </div>
+          <div class="ob-option" data-genre="Education" onclick="toggleGenre(this)">
+            <div class="ob-icon">📚</div>
+            <div class="ob-label">Bildung</div>
+          </div>
+          <div class="ob-option" data-genre="Autos & Vehicles" onclick="toggleGenre(this)">
+            <div class="ob-icon">🚗</div>
+            <div class="ob-label">Autos</div>
+          </div>
+        </div>
+        <div class="ob-actions">
+          <button class="ob-btn ob-btn-secondary" onclick="goStep(0)">← Zurück</button>
+          <div style="display:flex;gap:10px;align-items:center">
+            <span class="ob-skip" onclick="goStep(2)">Überspringen</span>
+            <button class="ob-btn ob-btn-primary" id="obGenreNext" onclick="goStep(2)" disabled>Weiter →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Content type -->
+      <div class="ob-step" id="obStep2">
+        <div class="ob-step-label">Schritt 3 von 3</div>
+        <div class="ob-title">Wie schaust du? 📺</div>
+        <div class="ob-subtitle">Wähle deinen bevorzugten Content-Typ.</div>
+        <div class="ob-grid" id="obTypeGrid">
+          <div class="ob-option selected" data-type="all" onclick="selectType(this)">
+            <div class="ob-icon">🌐</div>
+            <div class="ob-label">Alles</div>
+            <div class="ob-sub">Mix aus allem</div>
+          </div>
+          <div class="ob-option" data-type="short" onclick="selectType(this)">
+            <div class="ob-icon">⚡</div>
+            <div class="ob-label">Kurz</div>
+            <div class="ob-sub">unter 5 Min.</div>
+          </div>
+          <div class="ob-option" data-type="medium" onclick="selectType(this)">
+            <div class="ob-icon">▶️</div>
+            <div class="ob-label">Standard</div>
+            <div class="ob-sub">5–20 Min.</div>
+          </div>
+          <div class="ob-option" data-type="long" onclick="selectType(this)">
+            <div class="ob-icon">🎞️</div>
+            <div class="ob-label">Lang</div>
+            <div class="ob-sub">über 20 Min.</div>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="ob-summary" id="obSummary"></div>
+
+        <div class="ob-error-box" id="obErrorBox">
+          <p id="obErrorMsg"></p>
+          <small>Bitte überprüfe deine Internetverbindung. Du kannst es erneut versuchen oder Fallback-Inhalte laden.</small>
+        </div>
+
+        <div class="ob-actions">
+          <button class="ob-btn ob-btn-secondary" onclick="goStep(1)">← Zurück</button>
+          <button class="ob-btn ob-btn-primary" id="obFinishBtn" onclick="finishOnboarding()">🎬 Los geht's!</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Loading -->
+      <div class="ob-step" id="obStep3">
+        <div class="ob-loading-step">
+          <div class="ob-spinner">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="ob-loading-msg" id="obLoadingMsg">Suche passende Inhalte...</div>
+          <div class="ob-loading-detail" id="obLoadingDetail">Verbinde mit Streaming-API</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── NAVBAR ────────────────────────────────────────────────────────────── -->
+<nav class="navbar" id="navbar">
+  <div class="navbar-main">
+    <div class="logo">StreamFlix</div>
+    <div class="nav-links">
+      <span class="nav-link active" onclick="setCategory('Trending')">Trending</span>
+      <span class="nav-link" onclick="setCategory('Music')">Musik</span>
+      <span class="nav-link" onclick="setCategory('Gaming')">Gaming</span>
+      <span class="nav-link" onclick="setCategory('News')">News</span>
+      <span class="nav-link" onclick="setCategory('Sports')">Sport</span>
+      <span class="nav-link" onclick="setCategory('Science & Technology')">Tech</span>
+      <span class="nav-link" id="myListNavLink" onclick="showMyList()">♥ Meine Liste</span>
+    </div>
+    <div class="nav-right">
+      <div class="search-wrap">
+        <input class="search-input" id="searchInput" type="text" placeholder="🔍 Suchen..." onkeydown="if(event.key==='Enter')doSearch()" oninput="onSearchInput(this)">
+        <span class="search-clear" id="searchClear" onclick="clearSearch()">✕</span>
+      </div>
+      <button class="profile-btn" onclick="showOnboarding()" title="Einstellungen">⚙ Profil</button>
+      <button class="refresh-btn" onclick="loadAll()">⟳</button>
+    </div>
+  </div>
+  <div class="navbar-thumbs" id="navbarThumbs"></div>
+</nav>
+
+<!-- ─── LOADING SCREEN ────────────────────────────────────────────────────── -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="logo" style="font-size:48px">StreamFlix</div>
+  <div class="netflix-loader"><span></span><span></span><span></span></div>
+  <div class="loading-text" id="loadingText">Inhalte werden geladen...</div>
+</div>
+
+<!-- ─── MAIN ──────────────────────────────────────────────────────────────── -->
+<div id="mainContent" style="display:none">
+  <div class="hero" id="hero">
+    <iframe class="hero-video" id="heroVideo" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    <div class="hero-bg" id="heroBg"><img class="hero-thumb" id="heroThumb" src="" alt="" onerror="this.style.display='none'"></div>
+    <div class="hero-content" id="heroContent">
+      <div class="hero-badge">🔥 #1 Trending</div>
+      <div class="hero-title" id="heroTitle">Lade...</div>
+      <div class="hero-meta">
+        <span class="hero-views" id="heroViews"></span>
+        <span id="heroChannel"></span>
+        <span id="heroDuration"></span>
+      </div>
+      <div class="hero-desc" id="heroDesc"></div>
+      <div class="hero-actions">
+        <button class="btn-play" id="heroPlayBtn" onclick="openHeroVideo()">▶ Abspielen</button>
+        <button class="btn-info" onclick="openHeroInfo()">ℹ Mehr Info</button>
+      </div>
+    </div>
+    <div class="hero-dots" id="heroDots"></div>
+    <div class="hero-progress"><div class="hero-progress-bar" id="heroProgressBar"></div></div>
+  </div>
+
+  <div class="search-results-section" id="searchResultsSection">
+    <div class="search-results-header">
+      <div class="search-results-title" id="searchResultsTitle">Suchergebnisse</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="save-cat-btn" id="saveCatBtn" onclick="saveCurrentSearchAsCategory()">+ Als Kategorie speichern</button>
+        <button class="search-close-btn" onclick="clearSearch()">✕ Schließen</button>
+      </div>
+    </div>
+    <div id="searchResultsContent"></div>
+  </div>
+  <div class="category-pills" id="categoryPills"></div>
+  <div class="error-banner" id="errorBanner"></div>
+  <div class="content" id="contentRows"></div>
+</div>
+
+<!-- ─── VIDEO MODAL ───────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    <div class="modal-poster" id="modalPoster" onclick="playModalVideo()">
+      <img class="modal-poster-img" id="modalPosterImg" src="" alt="">
+      <div class="modal-poster-overlay">
+        <div class="modal-play-btn">▶</div>
+      </div>
+    </div>
+    <iframe class="modal-video" id="modalIframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    <div class="modal-body">
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-meta" id="modalMeta"></div>
+      <div class="modal-desc" id="modalDesc"></div>
+      <a class="modal-yt-link" id="modalYtLink" href="#" target="_blank">↗ Auf YouTube öffnen</a>
+    </div>
+    <div class="modal-similar" id="modalSimilar" style="display:none">
+      <div class="modal-similar-title">🎯 Ähnliche Videos</div>
+      <div class="modal-similar-scroll" id="modalSimilarScroll"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── RATING MODAL ─────────────────────────────────────────────────────── -->
+<div class="rating-overlay" id="ratingOverlay">
+  <div class="rating-card">
+    <div class="rating-title" id="ratingTitle">Wie hat es dir gefallen?</div>
+    <div class="rating-sub" id="ratingSubtitle">Deine Bewertung hilft uns, bessere Vorschläge zu machen.</div>
+    <div class="rating-stars" id="ratingStars">
+      <span class="rating-star" onclick="setRating(1)" onmouseover="hoverRating(1)" onmouseout="hoverRating(0)">⭐</span>
+      <span class="rating-star" onclick="setRating(2)" onmouseover="hoverRating(2)" onmouseout="hoverRating(0)">⭐</span>
+      <span class="rating-star" onclick="setRating(3)" onmouseover="hoverRating(3)" onmouseout="hoverRating(0)">⭐</span>
+      <span class="rating-star" onclick="setRating(4)" onmouseover="hoverRating(4)" onmouseout="hoverRating(0)">⭐</span>
+      <span class="rating-star" onclick="setRating(5)" onmouseover="hoverRating(5)" onmouseout="hoverRating(0)">⭐</span>
+    </div>
+    <div class="rating-actions">
+      <button class="rating-btn rating-btn-secondary" onclick="closeRating()">Überspringen</button>
+      <button class="rating-btn rating-btn-primary" id="ratingSubmitBtn" onclick="submitRating()" disabled>Bewerten</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── PROFILE / ONBOARDING STATE ───────────────────────────────────────────────
+let userProfile = {
+  region: 'DE',
+  language: 'de',
+  genres: [],
+  contentType: 'all',
+  onboardingDone: false,
+  savedCategories: [],   // [{name, query}]
+  myList: [],            // [videoObjects]
+  ratings: []            // [{videoId, title, rating, ratedAt}]
+};
+
+// ─── APP STATE ────────────────────────────────────────────────────────────────
+let allVideos = [];
+let heroVideos = [];
+let currentHeroIndex = 0;
+let heroTimer = null;
+const HERO_INTERVAL = 8000;
+let currentCategory = 'Trending';
+let isLoading = false;
+
+const PIPED_INSTANCES = [
+  'https://pipedapi.kavin.rocks',
+  'https://piped-api.garudalinux.org',
+  'https://api.piped.yt',
+  'https://piped.video/api',
+  'https://api.piped.projectsegfau.lt',
+  'https://pipedapi.in.projectsegfau.lt',
+  'https://watchapi.whatever.social',
+  'https://piped-api.codeberg.page'
+];
+
+// Invidious instances as fallback (public, no API key required)
+const INVIDIOUS_INSTANCES = [
+  'https://inv.nadeko.net',
+  'https://invidious.nerdvpn.de',
+  'https://invidious.tiekoetter.com',
+  'https://iv.melmac.space',
+  'https://invidious.privacyredirect.com',
+  'https://vid.puffyan.us',
+  'https://yt.cdaut.de'
+];
+
+function normalizeInvidious(videos) {
+  return videos
+    .filter(v => v.type === 'video' || !v.type)
+    .map(v => ({
+      url: `/watch?v=${v.videoId}`,
+      videoId: v.videoId,
+      title: v.title || '',
+      thumbnail: v.videoThumbnails && v.videoThumbnails.length > 0
+        ? (v.videoThumbnails.find(t => t.quality === 'medium') || v.videoThumbnails[0]).url
+        : null,
+      uploaderName: v.author || v.uploaderName || '',
+      duration: v.lengthSeconds || 0,
+      views: v.viewCount || 0,
+      type: 'stream'
+    }));
+}
+
+const CATEGORY_IDS = {
+  'Trending': null,
+  'Music': 10,
+  'Gaming': 20,
+  'News': 25,
+  'Sports': 17,
+  'Science & Technology': 28,
+  'Film & Animation': 1,
+  'Comedy': 23
+};
+
+// ─── ONBOARDING LOGIC ─────────────────────────────────────────────────────────
+let obCurrentStep = 0;
+
+function selectLang(el) {
+  document.querySelectorAll('.ob-lang').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  userProfile.region = el.dataset.region;
+  userProfile.language = el.dataset.lang;
+}
+
+function toggleGenre(el) {
+  el.classList.toggle('selected');
+  const genre = el.dataset.genre;
+  if (el.classList.contains('selected')) {
+    if (!userProfile.genres.includes(genre)) userProfile.genres.push(genre);
+  } else {
+    userProfile.genres = userProfile.genres.filter(g => g !== genre);
+  }
+  document.getElementById('obGenreNext').disabled = userProfile.genres.length === 0;
+}
+
+function selectType(el) {
+  document.querySelectorAll('#obTypeGrid .ob-option').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  userProfile.contentType = el.dataset.type;
+  updateSummary();
+}
+
+function updateSummary() {
+  const langEl = document.querySelector('.ob-lang.selected');
+  const flag = langEl ? langEl.querySelector('.ob-flag').textContent : '';
+  const regionName = langEl ? langEl.querySelector('.ob-region').textContent : userProfile.region;
+  const genres = userProfile.genres.length > 0
+    ? userProfile.genres.map(g => {
+        const map = {Music:'🎵 Musik',Gaming:'🎮 Gaming',Sports:'⚽ Sport',News:'📰 News',
+          'Science & Technology':'🔬 Tech','Film & Animation':'🎬 Film',Comedy:'😂 Comedy',
+          Trending:'🔥 Trending','Travel & Events':'✈️ Reise','People & Blogs':'👤 Vlogs',
+          Education:'📚 Bildung','Autos & Vehicles':'🚗 Autos'};
+        return map[g] || g;
+      }).join(', ')
+    : 'Alle Kategorien';
+  const typeMap = {all:'Alles', short:'Kurz (< 5 Min.)', medium:'Standard (5–20 Min.)', long:'Lang (> 20 Min.)'};
+  document.getElementById('obSummary').innerHTML = `
+    <div class="ob-summary-row"><span class="key">Region</span><span class="val">${flag} ${regionName}</span></div>
+    <div class="ob-summary-row"><span class="key">Kategorien</span><span class="val">${genres}</span></div>
+    <div class="ob-summary-row"><span class="key">Video-Länge</span><span class="val">${typeMap[userProfile.contentType]}</span></div>
+  `;
+}
+
+function goStep(n) {
+  document.getElementById('obStep' + obCurrentStep).classList.remove('active');
+  document.getElementById('obDot' + obCurrentStep).classList.remove('active');
+  document.getElementById('obDot' + obCurrentStep).classList.add('done');
+  obCurrentStep = n;
+  document.getElementById('obStep' + obCurrentStep).classList.add('active');
+  document.getElementById('obDot' + obCurrentStep).classList.add('active');
+  document.getElementById('obDot' + obCurrentStep).classList.remove('done');
+  if (n === 2) updateSummary();
+}
+
+async function finishOnboarding() {
+  // If no genres selected, default to trending
+  if (userProfile.genres.length === 0) userProfile.genres = ['Trending'];
+  userProfile.onboardingDone = true;
+  goStep(3);
+  document.getElementById('obErrorBox').classList.remove('visible');
+  document.getElementById('obLoadingMsg').textContent = 'Suche passende Inhalte...';
+  document.getElementById('obLoadingDetail').textContent = `Region: ${userProfile.region} · ${userProfile.genres.join(', ')}`;
+
+  await saveProfile();
+  await loadAll(true);
+}
+
+function skipOnboarding() {
+  userProfile.onboardingDone = true;
+  document.getElementById('onboarding').style.display = 'none';
+  saveProfile();
+  loadAll();
+}
+
+function showOnboarding() {
+  // Reset to step 0 for editing
+  obCurrentStep = 0;
+  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.ob-dot').forEach(d => { d.classList.remove('active','done'); });
+  document.getElementById('obStep0').classList.add('active');
+  document.getElementById('obDot0').classList.add('active');
+  // Pre-select saved lang
+  document.querySelectorAll('.ob-lang').forEach(el => {
+    el.classList.toggle('selected', el.dataset.region === userProfile.region);
+  });
+  // Pre-select saved genres
+  document.querySelectorAll('#obGenreGrid .ob-option').forEach(el => {
+    const sel = userProfile.genres.includes(el.dataset.genre);
+    el.classList.toggle('selected', sel);
+  });
+  document.getElementById('obGenreNext').disabled = userProfile.genres.length === 0;
+  // Pre-select type
+  document.querySelectorAll('#obTypeGrid .ob-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.type === userProfile.contentType);
+  });
+  document.getElementById('onboarding').style.display = 'block';
+}
+
+// ─── PROFILE PERSISTENCE ──────────────────────────────────────────────────────
+async function saveProfile() {
+  try {
+    await fetch('/app/streamflix/api/profile', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(userProfile)
+    });
+  } catch(e) {}
+}
+
+async function loadProfile() {
+  try {
+    const p = await fetch('/app/streamflix/api/profile').then(r => r.json());
+    if (p && p.onboardingDone) {
+      userProfile = {
+        ...userProfile,
+        ...p,
+        savedCategories: p.savedCategories || [],
+        myList: p.myList || [],
+        ratings: p.ratings || []
+      };
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function formatViews(n) {
+  if (!n) return '';
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'Mrd.';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'Mio.';
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+  return n.toString();
+}
+
+function formatDuration(s) {
+  if (!s || s < 0) return '';
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function getThumbUrl(video) {
+  // Always prefer YouTube CDN directly — fast, no CORS issues
+  const id = getVideoId(video);
+  if (id) return `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
+  if (video.thumbnail) return video.thumbnail;
+  if (video.thumbnails && video.thumbnails.length > 0) {
+    return video.thumbnails[video.thumbnails.length - 1].url || video.thumbnails[0].url;
+  }
+  return null;
+}
+
+function getVideoId(video) {
+  if (video.url) {
+    const m = video.url.match(/[?&]v=([^&]+)/) || video.url.match(/\/watch\?v=([^&]+)/);
+    if (m) return m[1];
+    const m2 = video.url.match(/\/([a-zA-Z0-9_-]{11})$/);
+    if (m2) return m2[1];
+  }
+  return video.videoId || null;
+}
+
+function getCategoryName(id) {
+  const map = {10:'Music',20:'Gaming',25:'News',17:'Sports',28:'Science & Technology',1:'Film & Animation',23:'Comedy'};
+  return map[id] || 'Other';
+}
+
+// ─── FETCH ───────────────────────────────────────────────────────────────────
+async function fetchWithFallback(path) {
+  return Promise.any(
+    PIPED_INSTANCES.map(instance =>
+      fetch(instance + path, { signal: AbortSignal.timeout(8000) })
+        .then(res => { if (!res.ok) throw new Error('not ok'); return res.json(); })
+    )
+  ).catch(() => { throw new Error('API nicht erreichbar.'); });
+}
+
+async function fetchTrending(region) {
+  // Try Piped instances first
+  try {
+    return await fetchWithFallback(`/trending?region=${region}`);
+  } catch(e) {
+    // Fallback to Invidious instances
+    const errors = [];
+    for (const instance of INVIDIOUS_INSTANCES) {
+      try {
+        const res = await fetch(`${instance}/api/v1/trending?region=${region}&type=default`, { signal: AbortSignal.timeout(8000) });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) return normalizeInvidious(data);
+        }
+      } catch(err) {
+        errors.push(`${instance}: ${err.message}`);
+      }
+    }
+    throw new Error('API nicht erreichbar. ' + (errors[0] || e.message));
+  }
+}
+
+// ─── FILTER VIDEOS BY PROFILE ─────────────────────────────────────────────────
+// Keywords that identify political news content to exclude from hero/trending
+const NEWS_FILTER_KEYWORDS = [
+  'merz', 'scholz', 'habeck', 'baerbock', 'lindner', 'lauterbach',
+  'bundestag', 'bundesregierung', 'kanzler', 'koalition',
+  'zelensky', 'selenskyj', 'selenskyy', 'ukraine', 'ukrainisch',
+  'kremlin', 'putin', 'nato', 'eu-gipfel', 'g7', 'g20',
+  'pressekonferenz', 'tagesschau', 'zdf heute', 'ard aktuell',
+  'nachrichten', 'breaking news', 'news update'
+];
+
+function isNewsVideo(video) {
+  const title = (video.title || '').toLowerCase();
+  const uploader = (video.uploaderName || video.author || '').toLowerCase();
+  return NEWS_FILTER_KEYWORDS.some(kw => title.includes(kw) || uploader.includes(kw));
+}
+
+function filterByProfile(videos) {
+  let result = videos.filter(v => v.type === 'stream' || !v.type);
+
+  // Filter by content type
+  if (userProfile.contentType === 'short') {
+    result = result.filter(v => !v.duration || v.duration < 300);
+  } else if (userProfile.contentType === 'medium') {
+    result = result.filter(v => v.duration >= 300 && v.duration <= 1200);
+  } else if (userProfile.contentType === 'long') {
+    result = result.filter(v => v.duration > 1200);
+  }
+
+  // If specific genres selected and not just "Trending"
+  const nonTrending = userProfile.genres.filter(g => g !== 'Trending');
+  if (nonTrending.length > 0) {
+    const catIds = nonTrending.map(g => CATEGORY_IDS[g]).filter(id => id != null);
+    if (catIds.length > 0) {
+      const filtered = result.filter(v => catIds.includes(v.category));
+      // Only filter if we get enough results, otherwise keep all
+      if (filtered.length >= 5) result = filtered;
+    }
+  }
+
+  return result;
+}
+
+// ─── LOAD ─────────────────────────────────────────────────────────────────────
+async function loadAll(fromOnboarding = false) {
+  if (isLoading) return;
+  isLoading = true;
+
+  if (!fromOnboarding) {
+    // Show fallback content immediately so the user sees something right away
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    document.getElementById('errorBanner').classList.remove('visible');
+    renderFallback();
+  }
+
+  try {
+    document.getElementById('obLoadingMsg') && (document.getElementById('obLoadingMsg').textContent = 'Verbinde mit API...');
+    document.getElementById('obLoadingDetail') && (document.getElementById('obLoadingDetail').textContent = 'Region: ' + userProfile.region);
+
+    const data = await fetchTrending(userProfile.region);
+    const filtered = filterByProfile(data);
+
+    if (filtered.length === 0) {
+      // Fallback: use all videos if filter too strict
+      allVideos = data.filter(v => v.type === 'stream' || !v.type);
+    } else {
+      allVideos = filtered;
+    }
+
+    if (allVideos.length === 0) throw new Error('Keine Videos gefunden');
+
+    if (fromOnboarding) {
+      document.getElementById('onboarding').style.display = 'none';
+    }
+
+    renderAll();
+    saveCurrentState();
+    // Start expanding library from related videos after initial load
+    setTimeout(expandLibrary, 5000);
+  } catch(e) {
+    if (fromOnboarding) {
+      // Show error in onboarding but allow continuing with fallback
+      const errBox = document.getElementById('obErrorBox');
+      document.getElementById('obErrorMsg').textContent = '⚠ API nicht erreichbar – Demo-Modus aktiv.';
+      errBox.classList.add('visible');
+      // Auto-continue with fallback after short delay
+      setTimeout(() => {
+        document.getElementById('onboarding').style.display = 'none';
+        renderFallback();
+      }, 2000);
+    }
+    // Non-onboarding: fallback already rendered above, nothing more to do
+  } finally {
+    isLoading = false;
+    if (!fromOnboarding) {
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+    }
+  }
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function renderAll() {
+  const nonNews = allVideos.filter(v => !isNewsVideo(v));
+  heroVideos = (nonNews.length >= 3 ? nonNews : allVideos).slice(0, 5);
+  currentHeroIndex = 0;
+  renderHero(heroVideos[0], 0);
+  renderHeroDots();
+  renderNavbarThumbs();
+  startHeroTimer();
+  renderRows();
+  renderCategoryPills();
+}
+
+let heroRenderedOnce = false;
+
+function renderHero(video, index) {
+  if (!video) return;
+  currentHeroIndex = index;
+
+  const bg = document.getElementById('heroBg');
+  const content = document.getElementById('heroContent');
+  const badge = document.querySelector('.hero-badge');
+  const progressBar = document.getElementById('heroProgressBar');
+  const thumb = getThumbUrl(video);
+
+  function applyHero() {
+    // Set background image via both CSS and img tag for maximum compatibility
+    const thumbEl = document.getElementById('heroThumb');
+    if (thumb) {
+      bg.style.backgroundImage = `url(${thumb})`;
+      if (thumbEl) { thumbEl.src = thumb; thumbEl.style.display = 'block'; }
+    } else {
+      bg.style.backgroundImage = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)';
+      if (thumbEl) { thumbEl.src = ''; thumbEl.style.display = 'none'; }
+    }
+    // Hide video iframe when switching hero items
+    const heroIframe = document.getElementById('heroVideo');
+    if (heroIframe) { heroIframe.src = ''; heroIframe.classList.remove('playing'); }
+
+    // Update text content
+    document.getElementById('heroTitle').textContent = video.title || 'Unbekannt';
+    document.getElementById('heroViews').textContent = video.views ? '👁 ' + formatViews(video.views) : '';
+    document.getElementById('heroChannel').textContent = video.uploaderName || '';
+    document.getElementById('heroDuration').textContent = video.duration ? '⏱ ' + formatDuration(video.duration) : '';
+    document.getElementById('heroDesc').textContent = video.shortDescription || video.description || '';
+    badge.innerHTML = `🔥 #${index + 1} Trending`;
+    badge.style.background = index === 0 ? '#09c414' : '#f5a623';
+    document.getElementById('heroPlayBtn').dataset.index = index;
+    document.querySelectorAll('.hero-dot').forEach((d, i) => d.classList.toggle('active', i === index));
+    document.querySelectorAll('.navbar-thumb').forEach((t, i) => t.classList.toggle('active', i === index));
+
+    // Fade in
+    bg.style.opacity = '1';
+    content.style.opacity = '1';
+
+    // Progress bar
+    if (progressBar) {
+      progressBar.style.transition = 'none';
+      progressBar.style.width = '0%';
+      void progressBar.offsetWidth;
+      progressBar.style.transition = `width ${HERO_INTERVAL}ms linear`;
+      progressBar.style.width = '100%';
+    }
+  }
+
+  if (!heroRenderedOnce) {
+    // First render: apply content immediately, then fade in
+    heroRenderedOnce = true;
+    bg.style.transition = 'none';
+    content.style.transition = 'none';
+    bg.style.opacity = '0';
+    content.style.opacity = '0';
+    applyHero();
+    // Restore transitions and fade in on next frame
+    requestAnimationFrame(() => {
+      bg.style.transition = 'opacity 0.7s ease';
+      content.style.transition = 'opacity 0.5s ease';
+    });
+  } else {
+    // Subsequent renders: fade out, swap, fade in
+    bg.style.opacity = '0';
+    content.style.opacity = '0';
+    setTimeout(applyHero, 350);
+  }
+}
+
+function renderHeroDots() {
+  const container = document.getElementById('heroDots');
+  container.innerHTML = heroVideos.map((_, i) =>
+    `<div class="hero-dot ${i===0?'active':''}" onclick="goHero(${i})"></div>`
+  ).join('');
+}
+
+function renderNavbarThumbs() {
+  const container = document.getElementById('navbarThumbs');
+  if (!container || !heroVideos.length) return;
+  container.innerHTML = heroVideos.map((v, i) => {
+    const thumb = getThumbUrl(v);
+    if (!thumb) return '';
+    return `<img class="navbar-thumb ${i===0?'active':''}" src="${thumb}" alt="${v.title||''}" onclick="goHero(${i})" title="${v.title||''}" onerror="this.style.display='none'">`;
+  }).join('');
+}
+
+function goHero(i) {
+  clearTimeout(heroTimer);
+  renderHero(heroVideos[i], i);
+  startHeroTimer();
+}
+
+function startHeroTimer() {
+  clearTimeout(heroTimer);
+  heroTimer = setTimeout(() => {
+    const next = (currentHeroIndex + 1) % Math.max(heroVideos.length, 1);
+    renderHero(heroVideos[next], next);
+    startHeroTimer();
+  }, HERO_INTERVAL);
+}
+
+function openHeroVideo() {
+  const video = heroVideos[currentHeroIndex];
+  if (!video) return;
+  openVideo(video);
+}
+function openHeroInfo() { if (heroVideos[currentHeroIndex]) openVideo(heroVideos[currentHeroIndex]); }
+
+function renderRows() {
+  const container = document.getElementById('contentRows');
+  container.innerHTML = '';
+  const rows = buildRows(allVideos);
+  rows.forEach(row => {
+    const el = document.createElement('div');
+    el.className = 'row';
+    el.innerHTML = `
+      <div class="row-title">${row.title} <span class="count">${row.videos.length} Videos</span></div>
+      <div class="cards-scroll">
+        ${row.videos.map((v, i) => renderCard(v, row.showRank ? i+1 : null)).join('')}
+      </div>
+    `;
+    container.appendChild(el);
+  });
+}
+
+function buildRows(videos) {
+  const rows = [];
+  rows.push({ title: '🔥 Top 10 Trending', videos: videos.slice(0, 10), showRank: true });
+
+  // Preferred genres first
+  const preferred = userProfile.genres.filter(g => g !== 'Trending');
+  const shown = new Set(preferred);
+  const catOrder = preferred.length > 0
+    ? [...preferred, ...['Music','Gaming','Sports','News','Comedy','Science & Technology','Film & Animation'].filter(c => !shown.has(c))]
+    : ['Music','Gaming','Sports','News','Comedy','Science & Technology','Film & Animation'];
+
+  const categories = {};
+  videos.forEach(v => {
+    const cat = getCategoryName(v.category);
+    if (!categories[cat]) categories[cat] = [];
+    if (categories[cat].length < 12) categories[cat].push(v);
+  });
+
+  catOrder.forEach(cat => {
+    if (categories[cat] && categories[cat].length >= 3) {
+      const icons = {Music:'🎵',Gaming:'🎮',Sports:'⚽',News:'📰',Comedy:'😂','Science & Technology':'🔬','Film & Animation':'🎬'};
+      rows.push({ title: `${icons[cat]||'▶'} ${cat}`, videos: categories[cat], showRank: false });
+    }
+  });
+
+  const recent = [...videos].sort((a,b) => (b.uploaded||0) - (a.uploaded||0)).slice(0, 10);
+  if (recent.length > 3) rows.push({ title: '🆕 Neu hochgeladen', videos: recent, showRank: false });
+
+  if (userProfile.contentType === 'all') {
+    const longVideos = videos.filter(v => v.duration > 600).slice(0, 10);
+    if (longVideos.length > 3) rows.push({ title: '🎬 Lange Videos', videos: longVideos, showRank: false });
+  }
+
+  return rows;
+}
+
+function renderCard(video, rank) {
+  const thumb = getThumbUrl(video);
+  const id = getVideoId(video);
+  const title = (video.title || 'Unbekannt').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const inList = isInMyList(id);
+  return `
+    <div class="card" onclick='openVideoById("${id}", ${JSON.stringify(video).replace(/'/g,"\\'")})'
+         title="${title}">
+      ${rank ? `<div class="card-rank">#${rank}</div>` : ''}
+      ${thumb
+        ? `<img class="card-thumb" src="${thumb}" alt="${title}" loading="lazy">`
+        : `<div class="card-thumb-placeholder">▶</div>`
+      }
+      <button class="card-list-btn ${inList?'in-list':''}" title="${inList?'Aus Meine Liste entfernen':'Zu Meine Liste hinzufügen'}"
+        onclick="event.stopPropagation();toggleMyList('${id}', event)">${inList?'✓':'+'}</button>
+      <div class="card-info">
+        <div class="card-title">${video.title || 'Unbekannt'}</div>
+        <div class="card-channel">${video.uploaderName || ''}</div>
+        <div class="card-views">${video.views ? '👁 ' + formatViews(video.views) : ''} ${video.duration ? '· ' + formatDuration(video.duration) : ''}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCategoryPills() {
+  const container = document.getElementById('categoryPills');
+  const cats = ['Alle', 'Musik', 'Gaming', 'Sport', 'News', 'Komödie', 'Tech', 'Film'];
+  const catMap = {'Alle':'Trending','Musik':'Music','Gaming':'Gaming','Sport':'Sports','News':'News','Komödie':'Comedy','Tech':'Science & Technology','Film':'Film & Animation'};
+  let html = cats.map(c =>
+    `<div class="pill ${catMap[c]===currentCategory?'active':''}" onclick="setCategoryFromPill('${catMap[c]}', this)">${c}</div>`
+  ).join('');
+  // Saved search categories
+  (userProfile.savedCategories || []).forEach((sc, idx) => {
+    const isActive = currentCategory === '__saved__' + sc.query;
+    html += `<div class="pill-saved ${isActive?'active':''}" onclick="loadSavedCategory(${idx})">
+      🔖 ${sc.name}
+      <button class="pill-saved-del" onclick="event.stopPropagation();deleteSavedCategory(${idx})" title="Löschen">✕</button>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function setCategoryFromPill(cat, el) {
+  currentCategory = cat;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  filterByCategory();
+}
+
+function setCategory(cat) {
+  currentCategory = cat;
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  event.target.classList.add('active');
+  filterByCategory();
+}
+
+function filterByCategory() {
+  if (currentCategory === 'Trending' || !CATEGORY_IDS[currentCategory]) {
+    renderRows();
+    return;
+  }
+  const catId = CATEGORY_IDS[currentCategory];
+  const filtered = allVideos.filter(v => v.category === catId || getCategoryName(v.category) === currentCategory);
+  const container = document.getElementById('contentRows');
+  container.innerHTML = '';
+  if (filtered.length > 0) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <div class="row-title">▶ ${currentCategory} <span class="count">${filtered.length} Videos</span></div>
+      <div class="cards-scroll">${filtered.map((v, i) => renderCard(v, i+1)).join('')}</div>
+    `;
+    container.appendChild(row);
+  } else {
+    container.innerHTML = '<p style="color:#777;padding:20px">Keine Videos in dieser Kategorie</p>';
+  }
+}
+
+// ─── VIDEO MODAL ──────────────────────────────────────────────────────────────
+function openVideoById(id, videoData) {
+  let video = videoData;
+  if (typeof videoData === 'string') { try { video = JSON.parse(videoData); } catch(e) {} }
+  if (id && !video) video = allVideos.find(v => getVideoId(v) === id) || { videoId: id };
+  openVideo(video);
+}
+
+let currentModalVideoId = null;
+
+function openVideo(video) {
+  const id = getVideoId(video);
+  if (!id) return;
+  currentModalVideoId = id;
+  // Show poster thumbnail first, play on click
+  const posterImg = document.getElementById('modalPosterImg');
+  posterImg.src = getThumbUrl(video) || '';
+  document.getElementById('modalPoster').style.display = '';
+  const iframe = document.getElementById('modalIframe');
+  iframe.src = '';
+  iframe.classList.remove('active');
+  document.getElementById('modalTitle').textContent = video.title || 'Video';
+  document.getElementById('modalDesc').textContent = video.shortDescription || video.description || '';
+  document.getElementById('modalYtLink').href = `https://www.youtube.com/watch?v=${id}`;
+  const meta = [];
+  if (video.views) meta.push(`<span class="views">👁 ${formatViews(video.views)} Aufrufe</span>`);
+  if (video.uploaderName) meta.push(`<span>📺 ${video.uploaderName}</span>`);
+  if (video.duration) meta.push(`<span>⏱ ${formatDuration(video.duration)}</span>`);
+  if (video.uploaded) meta.push(`<span>📅 ${new Date(video.uploaded * 1000).toLocaleDateString('de-DE')}</span>`);
+  document.getElementById('modalMeta').innerHTML = meta.join('');
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('modalSimilar').style.display = 'none';
+  lastWatchedVideo = video;
+  modalOpenTime = Date.now();
+  loadSimilarInModal(video);
+  PulseOS.emit('selected-video', { id, title: video.title, url: `https://www.youtube.com/watch?v=${id}`, thumbnail: getThumbUrl(video), channel: video.uploaderName });
+}
+
+function playModalVideo() {
+  if (!currentModalVideoId) return;
+  document.getElementById('modalPoster').style.display = 'none';
+  const iframe = document.getElementById('modalIframe');
+  // No autoplay - let the YouTube player's own play button handle it
+  // (autoplay is blocked in nested iframes without explicit permission delegation)
+  iframe.src = `https://www.youtube-nocookie.com/embed/${currentModalVideoId}?rel=0&controls=1`;
+  iframe.classList.add('active');
+}
+
+let lastWatchedVideo = null;
+let modalOpenTime = 0;
+
+function closeModal(e) { if (e.target === document.getElementById('modalOverlay')) closeModalDirect(); }
+function closeModalDirect() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('modalIframe').src = '';
+  document.getElementById('modalIframe').classList.remove('active');
+  document.getElementById('modalPoster').style.display = '';
+  currentModalVideoId = null;
+  document.body.style.overflow = '';
+  // Show rating prompt if watched for at least 10 seconds
+  if (lastWatchedVideo && (Date.now() - modalOpenTime) > 10000) {
+    const id = getVideoId(lastWatchedVideo);
+    const alreadyRated = (userProfile.ratings || []).some(r => r.videoId === id);
+    if (!alreadyRated) showRatingPrompt(lastWatchedVideo);
+  }
+}
+
+// ─── FALLBACK ─────────────────────────────────────────────────────────────────
+function renderFallback() {
+  // Seed with real popular video IDs so thumbnails show immediately
+  const seedIds = [
+    { videoId: 'dQw4w9WgXcQ', title: 'Rick Astley – Never Gonna Give You Up', uploaderName: 'Rick Astley' },
+    { videoId: 'kJQP7kiw5Fk', title: 'Luis Fonsi – Despacito', uploaderName: 'Luis Fonsi' },
+    { videoId: '9bZkp7q19f0', title: 'PSY – GANGNAM STYLE', uploaderName: 'officialpsy' },
+    { videoId: 'JGwWNGJdvx8', title: 'Ed Sheeran – Shape of You', uploaderName: 'Ed Sheeran' },
+    { videoId: 'OPf0YbXqDm0', title: 'Mark Ronson – Uptown Funk ft. Bruno Mars', uploaderName: 'Mark Ronson' },
+    { videoId: 'RgKAFK5djSk', title: 'Wiz Khalifa – See You Again ft. Charlie Puth', uploaderName: 'Wiz Khalifa' },
+    { videoId: 'hT_nvWreIhg', title: 'OneRepublic – Counting Stars', uploaderName: 'OneRepublic' },
+    { videoId: 'YqeW9_5kURI', title: 'Justin Bieber – Baby ft. Ludacris', uploaderName: 'Justin Bieber' },
+  ];
+  const placeholders = seedIds.map((s, i) => ({
+    title: s.title,
+    uploaderName: s.uploaderName,
+    views: Math.floor(Math.random() * 5e6) + 1e6,
+    duration: Math.floor(Math.random() * 300) + 180,
+    videoId: s.videoId,
+    url: `/watch?v=${s.videoId}`
+  }));
+  allVideos = placeholders;
+  heroVideos = placeholders.slice(0, 3);
+  currentHeroIndex = 0;
+  renderHero(placeholders[0], 0);
+  renderHeroDots();
+  renderNavbarThumbs();
+  startHeroTimer();
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorBanner');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('visible');
+}
+
+// ─── SEARCH ───────────────────────────────────────────────────────────────────
+let searchQuery = '';
+
+function onSearchInput(el) {
+  document.getElementById('searchClear').classList.toggle('visible', el.value.length > 0);
+}
+
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  searchQuery = q;
+  clearTimeout(heroTimer);
+  const sec = document.getElementById('searchResultsSection');
+  const title = document.getElementById('searchResultsTitle');
+  title.textContent = `🔍 Ergebnisse für: "${q}"`;
+  document.getElementById('searchResultsContent').innerHTML = '<div class="search-loading">Suche läuft...</div>';
+  sec.classList.add('visible');
+  sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Reset save button
+  const saveCatBtn = document.getElementById('saveCatBtn');
+  const alreadySaved = (userProfile.savedCategories || []).some(sc => sc.query === q);
+  saveCatBtn.textContent = alreadySaved ? '✓ Bereits gespeichert' : '+ Als Kategorie speichern';
+  saveCatBtn.classList.toggle('saved', alreadySaved);
+  await doSearchQuery(q);
+}
+
+async function doSearchQuery(q) {
+  const cont = document.getElementById('searchResultsContent');
+  try {
+    let results = [];
+    // Try all Piped instances in parallel — take the first that succeeds
+    const pipedResults = await Promise.any(
+      PIPED_INSTANCES.map(instance =>
+        fetch(`${instance}/search?q=${encodeURIComponent(q)}&filter=videos`, { signal: AbortSignal.timeout(6000) })
+          .then(res => { if (!res.ok) throw new Error('not ok'); return res.json(); })
+          .then(data => {
+            const items = (data.items || data).filter(v => v.type === 'stream' || v.videoId);
+            if (items.length === 0) throw new Error('empty');
+            return items;
+          })
+      )
+    ).catch(() => []);
+    results = pipedResults;
+    // Fallback: all Invidious instances in parallel
+    if (results.length === 0) {
+      results = await Promise.any(
+        INVIDIOUS_INSTANCES.map(instance =>
+          fetch(`${instance}/api/v1/search?q=${encodeURIComponent(q)}&type=video`, { signal: AbortSignal.timeout(6000) })
+            .then(res => { if (!res.ok) throw new Error('not ok'); return res.json(); })
+            .then(data => {
+              const items = normalizeInvidious(Array.isArray(data) ? data : []);
+              if (items.length === 0) throw new Error('empty');
+              return items;
+            })
+        )
+      ).catch(() => []);
+    }
+    if (results.length === 0) {
+      cont.innerHTML = '<div class="search-loading">Keine Ergebnisse gefunden.</div>';
+      return;
+    }
+    // Add to global library (deduplicate)
+    const existingIds = new Set(allVideos.map(v => getVideoId(v)).filter(Boolean));
+    const newOnes = results.filter(v => {
+      const id = getVideoId(v);
+      if (!id || existingIds.has(id)) return false;
+      existingIds.add(id);
+      return true;
+    });
+    if (newOnes.length > 0) {
+      allVideos = [...allVideos, ...newOnes];
+      renderRows();
+    }
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.style.marginBottom = '0';
+    row.innerHTML = `<div class="cards-scroll">${results.slice(0,20).map(v => renderCard(v, null)).join('')}</div>`;
+    cont.innerHTML = '';
+    cont.appendChild(row);
+    // Show search results in hero carousel
+    heroVideos = results.slice(0, 8);
+    currentHeroIndex = 0;
+    renderHero(heroVideos[0], 0);
+    renderHeroDots();
+    renderNavbarThumbs();
+    startHeroTimer();
+    // Load similar to first result
+    if (results[0]) loadSimilarForSearch(results[0]);
+  } catch(e) {
+    cont.innerHTML = `<div class="search-loading">Fehler: ${e.message}</div>`;
+  }
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchClear').classList.remove('visible');
+  document.getElementById('searchResultsSection').classList.remove('visible');
+  searchQuery = '';
+  // Restore hero to trending videos
+  const nonNewsRestore = allVideos.filter(v => !isNewsVideo(v));
+  heroVideos = (nonNewsRestore.length >= 3 ? nonNewsRestore : allVideos).slice(0, 5);
+  currentHeroIndex = 0;
+  if (heroVideos.length > 0) { renderHero(heroVideos[0], 0); renderHeroDots(); renderNavbarThumbs(); startHeroTimer(); }
+  const btn = document.getElementById('saveCatBtn');
+  btn.textContent = '+ Als Kategorie speichern';
+  btn.classList.remove('saved');
+  if (currentCategory.startsWith('__saved__')) {
+    currentCategory = 'Trending';
+    renderCategoryPills();
+  }
+}
+
+// Load similar to a searched video and inject into library
+async function loadSimilarForSearch(video) {
+  const id = getVideoId(video);
+  if (!id) return;
+  const related = await fetchRelated(id);
+  if (related.length === 0) return;
+  const existingIds = new Set(allVideos.map(v => getVideoId(v)).filter(Boolean));
+  const newOnes = related.filter(v => {
+    const vid = getVideoId(v);
+    if (!vid || existingIds.has(vid)) return false;
+    existingIds.add(vid);
+    return true;
+  });
+  if (newOnes.length > 0) {
+    allVideos = [...allVideos, ...newOnes];
+    renderRows();
+  }
+}
+
+// ─── SIMILAR / RELATED ────────────────────────────────────────────────────────
+async function fetchRelated(videoId) {
+  const piped = await Promise.any(
+    PIPED_INSTANCES.map(instance =>
+      fetch(`${instance}/streams/${videoId}`, { signal: AbortSignal.timeout(6000) })
+        .then(res => { if (!res.ok) throw new Error('not ok'); return res.json(); })
+        .then(data => {
+          const items = (data.relatedStreams || []).filter(v => v.type === 'stream' || v.videoId);
+          if (items.length === 0) throw new Error('empty');
+          return items;
+        })
+    )
+  ).catch(() => null);
+  if (piped) return piped;
+  const inv = await Promise.any(
+    INVIDIOUS_INSTANCES.map(instance =>
+      fetch(`${instance}/api/v1/videos/${videoId}`, { signal: AbortSignal.timeout(6000) })
+        .then(res => { if (!res.ok) throw new Error('not ok'); return res.json(); })
+        .then(data => {
+          const items = normalizeInvidious(data.recommendedVideos || []);
+          if (items.length === 0) throw new Error('empty');
+          return items;
+        })
+    )
+  ).catch(() => []);
+  return inv;
+}
+
+async function loadSimilarInModal(video) {
+  const id = getVideoId(video);
+  if (!id) return;
+  const sec = document.getElementById('modalSimilar');
+  const scroll = document.getElementById('modalSimilarScroll');
+  sec.style.display = 'block';
+  scroll.innerHTML = '<div style="color:#777;font-size:13px;padding:10px">Lade ähnliche Videos...</div>';
+  const related = await fetchRelated(id);
+  if (related.length === 0) { sec.style.display = 'none'; return; }
+  scroll.innerHTML = related.slice(0,10).map(v => renderCard(v, null)).join('');
+  // Add to library
+  const existingIds = new Set(allVideos.map(v => getVideoId(v)).filter(Boolean));
+  const newOnes = related.filter(v => {
+    const vid = getVideoId(v);
+    if (!vid || existingIds.has(vid)) return false;
+    existingIds.add(vid);
+    return true;
+  });
+  if (newOnes.length > 0) {
+    allVideos = [...allVideos, ...newOnes];
+    renderRows();
+  }
+}
+
+// ─── AUTO-EXPAND LIBRARY ──────────────────────────────────────────────────────
+let libraryExpandRunning = false;
+async function expandLibrary() {
+  if (libraryExpandRunning || allVideos.length === 0) return;
+  libraryExpandRunning = true;
+  try {
+    // Pick a random video from current library to find related
+    const pick = allVideos[Math.floor(Math.random() * Math.min(allVideos.length, 20))];
+    const id = getVideoId(pick);
+    if (!id) return;
+    const related = await fetchRelated(id);
+    const existingIds = new Set(allVideos.map(v => getVideoId(v)).filter(Boolean));
+    const newOnes = related.filter(v => {
+      const vid = getVideoId(v);
+      if (!vid || existingIds.has(vid)) return false;
+      existingIds.add(vid);
+      return true;
+    });
+    if (newOnes.length > 0) {
+      allVideos = [...allVideos, ...newOnes];
+      // Only re-render if not searching and modal closed
+      if (!searchQuery && !document.getElementById('modalOverlay').classList.contains('open')) {
+        renderRows();
+      }
+    }
+  } finally {
+    libraryExpandRunning = false;
+  }
+}
+
+// ─── MY LIST ──────────────────────────────────────────────────────────────────
+function isInMyList(videoId) {
+  if (!videoId) return false;
+  return (userProfile.myList || []).some(v => getVideoId(v) === videoId);
+}
+
+function toggleMyList(videoId, e) {
+  if (!videoId) return;
+  const list = userProfile.myList || [];
+  const idx = list.findIndex(v => getVideoId(v) === videoId);
+  if (idx >= 0) {
+    userProfile.myList.splice(idx, 1);
+  } else {
+    const video = allVideos.find(v => getVideoId(v) === videoId) || { videoId };
+    userProfile.myList = [video, ...list];
+  }
+  saveProfile();
+  // Update button in-place
+  const btn = e ? e.target : null;
+  if (btn) {
+    const inList = isInMyList(videoId);
+    btn.textContent = inList ? '✓' : '+';
+    btn.classList.toggle('in-list', inList);
+    btn.title = inList ? 'Aus Meine Liste entfernen' : 'Zu Meine Liste hinzufügen';
+  }
+  // If currently showing My List view, re-render
+  if (currentCategory === '__mylist__') showMyList();
+}
+
+function showMyList() {
+  currentCategory = '__mylist__';
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('myListNavLink').classList.add('active');
+  document.getElementById('searchResultsSection').classList.remove('visible');
+  const container = document.getElementById('contentRows');
+  const list = userProfile.myList || [];
+  container.innerHTML = '';
+  const row = document.createElement('div');
+  row.className = 'row';
+  if (list.length === 0) {
+    row.innerHTML = `<div class="row-title">♥ Meine Liste</div>
+      <p style="color:#777;padding:20px 0">Deine Liste ist leer. Füge Videos über das <strong>+</strong> auf den Karten hinzu.</p>`;
+  } else {
+    row.innerHTML = `<div class="row-title">♥ Meine Liste <span class="count">${list.length} Videos</span></div>
+      <div class="cards-scroll">${list.map(v => renderCard(v, null)).join('')}</div>`;
+  }
+  container.appendChild(row);
+}
+
+// ─── SAVED CATEGORIES ─────────────────────────────────────────────────────────
+function saveCurrentSearchAsCategory() {
+  const q = (searchQuery || document.getElementById('searchInput').value || '').trim();
+  if (!q) return;
+  const already = (userProfile.savedCategories || []).some(sc => sc.query === q);
+  if (already) {
+    const btn = document.getElementById('saveCatBtn');
+    btn.textContent = '✓ Bereits gespeichert';
+    btn.classList.add('saved');
+    return;
+  }
+  if (!userProfile.savedCategories) userProfile.savedCategories = [];
+  userProfile.savedCategories.push({ name: q, query: q });
+  saveProfile();
+  renderCategoryPills();
+  const btn = document.getElementById('saveCatBtn');
+  btn.textContent = '✓ Gespeichert!';
+  btn.classList.add('saved');
+}
+
+function deleteSavedCategory(idx) {
+  if (!userProfile.savedCategories) return;
+  userProfile.savedCategories.splice(idx, 1);
+  saveProfile();
+  renderCategoryPills();
+  if (currentCategory.startsWith('__saved__')) {
+    currentCategory = 'Trending';
+    renderRows();
+  }
+}
+
+async function loadSavedCategory(idx) {
+  const sc = (userProfile.savedCategories || [])[idx];
+  if (!sc) return;
+  currentCategory = '__saved__' + sc.query;
+  renderCategoryPills();
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  // Perform the search for this category
+  document.getElementById('searchInput').value = sc.query;
+  searchQuery = sc.query;
+  const sec = document.getElementById('searchResultsSection');
+  const title = document.getElementById('searchResultsTitle');
+  title.textContent = `🔖 ${sc.name} – Neueste Ergebnisse`;
+  document.getElementById('searchResultsContent').innerHTML = '<div class="search-loading">Lade neueste Inhalte...</div>';
+  sec.classList.add('visible');
+  sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Reset save button state
+  const btn = document.getElementById('saveCatBtn');
+  btn.textContent = '✓ Bereits gespeichert';
+  btn.classList.add('saved');
+  // Run actual search
+  await doSearchQuery(sc.query);
+}
+
+// ─── RATING ───────────────────────────────────────────────────────────────────
+let pendingRatingVideo = null;
+let selectedRating = 0;
+
+function showRatingPrompt(video) {
+  pendingRatingVideo = video;
+  selectedRating = 0;
+  const title = video.title ? `"${video.title.slice(0, 40)}${video.title.length > 40 ? '…' : ''}"` : 'dieses Video';
+  document.getElementById('ratingTitle').textContent = 'Wie hat dir ' + title + ' gefallen?';
+  document.getElementById('ratingSubtitle').textContent = 'Deine Bewertung hilft uns, bessere Vorschläge zu machen.';
+  document.querySelectorAll('.rating-star').forEach(s => s.classList.remove('lit'));
+  document.getElementById('ratingSubmitBtn').disabled = true;
+  document.getElementById('ratingOverlay').classList.add('open');
+}
+
+function setRating(n) {
+  selectedRating = n;
+  document.querySelectorAll('.rating-star').forEach((s, i) => s.classList.toggle('lit', i < n));
+  document.getElementById('ratingSubmitBtn').disabled = false;
+}
+
+function hoverRating(n) {
+  if (n === 0) {
+    // Restore selected state
+    document.querySelectorAll('.rating-star').forEach((s, i) => s.classList.toggle('lit', i < selectedRating));
+  } else {
+    document.querySelectorAll('.rating-star').forEach((s, i) => s.classList.toggle('lit', i < n));
+  }
+}
+
+function submitRating() {
+  if (!pendingRatingVideo || !selectedRating) return;
+  const id = getVideoId(pendingRatingVideo);
+  if (!userProfile.ratings) userProfile.ratings = [];
+  userProfile.ratings.push({
+    videoId: id,
+    title: pendingRatingVideo.title || '',
+    rating: selectedRating,
+    ratedAt: new Date().toISOString()
+  });
+  saveProfile();
+  closeRating();
+  // Show toast
+  showToast(selectedRating >= 4 ? '👍 Danke! Wir zeigen dir mehr davon.' : '👎 Verstanden, wir passen deine Vorschläge an.');
+}
+
+function closeRating() {
+  document.getElementById('ratingOverlay').classList.remove('open');
+  pendingRatingVideo = null;
+  selectedRating = 0;
+}
+
+function showToast(msg) {
+  let t = document.getElementById('sfToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'sfToast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;z-index:300;transition:opacity 0.3s;border:1px solid #444';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 3000);
+}
+
+// ─── STATE PERSISTENCE ────────────────────────────────────────────────────────
+function saveCurrentState() {
+  const state = {
+    region: userProfile.region,
+    lastFetched: new Date().toISOString(),
+    featuredIndex: currentHeroIndex,
+    activeCategory: currentCategory
+  };
+  fetch('/app/streamflix/api/state', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(state)
+  }).catch(() => {});
+}
+
+// ─── SCROLL NAVBAR ────────────────────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+});
+
+// ─── PULSEОС SDK ──────────────────────────────────────────────────────────────
+PulseOS.onInput('category', function(data) {
+  if (data && data.category) { currentCategory = data.category; filterByCategory(); }
+});
+PulseOS.onDataChanged(function() {
+  loadProfile().then(() => loadAll());
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+(async function init() {
+  const hasProfile = await loadProfile();
+  if (!hasProfile) {
+    // First time: skip onboarding, load content immediately with defaults
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    renderFallback();
+    loadAll();
+  } else {
+    await loadAll();
+    // Auto-refresh every 2 minutes
+    setInterval(() => {
+      if (!document.getElementById('modalOverlay').classList.contains('open') && !searchQuery) loadAll();
+    }, 2 * 60 * 1000);
+    // Reload on tab focus (visibility change)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && !document.getElementById('modalOverlay').classList.contains('open') && !searchQuery) loadAll();
+    });
+    // Auto-expand library every 90 seconds
+    setInterval(expandLibrary, 90 * 1000);
+    // First expansion after 20s
+    setTimeout(expandLibrary, 20 * 1000);
+  }
+})();
+</script>
+</body>
+</html>

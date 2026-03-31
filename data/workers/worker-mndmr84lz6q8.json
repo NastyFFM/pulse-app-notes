@@ -1,0 +1,29 @@
+{
+  "id": "worker-mndmr84lz6q8",
+  "task": "Modifiziere die App \"streamflix\": oben wird nicht immer ein bild angezeigt. nur füreien bruchteil einer sekunde. search fehlt. man mussähnliche sachen finden können zu denen die man mag und gesucht hat. die bibliothelk muss sich immer die ganze zeit erweitern",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 2254,
+  "progress": "Laden werden automatisch Related-Videos der aktuellen Sammlung abgerufen (alle 90 Sekunden + beim Suchen + beim Video öffnen). Neue Videos werden dedupliziert hinzugefügt und die Rows neu gerendert.",
+  "log": [
+    {
+      "time": "2026-03-30T20:18:05.925Z",
+      "type": "start",
+      "text": "Worker gestartet"
+    },
+    {
+      "time": "2026-03-30T20:18:30.000Z",
+      "type": "info",
+      "text": "4 Probleme identifiziert"
+    },
+    {
+      "time": "2026-03-30T20:19:00.000Z",
+      "type": "done",
+      "text": "Alle Fixes angewendet: Hero-Bild, Suche, Ähnliche Videos, Auto-Erweiterung"
+    }
+  ],
+  "result": "Streamflix verbessert: 1) Hero-Bild zeigt jetzt immer via YouTube CDN (i.ytimg.com), fade-in statt Flackern. 2) Suchleiste in Navbar mit Piped/Invidious API. 3) Ähnliche Videos im Modal nach jedem Video. 4) Bibliothek wächst automatisch alle 90s durch Related-Videos der laufenden Sammlung.",
+  "startedAt": "2026-03-30T20:18:05.925Z",
+  "finishedAt": "2026-03-30T20:19:10.000Z",
+  "createdBy": "user"
+}

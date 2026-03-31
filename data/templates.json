@@ -55,6 +55,38 @@
       "id": "vercel",
       "author": "user",
       "createdAt": "2026-03-30T15:46:45.014Z"
+    },
+    {
+      "name": "Cloudlfare",
+      "description": "Cloudflare",
+      "stacks": [
+        "next.js cloudflare"
+      ],
+      "instructions": "",
+      "id": "cloudlfare",
+      "author": "user",
+      "createdAt": "2026-03-30T19:42:24.764Z"
+    },
+    {
+      "name": "Cloudflare Static",
+      "stacks": [
+        "cloudflare"
+      ],
+      "description": "Static site on Cloudflare Pages",
+      "id": "cloudflare-static",
+      "author": "user",
+      "createdAt": "2026-03-30T19:51:11.003Z"
+    },
+    {
+      "name": "Netlify",
+      "description": "Netlify",
+      "stacks": [
+        "Netlify"
+      ],
+      "instructions": "",
+      "id": "netlify",
+      "author": "user",
+      "createdAt": "2026-03-30T22:16:21.593Z"
     }
   ]
 }

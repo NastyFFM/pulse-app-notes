@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Files</title>
+<title>Datei-Explorer</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--surface:var(--bg-surface, #111118);--dim:var(--text-dim, rgba(255,255,255,.4));--muted:rgba(255,255,255,.15);--lila:#a855f7;--red:#ef4444;--green:#22c55e;--font:'IBM Plex Mono',monospace}
@@ -50,13 +50,18 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
 .preview-content{flex:1;overflow:auto;padding:16px}
 .preview-content pre{font:12px/1.6 var(--font);color:var(--text);white-space:pre-wrap;word-break:break-all}
 .preview-loading{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
+.preview-render{flex:1;overflow:hidden;display:none}
+.preview-render iframe{width:100%;height:100%;border:none;background:#fff}
+.view-toggle{display:none;gap:2px;background:rgba(255,255,255,.05);border-radius:4px;padding:2px}
+.view-toggle button{background:none;border:none;color:var(--dim);font:500 10px var(--font);padding:3px 8px;border-radius:3px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;transition:all .1s}
+.view-toggle button.active{background:var(--teal);color:var(--bg)}
 </style>
 </head>
 <body>
 
 <div class="sidebar">
   <div class="sidebar-header">
-    <span class="sidebar-title">Files</span>
+    <span class="sidebar-title">Datei-Explorer</span>
     <span class="app-count" id="appCount">--</span>
   </div>
   <div class="folder-list" id="folderList"></div>
@@ -69,49 +74,66 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--font);height:100
 <div class="preview" id="preview">
   <div class="preview-header">
     <span class="preview-title">Preview</span>
-    <span class="preview-filename" id="previewFilename"></span>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="view-toggle" id="viewToggle">
+        <button class="active" id="btnCode" onclick="setView('code')">Code</button>
+        <button id="btnRender" onclick="setView('render')">Render</button>
+      </div>
+      <span class="preview-filename" id="previewFilename"></span>
+    </div>
   </div>
   <div class="preview-empty" id="previewEmpty">Datei anklicken um Inhalt zu sehen</div>
   <div class="preview-content" id="previewContent" style="display:none"><pre id="previewPre"></pre></div>
+  <div class="preview-render" id="previewRender"><iframe id="previewIframe"></iframe></div>
 </div>
 
+<script src="/sdk.js"></script>
 <script>
 let apps = [];
-let registry = {};
 let selectedApp = null;
 let selectedFile = null;
+let currentView = 'code';
+let currentRawText = '';
+let currentFilename = '';
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function setView(view) {
+  currentView = view;
+  document.getElementById('btnCode').classList.toggle('active', view === 'code');
+  document.getElementById('btnRender').classList.toggle('active', view === 'render');
+  if (view === 'code') {
+    document.getElementById('previewContent').style.display = 'block';
+    document.getElementById('previewRender').style.display = 'none';
+  } else {
+    document.getElementById('previewContent').style.display = 'none';
+    document.getElementById('previewRender').style.display = 'flex';
+    renderInIframe(currentRawText, currentFilename);
+  }
+}
+
+function renderInIframe(text, filename) {
+  const iframe = document.getElementById('previewIframe');
+  let content = text;
+  if (filename.endsWith('.md')) {
+    content = '<html><head><style>body{font-family:system-ui,sans-serif;padding:20px;line-height:1.6;max-width:800px;margin:0 auto}pre{background:#f4f4f4;padding:12px;border-radius:4px;overflow:auto}</style></head><body>' + text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') + '</body></html>';
+  }
+  const blob = new Blob([content], {type:'text/html'});
+  iframe.src = URL.createObjectURL(blob);
+}
 
 async function init() {
   try {
-    const r = await fetch('/api/app-registry');
-    if (r.ok) {
-      const data = await r.json();
-      if (Array.isArray(data)) {
-        data.forEach(a => { registry[a.id] = a; });
-        apps = data;
-      } else if (data.apps) {
-        data.apps.forEach(a => { registry[a.id] = a; });
-        apps = data.apps;
-      } else {
-        Object.entries(data).forEach(([id, info]) => {
-          registry[id] = { id, ...info };
-          apps.push({ id, ...info });
-        });
-      }
-    }
-  } catch {}
-
-  // fallback: try /api/apps
-  if (apps.length === 0) {
-    try {
-      const r2 = await fetch('/api/apps');
-      if (r2.ok) {
-        const list = await r2.json();
-        apps = (Array.isArray(list) ? list : []).map(id => ({ id, name: id }));
-      }
-    } catch {}
+    const r = await fetch('/api/apps');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    apps = Array.isArray(data) ? data : (data.apps || []);
+  } catch(e) {
+    document.getElementById('folderList').innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:11px">Fehler: ' + esc(e.message) + '</div>';
+    return;
   }
-
   apps.sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
   document.getElementById('appCount').textContent = apps.length + ' Apps';
   renderList();
@@ -119,119 +141,156 @@ async function init() {
 
 function renderList() {
   const list = document.getElementById('folderList');
+  if (!apps.length) {
+    list.innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:11px">Keine Apps gefunden</div>';
+    return;
+  }
   list.innerHTML = apps.map(a => {
-    const color = a.color || '#333';
-    const icon = a.icon || a.id.charAt(0).toUpperCase();
-    return '<div class="folder-item' + (selectedApp === a.id ? ' active' : '') + '" onclick="selectApp(\'' + esc(a.id) + '\')">' +
-      '<div class="folder-icon" style="background:' + color + '">' + esc(icon) + '</div>' +
-      '<div><div class="folder-name">' + esc(a.name || a.id) + '</div>' +
-      (a.description ? '<div class="folder-desc">' + esc(a.description) + '</div>' : '') +
-      '</div></div>';
+    const color = a.color || '#555';
+    const icon = esc(a.icon || (a.id||'?').charAt(0).toUpperCase());
+    const name = esc(a.name || a.id);
+    const desc = a.description ? '<div class="folder-desc">' + esc(a.description) + '</div>' : '';
+    const active = selectedApp === a.id ? ' active' : '';
+    return '<div class="folder-item' + active + '" onclick="selectApp(' + JSON.stringify(a.id) + ')">'
+      + '<div class="folder-icon" style="background:' + color + '">' + icon + '</div>'
+      + '<div><div class="folder-name">' + name + '</div>' + desc + '</div>'
+      + '</div>';
   }).join('');
 }
 
 async function selectApp(id) {
   selectedApp = id;
   renderList();
+
   const app = apps.find(a => a.id === id) || { id };
   const detail = document.getElementById('detail');
+  detail.innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:11px">Lade...</div>';
 
-  let html = '<div class="detail-header">' +
-    '<div class="detail-name">' + esc(app.name || app.id) + '</div>' +
-    '<div class="detail-desc">' + esc(app.description || '') + '</div>' +
-    '</div>';
-
-  // Manifest card
-  html += '<div class="card"><div class="card-title">Manifest</div>';
-  html += '<div class="info-row"><span class="info-label">ID</span><span class="info-value">' + esc(app.id) + '</span></div>';
-  html += '<div class="info-row"><span class="info-label">Name</span><span class="info-value">' + esc(app.name || '--') + '</span></div>';
-  html += '<div class="info-row"><span class="info-label">Icon</span><span class="info-value">' + esc(app.icon || '--') + '</span></div>';
-  html += '<div class="info-row"><span class="info-label">Farbe</span><span class="info-value">' + esc(app.color || '--') + '</span></div>';
-  html += '<div class="info-row"><span class="info-label">Pfad</span><span class="info-value">apps/' + esc(app.id) + '/</span></div>';
-  html += '</div>';
-
-  // Files card — detect API data files
-  let apiFiles = [];
+  // Try to load manifest for additional info (dataFiles etc.)
+  let manifest = null;
   try {
-    const r = await fetch('/app/' + id + '/api/');
-    if (r.ok) {
-      const listing = await r.json();
-      if (Array.isArray(listing)) apiFiles = listing;
-      else if (listing.files) apiFiles = listing.files;
-    }
+    const mr = await fetch('/app/' + encodeURIComponent(id) + '/manifest.json');
+    if (mr.ok) manifest = await mr.json();
   } catch {}
 
-  html += '<div class="card"><div class="card-title">Dateien</div>';
-  html += '<div class="file-item' + (selectedFile === id + '/index.html' ? ' active' : '') + '" onclick="previewFile(\'' + esc(id) + '\', \'index.html\', \'static\')">' +
-    '<span class="file-type">HTML</span><span class="file-name">index.html</span></div>';
-  html += '<div class="file-item' + (selectedFile === id + '/manifest.json' ? ' active' : '') + '" onclick="previewFile(\'' + esc(id) + '\', \'manifest.json\', \'static\')">' +
-    '<span class="file-type">JSON</span><span class="file-name">manifest.json</span></div>';
+  const info = manifest || app;
+  let html = '<div class="detail-header">'
+    + '<div class="detail-name">' + esc(info.name || id) + '</div>'
+    + '<div class="detail-desc">' + esc(info.description || '') + '</div>'
+    + '</div>';
 
-  apiFiles.forEach(f => {
-    const fname = typeof f === 'string' ? f : f.name || f;
-    html += '<div class="file-item' + (selectedFile === id + '/api/' + fname ? ' active' : '') + '" onclick="previewFile(\'' + esc(id) + '\', \'' + esc(fname) + '\', \'api\')">' +
-      '<span class="file-type" style="color:var(--lila);background:rgba(168,85,247,.1)">DATA</span><span class="file-name">' + esc(fname) + '</span></div>';
-  });
-
+  // Info card
+  html += '<div class="card"><div class="card-title">Info</div>';
+  html += row('ID', id);
+  html += row('Name', info.name || '--');
+  html += row('Icon', info.icon || '--');
+  html += row('Farbe', info.color || '--');
+  html += row('Pfad', 'apps/' + id + '/');
   html += '</div>';
 
-  // Open button
-  html += '<div style="margin-top:16px"><a href="/app/' + esc(app.id) + '" target="_blank" style="display:inline-block;background:var(--teal);color:var(--bg);padding:6px 16px;border-radius:4px;font:600 11px var(--font);text-decoration:none">App oeffnen</a></div>';
+  // Files card
+  const dataFiles = (manifest && manifest.dataFiles) ? manifest.dataFiles : (app.dataFiles || []);
+  html += '<div class="card"><div class="card-title">Dateien</div>';
+  html += fileItem(id, 'index.html', 'HTML', 'html');
+  html += fileItem(id, 'manifest.json', 'JSON', 'manifest');
+  dataFiles.forEach(f => {
+    const fname = f.endsWith('.json') ? f : f + '.json';
+    html += fileItem(id, fname, 'DATA', 'api');
+  });
+  html += '</div>';
+
+  html += '<div style="margin-top:16px">'
+    + '<a href="/app/' + esc(id) + '" target="_blank" style="display:inline-block;background:var(--teal);color:var(--bg);padding:6px 16px;border-radius:4px;font:600 11px var(--font);text-decoration:none">App öffnen ↗</a>'
+    + '</div>';
 
   detail.innerHTML = html;
 }
 
-async function previewFile(appId, filename, type) {
-  selectedFile = appId + (type === 'api' ? '/api/' : '/') + filename;
-  document.getElementById('previewFilename').textContent = filename;
-  document.getElementById('previewEmpty').style.display = 'none';
-  document.getElementById('previewContent').style.display = 'none';
+function row(label, value) {
+  return '<div class="info-row"><span class="info-label">' + esc(label) + '</span><span class="info-value">' + esc(value) + '</span></div>';
+}
 
-  // Show loading state
+function fileItem(id, filename, typeLabel, type) {
+  const activeClass = (selectedFile === id + '/' + filename) ? ' active' : '';
+  const style = type === 'api' ? ' style="color:var(--lila);background:rgba(168,85,247,.1)"' : '';
+  return '<div class="file-item' + activeClass + '" onclick="previewFile(' + JSON.stringify(id) + ',' + JSON.stringify(filename) + ',' + JSON.stringify(type) + ')">'
+    + '<span class="file-type"' + style + '>' + typeLabel + '</span>'
+    + '<span class="file-name">' + esc(filename) + '</span>'
+    + '</div>';
+}
+
+async function previewFile(appId, filename, type) {
+  selectedFile = appId + '/' + filename;
+
+  document.getElementById('previewFilename').textContent = filename;
   const empty = document.getElementById('previewEmpty');
   empty.textContent = 'Lade...';
   empty.style.display = 'flex';
+  document.getElementById('previewContent').style.display = 'none';
+  document.getElementById('previewRender').style.display = 'none';
+
+  // Refresh active states in detail panel
+  document.querySelectorAll('.file-item').forEach(el => {
+    el.classList.toggle('active', el.onclick && el.onclick.toString().includes(JSON.stringify(filename)));
+  });
 
   try {
-    let url, text;
-    if (filename === 'manifest.json') {
-      // Manifest via registry API
-      const reg = await fetch('/api/app-registry');
-      const data = await reg.json();
-      const appList = data.apps || data;
-      const appEntry = (Array.isArray(appList) ? appList : Object.values(appList)).find(a => a.id === appId);
-      text = JSON.stringify(appEntry || {}, null, 2);
-    } else if (filename === 'index.html') {
-      url = '/app/' + appId + '/';
-      const r = await fetch(url);
+    let text;
+    if (type === 'manifest') {
+      // Fetch manifest.json directly as static file
+      const r = await fetch('/app/' + encodeURIComponent(appId) + '/manifest.json');
+      if (r.ok) {
+        text = await r.text();
+      } else {
+        // Fallback: use data from apps list
+        const a = apps.find(x => x.id === appId);
+        text = JSON.stringify(a || {id: appId}, null, 2);
+      }
+    } else if (type === 'html') {
+      // Fetch raw HTML — use the direct file endpoint (no trailing slash to avoid redirect issues)
+      const r = await fetch('/app/' + encodeURIComponent(appId));
       text = await r.text();
     } else {
-      // API data file
-      url = '/app/' + appId + '/api/' + filename.replace(/\.json$/, '');
-      const r = await fetch(url);
+      // API data file — strip .json suffix for the API endpoint
+      const key = filename.replace(/\.json$/, '');
+      const r = await fetch('/app/' + encodeURIComponent(appId) + '/api/' + key);
       text = await r.text();
     }
 
-    if (!text) throw new Error('Leere Antwort');
-    // Try to pretty-print JSON
+    if (!text && text !== '{}') throw new Error('Leere Antwort');
+    currentRawText = text;
+    currentFilename = filename;
+
+    const isRenderable = filename.endsWith('.html') || filename.endsWith('.md');
+    document.getElementById('viewToggle').style.display = isRenderable ? 'flex' : 'none';
+    if (!isRenderable) currentView = 'code';
+
+    // Pretty-print JSON
     let display = text;
-    try { display = JSON.stringify(JSON.parse(text), null, 2); } catch {}
+    if (filename.endsWith('.json')) {
+      try { display = JSON.stringify(JSON.parse(text), null, 2); } catch {}
+    }
 
     document.getElementById('previewPre').textContent = display;
     empty.style.display = 'none';
-    document.getElementById('previewContent').style.display = 'block';
+    document.getElementById('btnCode').classList.toggle('active', currentView === 'code');
+    document.getElementById('btnRender').classList.toggle('active', currentView === 'render');
 
-    // Update active class on file items without full re-render
-    document.querySelectorAll('.file-item').forEach(el => {
-      el.classList.toggle('active', el.getAttribute('onclick') && el.getAttribute('onclick').includes(filename));
-    });
-  } catch (e) {
-    empty.textContent = 'Fehler beim Laden: ' + e.message;
+    if (currentView === 'render' && isRenderable) {
+      document.getElementById('previewRender').style.display = 'flex';
+      renderInIframe(text, filename);
+    } else {
+      document.getElementById('previewContent').style.display = 'block';
+    }
+  } catch(e) {
+    empty.textContent = 'Fehler: ' + e.message;
     empty.style.display = 'flex';
   }
 }
 
-function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+if (typeof PulseOS !== 'undefined') {
+  PulseOS.onDataChanged(init);
+}
 
 init();
 </script>

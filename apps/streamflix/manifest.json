@@ -1,0 +1,14 @@
+{
+  "name": "StreamFlix",
+  "icon": "▶",
+  "color": "#e50914",
+  "description": "Netflix-Style YouTube Trending – automatisch die populärsten Videos ohne Suche",
+  "inputs": [
+    { "id": "category", "desc": "Kategorie/Region für Trending-Videos setzen" }
+  ],
+  "outputs": [
+    { "id": "selected-video", "desc": "Ausgewähltes Video (Titel, URL, Thumbnail)" }
+  ],
+  "dataFiles": ["state", "profile"],
+  "pulseSubscriptions": []
+}

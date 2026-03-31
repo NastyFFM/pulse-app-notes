@@ -128,7 +128,11 @@
       "installed": true,
       "position": 9,
       "visibility": "unlisted",
-      "allowedUsers": []
+      "allowedUsers": [],
+      "template": "cloudlfare",
+      "stacks": [
+        "next.js cloudflare"
+      ]
     },
     {
       "id": "podcast",
@@ -172,7 +176,11 @@
       "installed": true,
       "position": 13,
       "visibility": "private",
-      "allowedUsers": []
+      "allowedUsers": [],
+      "template": "vercel",
+      "stacks": [
+        "vercel"
+      ]
     },
     {
       "id": "blockblast",
@@ -210,12 +218,15 @@
       "source": "https://github.com/NastyFFM/pulse-app-habit-tracker",
       "publishedAt": "2026-03-29T12:11:17.174Z",
       "railwayProjectId": "f8193a3f-64df-4441-bef6-c436079ac452",
-      "deployedAt": "2026-03-30T15:30:35.489Z",
-      "railwayUrl": "https://pulse-app-habit-tracker-production.up.railway.app",
+      "deployedAt": "2026-03-30T22:14:08.662Z",
+      "railwayUrl": "railway.app",
       "template": "nextjs-railway",
       "stacks": [
         "railway"
-      ]
+      ],
+      "deployUrl": "railway.app",
+      "deployDashboardUrl": "https://railway.com/project/f8193a3f-64df-4441-bef6-c436079ac452",
+      "deployProvider": "railway"
     },
     {
       "id": "asteroids",
@@ -223,11 +234,20 @@
       "icon": "☄️",
       "color": "#000814",
       "description": "Neon Asteroids mit Glow-Effekten und Partikel-Explosionen",
-      "installed": false,
+      "installed": true,
       "created": true,
       "position": 21,
       "visibility": "private",
-      "allowedUsers": []
+      "allowedUsers": [],
+      "source": "https://github.com/NastyFFM/pulse-app-asteroids",
+      "publishedAt": "2026-03-30T16:33:41.357Z",
+      "template": "vercel",
+      "stacks": [
+        "vercel"
+      ],
+      "vercelUrl": "https://asteroids-five-alpha.vercel.app",
+      "deployedAt": "2026-03-30T19:33:29.797Z",
+      "vercelTeam": "nastyffms-projects"
     },
     {
       "id": "ein-mobile-first3d-gameboy-easyjet-plausible-but-stundung-3d-graphics",
@@ -252,9 +272,18 @@
       "allowedUsers": [],
       "source": "https://github.com/NastyFFM/pulse-app-voidrunner",
       "publishedAt": "2026-03-29T16:01:46.658Z",
-      "railwayProjectId": "9a070a50-effa-49d5-b9a2-6f03575671e0",
+      "template": "vercel",
+      "stacks": [
+        "vercel"
+      ],
+      "railwayProjectId": "7d6adbb4-b83c-4f17-8d31-1f34d2b21679",
       "railwayUrl": "https://pulse-app-voidrunner-production.up.railway.app",
-      "deployedAt": "2026-03-30T16:12:05.709Z"
+      "deployedAt": "2026-03-30T22:14:25.108Z",
+      "vercelUrl": "https://voidrunner-wheat.vercel.app",
+      "vercelTeam": "nastyffms-projects",
+      "deployUrl": "https://voidrunner-wheat.vercel.app",
+      "deployDashboardUrl": "https://vercel.com/nastyffms-projects/voidrunner",
+      "deployProvider": "vercel"
     },
     {
       "id": "neonstrike",
@@ -322,7 +351,12 @@
       "created": true,
       "position": 28,
       "visibility": "private",
-      "allowedUsers": []
+      "allowedUsers": [],
+      "source": "https://github.com/NastyFFM/pulse-app-fitness",
+      "publishedAt": "2026-03-30T16:38:24.641Z",
+      "railwayProjectId": "ea421f09-762e-4f64-9ac2-3c5818f2698d",
+      "railwayUrl": "https://pulse-app-fitness-production.up.railway.app",
+      "deployedAt": "2026-03-30T16:54:04.915Z"
     },
     {
       "id": "pomodoro",
@@ -336,7 +370,10 @@
       "visibility": "private",
       "allowedUsers": [],
       "source": "https://github.com/NastyFFM/pulse-app-pomodoro",
-      "publishedAt": "2026-03-29T10:36:35.806Z"
+      "publishedAt": "2026-03-29T10:36:35.806Z",
+      "railwayProjectId": "696f4468-f128-41e7-b076-df33c278a150",
+      "railwayUrl": "https://pulse-app-pomodoro-production.up.railway.app",
+      "deployedAt": "2026-03-30T17:12:50.361Z"
     },
     {
       "id": "graph-morning-briefing",
@@ -375,6 +412,64 @@
       "railwayProjectId": "b4dbd9b6-7109-46e6-8d19-67e0eb6808c8",
       "railwayUrl": "https://pulse-app-countdown-production.up.railway.app",
       "deployedAt": "2026-03-30T16:17:41.021Z"
+    },
+    {
+      "id": "clock",
+      "name": "Analog Clock",
+      "icon": "🕐",
+      "color": "#1a2a3d",
+      "description": "Analoge Uhr mit digitalem Display",
+      "installed": true,
+      "source": "https://github.com/NastyFFM/pulse-app-clock",
+      "installedAt": "2026-03-30T17:13:28.069Z",
+      "position": 32,
+      "template": "vercel",
+      "stacks": [
+        "vercel"
+      ],
+      "railwayProjectId": "92bf946c-c334-4e72-94c7-69995272e22b",
+      "railwayUrl": "https://pulse-app-clock-production.up.railway.app",
+      "deployedAt": "2026-03-30T17:14:07.037Z"
+    },
+    {
+      "id": "youtube-cinema",
+      "name": "YouTube Cinema",
+      "icon": "🎬",
+      "color": "#E50914",
+      "description": "Netflix-Style Browser für populäre YouTube Videos — automatisch kuratiert, keine Suche nötig",
+      "installed": true,
+      "created": true,
+      "position": 33
+    },
+    {
+      "id": "streamflix",
+      "name": "StreamFlix",
+      "icon": "▶",
+      "color": "#e50914",
+      "description": "Netflix-Style YouTube Trending – automatisch die populärsten Videos ohne Suche",
+      "installed": true,
+      "created": true,
+      "position": 34,
+      "visibility": "private",
+      "allowedUsers": [],
+      "template": "frontend",
+      "stacks": [],
+      "source": "https://github.com/NastyFFM/pulse-app-streamflix",
+      "publishedAt": "2026-03-30T19:59:21.346Z",
+      "deployUrl": "https://streamflix.netlify.app",
+      "deployDashboardUrl": "https://app.netlify.com",
+      "deployProvider": "netlify",
+      "deployedAt": "2026-03-30T22:26:25.466Z"
+    },
+    {
+      "id": "bookmarks",
+      "name": "Bookmarks",
+      "icon": "🔖",
+      "color": "#6366f1",
+      "description": "Links sammeln mit Tags, Suche und Kategorien",
+      "installed": true,
+      "created": true,
+      "position": 35
     }
   ]
 }

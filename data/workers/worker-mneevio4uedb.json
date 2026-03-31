@@ -1,0 +1,24 @@
+{
+  "id": "worker-mneevio4uedb",
+  "task": "Modifiziere die App \"streamflix\": es stimmt noch was mit dem header nicht: wennich eine suche mache sehe ich das sich der header ändert. die anzahl der vorgestellten filme hat sich geändert  aber sofort wird der start hero geladen. ausserdem  zeigt der header nur ein und dasselbe bild. nie die neuen und anderen",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 51464,
+  "progress": "Suchergebnisse.\n\n3. **clearSearch** (`clearSearch`): Auch beim Schließen der Suche wird `renderNavbarThumbs()` aufgerufen, damit die Header-Bilder wieder auf die Trending-Videos zurückgesetzt werden.",
+  "log": [
+    {
+      "time": "2026-03-31T09:25:15.460Z",
+      "type": "start",
+      "text": "Worker gestartet"
+    },
+    {
+      "time": "2026-03-31T09:26:00.000Z",
+      "type": "done",
+      "text": "3 Bugs gefixt: heroTimer wird bei Suche sofort gestoppt, Navbar-Thumbs werden nach Suche und clearSearch aktualisiert"
+    }
+  ],
+  "result": "3 Fixes in doSearch/doSearchQuery/clearSearch: (1) clearTimeout(heroTimer) sofort wenn Suche startet, damit der alte Timer nicht den Hero zurücksetzt. (2) renderNavbarThumbs() nach Suchergebnissen aufgerufen damit die Header-Bilder die Suchergebnisse zeigen. (3) renderNavbarThumbs() auch in clearSearch() aufgerufen.",
+  "startedAt": "2026-03-31T09:25:15.460Z",
+  "finishedAt": "2026-03-31T09:26:00.000Z",
+  "createdBy": "user"
+}

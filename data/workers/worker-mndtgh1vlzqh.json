@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndtgh1vlzqh",
+  "task": "Ändere den Titel zu TESTXYZ",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 20986,
+  "progress": "Fertig",
+  "log": [
+    {
+      "time": "2026-03-30T23:25:41.587Z",
+      "type": "start",
+      "text": "Worker gestartet: Ändere den Titel zu TESTXYZ"
+    },
+    {
+      "time": "2026-03-31T00:00:00.000Z",
+      "type": "done",
+      "text": "Titel in apps/todo/index.html auf TESTXYZ geändert"
+    }
+  ],
+  "result": "Titel der Todo-App auf TESTXYZ geändert.",
+  "startedAt": "2026-03-30T23:25:41.587Z",
+  "finishedAt": "2026-03-31T00:00:00.000Z",
+  "createdBy": "user"
+}

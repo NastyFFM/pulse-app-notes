@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndzvw6gl7pc",
+  "task": "Ändere den Titel zu AUTO_RELOAD_TEST",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 33199,
+  "progress": "Fertig",
+  "log": [
+    {
+      "time": "2026-03-31T02:25:38.728Z",
+      "type": "start",
+      "text": "Worker gestartet: Ändere den Titel zu AUTO_RELOAD_TEST"
+    },
+    {
+      "time": "2026-03-31T02:25:45.000Z",
+      "type": "done",
+      "text": "Titel in apps/notes/index.html auf AUTO_RELOAD_TEST geändert"
+    }
+  ],
+  "result": "Titel erfolgreich auf AUTO_RELOAD_TEST gesetzt",
+  "startedAt": "2026-03-31T02:25:38.728Z",
+  "finishedAt": "2026-03-31T02:25:45.000Z",
+  "createdBy": "user"
+}

@@ -1,0 +1,10 @@
+{
+  "name": "Bookmarks",
+  "icon": "🔖",
+  "color": "#f59e0b",
+  "description": "Links sammeln mit Tags, Suche und Kategorien",
+  "inputs": [{"id": "add-bookmark", "desc": "URL + optionaler Titel/Tags als Bookmark speichern"}],
+  "outputs": [{"id": "bookmark", "desc": "Gespeicherter Bookmark (url, title, tags)"}],
+  "dataFiles": ["bookmarks"],
+  "pulseSubscriptions": []
+}

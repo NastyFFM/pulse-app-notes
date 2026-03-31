@@ -1,0 +1,24 @@
+{
+  "id": "worker-mnduqkz5f8ig",
+  "task": "Modifiziere die App \"streamflix\": die hero grafik stimmt nicht. überprüfe selbst solange bis sie zu sehen sind und nicht nur kurz ein und ausblenden",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 25557,
+  "progress": "n, dann Transitions per `requestAnimationFrame` wiederherstellen → Hero erscheint sofort sichtbar ohne Blinken\n- **Folgerender** (beim Weiterschalten): weiterhin Fade-Out → 350ms → Fade-In wie bisher",
+  "log": [
+    {
+      "time": "2026-03-31T00:01:32.849Z",
+      "type": "start",
+      "text": "Worker gestartet: Modifiziere die App \"streamflix\": die hero grafik stimmt nicht. überprüfe selbst"
+    },
+    {
+      "time": "2026-03-31T00:02:00.000Z",
+      "type": "fix",
+      "text": "Hero-Blink-Fix: Erstes Render ohne Fade-Out, Transition deaktiviert während initialem Content-Set, danach wiederhergestellt"
+    }
+  ],
+  "result": "Hero-Grafik-Fix: Beim ersten Laden wurde die hero-bg sofort auf opacity:0 gesetzt (350ms Delay), was zu einem kurzen Blinken führte. Jetzt: erstes Render setzt Content direkt (transition:none, opacity:1), danach werden Transitions wiederhergestellt. Folgerender nutzen weiterhin das Fade-Out/In.",
+  "startedAt": "2026-03-31T00:01:32.849Z",
+  "finishedAt": "2026-03-31T00:02:00.000Z",
+  "createdBy": "user"
+}

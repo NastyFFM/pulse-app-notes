@@ -1,0 +1,22 @@
+{
+  "bookmarks": [
+    {
+      "id": "1",
+      "url": "https://developer.mozilla.org",
+      "title": "MDN Web Docs",
+      "description": "Web-Dokumentation für HTML, CSS, JavaScript",
+      "tags": ["dev", "docs", "web"],
+      "favicon": "",
+      "createdAt": "2026-03-31T00:00:00.000Z"
+    },
+    {
+      "id": "2",
+      "url": "https://github.com",
+      "title": "GitHub",
+      "description": "Code-Hosting und Collaboration",
+      "tags": ["dev", "git"],
+      "favicon": "",
+      "createdAt": "2026-03-31T00:00:00.000Z"
+    }
+  ]
+}

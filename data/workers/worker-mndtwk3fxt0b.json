@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndtwk3fxt0b",
+  "task": "Modifiziere die App \"streamflix\": im header werden nicht die videos angeueigt. im hero müssen die videos angezeugt werden",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 22661,
+  "progress": "für maximale Kompatibilität (CSS-Background-Images können in iFrame-Kontexten blockiert sein).\n\n3. **Hero-Wechsel** — beim Wechsel zwischen Hero-Videos wird das Iframe zurückgesetzt und ausgeblendet.",
+  "log": [
+    {
+      "time": "2026-03-30T23:38:12.027Z",
+      "type": "start",
+      "text": "Worker gestartet: Modifiziere die App \"streamflix\": im header werden nicht die videos angeueigt. i"
+    },
+    {
+      "time": "2026-03-31T00:00:00.000Z",
+      "type": "done",
+      "text": "Hero-Thumbnails und Video-Wiedergabe gefixt: img-Tag für Thumbnails hinzugefügt, .hero-video.playing jetzt sichtbar"
+    }
+  ],
+  "result": "Streamflix hero gefixt: (1) .hero-video.playing nun display:block statt none — Video-Iframe wird beim Abspielen sichtbar. (2) <img id='heroThumb'> in hero-bg eingefügt — Thumbnails werden per img-Tag geladen (robuster als CSS background-image). (3) renderHero setzt beide Wege (backgroundImage + img.src) und setzt Video-Iframe zurück beim Wechsel.",
+  "startedAt": "2026-03-30T23:38:12.027Z",
+  "finishedAt": "2026-03-31T00:00:00.000Z",
+  "createdBy": "user"
+}

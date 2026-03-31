@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndt9mounuw7",
+  "task": "Modifiziere die App \"bookmarks\": mache alles rot",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 20021,
+  "progress": "Fertig",
+  "log": [
+    {
+      "time": "2026-03-30T23:20:22.302Z",
+      "type": "start",
+      "text": "Worker gestartet: Modifiziere die App \"bookmarks\": mache alles rot"
+    },
+    {
+      "time": "2026-03-31T00:00:00.000Z",
+      "type": "done",
+      "text": "Alle Farben auf Rot-Töne umgestellt"
+    }
+  ],
+  "result": "Bookmarks App komplett auf rotes Farbschema umgestellt: Hintergrund #2d0000, Karten #3d0000, Akzente #cc0000/#ff0000, Text #ffb3b3.",
+  "startedAt": "2026-03-30T23:20:22.302Z",
+  "finishedAt": "2026-03-31T00:00:00.000Z",
+  "createdBy": "user"
+}

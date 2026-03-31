@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndu02l52sz1",
+  "task": "Modifiziere die App \"streamflix\": es funktinoiert nicht mit dem video. wenn ich eine suchanfrage als kategorie speihcern will wird sie auch nicht in meine liste gespeichert",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 22972,
+  "progress": "setzt wird. Jetzt liest die Funktion als Fallback auch direkt aus dem Such-Input-Feld: `(searchQuery || document.getElementById('searchInput').value || '').trim()`. Dadurch wird das Speichern robust.",
+  "log": [
+    {
+      "time": "2026-03-30T23:40:55.961Z",
+      "type": "start",
+      "text": "Worker gestartet"
+    },
+    {
+      "time": "2026-03-31T00:00:00.000Z",
+      "type": "done",
+      "text": "Video und Kategorie-Speichern gefixt"
+    }
+  ],
+  "result": "Fix 1: Video-Wiedergabe - Hero-Play-Button öffnet jetzt das Modal statt einen verschachtelten YouTube-Iframe mit Autoplay zu laden (Autoplay ist in verschachtelten Iframes geblockt). Im Modal lädt der YouTube-Player ohne autoplay=1, sodass der User den Play-Button im Player selbst klickt. Fix 2: Kategorie speichern - saveCurrentSearchAsCategory liest jetzt als Fallback auch aus dem Such-Input-Feld, falls searchQuery nicht gesetzt ist.",
+  "startedAt": "2026-03-30T23:40:55.961Z",
+  "finishedAt": "2026-03-31T00:00:00.000Z",
+  "createdBy": "user"
+}

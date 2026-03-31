@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndp9p31nt5n",
+  "task": "Modifiziere die App \"streamflix\": es blitzen die bilder im header nur kurz auf und dann veschwinden sie wieder. das ist schlecht. sie sollen zu sehen sein bis das nächste angezeigt werden soll",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 8000,
+  "progress": "Fertig",
+  "log": [
+    {
+      "time": "2026-03-30T21:28:26.941Z",
+      "type": "start",
+      "text": "Worker gestartet"
+    },
+    {
+      "time": "2026-03-30T21:28:40.000Z",
+      "type": "done",
+      "text": "Hero-Bilder Crossfade-Bug gefixt: z-index von heroBgNext auf 1 gesetzt (war 0), JS-Transition-Logik korrigiert"
+    }
+  ],
+  "result": "Hero-Header-Bilder flackern nicht mehr. Fix: heroBgNext bekommt z-index:1 (liegt jetzt über heroBg), Crossfade blendet neues Bild ein, kopiert es dann in heroBg und versteckt heroBgNext – sauber ohne Flackern.",
+  "startedAt": "2026-03-30T21:28:26.941Z",
+  "finishedAt": "2026-03-30T21:28:40.000Z",
+  "createdBy": "user"
+}

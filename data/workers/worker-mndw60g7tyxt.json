@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndw60g7tyxt",
+  "task": "Ändere die Hintergrundfarbe des body zu #1a0a2e",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 29717,
+  "progress": "Fertig",
+  "log": [
+    {
+      "time": "2026-03-31T00:41:32.359Z",
+      "type": "start",
+      "text": "Worker gestartet: Ändere die Hintergrundfarbe des body zu #1a0a2e"
+    },
+    {
+      "time": "2026-03-31T00:41:45.000Z",
+      "type": "done",
+      "text": "Hintergrundfarbe des body auf #1a0a2e gesetzt"
+    }
+  ],
+  "result": "Hintergrundfarbe in apps/todo/index.html auf #1a0a2e geändert.",
+  "startedAt": "2026-03-31T00:41:32.359Z",
+  "finishedAt": "2026-03-31T00:41:45.000Z",
+  "createdBy": "user"
+}

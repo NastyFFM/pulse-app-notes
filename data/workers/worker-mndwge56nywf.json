@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndwge56nywf",
+  "task": "Ändere den Titel zu LIVETEST",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 30966,
+  "progress": "Fertig",
+  "log": [
+    {
+      "time": "2026-03-31T00:49:36.666Z",
+      "type": "start",
+      "text": "Worker gestartet: Ändere den Titel zu LIVETEST"
+    },
+    {
+      "time": "2026-03-31T00:49:45.000Z",
+      "type": "done",
+      "text": "Titel in apps/notes/index.html auf 'LIVETEST' geändert."
+    }
+  ],
+  "result": "Titel erfolgreich zu 'LIVETEST' geändert.",
+  "startedAt": "2026-03-31T00:49:36.666Z",
+  "finishedAt": "2026-03-31T00:49:45.000Z",
+  "createdBy": "user"
+}

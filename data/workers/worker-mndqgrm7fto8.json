@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndqgrm7fto8",
+  "task": "Modifiziere die App \"streamflix\": das bild wird eingeblendet und sofort wieder ausgeblendet und ist das nicht mehr sichtbar. da ist etwas völlig flasch",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 10872,
+  "progress": "l-URL gesetzt\n- Der Poster bleibt sichtbar mit dem Vorschaubild + Play-Button\n- Der iframe startet erst wenn der User den Play-Button klickt (`playModalVideo()`) — das war schon korrekt implementiert",
+  "log": [
+    {
+      "time": "2026-03-30T22:01:56.431Z",
+      "type": "start",
+      "text": "Worker gestartet"
+    },
+    {
+      "time": "2026-03-31T00:00:00.000Z",
+      "type": "fix",
+      "text": "Bug gefunden: openVideo() hat modalPoster sofort auf display:none gesetzt und modalPosterImg.src nie befüllt. Fix: Poster korrekt mit Thumbnail-URL anzeigen, iframe erst beim Play-Klick starten."
+    }
+  ],
+  "result": "Fix: Modal-Poster wird jetzt korrekt mit dem Video-Thumbnail angezeigt. openVideo() setzt nun posterImg.src auf die Thumbnail-URL und lässt den Poster sichtbar. Der iframe startet erst wenn der User auf den Play-Button klickt (playModalVideo).",
+  "startedAt": "2026-03-30T22:01:56.431Z",
+  "finishedAt": "2026-03-31T00:00:00.000Z",
+  "createdBy": "user"
+}

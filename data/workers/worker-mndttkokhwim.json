@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndttkokhwim",
+  "task": "Modifiziere die App \"bookmarks\": mache jetzt nochmal die grundfunktionen",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 22469,
+  "progress": "Starte...",
+  "log": [
+    {
+      "time": "2026-03-30T23:35:52.820Z",
+      "type": "start",
+      "text": "Worker gestartet: Modifiziere die App \"bookmarks\": mache jetzt nochmal die grundfunktionen"
+    },
+    {
+      "time": "2026-03-30T23:37:07.665Z",
+      "type": "done",
+      "text": "Worker beendet (Code 0)"
+    }
+  ],
+  "result": "Aufgabe abgeschlossen",
+  "startedAt": "2026-03-30T23:35:52.820Z",
+  "finishedAt": "2026-03-30T23:37:07.665Z",
+  "createdBy": "user"
+}

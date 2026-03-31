@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndojquro6t6",
+  "task": "Modifiziere die App \"streamflix\": es werden immer noch keine videos oben abgespielt. nur manhcmal die thumbnails gezeigt. Mache s simple. Spiele einfach das video ab",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 6292,
+  "progress": "Fertig",
+  "log": [
+    {
+      "time": "2026-03-30T21:08:16.179Z",
+      "type": "start",
+      "text": "Worker gestartet"
+    },
+    {
+      "time": "2026-03-30T21:08:30.000Z",
+      "type": "done",
+      "text": "openVideo() lädt jetzt direkt das YouTube-Embed ohne Poster-Umweg"
+    }
+  ],
+  "result": "Fix: openVideo() zeigt nicht mehr den Poster-Screen, sondern lädt das YouTube-Embed sofort mit autoplay=1.",
+  "startedAt": "2026-03-30T21:08:16.179Z",
+  "finishedAt": "2026-03-30T21:08:30.000Z",
+  "createdBy": "user"
+}

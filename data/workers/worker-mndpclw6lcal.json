@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndpclw6lcal",
+  "task": "Modifiziere die App \"streamflix\": es gibt nur ein hero image das gut angezeigt wird. und das schon siet immer. es ändert sich nichts muis der server neu gestartet werden?",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 8183,
+  "progress": "eroDots();\nstartHeroTimer(); // ← das fehlte\n```\n\nEinfach die StreamFlix-App im Browser **neu laden** (F5) – kein Server-Neustart erforderlich. Das Hero rotiert dann alle 8 Sekunden durch die Videos.",
+  "log": [
+    {
+      "time": "2026-03-30T21:30:42.774Z",
+      "type": "start",
+      "text": "Worker gestartet"
+    },
+    {
+      "time": "2026-03-30T21:31:30.000Z",
+      "type": "fix",
+      "text": "renderFallback() fehlte startHeroTimer() – Hero rotierte nie im Fallback-Modus"
+    }
+  ],
+  "result": "Fix: renderFallback() rief startHeroTimer() nicht auf. Wenn die Piped/Invidious API nicht erreichbar ist, wurden Fallback-Placeholder angezeigt aber der Timer nie gestartet – daher blieb das erste Hero-Bild stehen. Kein Server-Neustart nötig, einfach die App neu laden.",
+  "startedAt": "2026-03-30T21:30:42.774Z",
+  "finishedAt": "2026-03-30T21:31:30.000Z",
+  "createdBy": "user"
+}

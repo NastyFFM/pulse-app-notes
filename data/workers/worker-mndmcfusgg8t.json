@@ -1,0 +1,24 @@
+{
+  "id": "worker-mndmcfusgg8t",
+  "task": "Modifiziere die App \"streamflix\": es sagt : ⚠ API nicht erreichbar. https://pipedapi.kavin.rocks: Failed to fetch  Bitte überprüfe deine Internetverbindung. Du kannst es erneut versuchen oder Fallback-Inhalte laden.",
+  "status": "done",
+  "model": "sonnet",
+  "pid": 1265,
+  "progress": "alten**: Statt einer blockierenden Fehlermeldung werden Demo-Inhalte sofort geladen. Ein klickbares Banner zeigt dezent an dass die API nicht erreichbar ist und erlaubt manuelles Neu-Laden per Klick.",
+  "log": [
+    {
+      "time": "2026-03-30T20:06:36.100Z",
+      "type": "start",
+      "text": "Worker gestartet"
+    },
+    {
+      "time": "2026-03-30T20:07:10.000Z",
+      "type": "done",
+      "text": "Mehr Piped-Instanzen hinzugefügt (8 total). Fallback lädt nun sofort ohne blockierende Fehlermeldung – Demo-Modus mit klickbarem Hinweis-Banner."
+    }
+  ],
+  "result": "Streamflix: 4 zusätzliche Piped-API-Instanzen ergänzt. Bei API-Ausfall werden Fallback-Inhalte sofort geladen statt einer blockierenden Fehlermeldung – ein klickbares Banner ermöglicht manuelles Neu-Laden.",
+  "startedAt": "2026-03-30T20:06:36.100Z",
+  "finishedAt": "2026-03-30T20:07:10.000Z",
+  "createdBy": "user"
+}

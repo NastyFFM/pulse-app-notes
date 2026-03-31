@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bookmarks</title>
+<script src="/sdk.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:system-ui,-apple-system,sans-serif; background:#2d0000; color:#ffb3b3; padding:16px; min-height:100vh; }
+
+.header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.header h1 { font-size:18px; font-weight:600; flex:1; }
+.btn { background:#cc0000; color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px; }
+.btn:hover { opacity:0.85; }
+.btn-ghost { background:transparent; color:#ff6666; border:1px solid #660000; }
+.btn-ghost:hover { background:#3d0000; color:#ffb3b3; }
+
+.toolbar { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+.search-wrap { flex:1; min-width:160px; position:relative; }
+.search-wrap input { width:100%; padding:7px 12px 7px 32px; background:#3d0000; border:1px solid #660000; border-radius:6px; color:#ffb3b3; font-size:13px; }
+.search-wrap input:focus { outline:none; border-color:#ff0000; }
+.search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#ff6666; font-size:14px; pointer-events:none; }
+
+.filter-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; min-height:24px; }
+.tag-pill { padding:4px 10px; border-radius:20px; font-size:12px; cursor:pointer; background:#3d0000; border:1px solid #660000; color:#ff6666; transition:all .15s; }
+.tag-pill:hover, .tag-pill.active { background:#cc0000; color:#fff; border-color:#cc0000; }
+
+.count { font-size:12px; color:#ff6666; margin-bottom:10px; }
+.bookmarks-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:10px; }
+
+.bookmark-card { background:#3d0000; border:1px solid #660000; border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:8px; transition:border-color .15s; }
+.bookmark-card:hover { border-color:#ff0000; }
+.bookmark-top { display:flex; align-items:flex-start; gap:10px; }
+.favicon { width:28px; height:28px; border-radius:6px; background:#800000; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; overflow:hidden; color:#fff; }
+.favicon img { width:100%; height:100%; object-fit:contain; }
+.bookmark-title { font-size:14px; font-weight:600; flex:1; word-break:break-word; }
+.bookmark-title a { color:#ffb3b3; text-decoration:none; }
+.bookmark-title a:hover { color:#ff0000; }
+.bookmark-url { font-size:11px; color:#ff6666; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bookmark-desc { font-size:12px; color:#ff6666; line-height:1.5; }
+.bookmark-footer { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.tag { padding:2px 8px; border-radius:12px; font-size:11px; background:#2d0000; border:1px solid #660000; color:#ff6666; cursor:pointer; }
+.tag:hover { border-color:#ff0000; color:#ff0000; }
+.bookmark-actions { margin-left:auto; display:flex; gap:4px; opacity:0; transition:opacity .15s; }
+.bookmark-card:hover .bookmark-actions { opacity:1; }
+.action-btn { background:none; border:none; color:#ff6666; cursor:pointer; padding:4px 6px; border-radius:4px; font-size:13px; }
+.action-btn:hover { color:#ffb3b3; background:#2d0000; }
+.action-btn.del:hover { color:#ff0000; }
+
+.modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:100; align-items:center; justify-content:center; }
+.modal-backdrop.open { display:flex; }
+.modal { background:#3d0000; border:1px solid #660000; border-radius:10px; padding:20px; width:min(420px,90vw); }
+.modal h2 { font-size:16px; margin-bottom:16px; color:#ffb3b3; }
+.form-group { margin-bottom:12px; }
+.form-group label { display:block; font-size:12px; color:#ff6666; margin-bottom:4px; }
+.form-group input, .form-group textarea { width:100%; padding:8px 10px; background:#2d0000; border:1px solid #660000; border-radius:6px; color:#ffb3b3; font-size:13px; font-family:inherit; }
+.form-group input:focus, .form-group textarea:focus { outline:none; border-color:#ff0000; }
+.modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+.empty { text-align:center; color:#ff6666; padding:40px 20px; font-size:14px; grid-column:1/-1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔖 Bookmarks</h1>
+  <button class="btn" onclick="openModal()">+ Hinzufügen</button>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Suche nach Titel, URL, Tag..." oninput="renderAll()">
+  </div>
+</div>
+
+<div class="filter-tags" id="filterTags"></div>
+<div class="count" id="countLabel"></div>
+<div class="bookmarks-grid" id="bookmarksList"></div>
+
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeOnBackdrop(event)">
+  <div class="modal">
+    <h2 id="modalTitle">Bookmark hinzufügen</h2>
+    <div class="form-group">
+      <label>URL *</label>
+      <input type="url" id="fUrl" placeholder="https://..." oninput="autofillTitle()">
+    </div>
+    <div class="form-group">
+      <label>Titel *</label>
+      <input type="text" id="fTitle" placeholder="Seitentitel">
+    </div>
+    <div class="form-group">
+      <label>Beschreibung</label>
+      <textarea id="fDesc" rows="2" placeholder="Kurze Notiz..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Tags (kommagetrennt)</label>
+      <input type="text" id="fTags" placeholder="dev, design, tools">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Abbrechen</button>
+      <button class="btn" onclick="saveBookmark()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let bookmarks = [];
+let activeTag = null;
+let editId = null;
+
+async function loadData() {
+  try {
+    const res = await fetch('/app/bookmarks/api/bookmarks');
+    const data = await res.json();
+    bookmarks = Array.isArray(data) ? data : (data.bookmarks || []);
+  } catch { bookmarks = []; }
+  renderAll();
+}
+
+function getFaviconUrl(url) {
+  try {
+    const host = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${host}&sz=32`;
+  } catch { return null; }
+}
+
+function getDomainLetter(url) {
+  try { return new URL(url).hostname.replace('www.','')[0].toUpperCase(); }
+  catch { return '?'; }
+}
+
+function renderAll() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+
+  let filtered = bookmarks.filter(b => {
+    const matchTag = !activeTag || (b.tags || []).includes(activeTag);
+    const matchQ = !q || (b.title||'').toLowerCase().includes(q) || (b.url||'').toLowerCase().includes(q)
+      || (b.description||'').toLowerCase().includes(q)
+      || (b.tags||[]).some(t => t.toLowerCase().includes(q));
+    return matchTag && matchQ;
+  });
+
+  // Tag cloud
+  const allTags = [...new Set(bookmarks.flatMap(b => b.tags || []))].sort();
+  const tagEl = document.getElementById('filterTags');
+  if (allTags.length) {
+    tagEl.innerHTML = `<span class="tag-pill ${activeTag===null?'active':''}" onclick="setTag(null)">Alle</span>`
+      + allTags.map(t => `<span class="tag-pill ${activeTag===t?'active':''}" onclick="setTag('${escHtml(t)}')">${escHtml(t)}</span>`).join('');
+  } else {
+    tagEl.innerHTML = '';
+  }
+
+  document.getElementById('countLabel').textContent = `${filtered.length} Bookmark${filtered.length!==1?'s':''}`;
+
+  const list = document.getElementById('bookmarksList');
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">Keine Bookmarks gefunden.<br><small>Füge einen mit + Hinzufügen hinzu.</small></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(b => {
+    const faviconUrl = getFaviconUrl(b.url);
+    const letter = getDomainLetter(b.url);
+    const faviconHtml = faviconUrl
+      ? `<img src="${faviconUrl}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt=""><span style="display:none">${letter}</span>`
+      : letter;
+    const tagsHtml = (b.tags||[]).map(t => `<span class="tag" onclick="setTag('${escHtml(t)}')">${escHtml(t)}</span>`).join('');
+    return `<div class="bookmark-card">
+      <div class="bookmark-top">
+        <div class="favicon">${faviconHtml}</div>
+        <div style="flex:1;min-width:0">
+          <div class="bookmark-title"><a href="${escAttr(b.url)}" target="_blank" rel="noopener">${escHtml(b.title)}</a></div>
+          <div class="bookmark-url">${escHtml(b.url)}</div>
+        </div>
+        <div class="bookmark-actions">
+          <button class="action-btn" onclick="editBookmark('${b.id}')" title="Bearbeiten">✏️</button>
+          <button class="action-btn del" onclick="deleteBookmark('${b.id}')" title="Löschen">🗑️</button>
+        </div>
+      </div>
+      ${b.description ? `<div class="bookmark-desc">${escHtml(b.description)}</div>` : ''}
+      ${tagsHtml ? `<div class="bookmark-footer">${tagsHtml}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s) { return String(s||'').replace(/"/g,'&quot;'); }
+
+function setTag(tag) { activeTag = tag; renderAll(); }
+
+function openModal(id) {
+  editId = id || null;
+  if (id) {
+    const b = bookmarks.find(x => x.id === id);
+    if (!b) return;
+    document.getElementById('modalTitle').textContent = 'Bookmark bearbeiten';
+    document.getElementById('fUrl').value = b.url;
+    document.getElementById('fTitle').value = b.title;
+    document.getElementById('fDesc').value = b.description || '';
+    document.getElementById('fTags').value = (b.tags||[]).join(', ');
+  } else {
+    document.getElementById('modalTitle').textContent = 'Bookmark hinzufügen';
+    ['fUrl','fTitle','fDesc','fTags'].forEach(id => document.getElementById(id).value = '');
+  }
+  document.getElementById('modalBackdrop').classList.add('open');
+  setTimeout(() => document.getElementById('fUrl').focus(), 50);
+}
+
+function closeModal() { document.getElementById('modalBackdrop').classList.remove('open'); }
+function closeOnBackdrop(e) { if (e.target === document.getElementById('modalBackdrop')) closeModal(); }
+
+function autofillTitle() {
+  const url = document.getElementById('fUrl').value.trim();
+  const titleEl = document.getElementById('fTitle');
+  if (!url || titleEl.value) return;
+  try { titleEl.value = new URL(url).hostname.replace('www.',''); } catch {}
+}
+
+async function saveBookmark() {
+  const url = document.getElementById('fUrl').value.trim();
+  const title = document.getElementById('fTitle').value.trim();
+  if (!url || !title) { alert('URL und Titel sind Pflicht.'); return; }
+  const desc = document.getElementById('fDesc').value.trim();
+  const tags = document.getElementById('fTags').value.split(',').map(t => t.trim()).filter(Boolean);
+
+  if (editId) {
+    const b = bookmarks.find(x => x.id === editId);
+    if (b) Object.assign(b, { url, title, description: desc, tags, updatedAt: new Date().toISOString() });
+  } else {
+    bookmarks.unshift({ id: 'bm-' + Date.now(), url, title, description: desc, tags, createdAt: new Date().toISOString() });
+  }
+
+  await saveData();
+  closeModal();
+  renderAll();
+
+  if (window.PulseOS) PulseOS.emit('bookmark', { url, title, tags });
+}
+
+async function deleteBookmark(id) {
+  if (!confirm('Bookmark löschen?')) return;
+  bookmarks = bookmarks.filter(b => b.id !== id);
+  await saveData();
+  renderAll();
+}
+
+function editBookmark(id) { openModal(id); }
+
+async function saveData() {
+  await fetch('/app/bookmarks/api/bookmarks', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bookmarks })
+  });
+  try {
+    await fetch('/api/notify-change', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appId: 'bookmarks', file: 'bookmarks.json' })
+    });
+  } catch {}
+}
+
+if (window.PulseOS) {
+  PulseOS.onInput('add-bookmark', function(data) {
+    if (data && data.url) {
+      document.getElementById('fUrl').value = data.url;
+      document.getElementById('fTitle').value = data.title || '';
+      openModal();
+    }
+  });
+  PulseOS.onDataChanged(function() { loadData(); });
+}
+
+loadData();
+</script>
+</body>
+</html>
