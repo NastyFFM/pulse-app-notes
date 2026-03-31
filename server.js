@@ -2537,12 +2537,37 @@ if (window.PulseOS) {
           id: stack.id, name: stack.name, icon: stack.icon || '📦',
           description: stack.description || '',
           requiredEnvVars: stack.envVars || [],
-          onboarding: (stack.envVars || []).map(v => ({ type: 'paste-token', label: v + ' eingeben', envVar: v, placeholder: v })),
+          cliTool: stack.cliTool || null,
+          cliBinary: stack.cliTool ? stack.cliTool.split('/').pop() : null,
+          onboarding: stack.onboarding || (stack.envVars || []).map(v => ({ step: 'paste-token', title: v + ' eingeben', envVar: v, placeholder: v })),
           deploy: stack.deploy || {}
         };
         data.stacks.push(newStack);
         fs.writeFileSync(stacksFile, JSON.stringify(data, null, 2));
         jsonRes(res, { ok: true, stack: newStack });
+      } catch (e) { jsonRes(res, { error: e.message }, 500); }
+    });
+  }
+  // DELETE + PUT /api/stacks/:id
+  const stackMatch = url.match(/^\/api\/stacks\/([a-z0-9-]+)$/);
+  if (stackMatch && req.method === 'DELETE') {
+    const stacksFile = path.join(ROOT, 'data', 'tech-stacks.json');
+    const data = safeReadJSON(stacksFile, '{"stacks":[]}');
+    data.stacks = (data.stacks || []).filter(s => s.id !== stackMatch[1]);
+    fs.writeFileSync(stacksFile, JSON.stringify(data, null, 2));
+    return jsonRes(res, { ok: true });
+  }
+  if (stackMatch && req.method === 'PUT') {
+    return readBody(req, b => {
+      try {
+        const update = JSON.parse(b);
+        const stacksFile = path.join(ROOT, 'data', 'tech-stacks.json');
+        const data = safeReadJSON(stacksFile, '{"stacks":[]}');
+        const idx = (data.stacks || []).findIndex(s => s.id === stackMatch[1]);
+        if (idx < 0) return jsonRes(res, { error: 'Stack not found' }, 404);
+        Object.assign(data.stacks[idx], update);
+        fs.writeFileSync(stacksFile, JSON.stringify(data, null, 2));
+        jsonRes(res, { ok: true, stack: data.stacks[idx] });
       } catch (e) { jsonRes(res, { error: e.message }, 500); }
     });
   }
@@ -8281,6 +8306,20 @@ DATEN-API:
 - Lesen: fetch('/app/<name>/api/<dataFile>').then(r => r.json())
 - Schreiben: fetch('/app/<name>/api/<dataFile>', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)})
 
+STACK & TEMPLATE MANAGEMENT (via curl oder fetch im Browser):
+- GET /api/stacks — Alle Stacks auflisten
+- GET /api/stacks/status — Status aller Stacks (ready/not ready)
+- POST /api/stacks — Neuen Stack { name, icon, envVars[], onboarding[] }
+- PUT /api/stacks/:id — Stack aktualisieren
+- DELETE /api/stacks/:id — Stack loeschen
+- POST /api/stacks/save-key — Env-Var speichern { envVar, value }
+- GET /api/templates — Alle Templates
+- POST /api/templates — Neues Template { name, icon, stacks[], instructions }
+- PUT /api/templates/:id — Template aktualisieren (stacks hinzufuegen/entfernen)
+- DELETE /api/templates/:id — Template loeschen (nicht builtin)
+Nutze MCP Tools (Railway etc.) wenn verfuegbar, CLI als Fallback.
+Wenn User Service einrichten will: pruefe /api/stacks/status zuerst.
+
 CSS-VARIABLEN (nutze diese statt hardcodierte Farben):
 var(--bg), var(--bg-card), var(--bg-card-hover), var(--text), var(--text-dim),
 var(--teal), var(--border), var(--accent)
@@ -8299,10 +8338,13 @@ STARTE JETZT mit der Aufgabe.`;
 
         const claudePath = process.env.CLAUDE_PATH || '/Users/chris.pohl/.bun/bin/claude';
         const modelFlag = workerData.model || 'sonnet'; // claude CLI accepts: haiku, sonnet, opus
+        const mcpConfig = path.join(ROOT, '.mcp.json');
+        const mcpFlags = fs.existsSync(mcpConfig) ? ['--mcp-config', mcpConfig] : [];
         const proc = spawn(claudePath, [
           '-p',
           '--model', modelFlag,
           '--allowedTools', 'Bash,Read,Write,Edit,Glob,Grep',
+          ...mcpFlags,
           '--max-turns', '50',
           workerPrompt
         ], {

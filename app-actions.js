@@ -259,8 +259,8 @@ window.AppActions = {
     // 1. Determine which deploy stack this app needs
     let appData;
     try { const r = await fetch('/api/apps'); const d = await r.json(); appData = (d.apps || []).find(a => a.id === appId); } catch {}
-    const requiredStacks = appData?.stacks?.length ? appData.stacks : ['railway']; // default: railway
-    const deployStack = requiredStacks.find(s => s === 'railway' || s === 'vercel') || 'railway';
+    const requiredStacks = appData?.stacks?.length ? appData.stacks : ['railway'];
+    const deployStack = requiredStacks[0] || 'railway'; // Use first stack from template
 
     // 2. Check if required stack is ready
     let stackStatus;
@@ -302,9 +302,19 @@ window.AppActions = {
       }
     }
 
-    const steps = (stack.onboarding || []).filter(s => !s.auto); // non-auto steps for progress
+    const steps = (stack.onboarding || []).filter(s => !s.auto);
     const totalSteps = steps.length;
     let currentStep = 0;
+
+    if (!stack.onboarding || stack.onboarding.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:12px;">' +
+        '<div style="font-size:24px;margin-bottom:8px;">' + (stack.icon || '📦') + '</div>' +
+        '<div style="font-weight:600;margin-bottom:8px;">' + (stack.name || stackId) + '</div>' +
+        '<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Dieser Service hat noch kein Onboarding.<br>Nutze den App-Editor Chat um ihn einzurichten.</div>' +
+        '<button onclick="this.closest(\'#onboarding-wizard\')?.remove()" style="padding:6px 16px;border-radius:6px;border:1px solid var(--border);background:var(--teal);color:var(--bg);cursor:pointer;">OK</button>' +
+        '</div>';
+      return;
+    }
 
     for (const step of (stack.onboarding || [])) {
       // Auto CLI install — no UI needed
@@ -577,20 +587,38 @@ window.AppActions = {
       const action = ready
         ? '<span class="pub-stack-ready">Bereit</span>'
         : '<button class="pub-btn small" onclick="AppActions.onboardStack(\'' + sId.replace(/'/g,'&#39;') + '\', this)">Einrichten</button>';
-      return '<div class="pub-stack-row">' + icon + ' <span>' + label + '</span>' + action + '</div>';
+      return '<div class="pub-stack-row">' + icon + ' <span>' + label + '</span>' + action +
+        ' <button class="pub-btn small danger" onclick="AppActions._uiRemoveStack(\'' + sId.replace(/'/g,'&#39;') + '\')" title="Entfernen" style="padding:2px 6px;">×</button></div>';
     }).join('');
-    el.innerHTML += '<button class="pub-btn small" onclick="AppActions._uiCreateStack()" style="margin-top:6px;">+ Neuen Stack</button>';
+    el.innerHTML += '<button class="pub-btn small" onclick="AppActions._uiCreateStack()" style="margin-top:6px;">+ Service hinzufuegen</button>';
+  },
+
+  async _uiRemoveStack(stackId) {
+    const tplSelect = document.getElementById('pub-tpl-select');
+    if (!tplSelect) return;
+    const tplId = tplSelect.value;
+    try {
+      const tplR = await fetch('/api/templates').then(r => r.json());
+      const tpl = (tplR.templates || []).find(t => t.id === tplId);
+      if (tpl) {
+        const stacks = (tpl.stacks || []).filter(s => s !== stackId);
+        await fetch('/api/templates/' + tplId, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stacks })
+        });
+      }
+    } catch (e) { console.error('[stack] remove failed:', e); }
+    const overlay = document.getElementById('pub-panel-overlay');
+    if (overlay && overlay.dataset.appid) this.showPublishingPanel(overlay.dataset.appid);
   },
 
   async _uiCreateStack() {
-    const name = prompt('Neuen Tech-Stack erstellen:\n\nName (z.B. "Firebase", "PlanetScale"):');
+    const name = prompt('Service Name (z.B. "Firebase", "PlanetScale", "MongoDB"):');
     if (!name) return;
-    const envVars = prompt('Benoetigte Env-Variablen (kommasepariert):\nz.B. FIREBASE_API_KEY,FIREBASE_PROJECT_ID') || '';
-    const icon = prompt('Icon (Emoji):', '📦') || '📦';
     try {
       const r = await fetch('/api/stacks', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, icon, envVars: envVars ? envVars.split(',').map(s => s.trim()).filter(Boolean) : [] })
+        body: JSON.stringify({ name, icon: '📦', envVars: [] })
       });
       const d = await r.json();
       if (!d.ok) { alert('Fehler: ' + (d.error || 'Unbekannt')); return; }
