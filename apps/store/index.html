@@ -281,7 +281,8 @@ async function renderMyApps(el) {
       actions += '<button class="action-btn danger" onclick="AppActions._uiDeleteRemote(\'' + esc(a.id) + '\', \'' + esc(a.name) + '\')">Von GitHub loeschen</button>';
     } else {
       // Use shared AppActions buttons
-      actions = AppActions.renderButtons(a, { onOpen: 'openAppInPulse', showDeploy: true });
+      actions = '<button class="action-btn" onclick="openAppInPulse(\'' + esc(a.id) + '\')">Oeffnen</button>' +
+        '<button class="action-btn" onclick="openPublishPanel(\'' + esc(a.id) + '\')">🚀 Publish</button>';
     }
 
     html += '<div class="app-card"><div class="app-icon" style="background:' + esc(a.color || '#1a2a3a') + ';">' + esc(a.icon || '?') + '</div>' +
@@ -377,6 +378,10 @@ async function setupStack(stackId, btn) {
 
 function openAppInPulse(appId) {
   window.parent.postMessage({ type: 'open-app', appId }, '*');
+}
+
+function openPublishPanel(appId) {
+  window.parent.postMessage({ type: 'show-publish-panel', appId: appId }, '*');
 }
 
 function appCard(app) {

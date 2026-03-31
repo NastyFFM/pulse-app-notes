@@ -1948,16 +1948,31 @@ const server = http.createServer(async (req, res) => {
         const appDir = path.join(USERDATA, 'apps', appId);
 
         if (fs.existsSync(appDir) || fs.existsSync(path.join(ROOT, 'apps', appId))) {
-          // If app exists but is hidden → just unhide it
           const appsData = safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}');
           const existingApp = (appsData.apps || []).find(a => a.id === appId);
           if (existingApp && existingApp.installed === false) {
+            // Hidden → unhide
             existingApp.installed = true;
             fs.writeFileSync(path.join(ROOT, 'data', 'apps.json'), JSON.stringify(appsData, null, 2));
             broadcast('dashboard', { type: 'app-unhidden', appId });
             return jsonRes(res, { ok: true, appId, name: existingApp.name || appId, reinstalled: true });
           }
-          return jsonRes(res, { ok: false, error: 'App already exists: ' + appId });
+          if (existingApp) {
+            return jsonRes(res, { ok: false, error: 'App already exists: ' + appId });
+          }
+          // Ordner existiert aber kein apps.json Eintrag → neu registrieren
+          const actualDir = fs.existsSync(appDir) ? appDir : path.join(ROOT, 'apps', appId);
+          let manifest = { name: appId, icon: appId[0].toUpperCase(), color: '#333', description: '' };
+          const mf = path.join(actualDir, 'manifest.json');
+          if (fs.existsSync(mf)) { try { manifest = { ...manifest, ...JSON.parse(fs.readFileSync(mf, 'utf8')) }; } catch {} }
+          const repoPath = repoUrl.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/$/, '');
+          const apps = appsData.apps || [];
+          apps.push({ id: appId, name: manifest.name, icon: manifest.icon, color: manifest.color, description: manifest.description, installed: true, source: 'https://github.com/' + repoPath, installedAt: new Date().toISOString(), position: apps.length });
+          if (appsData.apps) appsData.apps = apps;
+          fs.writeFileSync(path.join(ROOT, 'data', 'apps.json'), JSON.stringify(appsData, null, 2));
+          invalidateAgentContextCache();
+          broadcast('dashboard', { type: 'app-installed', appId });
+          return jsonRes(res, { ok: true, appId, name: manifest.name, reinstalled: true });
         }
 
         // Clone repo using gh CLI (works with private repos, authenticated via gh)
@@ -5479,6 +5494,21 @@ Schreiben: \`PUT /app/${appId}/api/${dataFileName}\` (triggert SSE)
       fs.writeFileSync(filesJson, JSON.stringify({ tree }, null, 2));
       broadcast('filebrowser', { type: 'change', file: 'files.json', time: Date.now() });
       return jsonRes(res, { ok: true, files: tree.children.length });
+    }
+
+    // DELETE /app/<name>/api/_all — reset all data/*.json to {}
+    if (rest === '/api/_all' && req.method === 'DELETE') {
+      const dataDir = path.join(appDir, 'data');
+      if (fs.existsSync(dataDir)) {
+        const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
+        for (const f of files) {
+          fs.writeFileSync(path.join(dataDir, f), '{}');
+          broadcast(appId, { type: 'change', file: f, time: Date.now() });
+        }
+        invalidateAgentContextCache();
+        return jsonRes(res, { ok: true, cleared: files.length });
+      }
+      return jsonRes(res, { ok: true, cleared: 0 });
     }
 
     const apiMatch = rest.match(/^\/api\/([a-z0-9-]+)$/);

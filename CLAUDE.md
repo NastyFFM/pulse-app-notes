@@ -4,6 +4,10 @@
 
 PulseOS is a browser-based desktop OS built entirely with vanilla HTML/CSS/JS and a single Node.js server (no npm, no build tools). It runs at `http://localhost:3000` and lets users launch, use, and AI-modify ~30 apps in real time.
 
+## Agent Workflow
+
+Entwicklung läuft über `agents/orchestrator.md`. Der Orchestrator delegiert an Scanner, Planner, Coder und Reviewer. Ergebnisse landen in `docs/status.md`, `docs/spec.md`, `docs/review.md`. Lies den Orchestrator für Details.
+
 ## Architecture
 
 ```

@@ -4,7 +4,7 @@
 // All functions return Promises. UI feedback (toasts, buttons) is handled by callbacks.
 // =============================================================================
 
-const AppActions = {
+window.AppActions = {
 
   // Cached deploy status
   _deployStatus: null,
@@ -443,7 +443,198 @@ const AppActions = {
       if (btn) btn.textContent = '✅';
       if (this._onUpdate) this._onUpdate(d.appId, 'installed');
     } else {
-      if (btn) { btn.textContent = 'Fehler'; setTimeout(() => { btn.textContent = 'Installieren'; btn.disabled = false; }, 2000); }
+      if (btn) { btn.textContent = d.error || 'Fehler'; setTimeout(() => { btn.textContent = 'Installieren'; btn.disabled = false; }, 3000); }
     }
+  },
+
+  async showPublishingPanel(appId) {
+    let app, templates, stackStatus = [];
+    try {
+      const [appsR, tplR] = await Promise.all([
+        fetch('/api/apps').then(r => r.json()),
+        fetch('/api/templates').then(r => r.json())
+      ]);
+      app = (appsR.apps || []).find(a => a.id === appId);
+      templates = tplR.templates || [];
+    } catch { return; }
+    if (!app) return;
+
+    const status = this.getStatus(app);
+    const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+    let overlay = document.getElementById('pub-panel-overlay');
+    if (overlay) overlay.remove();
+    overlay = document.createElement('div');
+    overlay.id = 'pub-panel-overlay';
+    overlay.className = 'modal-overlay';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+    const currentTpl = templates.find(t => t.id === (app.template || 'frontend')) || templates[0];
+    const requiredStacks = currentTpl?.stacks || [];
+
+    overlay.innerHTML = '<div class="modal-box pub-panel" style="width:480px;">' +
+      '<div class="pub-header">' +
+        '<div class="pub-app-icon" style="background:' + esc(app.color||'#333') + ';">' + esc(app.icon||'?') + '</div>' +
+        '<div><h2>' + esc(app.name||app.id) + '</h2>' +
+        '<div class="subtitle">' + esc(app.description||'') + '</div></div>' +
+        '<button class="pub-close" onclick="document.getElementById(\'pub-panel-overlay\').remove()">✕</button>' +
+      '</div>' +
+      '<span class="status-badge ' + status.badgeClass + '">' + status.badge + '</span>' +
+      '<div class="pub-section">' +
+        '<div class="pub-section-title">GitHub</div>' +
+        '<div class="pub-section-body" id="pub-github"></div>' +
+      '</div>' +
+      '<div class="pub-section">' +
+        '<div class="pub-section-title">Deployment</div>' +
+        '<div class="pub-tpl-row">' +
+          '<label style="margin:0;">Template</label>' +
+          '<select id="pub-tpl-select" class="pub-select">' +
+            templates.map(t => '<option value="'+t.id+'"'+(t.id===(app.template||'frontend')?' selected':'')+'>'+esc((t.icon||'')+' '+t.name)+'</option>').join('') +
+          '</select>' +
+        '</div>' +
+        '<div id="pub-stacks"></div>' +
+        '<div class="pub-section-body" id="pub-deploy"></div>' +
+      '</div>' +
+      '<div class="pub-section" id="pub-live-section" style="display:' + (status.isDeployed ? 'block' : 'none') + ';">' +
+        '<div class="pub-section-title">Live</div>' +
+        '<div class="pub-section-body" id="pub-live"></div>' +
+      '</div>' +
+      '<div class="pub-section">' +
+        '<div class="pub-section-title">Verwalten</div>' +
+        '<div class="pub-section-body" id="pub-manage"></div>' +
+      '</div>' +
+    '</div>';
+
+    document.body.appendChild(overlay);
+
+    this._renderPubGitHub(app, status);
+    this._renderPubStacks(requiredStacks, stackStatus);
+    this._renderPubDeploy(app, status);
+    this._renderPubLive(app, status);
+    this._renderPubManage(app, status);
+
+    document.getElementById('pub-tpl-select').onchange = async (e) => {
+      const tplId = e.target.value;
+      const tpl = templates.find(t => t.id === tplId);
+      const stacks = tpl?.stacks || [];
+      try {
+        await fetch('/api/apps/' + appId + '/meta', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ template: tplId, stacks })
+        });
+      } catch {}
+      this._renderPubStacks(stacks, stackStatus);
+    };
+
+    this._onUpdate = (id, action) => {
+      this.showPublishingPanel(appId);
+    };
+
+    // Lazy-load stack status (slow due to CLI checks)
+    fetch('/api/stacks/status').then(r => r.json()).then(stackR => {
+      stackStatus = stackR.stacks || [];
+      const currentTplNow = templates.find(t => t.id === (document.getElementById('pub-tpl-select')?.value || app.template || 'frontend')) || templates[0];
+      this._renderPubStacks(currentTplNow?.stacks || [], stackStatus);
+    }).catch(() => {});
+  },
+
+  _renderPubGitHub(app, status) {
+    const el = document.getElementById('pub-github');
+    if (!el) return;
+    const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const id = esc(app.id);
+    if (status.isPublished) {
+      el.innerHTML =
+        '<div class="pub-row">' +
+          '<span class="pub-label">✅ Auf GitHub</span>' +
+          '<a href="' + esc(app.source||'') + '" target="_blank" class="pub-link">Repo oeffnen</a>' +
+        '</div>' +
+        '<div class="pub-btn-row">' +
+          '<button class="pub-btn" id="pub-push-btn" onclick="AppActions._uiPublish(\'' + id + '\', this)">Update pushen</button>' +
+        '</div>';
+    } else {
+      el.innerHTML =
+        '<div class="pub-row"><span class="pub-label">Noch nicht auf GitHub</span></div>' +
+        '<div class="pub-btn-row">' +
+          '<button class="pub-btn primary" id="pub-publish-btn" onclick="AppActions._uiPublish(\'' + id + '\', this)">Auf GitHub publishen</button>' +
+        '</div>';
+    }
+  },
+
+  _renderPubStacks(requiredStacks, allStackStatus) {
+    const el = document.getElementById('pub-stacks');
+    if (!el) return;
+    if (!requiredStacks.length) {
+      el.innerHTML = '<div class="pub-hint">Keine externen Services noetig (Frontend-only)</div>';
+      return;
+    }
+    el.innerHTML = requiredStacks.map(sId => {
+      const s = allStackStatus.find(x => x.id === sId);
+      const ready = s?.ready;
+      const icon = ready ? '✅' : '⚠️';
+      const label = sId.charAt(0).toUpperCase() + sId.slice(1);
+      const action = ready
+        ? '<span class="pub-stack-ready">Bereit</span>'
+        : '<button class="pub-btn small" onclick="AppActions.onboardStack(\'' + sId.replace(/'/g,'&#39;') + '\', this)">Einrichten</button>';
+      return '<div class="pub-stack-row">' + icon + ' <span>' + label + '</span>' + action + '</div>';
+    }).join('');
+  },
+
+  _renderPubDeploy(app, status) {
+    const el = document.getElementById('pub-deploy');
+    if (!el) return;
+    const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const id = esc(app.id);
+    if (status.isDeployed) {
+      el.innerHTML = '<button class="pub-btn" onclick="AppActions._uiSmartDeploy(\'' + id + '\', this)">↻ Redeploy</button>';
+    } else {
+      el.innerHTML = '<button class="pub-btn primary" onclick="AppActions._uiSmartDeploy(\'' + id + '\', this)">🚀 Deploy</button>';
+    }
+  },
+
+  _renderPubLive(app, status) {
+    const el = document.getElementById('pub-live');
+    if (!el) return;
+    if (!status.isDeployed) return;
+    const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const url = app.deployUrl || app.railwayUrl || app.vercelUrl || '';
+    let html = '<div class="pub-row"><a href="' + esc(url) + '" target="_blank" class="pub-link">🟢 ' + esc(url) + '</a></div>';
+    if (app.deployDashboardUrl) {
+      html += '<div class="pub-row"><a href="' + esc(app.deployDashboardUrl) + '" target="_blank" class="pub-link">Provider Dashboard</a></div>';
+    } else if (app.railwayProjectId) {
+      html += '<div class="pub-row"><a href="https://railway.com/project/' + esc(app.railwayProjectId) + '" target="_blank" class="pub-link">🚂 Railway Dashboard</a></div>';
+    }
+    html += '<div class="pub-btn-row"><button class="pub-btn danger" onclick="AppActions._uiUndeploy(\'' + app.id + '\', \'' + esc(app.name||app.id) + '\', this)">Undeploy</button></div>';
+    el.innerHTML = html;
+  },
+
+  async _uiClearData(appId, appName) {
+    if (!confirm('Alle Daten von "' + appName + '" zuruecksetzen? Das kann nicht rueckgaengig gemacht werden.')) return;
+    try {
+      const r = await fetch('/app/' + appId + '/api/_all', { method: 'DELETE' });
+      const d = await r.json();
+      if (d.ok) alert(d.cleared + ' Datei(en) zurueckgesetzt.');
+      else alert('Fehler beim Zuruecksetzen.');
+    } catch (e) { alert('Fehler: ' + e.message); }
+  },
+
+  _renderPubManage(app, status) {
+    const el = document.getElementById('pub-manage');
+    if (!el) return;
+    const id = app.id;
+    const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const name = esc(app.name || app.id);
+    let html = '';
+    if (app.installed !== false) {
+      html += '<button class="pub-btn" onclick="AppActions._uiHide(\'' + id + '\')">Ausblenden</button>';
+      html += '<button class="pub-btn warn" onclick="AppActions._uiClearData(\'' + id + '\', \'' + name + '\')">Daten loeschen</button>';
+      html += '<button class="pub-btn danger" onclick="AppActions._uiDelete(\'' + id + '\', \'' + name + '\', ' + status.isPublished + ')">Loeschen</button>';
+    } else {
+      html += '<button class="pub-btn" onclick="AppActions._uiUnhide(\'' + id + '\')">Wieder anzeigen</button>';
+    }
+    if (status.isPublished) {
+      html += '<button class="pub-btn danger" onclick="AppActions._uiDeleteRemote(\'' + id + '\', \'' + name + '\')">Von GitHub loeschen</button>';
+    }
+    el.innerHTML = '<div class="pub-btn-row">' + html + '</div>';
   }
 };

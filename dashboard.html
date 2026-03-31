@@ -1243,6 +1243,93 @@ body {
 }
 .modal-box .btn-secondary:hover { background: var(--bg-card-hover); }
 
+/* ── Publishing Panel ── */
+.pub-panel { padding: 0; }
+.pub-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 20px 24px 12px;
+  position: relative;
+}
+.pub-header h2 { font-size: 15px; margin: 0; }
+.pub-header .subtitle { margin: 2px 0 0; }
+.pub-app-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 600; color: #fff; flex-shrink: 0;
+}
+.pub-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; color: var(--text-dim);
+  font-size: 16px; cursor: pointer; padding: 4px 8px;
+  border-radius: 4px;
+}
+.pub-close:hover { background: var(--bg-card-hover); color: var(--text); }
+.pub-panel .status-badge {
+  margin: 0 24px 8px; display: inline-block;
+  font-size: 9px; padding: 2px 8px; border-radius: 4px;
+  background: var(--bg-card); color: var(--text-dim);
+}
+.pub-panel .status-badge.badge-deployed { color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+.pub-panel .status-badge.badge-published { color: var(--teal); border: 1px solid rgba(78,205,196,0.3); }
+.pub-panel .status-badge.badge-local { color: var(--amber); border: 1px solid rgba(245,166,35,0.3); }
+.pub-section {
+  border-top: 1px solid var(--border);
+  padding: 14px 24px;
+}
+.pub-section-title {
+  font-size: 10px; font-weight: 600; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+.pub-section-body { display: flex; flex-direction: column; gap: 8px; }
+.pub-row {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px;
+}
+.pub-label { color: var(--text-dim); font-size: 11px; }
+.pub-link {
+  color: var(--teal); text-decoration: none; font-size: 11px;
+}
+.pub-link:hover { text-decoration: underline; }
+.pub-hint {
+  font-size: 10px; color: var(--text-muted); padding: 4px 0;
+}
+.pub-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.pub-btn {
+  padding: 6px 14px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text); font: 11px var(--font);
+  cursor: pointer; transition: all 0.15s;
+}
+.pub-btn:hover { border-color: var(--teal); }
+.pub-btn:disabled { opacity: 0.5; cursor: default; }
+.pub-btn.primary {
+  background: var(--teal); color: var(--bg); border-color: var(--teal);
+  font-weight: 600;
+}
+.pub-btn.primary:hover { opacity: 0.9; }
+.pub-btn.warn { border-color: var(--amber); color: var(--amber); }
+.pub-btn.warn:hover { background: var(--amber); color: #fff; }
+.pub-btn.danger { border-color: var(--red); color: var(--red); }
+.pub-btn.danger:hover { background: var(--red); color: #fff; }
+.pub-btn.small { padding: 3px 8px; font-size: 9px; }
+.pub-tpl-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.pub-select {
+  padding: 4px 8px; border-radius: 5px;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text); font: 11px var(--font);
+  cursor: pointer; max-width: 220px;
+}
+.pub-stack-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; padding: 4px 0;
+}
+.pub-stack-row span { flex: 1; }
+.pub-stack-ready { color: var(--green); font-size: 10px; }
+
 /* ═══ Responsive ═══ */
 @media (max-width: 768px) {
   .topbar { padding: 0 10px; }
@@ -1471,6 +1558,13 @@ body.mode-builder .home-screen { max-width: 600px; }
 
 <!-- ═══ JavaScript ═══ -->
 <script src="/app-actions.js"></script>
+<script>
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'show-publish-panel' && e.data.appId && window.AppActions) {
+    AppActions.showPublishingPanel(e.data.appId);
+  }
+});
+</script>
 <script>
 // ── State ──
 let state = null, lastHash = '';
@@ -1996,7 +2090,7 @@ function openApp(app, opts) {
       '<div class="win-btns">' +
         '<button class="win-btn" onclick="refreshWin(\'' + winId + '\')" title="Neu laden">↻</button>' +
         '<button class="win-btn" onclick="historyWin(\'' + winId + '\',\'' + app.id + '\')" title="Versionen">h</button>' +
-        '<button class="win-btn" onclick="editWin(\'' + winId + '\')" title="Anpassen">e</button>' +
+        '<button class="win-btn" onclick="editWin(\'' + winId + '\')" title="Anpassen">✏</button>' +
         '<button class="win-btn" onclick="minimizeWin(\'' + winId + '\')" title="Minimize">-</button>' +
         '<button class="win-btn" onclick="maximizeWin(\'' + winId + '\')" title="Maximize">+</button>' +
         '<button class="win-btn close" onclick="closeWin(\'' + winId + '\')" title="Close">x</button>' +
@@ -2128,21 +2222,8 @@ function showCreateTemplate(winId) {
 
 async function renderEditActions(winId, appId) {
   const el = document.getElementById('edit-actions-' + winId);
-  console.log('[edit] renderEditActions', winId, appId, 'el:', !!el, 'AppActions:', !!window.AppActions);
-  if (!el) { console.warn('[edit] edit-actions element not found for', winId); return; }
-  if (!window.AppActions) { console.warn('[edit] AppActions not loaded yet'); return; }
-  const app = (state?.apps || []).find(a => a.id === appId);
-  if (!app) { console.warn('[edit] App not found in state:', appId); return; }
-  try {
-    await AppActions.checkDeployStatus();
-  } catch (e) { console.warn('[edit] checkDeployStatus failed:', e); }
-  AppActions._onUpdate = async (id, action) => {
-    await load(); render(); renderLauncher();
-    renderEditActions(winId, appId);
-  };
-  const html = AppActions.renderButtons(app, { showDeploy: true });
-  console.log('[edit] buttons HTML length:', html.length);
-  el.innerHTML = html;
+  if (!el) return;
+  el.innerHTML = '<button class="edit-action-btn" onclick="AppActions.showPublishingPanel(\'' + appId + '\')">🚀 Publish / Deploy</button>';
 }
 
 async function loadEditChat(winId, appId) {
@@ -4022,6 +4103,9 @@ window.addEventListener('message', e => {
     const app = state?.apps?.find(a => a.id === e.data.appId);
     if (app) openApp(app);
     else fetch('/api/apps').then(r => r.json()).then(data => { if (data.apps) state.apps = data.apps; const a = data.apps?.find(a => a.id === e.data.appId); if (a) openApp(a); }).catch(() => {});
+  }
+  if (e.data && e.data.type === 'show-publishing-panel' && e.data.appId) {
+    if (window.AppActions) AppActions.showPublishingPanel(e.data.appId);
   }
 });
 
