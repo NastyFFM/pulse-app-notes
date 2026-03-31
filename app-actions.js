@@ -194,6 +194,14 @@ window.AppActions = {
     // Stack keys are checked in onboarding (via _uiSmartDeploy), no per-app env check needed
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Deploying...'; }
     const d = await this.deploy(appId);
+    if (d.agentDeploy) {
+      // Agentisches Deployment — Worker läuft im Hintergrund
+      if (btn) { btn.textContent = '🤖 Agent deployt...'; btn.disabled = true; }
+      // Öffne Edit-Panel für Live-Feedback
+      const win = (typeof openWindows !== 'undefined' ? openWindows : []).find(w => w.appId === appId);
+      if (win && typeof editWin === 'function') editWin(win.winId);
+      return;
+    }
     if (d.ok) {
       const url = d.url || d.github || '';
       if (btn) {

@@ -2739,13 +2739,101 @@ if (window.PulseOS) {
     const appsFile = path.join(ROOT, 'data', 'apps.json');
     const appsData = safeReadJSON(appsFile, '{"apps":[]}');
     const app = (appsData.apps || []).find(a => a.id === appId);
-    const deployStack = ((app?.stacks || [])[0] || 'railway').toLowerCase();
+    // Get stacks from app or from template
+    let appStacks = (app?.stacks || []).filter(Boolean);
+    if (!appStacks.length && app?.template) {
+      const tplData = safeReadJSON(path.join(ROOT, 'data', 'templates.json'), '{"templates":[]}');
+      const tpl = (tplData.templates || []).find(t => t.id === app.template);
+      if (tpl?.stacks?.length) appStacks = tpl.stacks;
+    }
+    // If template name IS a stack (e.g. template="heroku"), use it directly
+    if (!appStacks.length && app?.template && app.template !== 'frontend') {
+      appStacks = [app.template];
+    }
+    const deployStack = (appStacks[0] || 'railway').toLowerCase();
 
     // Load stack config
     const stacksData = safeReadJSON(path.join(ROOT, 'data', 'tech-stacks.json'), '{"stacks":[]}');
     const stack = (stacksData.stacks || []).find(s => s.id === deployStack);
     if (!stack) return jsonRes(res, { error: 'Stack "' + deployStack + '" nicht gefunden in tech-stacks.json' }, 400);
-    if (!stack.deploy?.commands?.length) return jsonRes(res, { error: 'Stack "' + deployStack + '" hat keine deploy.commands konfiguriert' }, 400);
+
+    // Agentisches Deployment: wenn Stack keine deploy.commands hat, starte einen Deploy-Worker
+    if (!stack.deploy?.commands?.length) {
+      if (!fs.existsSync(workersDir)) fs.mkdirSync(workersDir, { recursive: true });
+      const wId = 'worker-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+      const wFile = path.join(workersDir, wId + '.json');
+      const wData = { id: wId, task: 'Deploy ' + appId + ' auf ' + deployStack, status: 'running', model: 'sonnet', pid: null, progress: 'Starte Deploy-Agent...', log: [{ time: new Date().toISOString(), type: 'start', text: 'Deploy-Agent fuer ' + deployStack }], result: null, startedAt: new Date().toISOString(), finishedAt: null, createdBy: 'deploy' };
+      fs.writeFileSync(wFile, JSON.stringify(wData, null, 2));
+      const deployPrompt = `Du bist der PulseOS Deploy-Agent. Deploye die App "${appId}" auf "${deployStack}".
+
+INTERAKTION MIT DEM USER:
+Kommuniziere ueber den Edit-Chat der App "${appId}".
+1. Lies: curl -s http://localhost:3000/app/${appId}/api/edit-chat
+2. Fuege deine Message hinzu (from: "agent") und schreibe zurueck via PUT
+3. Warte auf Antworten: poll alle 3s, timeout 2min
+
+APP-INFO:
+- App-ID: ${appId}
+- App-Verzeichnis: ${appDir}
+- Stack: ${deployStack} (${stack.name || deployStack})
+- GitHub User: ${githubUser}
+- Repo: ${repoName}
+
+STACK-APIs:
+- PUT http://localhost:3000/api/stacks/${deployStack} — Stack-Config aktualisieren (deploy.commands etc.)
+- POST http://localhost:3000/api/stacks/save-key — Env-Var speichern { envVar, value }
+- PUT http://localhost:3000/api/apps/${appId}/meta — App-Metadaten updaten (deployUrl etc.)
+
+DEINE AUFGABE:
+1. Informiere den User im Chat dass du das Deployment startest
+2. Pruefe ob API Keys vorhanden sind: curl -s http://localhost:3000/api/stacks/status
+3. Wenn Keys fehlen: Frage den User im Chat (NICHT einfach CLI installieren!)
+4. PRIORITAET beim Deployen:
+   a. MCP Tools nutzen wenn verfuegbar (railway MCP etc.)
+   b. HTTP API des Services nutzen (curl mit API Token) — BEVORZUGT vor CLI
+   c. CLI NUR als letzter Ausweg, und NUR wenn bereits installiert (NICHT installieren!)
+5. Scaffold deploy-Dateien falls noetig (Dockerfile, Procfile, fly.toml etc.)
+6. Publishe auf GitHub falls noch nicht geschehen (gh CLI ist bereits installiert)
+7. Deploye via API oder vorhandene CLI
+8. Speichere Deploy-URL: curl -X PUT http://localhost:3000/api/apps/${appId}/meta -H 'Content-Type: application/json' -d '{"deployUrl":"https://..."}'
+9. Aktualisiere Stack mit deploy.commands: curl -X PUT http://localhost:3000/api/stacks/${deployStack} -H 'Content-Type: application/json' -d '{"deploy":{"commands":[...]}}'
+10. Melde Erfolg im Chat
+
+WICHTIG: Installiere KEINE CLIs! Nutze HTTP APIs mit den gespeicherten Tokens.
+Lese vorhandene Env Vars: curl -s http://localhost:3000/api/env
+
+BEKANNTE DEPLOY-APIs (nutze curl mit Token):
+- Heroku: curl -X POST https://api.heroku.com/apps -H "Authorization: Bearer $HEROKU_API_KEY" -H "Accept: application/vnd.heroku+json; version=3"
+- Fly.io: curl https://api.machines.dev/v1/apps -H "Authorization: Bearer $FLY_API_TOKEN"
+- Render: curl https://api.render.com/v1/services -H "Authorization: Bearer $RENDER_API_KEY"
+- Vercel: curl https://api.vercel.com/v13/deployments -H "Authorization: Bearer $VERCEL_TOKEN"
+Fuer unbekannte: Pruefe die API-Docs des Services.
+
+Arbeitsverzeichnis: ${ROOT}`;
+
+      const claudePath = process.env.CLAUDE_PATH || '/Users/chris.pohl/.bun/bin/claude';
+      const mcpConfig = path.join(ROOT, '.mcp.json');
+      const mcpFlags = fs.existsSync(mcpConfig) ? ['--mcp-config', mcpConfig] : [];
+      const proc = spawn(claudePath, ['-p', '--model', 'sonnet', '--allowedTools', 'Bash,Read,Write,Edit,Glob,Grep', ...mcpFlags, '--max-turns', '50', deployPrompt], {
+        cwd: ROOT, env: { ...process.env, PATH: extPath }, stdio: ['pipe', 'pipe', 'pipe'], detached: false
+      });
+      wData.pid = proc.pid;
+      fs.writeFileSync(wFile, JSON.stringify(wData, null, 2));
+      broadcast('dashboard', { type: 'worker-update', workerId: wId, status: 'running' });
+
+      let buf = '';
+      proc.stdout.on('data', d => { buf += d.toString(); if (buf.length > 500) { wData.progress = buf.slice(-200); buf = ''; try { fs.writeFileSync(wFile, JSON.stringify(wData, null, 2)); } catch {} } });
+      proc.stderr.on('data', d => { buf += d.toString(); });
+      proc.on('close', code => {
+        wData.status = code === 0 ? 'done' : 'error';
+        wData.finishedAt = new Date().toISOString();
+        wData.result = code === 0 ? 'Deployment abgeschlossen' : 'Deployment fehlgeschlagen';
+        try { fs.writeFileSync(wFile, JSON.stringify(wData, null, 2)); } catch {}
+        broadcast('dashboard', { type: 'worker-update', workerId: wId, status: wData.status });
+      });
+
+      return jsonRes(res, { ok: true, agentDeploy: true, workerId: wId, message: 'Deploy-Agent gestartet fuer ' + deployStack });
+    }
 
     // ── GENERIC DEPLOY (reads deploy.commands from stack config) ──
 
@@ -8372,8 +8460,38 @@ STACK & TEMPLATE MANAGEMENT (via curl oder fetch im Browser):
 - POST /api/templates — Neues Template { name, icon, stacks[], instructions }
 - PUT /api/templates/:id — Template aktualisieren (stacks hinzufuegen/entfernen)
 - DELETE /api/templates/:id — Template loeschen (nicht builtin)
-Nutze MCP Tools (Railway etc.) wenn verfuegbar, CLI als Fallback.
-Wenn User Service einrichten will: pruefe /api/stacks/status zuerst.
+PUBLISHING & DEPLOYMENT:
+Du kannst Apps publishen und deployen. Priorisierung:
+1. MCP Tools (wenn verfuegbar) — z.B. Railway MCP
+2. HTTP APIs mit gespeicherten Tokens (curl mit Bearer Token)
+3. CLI Tools — installiere sie SELBST wenn noetig (bun install -g <tool>)
+
+Gespeicherte Env Vars lesen: curl -s http://localhost:3000/api/env
+Stack-Status pruefen: curl -s http://localhost:3000/api/stacks/status
+
+Ablauf fuer Deployment:
+1. Pruefe Stack-Status — wenn nicht ready, richte ein (frage User nach Token im Chat)
+2. Scaffold deploy-Dateien (Dockerfile, Procfile, vercel.json, railway.json etc.)
+3. GitHub publishen: gh repo create pulse-app-{appId} --public --source=. --push
+4. Deploy via API oder CLI des Services
+5. Deploy-URL speichern: curl -X PUT http://localhost:3000/api/apps/{appId}/meta -H 'Content-Type: application/json' -d '{"deployUrl":"https://..."}'
+6. Stack-Config updaten: curl -X PUT http://localhost:3000/api/stacks/{stackId} -H 'Content-Type: application/json' -d '{"deploy":{"commands":[...]},"requiredEnvVars":[...]}'
+
+INTERAKTION MIT DEM USER (Chat):
+Fuer Setup/Onboarding/Fragen — kommuniziere ueber den Edit-Chat:
+- Lies: curl -s http://localhost:3000/app/${editAppId}/api/edit-chat
+- Schreibe: Fuege Message hinzu (from:"agent") und PUT das ganze JSON zurueck
+- Poll auf Antwort: alle 3s, max 2min
+
+Bekannte Services + Deploy-Methoden:
+- Heroku: HEROKU_API_KEY, API: api.heroku.com, CLI: heroku (npm i -g heroku)
+- Vercel: VERCEL_TOKEN, API: api.vercel.com, CLI: vercel (bun i -g vercel)
+- Railway: RAILWAY_TOKEN, MCP Tools verfuegbar!, CLI: railway
+- Fly.io: FLY_API_TOKEN, API: api.machines.dev, CLI: flyctl (curl -L https://fly.io/install.sh | sh)
+- Cloudflare: CLOUDFLARE_API_TOKEN, CLI: wrangler (bun i -g wrangler)
+- Netlify: NETLIFY_AUTH_TOKEN, CLI: netlify-cli (bun i -g netlify-cli)
+- Supabase: SUPABASE_URL + SUPABASE_ANON_KEY, CLI: supabase (bun i -g supabase)
+- Stripe: STRIPE_SECRET_KEY + STRIPE_PUBLISHABLE_KEY, CLI: stripe
 
 CSS-VARIABLEN (nutze diese statt hardcodierte Farben):
 var(--bg), var(--bg-card), var(--bg-card-hover), var(--text), var(--text-dim),
