@@ -2508,7 +2508,7 @@ if (window.PulseOS) {
     });
   }
   // Generate template from natural language prompt
-  if (rest === '/api/templates/generate' && req.method === 'POST') {
+  if (url === '/api/templates/generate' && req.method === 'POST') {
     return readBody(req, body => {
       try {
         const { prompt } = JSON.parse(body);
