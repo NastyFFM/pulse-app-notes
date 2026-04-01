@@ -2107,6 +2107,7 @@ function openApp(app, opts) {
       '</div>' +
       '<div class="edit-app-actions" id="edit-actions-' + winId + '"></div>' +
       '<div class="edit-envvars" id="edit-env-' + winId + '" style="display:none;"><textarea id="edit-envtxt-' + winId + '" placeholder="KEY=value (eine pro Zeile)" spellcheck="false"></textarea><button onclick="saveEnvVars(\'' + app.id + '\',\'' + winId + '\')">Speichern</button></div>' +
+      '<div class="edit-quick-actions" style="display:flex;gap:4px;padding:4px 8px;"><button onclick="sendEditDeploy(\'' + winId + '\')" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);cursor:pointer;" title="Deploy mit gewaehltem Template">🚀 Deploy</button><button onclick="sendEditPublish(\'' + winId + '\')" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);cursor:pointer;" title="Auf GitHub publishen">📦 Publish</button></div>' +
       '<div class="edit-input"><input type="text" id="edit-inp-' + winId + '" placeholder="Beschreibe die Aenderung..." onkeydown="if(event.key===\'Enter\')sendEdit(\'' + winId + '\')"><button onclick="sendEdit(\'' + winId + '\')">↑</button></div>' +
     '</div>' +
     '<iframe src="' + iframeSrc + '"></iframe>' +
@@ -2257,9 +2258,34 @@ async function loadEditChat(winId, appId) {
   } catch {}
 }
 
+async function sendEditDeploy(winId) {
+  const panel = document.getElementById('edit-' + winId);
+  const appId = panel?.dataset.appid;
+  const tplSelect = document.getElementById('edit-tpl-' + winId);
+  const tplId = tplSelect?.value || 'frontend';
+  const tplName = tplSelect?.options[tplSelect.selectedIndex]?.textContent || tplId;
+  let stacks = '';
+  try {
+    const tpls = await fetch('/api/templates').then(r => r.json());
+    const tpl = (tpls.templates || []).find(t => t.id === tplId);
+    if (tpl && tpl.stacks) stacks = ' (Stacks: ' + tpl.stacks.join(', ') + ')';
+  } catch {}
+  const input = document.getElementById('edit-inp-' + winId);
+  input.value = 'Deploye diese App mit Template "' + tplName + '"' + stacks + '. Folge den Deploy-Instruktionen aus dem Template.';
+  sendEdit(winId);
+}
+
+async function sendEditPublish(winId) {
+  const panel = document.getElementById('edit-' + winId);
+  const appId = panel?.dataset.appid;
+  const input = document.getElementById('edit-inp-' + winId);
+  input.value = 'Publish diese App auf GitHub. Erstelle ein Repository pulse-app-' + appId + ' und pushe den Code.';
+  sendEdit(winId);
+}
+
 async function sendEdit(winId) {
   const input = document.getElementById('edit-inp-' + winId);
-  const text = input?.value.trim();
+  let text = input?.value.trim();
   if (!text) return;
   input.value = '';
   const panel = document.getElementById('edit-' + winId);
@@ -2267,6 +2293,14 @@ async function sendEdit(winId) {
   if (!appId) return;
   const msgs = document.getElementById('edit-msgs-' + winId);
   const tpl = document.getElementById('edit-tpl-' + winId)?.value || 'frontend';
+
+  // Auto-enrich deploy/publish keywords with template context
+  const lower = text.toLowerCase();
+  if (lower.match(/\b(deploy|publish|veröffentlich|release|ship)\b/) && !lower.includes('template')) {
+    const tplSelect = document.getElementById('edit-tpl-' + winId);
+    const tplName = tplSelect?.options[tplSelect.selectedIndex]?.textContent || tpl;
+    text = text + ' (Template: ' + tplName + ')';
+  }
 
   // Show user message
   const userDiv = document.createElement('div');
