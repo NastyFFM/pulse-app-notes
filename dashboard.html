@@ -2250,7 +2250,7 @@ async function loadEditChat(winId, appId) {
     data.messages.forEach(m => {
       const div = document.createElement('div');
       div.className = m.from === 'user' ? 'edit-msg-user' : 'edit-msg-agent';
-      div.textContent = m.text;
+      div.innerHTML = renderChatMarkdown(m.text || '');
       msgs.appendChild(div);
     });
     msgs.scrollTop = msgs.scrollHeight;
@@ -2312,7 +2312,7 @@ async function sendEdit(winId) {
             spinner.remove();
             const agentDiv = document.createElement('div');
             agentDiv.className = 'edit-msg-agent';
-            agentDiv.textContent = '✅ ' + (w.result || 'Fertig!');
+            agentDiv.innerHTML = renderChatMarkdown('✅ ' + (w.result || 'Fertig!'));
             msgs.appendChild(agentDiv);
             msgs.scrollTop = msgs.scrollHeight;
             // Save agent response
