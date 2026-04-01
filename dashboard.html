@@ -3469,6 +3469,8 @@ async function openChat(chatId) {
   const msgs = document.getElementById('systemChatMessages');
   msgs.innerHTML = '<div class="chat-empty">Lade...</div>';
   chatHistoryRendering = true;
+  lastSentText = '';
+  lastSentTime = 0;
   try {
     const res = await fetch('/api/chats/' + chatId);
     const data = await res.json();
@@ -3491,6 +3493,7 @@ async function openChat(chatId) {
           histData.messages.forEach(m => { if (!seenIds.has(m.id)) { allMsgs.push(m); seenIds.add(m.id); } });
           allMsgs.sort((a, b) => new Date(a.time || 0) - new Date(b.time || 0));
           msgs.innerHTML = '';
+          renderedMsgIds.clear();
           allMsgs.forEach(m => renderChatMsg(m));
         }
       } catch {}
@@ -3673,8 +3676,8 @@ let chatHistoryRendering = false;
 function renderChatMsg(msg) {
   if (renderedMsgIds.has(msg.id)) return;
   renderedMsgIds.add(msg.id);
-  // Dedupe: skip SSE echo of message we already rendered locally
-  if (msg.from === 'user' && msg.text === lastSentText && Date.now() - lastSentTime < 10000 && msg.id.startsWith('m-')) {
+  // Dedupe: skip SSE echo of message we already rendered locally (not during history load)
+  if (!chatHistoryRendering && msg.from === 'user' && msg.text === lastSentText && Date.now() - lastSentTime < 10000 && msg.id.startsWith('m-')) {
     return;
   }
   // Hide typing indicator when agent responds
