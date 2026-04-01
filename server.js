@@ -8588,6 +8588,17 @@ STARTE JETZT mit der Aufgabe.`;
             fs.writeFileSync(histFile, JSON.stringify(hist, null, 2));
             appendToChatFile('chat-claudeos', chatMsg);
             broadcast('dashboard', { type: 'chat-message', message: chatMsg });
+            // Also persist to edit-chat.json so the app editor chat shows the result
+            if (editAppId) {
+              try {
+                const editChatFile = path.join(ROOT, 'apps', editAppId, 'data', 'edit-chat.json');
+                const editChat = safeReadJSON(editChatFile, '{"messages":[]}');
+                if (!editChat.messages) editChat.messages = [];
+                editChat.messages.push(chatMsg);
+                fs.writeFileSync(editChatFile, JSON.stringify(editChat, null, 2));
+                broadcast(editAppId, { type: 'change', file: 'edit-chat.json', time: Date.now() });
+              } catch (ecErr) { console.error('[worker-edit-chat]', ecErr.message); }
+            }
           } catch (e) { console.error('[worker-completion]', e.message); }
           delete activeWorkers[proc.pid];
           broadcast('dashboard', { type: 'worker-update', workerId: id, status: workerStatus });
