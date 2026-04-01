@@ -2507,6 +2507,63 @@ if (window.PulseOS) {
       } catch (e) { jsonRes(res, { error: e.message }, 400); }
     });
   }
+  // Generate template from natural language prompt
+  if (rest === '/api/templates/generate' && req.method === 'POST') {
+    return readBody(req, body => {
+      try {
+        const { prompt } = JSON.parse(body);
+        if (!prompt) return jsonRes(res, { ok: false, error: 'No prompt' }, 400);
+        const lower = prompt.toLowerCase();
+        const detectedStacks = [];
+        const stackKeywords = {
+          'railway': ['railway', 'node.js', 'node', 'express', 'backend', 'server', 'api'],
+          'vercel': ['vercel', 'next.js', 'nextjs', 'next'],
+          'supabase': ['supabase', 'database', 'db', 'auth', 'user management', 'users', 'login'],
+          'stripe': ['stripe', 'payment', 'payments', 'billing', 'subscription', 'saas'],
+          'cloudflare': ['cloudflare', 'workers', 'edge'],
+          'netlify': ['netlify', 'serverless'],
+          'github-pages': ['github pages', 'static', 'portfolio', 'landing page', 'frontend only']
+        };
+        for (const [stack, keywords] of Object.entries(stackKeywords)) {
+          if (keywords.some(k => lower.includes(k))) detectedStacks.push(stack);
+        }
+        if (detectedStacks.length === 0) detectedStacks.push('github-pages');
+        const words = prompt.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2).slice(0, 4);
+        const name = words.join(' ') || 'Custom Template';
+        const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        let stage = 1;
+        if (detectedStacks.some(s => ['railway', 'vercel', 'netlify', 'cloudflare'].includes(s))) stage = 2;
+        if (detectedStacks.includes('supabase')) stage = 3;
+        if (detectedStacks.includes('stripe')) stage = 4;
+        const template = {
+          id, name, description: prompt,
+          icon: stage >= 4 ? '💼' : stage >= 3 ? '🔐' : stage >= 2 ? '🚀' : '📄',
+          author: 'user', stacks: detectedStacks, progressiveStage: stage,
+          instructions: prompt + '\n\n--- Progressive Stage: ' + stage + ' ---\nDetected Stacks: ' + detectedStacks.join(', '),
+          createdAt: new Date().toISOString()
+        };
+        const data = safeReadJSON(templatesFile, '{"templates":[]}');
+        data.templates = (data.templates || []).filter(t => t.id !== id);
+        data.templates.push(template);
+        fs.writeFileSync(templatesFile, JSON.stringify(data, null, 2));
+        // Auto-register unknown stacks
+        const stackFile = path.join(ROOT, 'data', 'tech-stacks.json');
+        const stackData = safeReadJSON(stackFile, '{"stacks":[]}');
+        const existingIds = new Set((stackData.stacks || []).map(s => s.id));
+        const knownDefs = { 'github-pages': { icon: '📄', name: 'GitHub Pages', description: 'Static site hosting via GitHub', authMethod: 'cli', checkCmd: 'gh auth status' } };
+        let stacksChanged = false;
+        for (const sid of detectedStacks) {
+          if (!existingIds.has(sid)) {
+            const def = knownDefs[sid] || { icon: '📦', name: sid, description: 'Auto-detected from template prompt', authMethod: 'token' };
+            stackData.stacks.push({ id: sid, ...def, status: 'unknown' });
+            stacksChanged = true;
+          }
+        }
+        if (stacksChanged) fs.writeFileSync(stackFile, JSON.stringify(stackData, null, 2));
+        return jsonRes(res, { ok: true, template });
+      } catch (e) { return jsonRes(res, { ok: false, error: e.message }, 500); }
+    });
+  }
   if (tplMatch && req.method === 'DELETE') {
     const data = safeReadJSON(templatesFile, '{"templates":[]}');
     const tpl = data.templates.find(t => t.id === tplMatch[1]);
@@ -8331,7 +8388,7 @@ function copyInstall(repo, btn) {
         const upgradeKeywords = ['deploy', 'vercel', 'railway', 'netlify', 'online', 'web-app', 'webapp', 'user', 'auth', 'login', 'registrier', 'supabase', 'payment', 'bezahl', 'stripe', 'saas', 'subscription', 'admin', 'dashboard', 'monetarisier'];
         let effectiveTemplate = template;
         if (!effectiveTemplate && upgradeKeywords.some(k => taskLower.includes(k))) {
-          effectiveTemplate = 'full-stack';
+          effectiveTemplate = 'progressive-default';
           const stages = { 1: 'PulseOS Frontend', 3: 'Deployed Web-App', 4: 'With Users (Supabase)', 5: 'SaaS (Stripe)' };
           const nextStages = { 1: 3, 3: 4, 4: 5, 5: 5 };
           stageInfo = '\n\nPROGRESSIVE BUILDING:\nAktuelle Stufe: ' + detectedStage + ' (' + (stages[detectedStage] || 'Frontend') + ')\nNaechste Stufe: ' + nextStages[detectedStage] + ' (' + (stages[nextStages[detectedStage]] || '') + ')\nFuehre NUR den Upgrade zur naechsten Stufe durch. Bestehenden Code behalten, nur erweitern.\n';
@@ -8422,7 +8479,7 @@ Arbeitsverzeichnis: ${ROOT}
         workerPrompt = `Du bist ein PulseOS Worker-Agent. Deine Aufgabe:
 
 ${task}${editContext}${stageInfo}
-${templateContent ? '\n--- TEMPLATE INSTRUKTIONEN ---\n' + templateContent + '\n--- ENDE TEMPLATE ---\n' : ''}
+${templateContent ? '\n--- TEMPLATE INSTRUKTIONEN ---\n' + templateContent + '\n--- ENDE TEMPLATE ---\n' : '\n--- PROGRESSIVE DEPLOYMENT ---\nNutze die Progressive Deployment Pipeline: Stage 1 (GitHub Pages) → Stage 2 (Railway) → Stage 3 (DB/Auth) → Stage 4 (Payments). Starte bei Stage 1, eskaliere nur wenn noetig. Melde im Chat welcher Stage aktiv ist.\n'}
 
 REGELN:
 - Arbeite im Verzeichnis: ${ROOT}

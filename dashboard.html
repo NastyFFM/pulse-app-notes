@@ -2224,14 +2224,51 @@ async function saveTemplateChoice(winId, templateId) {
 }
 
 function showCreateTemplate(winId) {
-  const name = prompt('Neues Template erstellen:\n\nName:');
-  if (!name) return;
-  const stacks = prompt('Benoetigte Stacks (kommasepariert, z.B. railway,supabase):\n(leer lassen fuer Frontend-only)') || '';
-  const desc = prompt('Beschreibung:') || '';
-  fetch('/api/templates', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, description: desc, stacks: stacks ? stacks.split(',').map(s => s.trim()) : [], instructions: '' })
-  }).then(() => loadTemplateDropdown(winId)).catch(() => {});
+  document.getElementById('tpl-create-modal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'tpl-create-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);';
+  modal.innerHTML = '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;width:420px;max-width:90vw;">' +
+    '<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px;">Neues Deployment-Template</div>' +
+    '<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Beschreibe in natuerlicher Sprache was du deployen willst. Die KI erkennt automatisch die benoetigten Stacks.</div>' +
+    '<textarea id="tpl-prompt-input" style="width:100%;height:120px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;resize:vertical;font-family:inherit;" placeholder="Beispiele:\n• Simple Node.js app on Railway, no auth\n• React SaaS with Supabase auth and Stripe payments\n• Static portfolio on GitHub Pages\n• Full-stack Next.js with database and user management"></textarea>' +
+    '<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;">' +
+    '<button onclick="document.getElementById(\'tpl-create-modal\').remove()" style="padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-size:12px;">Abbrechen</button>' +
+    '<button id="tpl-create-btn" onclick="generateTemplate(\'' + winId + '\')" style="padding:6px 14px;border-radius:6px;border:none;background:var(--teal);color:var(--bg);cursor:pointer;font-size:12px;font-weight:600;">Erstellen</button>' +
+    '</div></div>';
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+  document.getElementById('tpl-prompt-input').focus();
+}
+
+async function generateTemplate(winId) {
+  const input = document.getElementById('tpl-prompt-input');
+  const prompt = input?.value.trim();
+  if (!prompt) return;
+  const btn = document.getElementById('tpl-create-btn');
+  btn.textContent = 'Generiere...';
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/templates/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('tpl-create-modal')?.remove();
+      loadTemplateDropdown(winId);
+      setTimeout(() => {
+        const sel = document.getElementById('edit-tpl-' + winId);
+        if (sel && d.template?.id) { sel.value = d.template.id; saveTemplateChoice(winId, d.template.id); }
+      }, 500);
+    } else {
+      alert('Fehler: ' + (d.error || 'Unbekannt'));
+      btn.textContent = 'Erstellen'; btn.disabled = false;
+    }
+  } catch (e) {
+    alert('Fehler: ' + e.message);
+    btn.textContent = 'Erstellen'; btn.disabled = false;
+  }
 }
 
 async function renderEditActions(winId, appId) {

@@ -1,6 +1,17 @@
 {
   "templates": [
     {
+      "id": "progressive-default",
+      "name": "Progressive (Default)",
+      "description": "KI-gesteuerte Pipeline: GitHub Pages → Railway → DB → Payments. Eskaliert nur wenn noetig.",
+      "icon": "📈",
+      "author": "pulseos",
+      "builtin": true,
+      "stacks": ["github-pages"],
+      "progressiveStage": 1,
+      "instructions": "→ data/templates/progressive-default.md"
+    },
+    {
       "id": "frontend",
       "name": "PulseOS Frontend",
       "description": "Vanilla HTML/CSS/JS App — einfach, schnell, kein Build-Schritt",
@@ -21,11 +32,10 @@
         "vercel",
         "supabase",
         "stripe",
-        "cloudflare",
-        "qwdqwd"
+        "cloudflare"
       ],
       "instructions": "→ data/templates/full-stack.md",
-      "updatedAt": "2026-03-31T16:19:32.774Z"
+      "updatedAt": "2026-03-31T17:08:15.908Z"
     },
     {
       "id": "nextjs-railway",
@@ -104,6 +114,40 @@
       "id": "netlify",
       "author": "user",
       "createdAt": "2026-03-30T22:16:21.593Z"
+    },
+    {
+      "name": "Fly.io",
+      "description": "Deploy als Docker Container auf Fly.io — weltweit, günstig, einfach",
+      "icon": "🪰",
+      "stacks": [],
+      "instructions": "# Fly.io Deployment Template\n\nDu deployest eine PulseOS App auf Fly.io als Docker Container.\n\n## Neue Dateien erstellen\n```\napps/<name>/\n├── index.html      ← BEHALTEN oder als Wrapper umbauen\n├── manifest.json   ← BEHALTEN, fly-io zu stacks hinzufuegen\n├── Dockerfile      ← NEU\n├── fly.toml        ← NEU\n└── .dockerignore   ← NEU\n```\n\n## Dockerfile (Node.js App)\n```dockerfile\nFROM node:20-alpine\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci --only=production\nCOPY . .\nEXPOSE 8080\nCMD [\"node\", \"server.js\"]\n```\n\n## fly.toml\n```toml\napp = \"pulse-app-NAME\"\nprimary_region = \"fra\"\n\n[build]\n\n[http_service]\n  internal_port = 8080\n  force_https = true\n  auto_stop_machines = \"stop\"\n  auto_start_machines = true\n  min_machines_running = 0\n  processes = [\"app\"]\n\n[[vm]]\n  memory = \"256mb\"\n  cpu_kind = \"shared\"\n  cpus = 1\n```\n\n## .dockerignore\n```\nnode_modules\n.git\n*.md\n```\n\n## Deploy-Befehle\n```bash\n# Einmalig: App erstellen\nfly launch --name pulse-app-NAME --region fra --no-deploy\n\n# Deployen\nfly deploy\n\n# Logs\nfly logs\n\n# Secrets setzen\nfly secrets set KEY=VALUE\n```\n\n## Regeln\n- App muss auf Port 8080 lauschen (Fly.io Standard)\n- Fly.io Token in PulseOS Env als FLY_API_TOKEN speichern\n- Auto-stop auf 0 Maschinen wenn idle (kostenguenstig)\n- Region fra (Frankfurt) fuer Europa\n- manifest.json: stacks:[\"fly-io\"] hinzufuegen",
+      "id": "fly-io",
+      "author": "user",
+      "createdAt": "2026-03-31T16:50:00.000Z",
+      "updatedAt": "2026-03-31T17:09:46.184Z"
+    },
+    {
+      "name": "Heroku",
+      "icon": "📦",
+      "stacks": [
+        "heroku"
+      ],
+      "instructions": "",
+      "id": "heroku",
+      "author": "user",
+      "createdAt": "2026-03-31T17:08:56.803Z",
+      "updatedAt": "2026-03-31T17:13:30.850Z"
+    },
+    {
+      "name": "railway",
+      "description": "railway",
+      "stacks": [
+        "railway"
+      ],
+      "instructions": "",
+      "id": "railway",
+      "author": "user",
+      "createdAt": "2026-04-01T16:41:32.943Z"
     }
   ]
 }
