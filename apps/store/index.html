@@ -82,6 +82,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:var(-
   <button class="tab" onclick="setTab('installed')">Installiert</button>
   <button class="tab" onclick="setTab('myapps')">Meine Apps</button>
   <button class="tab" onclick="setTab('accounts')">Accounts</button>
+  <button class="tab" onclick="setTab('templates')">Templates</button>
 </div>
 <div class="content" id="content"></div>
 <div class="add-source">
@@ -178,6 +179,7 @@ function render() {
   const el = document.getElementById('content');
   if (activeTab === 'myapps') { renderMyApps(el); return; }
   if (activeTab === 'accounts') { renderAccounts(el); return; }
+  if (activeTab === 'templates') { renderTemplates(el); return; }
 
   const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
   let allApps = [];
@@ -367,6 +369,125 @@ async function renderAccounts(el) {
   }
 
   el.innerHTML = html;
+}
+
+async function renderTemplates(el) {
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);">Lade Templates...</div>';
+
+  // Load local templates
+  let localTemplates = [];
+  try {
+    const r = await fetch('/api/templates');
+    const d = await r.json();
+    localTemplates = d.templates || [];
+  } catch {}
+
+  // Load GitHub sync
+  let githubTemplates = [];
+  try {
+    const r = await fetch('/api/templates/github-sync');
+    const d = await r.json();
+    githubTemplates = d.repos || [];
+  } catch {}
+
+  // Load contact templates
+  let contactTemplates = [];
+  try {
+    for (const src of (catalog?.sources || [])) {
+      if (src.templates && src.templates.length > 0) {
+        src.templates.forEach(t => contactTemplates.push({ ...t, from: src.handle || src.name }));
+      }
+    }
+  } catch {}
+
+  let html = '<div style="padding:8px;">';
+
+  // Section: My Templates (non-builtin)
+  const myTemplates = localTemplates.filter(t => !t.builtin);
+  html += '<h3 style="color:var(--text);font-size:13px;margin:12px 0 8px;">Meine Templates (' + myTemplates.length + ')</h3>';
+  if (myTemplates.length === 0) {
+    html += '<div style="color:var(--text-dim);font-size:11px;padding:8px;">Noch keine eigenen Templates. Erstelle eins im App-Editor mit dem "+" Button.</div>';
+  } else {
+    html += '<div class="grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">';
+    myTemplates.forEach(t => {
+      const published = t.publishedAt ? '✅ Published' : '⬜ Lokal';
+      html += '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px;">' +
+        '<div style="font-size:16px;margin-bottom:4px;">' + (t.icon || '📋') + ' ' + esc(t.name || t.id) + '</div>' +
+        '<div style="font-size:10px;color:var(--text-dim);margin-bottom:6px;">' + esc(t.description || '').substring(0, 80) + '</div>' +
+        '<div style="font-size:9px;color:var(--text-dim);margin-bottom:6px;">' + (t.stacks || []).map(s => '<span style="background:var(--bg);padding:1px 4px;border-radius:3px;margin-right:2px;">' + s + '</span>').join('') + '</div>' +
+        '<div style="display:flex;gap:4px;">' +
+        (t.publishedAt ? '<button onclick="updateTemplate(\'' + t.id + '\')" style="font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;">🔄 Update</button>'
+          : '<button onclick="publishTemplate(\'' + t.id + '\')" style="font-size:10px;padding:3px 8px;border-radius:4px;border:none;background:var(--teal);color:var(--bg);cursor:pointer;">🚀 Publish</button>') +
+        '<span style="font-size:9px;color:var(--text-dim);padding:4px;">' + published + '</span>' +
+        '</div></div>';
+    });
+    html += '</div>';
+  }
+
+  // Section: GitHub Templates (not installed locally)
+  const notInstalled = githubTemplates.filter(r => !r.installed);
+  if (notInstalled.length > 0) {
+    html += '<h3 style="color:var(--text);font-size:13px;margin:16px 0 8px;">Auf GitHub (' + notInstalled.length + ' nicht installiert)</h3>';
+    html += '<div class="grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">';
+    notInstalled.forEach(r => {
+      html += '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px;">' +
+        '<div style="font-size:13px;color:var(--text);">' + esc(r.templateId) + '</div>' +
+        '<div style="font-size:10px;color:var(--text-dim);margin:4px 0;">' + esc(r.description || '') + '</div>' +
+        '<button onclick="installTemplate(\'' + esc(r.installUrl || r.name) + '\')" style="font-size:10px;padding:3px 8px;border-radius:4px;border:none;background:var(--teal);color:var(--bg);cursor:pointer;">⬇ Installieren</button>' +
+        '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Section: Contact Templates
+  if (contactTemplates.length > 0) {
+    html += '<h3 style="color:var(--text);font-size:13px;margin:16px 0 8px;">Von Kontakten (' + contactTemplates.length + ')</h3>';
+    html += '<div class="grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">';
+    contactTemplates.forEach(t => {
+      const isInstalled = localTemplates.some(lt => lt.id === t.id);
+      html += '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px;">' +
+        '<div style="font-size:13px;color:var(--text);">' + (t.icon || '📋') + ' ' + esc(t.name || t.id) + '</div>' +
+        '<div style="font-size:10px;color:var(--text-dim);margin:4px 0;">von @' + esc(t.from) + '</div>' +
+        (isInstalled ? '<span style="font-size:10px;color:var(--teal);">✅ Installiert</span>'
+          : '<button onclick="installTemplate(\'' + esc(t.installUrl || '') + '\')" style="font-size:10px;padding:3px 8px;border-radius:4px;border:none;background:var(--teal);color:var(--bg);cursor:pointer;">⬇ Installieren</button>') +
+        '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function publishTemplate(tplId) {
+  if (!confirm('Template "' + tplId + '" auf GitHub publishen?')) return;
+  try {
+    const r = await fetch('/api/templates/' + tplId + '/publish', { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) { alert('Published: ' + d.url); render(); }
+    else alert('Fehler: ' + (d.error || 'Unbekannt'));
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+async function updateTemplate(tplId) {
+  try {
+    const r = await fetch('/api/templates/' + tplId + '/publish', { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) { alert('Updated: ' + d.url); render(); }
+    else alert('Fehler: ' + (d.error || 'Unbekannt'));
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+async function installTemplate(repoUrl) {
+  try {
+    const r = await fetch('/api/templates/install', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: repoUrl })
+    });
+    const d = await r.json();
+    if (d.ok) { alert('Template "' + (d.template?.name || '') + '" installiert!'); render(); }
+    else alert('Fehler: ' + (d.error || 'Unbekannt'));
+  } catch (e) { alert('Fehler: ' + e.message); }
 }
 
 async function setupStack(stackId, btn) {

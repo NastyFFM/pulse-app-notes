@@ -2056,6 +2056,53 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // ── Template Install from GitHub ──
+  if (url === '/api/templates/install' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { url: repoUrl, id } = JSON.parse(b);
+        if (!repoUrl && !id) return jsonRes(res, { error: 'url or id required' }, 400);
+
+        const tmpDir = path.join(require('os').tmpdir(), 'pulse-tpl-install-' + Date.now());
+        const repoPath = repoUrl || id;
+
+        require('child_process').execSync('gh repo clone ' + repoPath + ' ' + tmpDir + ' -- --depth=1', { encoding: 'utf8' });
+
+        // Read template.json
+        const tplJsonFile = path.join(tmpDir, 'template.json');
+        if (!fs.existsSync(tplJsonFile)) {
+          try { fs.rmSync(tmpDir, { recursive: true }); } catch {}
+          return jsonRes(res, { error: 'No template.json found in repo' }, 400);
+        }
+        const tpl = JSON.parse(fs.readFileSync(tplJsonFile, 'utf8'));
+
+        // Copy instructions.md if exists
+        const instrFile = path.join(tmpDir, 'instructions.md');
+        if (fs.existsSync(instrFile)) {
+          const destDir = path.join(ROOT, 'data', 'templates');
+          if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+          fs.copyFileSync(instrFile, path.join(destDir, tpl.id + '.md'));
+          tpl.instructions = '→ data/templates/' + tpl.id + '.md';
+        }
+
+        tpl.installedAt = new Date().toISOString();
+        tpl.source = repoUrl || repoPath;
+
+        // Add to templates.json
+        const tplFile = path.join(ROOT, 'data', 'templates.json');
+        const data = safeReadJSON(tplFile, '{"templates":[]}');
+        data.templates = (data.templates || []).filter(t => t.id !== tpl.id);
+        data.templates.push(tpl);
+        fs.writeFileSync(tplFile, JSON.stringify(data, null, 2));
+
+        // Cleanup
+        try { fs.rmSync(tmpDir, { recursive: true }); } catch {}
+
+        return jsonRes(res, { ok: true, template: tpl });
+      } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+    });
+  }
+
   // Uninstall app
   if (url === '/api/apps/uninstall' && req.method === 'POST') {
     return readBody(req, b => {
@@ -2366,6 +2413,35 @@ if (window.PulseOS) {
     } catch (e) {
       return jsonRes(res, { error: 'GitHub Abfrage fehlgeschlagen: ' + (e.message || '').split('\n')[0] }, 500);
     }
+  }
+
+  // ── Template GitHub Sync ──
+  if (url === '/api/templates/github-sync' && req.method === 'GET') {
+    try {
+      let githubUser = '';
+      try { githubUser = require('child_process').execSync('gh api user -q .login', { encoding: 'utf8' }).trim(); } catch {}
+      if (!githubUser) return jsonRes(res, { repos: [], error: 'GitHub not authenticated' });
+
+      const raw = require('child_process').execSync(
+        "gh repo list " + githubUser + " --json name,isPrivate,description --limit 100 -q '.[] | select(.name | startswith(\"pulse-template-\"))'",
+        { encoding: 'utf8' }
+      ).trim();
+
+      const repos = raw ? raw.split('\n').map(line => { try { return JSON.parse(line); } catch { return null; } }).filter(Boolean) : [];
+
+      // Compare with local templates
+      const localData = safeReadJSON(path.join(ROOT, 'data', 'templates.json'), '{"templates":[]}');
+      const localIds = new Set((localData.templates || []).map(t => t.id));
+
+      const result = repos.map(r => ({
+        ...r,
+        templateId: r.name.replace(/^pulse-template-/, ''),
+        installed: localIds.has(r.name.replace(/^pulse-template-/, '')),
+        installUrl: 'https://github.com/' + githubUser + '/' + r.name
+      }));
+
+      return jsonRes(res, { repos: result, user: githubUser });
+    } catch (e) { return jsonRes(res, { repos: [], error: e.message }); }
   }
 
   // ── App Env Vars ──
@@ -3265,6 +3341,55 @@ Arbeitsverzeichnis: ${ROOT}`;
       }
     });
     return;
+  }
+
+  // ── Template Publish to GitHub ──
+  const tplPublishMatch = url.match(/^\/api\/templates\/([a-zA-Z0-9_-]+)\/publish$/);
+  if (tplPublishMatch && req.method === 'POST') {
+    try {
+      const tplId = tplPublishMatch[1];
+      const tplData = safeReadJSON(path.join(ROOT, 'data', 'templates.json'), '{"templates":[]}');
+      const tpl = (tplData.templates || []).find(t => t.id === tplId);
+      if (!tpl) return jsonRes(res, { error: 'Template not found' }, 404);
+
+      const repoName = 'pulse-template-' + tplId;
+      const tmpDir = path.join(require('os').tmpdir(), 'pulse-tpl-' + Date.now());
+      fs.mkdirSync(tmpDir, { recursive: true });
+
+      // Write template files
+      fs.writeFileSync(path.join(tmpDir, 'template.json'), JSON.stringify(tpl, null, 2));
+      // Copy .md instructions if exists
+      const mdFile = path.join(ROOT, 'data', 'templates', tplId + '.md');
+      if (fs.existsSync(mdFile)) {
+        fs.copyFileSync(mdFile, path.join(tmpDir, 'instructions.md'));
+      } else if (tpl.instructions && !tpl.instructions.startsWith('→')) {
+        fs.writeFileSync(path.join(tmpDir, 'instructions.md'), tpl.instructions);
+      }
+
+      // Get GitHub user
+      let githubUser = '';
+      try { githubUser = require('child_process').execSync('gh api user -q .login', { encoding: 'utf8' }).trim(); } catch {}
+      if (!githubUser) return jsonRes(res, { error: 'GitHub not authenticated. Run: gh auth login' }, 500);
+
+      // Create repo and push
+      require('child_process').execSync('cd ' + tmpDir + ' && git init && git add -A && git commit -m "PulseOS template: ' + tplId + '"', { encoding: 'utf8' });
+      try {
+        require('child_process').execSync('gh repo create ' + githubUser + '/' + repoName + ' --public --description "PulseOS Template: ' + (tpl.name || tplId) + '" --source ' + tmpDir + ' --push', { encoding: 'utf8' });
+      } catch (e) {
+        // Repo might exist, try push
+        require('child_process').execSync('cd ' + tmpDir + ' && git remote add origin https://github.com/' + githubUser + '/' + repoName + '.git && git push -u origin main --force', { encoding: 'utf8' });
+      }
+
+      // Update template with publish info
+      tpl.publishedAt = new Date().toISOString();
+      tpl.source = 'https://github.com/' + githubUser + '/' + repoName;
+      fs.writeFileSync(path.join(ROOT, 'data', 'templates.json'), JSON.stringify(tplData, null, 2));
+
+      // Cleanup
+      try { fs.rmSync(tmpDir, { recursive: true }); } catch {}
+
+      return jsonRes(res, { ok: true, repo: githubUser + '/' + repoName, url: 'https://github.com/' + githubUser + '/' + repoName });
+    } catch (e) { return jsonRes(res, { error: e.message }, 500); }
   }
 
   // ── App Delete from GitHub (uses gh CLI) ──
@@ -7971,6 +8096,13 @@ Regeln:
         publicApps: publicApps.map(a => ({ id: a.id, name: a.name, icon: a.icon, description: a.description, installUrl: `${profile.github || 'user'}/pulse-app-${a.id}` })),
         unlistedApps: unlistedApps.map(a => ({ id: a.id, name: a.name })),
         inviteApps: inviteApps.map(a => ({ id: a.id, name: a.name, allowedUsers: a.allowedUsers })),
+        publicTemplates: (() => {
+          const tplData = safeReadJSON(path.join(ROOT, 'data', 'templates.json'), '{"templates":[]}');
+          return (tplData.templates || []).filter(t => !t.builtin && t.publishedAt).map(t => ({
+            id: t.id, name: t.name, description: t.description, icon: t.icon, stacks: t.stacks,
+            installUrl: t.source || ''
+          }));
+        })(),
         roomId: profile.roomId,
         updated: new Date().toISOString()
       };
