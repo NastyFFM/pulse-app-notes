@@ -3392,6 +3392,33 @@ Arbeitsverzeichnis: ${ROOT}`;
     } catch (e) { return jsonRes(res, { error: e.message }, 500); }
   }
 
+  // ── Template Unpublish (remove from GitHub + clear publishedAt) ──
+  if (url.match(/^\/api\/templates\/[^/]+\/unpublish$/) && req.method === 'POST') {
+    const tplId = url.split('/')[3];
+    const tplFile = path.join(ROOT, 'data', 'templates.json');
+    const tplData = safeReadJSON(tplFile, '{"templates":[]}');
+    const tpl = (tplData.templates || []).find(t => t.id === tplId);
+    if (!tpl) return jsonRes(res, { error: 'Template not found' }, 404);
+    if (tpl.builtin) return jsonRes(res, { error: 'Cannot unpublish builtin template' }, 400);
+
+    // Try to delete GitHub repo
+    if (tpl.source) {
+      try {
+        const repoName = 'pulse-template-' + tplId;
+        let githubUser = '';
+        try { githubUser = require('child_process').execSync('gh api user -q .login', { encoding: 'utf8' }).trim(); } catch {}
+        if (githubUser) {
+          require('child_process').execSync('gh repo delete ' + githubUser + '/' + repoName + ' --yes', { stdio: 'pipe', timeout: 15000 });
+        }
+      } catch {}
+    }
+
+    delete tpl.publishedAt;
+    delete tpl.source;
+    fs.writeFileSync(tplFile, JSON.stringify(tplData, null, 2));
+    return jsonRes(res, { ok: true });
+  }
+
   // ── App Delete from GitHub (uses gh CLI) ──
   if (url.match(/^\/api\/apps\/[^/]+\/delete-remote$/) && req.method === 'POST') {
     const appId = url.split('/')[3];

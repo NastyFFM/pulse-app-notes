@@ -404,9 +404,23 @@ async function renderTemplates(el) {
 
   // Section: My Templates (non-builtin)
   const myTemplates = localTemplates.filter(t => !t.builtin);
-  html += '<h3 style="color:var(--text);font-size:13px;margin:12px 0 8px;">Meine Templates (' + myTemplates.length + ')</h3>';
+  html += '<div style="display:flex;align-items:center;gap:8px;margin:12px 0 8px;">' +
+    '<h3 style="color:var(--text);font-size:13px;margin:0;">Meine Templates (' + myTemplates.length + ')</h3>' +
+    '<button onclick="showCreateTemplate()" style="font-size:12px;width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:var(--teal);color:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;" title="Neues Template erstellen">+</button>' +
+    '</div>';
+  html += '<div id="create-template-form" style="display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;">' +
+    '<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;">Neues Template</div>' +
+    '<input id="tpl-name" placeholder="Name" style="width:100%;box-sizing:border-box;padding:6px 8px;margin-bottom:6px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:11px;">' +
+    '<input id="tpl-desc" placeholder="Beschreibung" style="width:100%;box-sizing:border-box;padding:6px 8px;margin-bottom:6px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:11px;">' +
+    '<input id="tpl-icon" placeholder="Icon (emoji)" value="📋" style="width:60px;padding:6px 8px;margin-bottom:6px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:11px;">' +
+    '<input id="tpl-stacks" placeholder="Stacks (kommagetrennt, z.B. railway,supabase)" style="width:100%;box-sizing:border-box;padding:6px 8px;margin-bottom:6px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:11px;">' +
+    '<textarea id="tpl-instructions" placeholder="Instruktionen für den Worker..." rows="4" style="width:100%;box-sizing:border-box;padding:6px 8px;margin-bottom:8px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:11px;resize:vertical;"></textarea>' +
+    '<div style="display:flex;gap:6px;">' +
+    '<button onclick="createTemplate()" style="font-size:11px;padding:4px 12px;border-radius:4px;border:none;background:var(--teal);color:var(--bg);cursor:pointer;">Erstellen</button>' +
+    '<button onclick="document.getElementById(\'create-template-form\').style.display=\'none\'" style="font-size:11px;padding:4px 12px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;">Abbrechen</button>' +
+    '</div></div>';
   if (myTemplates.length === 0) {
-    html += '<div style="color:var(--text-dim);font-size:11px;padding:8px;">Noch keine eigenen Templates. Erstelle eins im App-Editor mit dem "+" Button.</div>';
+    html += '<div style="color:var(--text-dim);font-size:11px;padding:8px;">Noch keine eigenen Templates.</div>';
   } else {
     html += '<div class="grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">';
     myTemplates.forEach(t => {
@@ -415,8 +429,10 @@ async function renderTemplates(el) {
         '<div style="font-size:16px;margin-bottom:4px;">' + (t.icon || '📋') + ' ' + esc(t.name || t.id) + '</div>' +
         '<div style="font-size:10px;color:var(--text-dim);margin-bottom:6px;">' + esc(t.description || '').substring(0, 80) + '</div>' +
         '<div style="font-size:9px;color:var(--text-dim);margin-bottom:6px;">' + (t.stacks || []).map(s => '<span style="background:var(--bg);padding:1px 4px;border-radius:3px;margin-right:2px;">' + s + '</span>').join('') + '</div>' +
-        '<div style="display:flex;gap:4px;">' +
-        (t.publishedAt ? '<button onclick="updateTemplate(\'' + t.id + '\')" style="font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;">🔄 Update</button>'
+        '<div style="display:flex;gap:4px;flex-wrap:wrap;">' +
+        '<button onclick="editTemplate(\'' + t.id + '\')" style="font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;">✏️ Edit</button>' +
+        (t.publishedAt ? '<button onclick="updateTemplate(\'' + t.id + '\')" style="font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;">🔄 Update</button>' +
+          '<button onclick="unpublishTemplate(\'' + t.id + '\')" style="font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid #e74c3c;background:var(--bg);color:#e74c3c;cursor:pointer;">⬇ Unpublish</button>'
           : '<button onclick="publishTemplate(\'' + t.id + '\')" style="font-size:10px;padding:3px 8px;border-radius:4px;border:none;background:var(--teal);color:var(--bg);cursor:pointer;">🚀 Publish</button>') +
         '<span style="font-size:9px;color:var(--text-dim);padding:4px;">' + published + '</span>' +
         '</div></div>';
@@ -474,6 +490,83 @@ async function updateTemplate(tplId) {
     const r = await fetch('/api/templates/' + tplId + '/publish', { method: 'POST' });
     const d = await r.json();
     if (d.ok) { alert('Updated: ' + d.url); render(); }
+    else alert('Fehler: ' + (d.error || 'Unbekannt'));
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+async function editTemplate(tplId) {
+  try {
+    const r = await fetch('/api/templates');
+    const data = await r.json();
+    const templates = data.templates || data;
+    const t = templates.find(x => x.id === tplId);
+    if (!t) { alert('Template nicht gefunden'); return; }
+    document.getElementById('create-template-form').style.display = 'block';
+    document.getElementById('tpl-name').value = t.name || '';
+    document.getElementById('tpl-desc').value = t.description || '';
+    document.getElementById('tpl-icon').value = t.icon || '📋';
+    document.getElementById('tpl-stacks').value = (t.stacks || []).join(', ');
+    document.getElementById('tpl-instructions').value = t.instructions || '';
+    // Switch button to save mode
+    const btn = document.querySelector('#create-template-form button');
+    btn.textContent = 'Speichern';
+    btn.onclick = async function() {
+      const name = document.getElementById('tpl-name').value.trim();
+      const desc = document.getElementById('tpl-desc').value.trim();
+      const icon = document.getElementById('tpl-icon').value.trim() || '📋';
+      const stacks = document.getElementById('tpl-stacks').value.split(',').map(s => s.trim()).filter(Boolean);
+      const instructions = document.getElementById('tpl-instructions').value.trim();
+      if (!name) { alert('Name ist Pflicht'); return; }
+      try {
+        const res = await fetch('/api/templates/' + tplId, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description: desc, icon, stacks, instructions })
+        });
+        const d = await res.json();
+        if (d.ok) { render(); }
+        else alert('Fehler: ' + (d.error || 'Unbekannt'));
+      } catch (e) { alert('Fehler: ' + e.message); }
+    };
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+function showCreateTemplate() {
+  document.getElementById('create-template-form').style.display = 'block';
+  document.getElementById('tpl-name').value = '';
+  document.getElementById('tpl-desc').value = '';
+  document.getElementById('tpl-icon').value = '📋';
+  document.getElementById('tpl-stacks').value = '';
+  document.getElementById('tpl-instructions').value = '';
+  const btn = document.querySelector('#create-template-form button');
+  btn.textContent = 'Erstellen';
+  btn.onclick = createTemplate;
+  document.getElementById('tpl-name').focus();
+}
+
+async function createTemplate() {
+  const name = document.getElementById('tpl-name').value.trim();
+  const desc = document.getElementById('tpl-desc').value.trim();
+  const icon = document.getElementById('tpl-icon').value.trim() || '📋';
+  const stacks = document.getElementById('tpl-stacks').value.split(',').map(s => s.trim()).filter(Boolean);
+  const instructions = document.getElementById('tpl-instructions').value.trim();
+  if (!name) { alert('Name ist Pflicht'); return; }
+  try {
+    const r = await fetch('/api/templates', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description: desc, icon, stacks, instructions })
+    });
+    const d = await r.json();
+    if (d.ok) { render(); }
+    else alert('Fehler: ' + (d.error || 'Unbekannt'));
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+async function unpublishTemplate(tplId) {
+  if (!confirm('Template "' + tplId + '" von GitHub entfernen?')) return;
+  try {
+    const r = await fetch('/api/templates/' + tplId + '/unpublish', { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) { alert('Template unpublished.'); render(); }
     else alert('Fehler: ' + (d.error || 'Unbekannt'));
   } catch (e) { alert('Fehler: ' + e.message); }
 }
