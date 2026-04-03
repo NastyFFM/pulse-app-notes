@@ -1458,7 +1458,9 @@ body.mode-builder .home-screen { max-width: 600px; }
   <div class="section">
     <div class="section-title">
       Apps
-      <span style="margin-left:auto;font-size:10px;color:var(--text-muted);cursor:pointer;" onclick="toggleLauncher()">Alle anzeigen</span>
+      <span style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:10px;color:var(--text-muted);cursor:pointer;" onclick="toggleLauncher()">Alle anzeigen</span>
+      </span>
     </div>
     <div class="app-grid" id="appGrid">
       <div style="color:var(--text-muted);font-size:11px;padding:8px;">Lade...</div>
@@ -1780,7 +1782,10 @@ function renderAppGrid() {
   const grid = document.getElementById('appGrid');
   // Show first 9 pinned apps on home screen (including Settings)
   const shown = apps.slice(0, 9);
-  grid.innerHTML = shown.map(app =>
+  grid.innerHTML = '<div class="app-item" onclick="quickCreateApp()" title="Neue App erstellen">' +
+    '<div class="app-icon" style="background:var(--teal);font-size:28px;display:flex;align-items:center;justify-content:center;">+</div>' +
+    '<div class="app-name">Neue App</div></div>' +
+    shown.map(app =>
     '<div class="app-item" onclick="const a=state.apps.find(x=>x.id===\'' + app.id + '\');if(a)openApp(a);else console.warn(\'App not found:\',\'' + app.id + '\')">' +
     '<div class="app-icon" style="background:' + app.color + '">' + app.icon + '</div>' +
     '<div class="app-name">' + app.name + '</div></div>'
@@ -1791,6 +1796,13 @@ function renderLauncher() {
   const apps = state.apps.filter(a => a.installed).sort((a, b) => (a.position || 0) - (b.position || 0));
   const grid = document.getElementById('launcherGrid');
   grid.innerHTML = '';
+  // "+" Kachel als erstes Element
+  const createEl = document.createElement('div');
+  createEl.className = 'launcher-app';
+  createEl.dataset.name = 'neue app';
+  createEl.onclick = () => { quickCreateApp(); toggleLauncher(); };
+  createEl.innerHTML = '<div class="icon" style="background:var(--teal);font-size:28px;display:flex;align-items:center;justify-content:center;">+</div><div class="name">Neue App</div>';
+  grid.appendChild(createEl);
   apps.forEach(app => {
     const el = document.createElement('div');
     el.className = 'launcher-app';
@@ -1992,6 +2004,10 @@ function renderDock() {
     '</div>' +
     '<span class="dock-label">Chat</span>' +
     '</div>' +
+    '<div class="dock-item" onclick="quickCreateApp()" title="Neue App">' +
+    '<div class="dock-icon" style="background:var(--teal);font-size:20px;">+</div>' +
+    '<span class="dock-label">Neu</span>' +
+    '</div>' +
     '<div class="dock-item all-apps" onclick="toggleLauncher()" title="Alle Apps">' +
     '<div class="dock-icon">⊞</div>' +
     '<span class="dock-label">Apps</span>' +
@@ -2162,7 +2178,7 @@ function editWin(winId) {
       chatSSE.onmessage = (e) => {
         try {
           const d = JSON.parse(e.data);
-          if (d.type === 'change' && d.file === 'edit-chat.json') loadEditChat(winId, appId);
+          if (d.type === 'change' && d.file === 'edit-chat.json' && !panel._polling) loadEditChat(winId, appId);
         } catch {}
       };
       panel._chatSSE = chatSSE;
@@ -2184,6 +2200,14 @@ async function loadTemplateDropdown(winId) {
         const appsData = await appsRes.json();
         const appObj = (appsData.apps || []).find(a => a.id === appId);
         if (appObj?.template) savedTemplate = appObj.template;
+      } catch {}
+    }
+    // Use profile default template if no saved template
+    if (savedTemplate === 'frontend') {
+      try {
+        const profileRes = await fetch('/api/profile');
+        const profile = await profileRes.json();
+        if (profile.defaultTemplate) savedTemplate = profile.defaultTemplate;
       } catch {}
     }
     const r = await fetch('/api/templates');
@@ -2274,7 +2298,52 @@ async function generateTemplate(winId) {
 async function renderEditActions(winId, appId) {
   const el = document.getElementById('edit-actions-' + winId);
   if (!el) return;
-  el.innerHTML = '<button class="edit-action-btn" onclick="AppActions.showPublishingPanel(\'' + appId + '\')">🚀 Publish / Deploy</button>';
+  el.innerHTML = '<button class="edit-action-btn" onclick="AppActions.showPublishingPanel(\'' + appId + '\')">🚀 Publish / Deploy</button>' +
+    '<button class="edit-action-btn" onclick="showSaveAsTemplate(\'' + appId + '\')">📋 Als Template</button>';
+}
+
+function showSaveAsTemplate(appId) {
+  let modal = document.getElementById('saveTemplateModal');
+  if (modal) { modal.remove(); return; }
+  modal = document.createElement('div');
+  modal.id = 'saveTemplateModal';
+  modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:20px;z-index:10002;min-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.5);';
+  modal.innerHTML = '<div style="font-weight:600;margin-bottom:12px;">App als Template speichern</div>' +
+    '<input id="saveTplName" placeholder="Template Name" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;box-sizing:border-box;margin-bottom:8px;">' +
+    '<input id="saveTplDesc" placeholder="Beschreibung" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;box-sizing:border-box;margin-bottom:8px;">' +
+    '<input id="saveTplStacks" placeholder="Stacks (kommagetrennt, z.B. railway,supabase)" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;box-sizing:border-box;margin-bottom:8px;">' +
+    '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);margin-bottom:12px;cursor:pointer;">' +
+    '<input type="checkbox" id="saveTplGenerate" checked> KI-generierte Instruktionen</label>' +
+    '<div id="saveTplStatus" style="font-size:11px;min-height:16px;margin-bottom:8px;"></div>' +
+    '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+    '<button onclick="document.getElementById(\'saveTemplateModal\').remove()" style="padding:6px 12px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;">Abbrechen</button>' +
+    '<button onclick="doSaveAsTemplate(\'' + appId + '\')" style="padding:6px 12px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">Speichern</button></div>';
+  document.body.appendChild(modal);
+  document.getElementById('saveTplName').focus();
+}
+
+async function doSaveAsTemplate(appId) {
+  const name = document.getElementById('saveTplName').value.trim();
+  const description = document.getElementById('saveTplDesc').value.trim();
+  const stacks = document.getElementById('saveTplStacks').value.split(',').map(s => s.trim()).filter(Boolean);
+  const generateInstructions = document.getElementById('saveTplGenerate').checked;
+  const statusEl = document.getElementById('saveTplStatus');
+  if (!name) { statusEl.textContent = 'Name erforderlich'; statusEl.style.color = '#e74c3c'; return; }
+  statusEl.textContent = 'Speichere...'; statusEl.style.color = 'var(--teal)';
+  try {
+    const r = await fetch('/api/apps/' + appId + '/save-as-template', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description, stacks, generateInstructions })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      statusEl.textContent = 'Template gespeichert!' + (d.generatingInstructions ? ' Instruktionen werden generiert...' : '');
+      statusEl.style.color = 'var(--green)';
+      setTimeout(() => document.getElementById('saveTemplateModal')?.remove(), 2000);
+    } else {
+      statusEl.textContent = d.error || 'Fehler'; statusEl.style.color = '#e74c3c';
+    }
+  } catch { statusEl.textContent = 'Netzwerkfehler'; statusEl.style.color = '#e74c3c'; }
 }
 
 async function loadEditChat(winId, appId) {
@@ -2345,7 +2414,9 @@ async function sendEdit(winId) {
   userDiv.textContent = text;
   msgs.appendChild(userDiv);
 
-  // Show spinner
+  // Show spinner + block SSE reload during worker
+  const editPanel = document.getElementById('edit-' + winId);
+  if (editPanel) editPanel._polling = true;
   const spinner = document.createElement('div');
   spinner.className = 'edit-spinner';
   spinner.textContent = '⏳ Worker arbeitet...';
@@ -2372,14 +2443,19 @@ async function sendEdit(winId) {
       // Poll worker status
       const workerId = d.worker.id;
       // Safety timeout: clear spinner after 5 min max
-      const pollTimeout = setTimeout(() => { clearInterval(pollEdit); try { spinner.remove(); } catch {} }, 300000);
+      const pollTimeout = setTimeout(() => { clearInterval(pollEdit); try { spinner.remove(); } catch {} if (editPanel) editPanel._polling = false; }, 300000);
       const pollEdit = setInterval(async () => {
         try {
           const wr = await fetch('/api/workers/' + workerId);
           const w = await wr.json();
+          // Show live progress in spinner
+          if (w.progress && spinner.parentNode) {
+            spinner.textContent = '⏳ ' + w.progress;
+          }
           if (w.status === 'done') {
             clearTimeout(pollTimeout);
             clearInterval(pollEdit);
+            if (editPanel) editPanel._polling = false;
             spinner.remove();
             const agentDiv = document.createElement('div');
             agentDiv.className = 'edit-msg-agent';
@@ -2399,6 +2475,7 @@ async function sendEdit(winId) {
           } else if (w.status === 'error') {
             clearTimeout(pollTimeout);
             clearInterval(pollEdit);
+            if (editPanel) editPanel._polling = false;
             spinner.remove();
             const errDiv = document.createElement('div');
             errDiv.className = 'edit-msg-agent';
@@ -2408,8 +2485,17 @@ async function sendEdit(winId) {
           }
         } catch {}
       }, 5000);
+    } else {
+      // Worker creation failed or no worker returned
+      if (editPanel) editPanel._polling = false;
+      spinner.remove();
+      const errDiv = document.createElement('div');
+      errDiv.className = 'edit-msg-agent';
+      errDiv.textContent = '❌ ' + (d.error || 'Worker konnte nicht gestartet werden');
+      msgs.appendChild(errDiv);
     }
   } catch (e) {
+    if (editPanel) editPanel._polling = false;
     spinner.remove();
     const errDiv = document.createElement('div');
     errDiv.className = 'edit-msg-agent';
@@ -2769,6 +2855,53 @@ async function doInstallApp() {
 }
 
 // ── App Create ──
+function quickCreateApp() {
+  let modal = document.getElementById('quickCreateModal');
+  if (modal) { modal.remove(); return; }
+  modal = document.createElement('div');
+  modal.id = 'quickCreateModal';
+  modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:20px;z-index:10001;min-width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.5);';
+  modal.innerHTML = '<div style="font-weight:600;margin-bottom:12px;">Neue App</div>' +
+    '<input id="quickAppName" type="text" placeholder="App Name eingeben..." style="width:100%;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;box-sizing:border-box;" autofocus>' +
+    '<div id="quickCreateStatus" style="font-size:11px;min-height:16px;margin-top:8px;color:var(--text-dim);">Enter drücken zum Erstellen</div>' +
+    '<div style="display:flex;justify-content:flex-end;margin-top:8px;">' +
+    '<button onclick="document.getElementById(\'quickCreateModal\').remove()" style="padding:6px 14px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;">Abbrechen</button></div>';
+  document.body.appendChild(modal);
+  const input = document.getElementById('quickAppName');
+  input.focus();
+  input.onkeydown = async (e) => {
+    if (e.key === 'Escape') { modal.remove(); return; }
+    if (e.key !== 'Enter') return;
+    const name = input.value.trim();
+    if (!name) return;
+    const status = document.getElementById('quickCreateStatus');
+    status.textContent = 'Erstelle...'; status.style.color = 'var(--teal)';
+    try {
+      const r = await fetch('/api/apps/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+      const d = await r.json();
+      if (d.ok) {
+        modal.remove();
+        // Refresh apps list then open app with editor
+        await load();
+        const app = state.apps.find(a => a.id === d.appId);
+        if (app) {
+          openApp(app);
+          // Auto-open editor after short delay for window to render
+          setTimeout(() => {
+            const win = openWindows.find(w => w.appId === d.appId);
+            if (win) editWin(win.winId);
+          }, 500);
+        }
+        addFeed('App erstellt: ' + d.name, 'create');
+      } else {
+        status.textContent = d.error || 'Fehler'; status.style.color = '#e74c3c';
+      }
+    } catch { status.textContent = 'Netzwerkfehler'; status.style.color = '#e74c3c'; }
+  };
+  // Close on click outside
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+}
+
 function showCreateDialog() {
   let modal = document.getElementById('createModal');
   if (modal) { modal.remove(); return; }
@@ -2778,6 +2911,7 @@ function showCreateDialog() {
   modal.innerHTML = '<div style="font-weight:600;margin-bottom:12px;">Neue App erstellen</div>' +
     '<input id="createName" type="text" placeholder="App Name" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;box-sizing:border-box;margin-bottom:8px;">' +
     '<input id="createDesc" type="text" placeholder="Beschreibung (optional)" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;box-sizing:border-box;margin-bottom:8px;">' +
+    '<select id="createTemplate" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;box-sizing:border-box;margin-bottom:8px;"><option value="">Template laden...</option></select>' +
     '<div style="display:flex;gap:8px;margin-bottom:8px;">' +
     '<input id="createIcon" type="text" placeholder="Icon (1 Buchstabe)" maxlength="2" style="width:60px;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;text-align:center;">' +
     '<input id="createColor" type="color" value="#1a2a3a" style="width:40px;height:36px;border:none;background:none;cursor:pointer;"></div>' +
@@ -2787,6 +2921,22 @@ function showCreateDialog() {
     '<button onclick="doCreateApp()" style="padding:6px 12px;background:var(--teal);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">Erstellen</button></div>';
   document.body.appendChild(modal);
   document.getElementById('createName').focus();
+  // Load templates into dropdown
+  fetch('/api/templates').then(r => r.json()).then(d => {
+    const sel = document.getElementById('createTemplate');
+    if (!sel) return;
+    const templates = d.templates || d;
+    sel.innerHTML = '<option value="">Kein Template (Standard)</option>';
+    templates.forEach(t => {
+      sel.innerHTML += '<option value="' + t.id + '"' + (t.hasStarter ? ' style="font-weight:600;"' : '') + '>' + (t.icon || '📋') + ' ' + (t.name || t.id) + (t.hasStarter ? ' ★' : '') + '</option>';
+    });
+    // Set default from profile
+    fetch('/api/profile').then(r => r.json()).then(p => {
+      if (p.defaultTemplate && sel.querySelector('option[value="' + p.defaultTemplate + '"]')) {
+        sel.value = p.defaultTemplate;
+      }
+    }).catch(() => {});
+  }).catch(() => {});
 }
 
 async function doCreateApp() {
@@ -2798,7 +2948,8 @@ async function doCreateApp() {
   if (!appName) { statusEl.textContent = 'Name erforderlich'; statusEl.style.color = '#e74c3c'; return; }
   statusEl.textContent = 'Erstelle...'; statusEl.style.color = 'var(--teal)';
   try {
-    const r = await fetch('/api/apps/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: appName, description: desc, icon: icon || undefined, color }) });
+    const template = document.getElementById('createTemplate')?.value || undefined;
+    const r = await fetch('/api/apps/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: appName, description: desc, icon: icon || undefined, color, template }) });
     const d = await r.json();
     if (d.ok) {
       statusEl.textContent = d.name + ' erstellt!'; statusEl.style.color = 'var(--green)';

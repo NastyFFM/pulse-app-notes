@@ -101,6 +101,17 @@ function appendToChatFile(chatId, msg) {
   } catch (e) { console.error('[appendToChatFile] Error:', e.message); }
 }
 
+function copyDirExcluding(src, dest, excludes = ['.git', 'node_modules', '.next', 'data']) {
+  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    if (excludes.includes(entry.name)) continue;
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) copyDirExcluding(srcPath, destPath, excludes);
+    else fs.copyFileSync(srcPath, destPath);
+  }
+}
+
 function safeReadJSON(file, fallback) {
   try {
     const raw = fs.readFileSync(file, 'utf8');
@@ -2088,6 +2099,15 @@ const server = http.createServer(async (req, res) => {
         tpl.installedAt = new Date().toISOString();
         tpl.source = repoUrl || repoPath;
 
+        // Copy starter files if present
+        const starterSrc = path.join(tmpDir, 'starter');
+        if (fs.existsSync(starterSrc)) {
+          const starterDest = path.join(ROOT, 'data', 'template-starters', tpl.id);
+          if (fs.existsSync(starterDest)) fs.rmSync(starterDest, { recursive: true });
+          copyDirExcluding(starterSrc, starterDest, ['.git']);
+          tpl.hasStarter = true;
+        }
+
         // Add to templates.json
         const tplFile = path.join(ROOT, 'data', 'templates.json');
         const data = safeReadJSON(tplFile, '{"templates":[]}');
@@ -2247,6 +2267,35 @@ const server = http.createServer(async (req, res) => {
 
         fs.mkdirSync(appDir, { recursive: true });
         fs.mkdirSync(path.join(appDir, 'data'), { recursive: true });
+
+        // Check for starter files from template
+        const starterDir = template ? path.join(ROOT, 'data', 'template-starters', template) : null;
+        if (starterDir && fs.existsSync(starterDir)) {
+          copyDirExcluding(starterDir, appDir, ['.git']);
+          // Merge manifest with app-specific values
+          const manifestPath = path.join(appDir, 'manifest.json');
+          const manifest = fs.existsSync(manifestPath) ? safeReadJSON(manifestPath, '{}') : {};
+          manifest.name = name;
+          manifest.icon = icon || manifest.icon || name[0].toUpperCase();
+          manifest.color = color || manifest.color || '#1a2a3a';
+          manifest.description = description || manifest.description || '';
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+          if (!fs.existsSync(path.join(appDir, 'data'))) fs.mkdirSync(path.join(appDir, 'data'), { recursive: true });
+          if (!fs.existsSync(path.join(appDir, 'data', 'state.json'))) fs.writeFileSync(path.join(appDir, 'data', 'state.json'), '{}');
+          // Register and return (skip boilerplate)
+          const appsFile = path.join(ROOT, 'data', 'apps.json');
+          const appsData = safeReadJSON(appsFile, '{"apps":[]}');
+          const apps = appsData.apps || [];
+          const appEntry = { id: appId, name, icon: manifest.icon, color: manifest.color, description: manifest.description, installed: true, created: true, position: apps.length };
+          if (template) appEntry.template = template;
+          if (stacks && stacks.length) appEntry.stacks = stacks;
+          apps.push(appEntry);
+          if (appsData.apps) appsData.apps = apps;
+          fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+          invalidateAgentContextCache();
+          broadcast('dashboard', { type: 'app-installed', appId, name });
+          return jsonRes(res, { ok: true, appId, name, fromStarter: true });
+        }
 
         // Generate template HTML
         const appColor = color || '#1a2a3a';
@@ -3346,7 +3395,9 @@ Arbeitsverzeichnis: ${ROOT}`;
   // ── Template Publish to GitHub ──
   const tplPublishMatch = url.match(/^\/api\/templates\/([a-zA-Z0-9_-]+)\/publish$/);
   if (tplPublishMatch && req.method === 'POST') {
+    return readBody(req, (b) => {
     try {
+      const body = b ? JSON.parse(b) : {};
       const tplId = tplPublishMatch[1];
       const tplData = safeReadJSON(path.join(ROOT, 'data', 'templates.json'), '{"templates":[]}');
       const tpl = (tplData.templates || []).find(t => t.id === tplId);
@@ -3364,6 +3415,17 @@ Arbeitsverzeichnis: ${ROOT}`;
         fs.copyFileSync(mdFile, path.join(tmpDir, 'instructions.md'));
       } else if (tpl.instructions && !tpl.instructions.startsWith('→')) {
         fs.writeFileSync(path.join(tmpDir, 'instructions.md'), tpl.instructions);
+      }
+
+      // Copy starter files from app if appId provided
+      const appId = body.appId || tpl.sourceAppId;
+      if (appId) {
+        const appDir = path.join(ROOT, 'apps', appId);
+        if (fs.existsSync(appDir)) {
+          const starterDir = path.join(tmpDir, 'starter');
+          copyDirExcluding(appDir, starterDir, ['.git', 'node_modules', '.next', 'data', 'versions']);
+          tpl.hasStarter = true;
+        }
       }
 
       // Get GitHub user
@@ -3390,6 +3452,66 @@ Arbeitsverzeichnis: ${ROOT}`;
 
       return jsonRes(res, { ok: true, repo: githubUser + '/' + repoName, url: 'https://github.com/' + githubUser + '/' + repoName });
     } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+    });
+  }
+
+  // ── Save App as Template ──
+  const saveAsTplMatch = url.match(/^\/api\/apps\/([a-zA-Z0-9_-]+)\/save-as-template$/);
+  if (saveAsTplMatch && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { name, description, icon, stacks, generateInstructions } = JSON.parse(b);
+        const appId = saveAsTplMatch[1];
+        const appDir = resolveAppDir(appId);
+        if (!appDir || !fs.existsSync(appDir)) return jsonRes(res, { error: 'App not found' }, 404);
+        if (!name) return jsonRes(res, { error: 'name required' }, 400);
+
+        const tplId = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+
+        // Read app manifest for defaults
+        const appManifest = safeReadJSON(path.join(appDir, 'manifest.json'), '{}');
+
+        // Create template entry
+        const tplFile = path.join(ROOT, 'data', 'templates.json');
+        const tplData = safeReadJSON(tplFile, '{"templates":[]}');
+        tplData.templates = (tplData.templates || []).filter(t => t.id !== tplId);
+        const tpl = {
+          id: tplId,
+          name,
+          description: description || appManifest.description || '',
+          icon: icon || appManifest.icon || '📋',
+          author: 'user',
+          stacks: stacks || [],
+          instructions: '',
+          sourceAppId: appId,
+          hasStarter: true,
+          createdAt: new Date().toISOString()
+        };
+        tplData.templates.push(tpl);
+        fs.writeFileSync(tplFile, JSON.stringify(tplData, null, 2));
+
+        // Copy app files to template-starters
+        const starterDest = path.join(ROOT, 'data', 'template-starters', tplId);
+        if (fs.existsSync(starterDest)) fs.rmSync(starterDest, { recursive: true });
+        copyDirExcluding(appDir, starterDest, ['.git', 'node_modules', '.next', 'data', 'versions']);
+
+        // Generate instructions via mini-worker if requested
+        if (generateInstructions) {
+          const instrPath = path.join(ROOT, 'data', 'templates', tplId + '.md');
+          const instrDir = path.join(ROOT, 'data', 'templates');
+          if (!fs.existsSync(instrDir)) fs.mkdirSync(instrDir, { recursive: true });
+          const claudePath = process.env.CLAUDE_PATH || 'claude';
+          const prompt = 'Read all files in ' + appDir + ' and write a template instructions file to ' + instrPath + '. The instructions should explain: what this template does, what files are included and their purpose, what stacks/services are needed, what env vars are required, and conventions a worker building on this starter should follow. Be concise and actionable. Write in markdown.';
+          const { spawn } = require('child_process');
+          const worker = spawn(claudePath, ['-p', '--model', 'haiku', '--allowedTools', 'Read,Write,Glob', '--max-turns', '10', prompt], { stdio: 'ignore', detached: true });
+          worker.unref();
+          tpl.instructions = '→ data/templates/' + tplId + '.md';
+          fs.writeFileSync(tplFile, JSON.stringify(tplData, null, 2));
+        }
+
+        return jsonRes(res, { ok: true, templateId: tplId, generatingInstructions: !!generateInstructions });
+      } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+    });
   }
 
   // ── Template Unpublish (remove from GitHub + clear publishedAt) ──
@@ -8546,6 +8668,11 @@ function copyInstall(repo, btn) {
         const taskLower = (task || '').toLowerCase();
         const upgradeKeywords = ['deploy', 'vercel', 'railway', 'netlify', 'online', 'web-app', 'webapp', 'user', 'auth', 'login', 'registrier', 'supabase', 'payment', 'bezahl', 'stripe', 'saas', 'subscription', 'admin', 'dashboard', 'monetarisier'];
         let effectiveTemplate = template;
+        // Use profile default template if none specified and not in edit mode
+        if (!effectiveTemplate && !editMode) {
+          const profile = safeReadJSON(path.join(ROOT, 'data', 'profile.json'), '{}');
+          if (profile.defaultTemplate) effectiveTemplate = profile.defaultTemplate;
+        }
         if (!effectiveTemplate && upgradeKeywords.some(k => taskLower.includes(k))) {
           effectiveTemplate = 'progressive-default';
           const stages = { 1: 'PulseOS Frontend', 3: 'Deployed Web-App', 4: 'With Users (Supabase)', 5: 'SaaS (Stripe)' };
