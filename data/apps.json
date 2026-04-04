@@ -59,7 +59,9 @@
       "color": "#4ecdc4",
       "description": "Kontakte verwalten",
       "installed": true,
-      "position": 5
+      "position": 5,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "files",
@@ -80,7 +82,7 @@
       "description": "Wetter-Anzeige",
       "installed": true,
       "position": 6,
-      "visibility": "public",
+      "visibility": "private",
       "allowedUsers": []
     },
     {
@@ -217,7 +219,7 @@
       "installed": true,
       "created": true,
       "position": 16,
-      "visibility": "public",
+      "visibility": "private",
       "allowedUsers": [],
       "source": "https://github.com/NastyFFM/pulse-app-habit-tracker",
       "publishedAt": "2026-03-29T12:11:17.174Z",
@@ -261,7 +263,9 @@
       "description": "",
       "installed": false,
       "created": true,
-      "position": 20
+      "position": 20,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "voidrunner",
@@ -313,7 +317,9 @@
       "color": "#6366f1",
       "description": "Eigene Webseiten erstellen",
       "installed": true,
-      "position": 25
+      "position": 25,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "social",
@@ -322,7 +328,9 @@
       "color": "#f59e0b",
       "description": "Social Feed deiner Kontakte",
       "installed": true,
-      "position": 26
+      "position": 26,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "store",
@@ -335,7 +343,9 @@
       "template": "static-portfolio-github-pages",
       "stacks": [
         "github-pages"
-      ]
+      ],
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "workers",
@@ -435,7 +445,9 @@
       "position": 31,
       "railwayProjectId": "b4dbd9b6-7109-46e6-8d19-67e0eb6808c8",
       "railwayUrl": "https://pulse-app-countdown-production.up.railway.app",
-      "deployedAt": "2026-03-30T16:17:41.021Z"
+      "deployedAt": "2026-03-30T16:17:41.021Z",
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "clock",
@@ -453,7 +465,9 @@
       ],
       "railwayProjectId": "92bf946c-c334-4e72-94c7-69995272e22b",
       "railwayUrl": "https://pulse-app-clock-production.up.railway.app",
-      "deployedAt": "2026-03-30T17:14:07.037Z"
+      "deployedAt": "2026-03-30T17:14:07.037Z",
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "youtube-cinema",
@@ -463,7 +477,9 @@
       "description": "Netflix-Style Browser für populäre YouTube Videos — automatisch kuratiert, keine Suche nötig",
       "installed": true,
       "created": true,
-      "position": 33
+      "position": 33,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "streamflix",
@@ -500,7 +516,9 @@
         "supabase",
         "stripe",
         "cloudflare"
-      ]
+      ],
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "demo",
@@ -511,7 +529,9 @@
       "installed": true,
       "source": "https://github.com/NastyFFM/pulse-app-demo",
       "installedAt": "2026-03-31T14:08:25.837Z",
-      "position": 35
+      "position": 35,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "stopwatch",
@@ -522,7 +542,9 @@
       "installed": true,
       "source": "https://github.com/NastyFFM/pulse-app-stopwatch",
       "installedAt": "2026-03-31T14:10:31.752Z",
-      "position": 36
+      "position": 36,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "calendar",
@@ -541,7 +563,9 @@
       "deployUrl": "https://pulse-app-calendar.herokuapp.com",
       "deployDashboardUrl": "https://dashboard.heroku.com/apps/pulse-app-calendar",
       "deployProvider": "heroku",
-      "deployedAt": "2026-03-31T21:16:39.147Z"
+      "deployedAt": "2026-03-31T21:16:39.147Z",
+      "visibility": "public",
+      "allowedUsers": []
     },
     {
       "id": "colorpicker",
@@ -567,7 +591,9 @@
       "description": "Farbwähler mit Hex, RGB und HSL Unterstützung",
       "installed": true,
       "created": true,
-      "position": 39
+      "position": 39,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "roll-the-dice",
@@ -581,7 +607,9 @@
       "template": "vercel",
       "stacks": [
         "vercel"
-      ]
+      ],
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "roll-the-dice",
@@ -622,7 +650,9 @@
       "description": "",
       "installed": true,
       "created": true,
-      "position": 43
+      "position": 43,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "eine-tetris-von-links-nach-rechts",
@@ -632,7 +662,9 @@
       "description": "",
       "installed": true,
       "created": true,
-      "position": 44
+      "position": 44,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "pong-spiel",
@@ -642,7 +674,9 @@
       "description": "",
       "installed": true,
       "created": true,
-      "position": 45
+      "position": 45,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "videostreming-portsl-delux-modern-high-qualite-premium-player-heroe-at-the-top-kategories-etc-like-modern-streaming-platoform",
@@ -652,7 +686,9 @@
       "description": "",
       "installed": true,
       "created": true,
-      "position": 46
+      "position": 46,
+      "visibility": "private",
+      "allowedUsers": []
     },
     {
       "id": "test-orchestrator",
@@ -662,7 +698,189 @@
       "description": "",
       "installed": true,
       "created": true,
-      "position": 47
+      "position": 47,
+      "visibility": "private",
+      "allowedUsers": []
+    },
+    {
+      "id": "agent-dashboard",
+      "name": "Agent Dashboard",
+      "icon": "🤖",
+      "color": "#8b5cf6",
+      "description": "Transparenter Viewer für das Agent-System",
+      "installed": true,
+      "created": true,
+      "position": 99
+    },
+    {
+      "id": "pomodoro-timer",
+      "name": "pomodoro-timer",
+      "icon": "P",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 49
+    },
+    {
+      "id": "habit-tracker-v2",
+      "name": "habit-tracker-v2",
+      "icon": "H",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 50
+    },
+    {
+      "id": "todo-board",
+      "name": "todo-board",
+      "icon": "T",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 51
+    },
+    {
+      "id": "testapp1775343753870",
+      "name": "TestApp1775343753870",
+      "icon": "T",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 52
+    },
+    {
+      "id": "dockapp1775343760188",
+      "name": "DockApp1775343760188",
+      "icon": "D",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 53
+    },
+    {
+      "id": "paneltest1775343764979",
+      "name": "PanelTest1775343764979",
+      "icon": "P",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 54
+    },
+    {
+      "id": "testapp1775343780531",
+      "name": "TestApp1775343780531",
+      "icon": "T",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 55
+    },
+    {
+      "id": "dockapp1775343786831",
+      "name": "DockApp1775343786831",
+      "icon": "D",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 56
+    },
+    {
+      "id": "paneltest1775343791705",
+      "name": "PanelTest1775343791705",
+      "icon": "P",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 57
+    },
+    {
+      "id": "testapp1775344083617",
+      "name": "TestApp1775344083617",
+      "icon": "T",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 58
+    },
+    {
+      "id": "dockapp1775344091033",
+      "name": "DockApp1775344091033",
+      "icon": "D",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 59
+    },
+    {
+      "id": "paneltest1775344096802",
+      "name": "PanelTest1775344096802",
+      "icon": "P",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 60
+    },
+    {
+      "id": "orctest1775344125667",
+      "name": "OrcTest1775344125667",
+      "icon": "O",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 61
+    },
+    {
+      "id": "dockorc1775344131486",
+      "name": "DockOrc1775344131486",
+      "icon": "D",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 62
+    },
+    {
+      "id": "orctest1775344145321",
+      "name": "OrcTest1775344145321",
+      "icon": "O",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 63
+    },
+    {
+      "id": "dockorc1775344151117",
+      "name": "DockOrc1775344151117",
+      "icon": "D",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 64
+    },
+    {
+      "id": "podcast-finder-and-player",
+      "name": "Podcast Finder",
+      "icon": "🎙",
+      "color": "#8B5CF6",
+      "description": "Podcasts suchen und abspielen",
+      "installed": true,
+      "created": true,
+      "position": 65
     }
   ]
 }

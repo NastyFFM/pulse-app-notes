@@ -1,0 +1,10 @@
+{
+  "name": "Podcast Finder",
+  "icon": "🎙",
+  "color": "#8B5CF6",
+  "description": "Podcasts suchen und abspielen",
+  "inputs": [{"id": "search", "desc": "Suchbegriff empfangen"}],
+  "outputs": [{"id": "podcast", "desc": "Ausgewählten Podcast senden"}],
+  "dataFiles": ["state"],
+  "pulseSubscriptions": []
+}
