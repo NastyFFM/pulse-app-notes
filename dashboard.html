@@ -2432,11 +2432,19 @@ async function sendEdit(winId) {
     await fetch('/app/' + appId + '/api/edit-chat', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(existing) });
   } catch {}
 
-  // Send to worker (with template context)
+  // Send to worker — detect if app is fresh (use orchestrator) or existing (edit mode)
+  let isNewApp = false;
   try {
+    const chatData = await fetch('/app/' + appId + '/api/edit-chat').then(r => r.ok ? r.json() : { messages: [] }).catch(() => ({ messages: [] }));
+    isNewApp = !chatData.messages || chatData.messages.filter(m => m.from === 'agent').length === 0;
+  } catch {}
+  try {
+    const workerBody = isNewApp
+      ? { task: 'Erstelle die App "' + appId + '": ' + text, model: 'sonnet', appId, template: tpl, orchestrated: true }
+      : { task: 'Modifiziere die App "' + appId + '": ' + text, model: 'sonnet', appId, template: tpl, editMode: true };
     const r = await fetch('/api/workers', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ task: 'Modifiziere die App "' + appId + '": ' + text, model: 'sonnet', appId, template: tpl, editMode: true })
+      body: JSON.stringify(workerBody)
     });
     const d = await r.json();
     if (d.ok && d.worker) {
