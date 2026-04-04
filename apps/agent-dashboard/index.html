@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Dashboard</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:system-ui,-apple-system,sans-serif; background:var(--bg, #0d0d14); color:var(--text, #e0e0e0); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+.tabs { display:flex; gap:2px; padding:8px 12px 0; background:var(--bg-card, #1a1a2e); border-bottom:1px solid var(--border, #2a2a3e); flex-shrink:0; }
+.tab { padding:8px 14px; font-size:11px; cursor:pointer; border-radius:6px 6px 0 0; color:var(--text-dim, #888); font-weight:500; transition:all 0.15s; }
+.tab:hover { background:rgba(78,205,196,0.08); }
+.tab.active { background:var(--bg, #0d0d14); color:var(--teal, #4ecdc4); border:1px solid var(--border, #2a2a3e); border-bottom-color:var(--bg, #0d0d14); }
+
+.content { flex:1; overflow-y:auto; padding:12px; }
+
+.card { background:var(--bg-card, #1a1a2e); border:1px solid var(--border, #2a2a3e); border-radius:8px; padding:12px; margin-bottom:8px; }
+.card-title { font-size:13px; font-weight:600; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+.card-meta { font-size:10px; color:var(--text-dim, #888); }
+.card-body { font-size:11px; margin-top:6px; line-height:1.5; }
+
+.badge { display:inline-block; padding:2px 6px; border-radius:4px; font-size:9px; font-weight:600; }
+.badge-green { background:rgba(78,205,196,0.15); color:var(--teal, #4ecdc4); }
+.badge-yellow { background:rgba(255,193,7,0.15); color:#ffc107; }
+.badge-red { background:rgba(231,76,60,0.15); color:#e74c3c; }
+.badge-blue { background:rgba(100,149,237,0.15); color:#6495ed; }
+.badge-purple { background:rgba(139,92,246,0.15); color:#8b5cf6; }
+
+.progress-bar { height:4px; background:var(--border, #2a2a3e); border-radius:2px; margin-top:6px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--teal, #4ecdc4); transition:width 0.3s; border-radius:2px; }
+
+.status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.status-running { background:#4ecdc4; animation:pulse 1.5s infinite; }
+.status-done { background:#2ecc71; }
+.status-error { background:#e74c3c; }
+.status-idle { background:#555; }
+
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+.file-tree { font-family:monospace; font-size:11px; }
+.file-item { padding:4px 8px; cursor:pointer; border-radius:4px; display:flex; justify-content:space-between; }
+.file-item:hover { background:rgba(78,205,196,0.08); }
+
+.code-preview { background:#0a0a12; border:1px solid var(--border, #2a2a3e); border-radius:6px; padding:10px; font-family:monospace; font-size:10px; white-space:pre-wrap; max-height:200px; overflow-y:auto; margin-top:6px; color:#bbb; }
+
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+@media (max-width:600px) { .grid-2 { grid-template-columns:1fr; } }
+
+.stats-bar { display:flex; gap:12px; padding:8px 12px; background:var(--bg-card, #1a1a2e); border-bottom:1px solid var(--border, #2a2a3e); font-size:10px; color:var(--text-dim, #888); flex-shrink:0; }
+.stat { display:flex; align-items:center; gap:4px; }
+.stat-val { color:var(--teal, #4ecdc4); font-weight:600; }
+
+.log-line { font-family:monospace; font-size:10px; padding:2px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
+.log-time { color:var(--text-dim, #888); margin-right:8px; }
+</style>
+</head>
+<body>
+
+<div class="stats-bar" id="statsBar">
+  <div class="stat">Workers: <span class="stat-val" id="statWorkers">-</span></div>
+  <div class="stat">Agents: <span class="stat-val" id="statAgents">-</span></div>
+  <div class="stat">Skills: <span class="stat-val" id="statSkills">-</span></div>
+  <div class="stat">MCP: <span class="stat-val" id="statMcp">-</span></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('workers')">⚡ Workers</div>
+  <div class="tab" onclick="switchTab('agents')">🤖 Agents</div>
+  <div class="tab" onclick="switchTab('skills')">🧠 Skills</div>
+  <div class="tab" onclick="switchTab('mcp')">🔌 MCP</div>
+  <div class="tab" onclick="switchTab('files')">📁 Files</div>
+</div>
+
+<div class="content" id="content"></div>
+
+<script src="/sdk.js"></script>
+<script>
+let activeTab = 'workers';
+let data = { workers: [], agents: [], skills: [], mcp: {}, files: [] };
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.tab[onclick*="' + tab + '"]').classList.add('active');
+  render();
+}
+
+async function loadAll() {
+  const [w, a, s, m, f] = await Promise.allSettled([
+    fetch('/api/workers').then(r => r.json()),
+    fetch('/api/agent-system/agents').then(r => r.json()),
+    fetch('/api/agent-system/skills').then(r => r.json()),
+    fetch('/api/agent-system/mcp').then(r => r.json()),
+    fetch('/api/agent-system/files').then(r => r.json())
+  ]);
+  if (w.status === 'fulfilled') data.workers = (w.value.workers || w.value || []);
+  if (a.status === 'fulfilled') data.agents = a.value.agents || [];
+  if (s.status === 'fulfilled') data.skills = s.value.skills || [];
+  if (m.status === 'fulfilled') data.mcp = m.value.mcpServers || m.value || {};
+  if (f.status === 'fulfilled') data.files = f.value.files || [];
+
+  // Stats
+  const running = data.workers.filter(w => w.status === 'running').length;
+  document.getElementById('statWorkers').textContent = running + ' running / ' + data.workers.length + ' total';
+  document.getElementById('statAgents').textContent = data.agents.length;
+  document.getElementById('statSkills').textContent = data.skills.length;
+  document.getElementById('statMcp').textContent = Object.keys(data.mcp).length;
+
+  render();
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return Math.floor(diff) + 's ago';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+function render() {
+  const el = document.getElementById('content');
+  switch(activeTab) {
+    case 'workers': renderWorkers(el); break;
+    case 'agents': renderAgents(el); break;
+    case 'skills': renderSkills(el); break;
+    case 'mcp': renderMcp(el); break;
+    case 'files': renderFiles(el); break;
+  }
+}
+
+function renderWorkers(el) {
+  const workers = [...data.workers].sort((a,b) => (b.startedAt||'').localeCompare(a.startedAt||''));
+  if (workers.length === 0) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);">Keine Workers. Erstelle eine App um einen Worker zu starten.</div>'; return; }
+
+  el.innerHTML = workers.map(w => {
+    const statusClass = w.status === 'running' ? 'status-running' : w.status === 'done' ? 'status-done' : 'status-error';
+    const badge = w.status === 'running' ? 'badge-yellow' : w.status === 'done' ? 'badge-green' : 'badge-red';
+    const phases = (w.phases || []).map(p => p.status === 'done' ? '✅' : p.status === 'running' ? '⏳' : '⬜').join('');
+
+    return '<div class="card">' +
+      '<div class="card-title"><span class="status-dot ' + statusClass + '"></span> ' + esc(w.id) + ' <span class="badge ' + badge + '">' + (w.status || 'unknown') + '</span></div>' +
+      '<div class="card-meta">' + esc(w.model || 'sonnet') + ' · ' + timeAgo(w.startedAt) + (w.finishedAt ? ' · Dauer: ' + Math.round((new Date(w.finishedAt) - new Date(w.startedAt))/1000) + 's' : '') + '</div>' +
+      '<div class="card-body">' +
+        '<div style="margin-bottom:4px;"><strong>Task:</strong> ' + esc((w.task || '').substring(0, 150)) + '</div>' +
+        (w.progress ? '<div style="margin-bottom:4px;"><strong>Progress:</strong> ' + esc(w.progress) + '</div>' : '') +
+        (phases ? '<div style="margin-bottom:4px;">Phasen: ' + phases + '</div>' : '') +
+        (w.result ? '<div style="margin-bottom:4px;"><strong>Result:</strong> ' + esc((w.result || '').substring(0, 200)) + '</div>' : '') +
+      '</div>' +
+      (w.log && w.log.length > 0 ? '<details style="margin-top:6px;"><summary style="font-size:10px;cursor:pointer;color:var(--text-dim);">Log (' + w.log.length + ' entries)</summary><div style="max-height:150px;overflow-y:auto;margin-top:4px;">' +
+        w.log.slice(-10).map(l => '<div class="log-line"><span class="log-time">' + (l.time ? new Date(l.time).toLocaleTimeString() : '') + '</span>' + esc(l.text || l.type || '') + '</div>').join('') +
+      '</div></details>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function renderAgents(el) {
+  if (data.agents.length === 0) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);">Keine Agents in .claude/agents/</div>'; return; }
+  el.innerHTML = data.agents.map(a => {
+    const tools = (a.tools || '').replace(/\n/g, '').split('-').filter(Boolean).map(t => t.trim());
+    return '<div class="card">' +
+      '<div class="card-title">🤖 ' + esc(a.name || a.file) + ' <span class="badge badge-purple">' + esc(a.model || 'sonnet') + '</span>' +
+      (a.isolation ? ' <span class="badge badge-blue">' + esc(a.isolation) + '</span>' : '') +
+      (a.maxTurns ? ' <span class="badge badge-yellow">' + a.maxTurns + ' turns</span>' : '') +
+      '</div>' +
+      '<div class="card-meta">' + esc(a.description || '') + '</div>' +
+      '<div class="card-body">' +
+        (tools.length > 0 ? '<div style="margin-bottom:4px;"><strong>Tools:</strong> ' + tools.map(t => '<span class="badge badge-blue" style="margin-right:2px;">' + esc(t) + '</span>').join('') + '</div>' : '') +
+        '<div class="code-preview">' + esc(a.body || '') + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderSkills(el) {
+  if (data.skills.length === 0) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);">Keine Skills in .claude/skills/</div>'; return; }
+  el.innerHTML = '<div class="grid-2">' + data.skills.map(s => {
+    return '<div class="card">' +
+      '<div class="card-title">🧠 ' + esc(s.name || s.id) + '</div>' +
+      '<div class="card-meta">' + esc(s.description || '') + '</div>' +
+      '<div class="card-body">' +
+        '<div style="font-size:10px;color:var(--text-dim);margin-top:4px;">ID: ' + esc(s.id) + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+function renderMcp(el) {
+  const servers = Object.entries(data.mcp);
+  if (servers.length === 0) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);">Keine MCP Server in .mcp.json</div>'; return; }
+  el.innerHTML = servers.map(([name, cfg]) => {
+    return '<div class="card">' +
+      '<div class="card-title">🔌 ' + esc(name) + ' <span class="badge badge-green">configured</span></div>' +
+      '<div class="card-body">' +
+        '<div><strong>Command:</strong> <code>' + esc(cfg.command || '') + ' ' + (cfg.args || []).join(' ') + '</code></div>' +
+        (cfg.env ? '<div style="margin-top:4px;"><strong>Env:</strong> ' + Object.keys(cfg.env).map(k => '<span class="badge badge-yellow" style="margin-right:2px;">' + esc(k) + '</span>').join('') + '</div>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderFiles(el) {
+  if (data.files.length === 0) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);">Keine Files in .claude/</div>'; return; }
+
+  // Group by directory
+  const groups = {};
+  data.files.forEach(f => {
+    const parts = f.path.split('/');
+    const dir = parts.slice(0, -1).join('/');
+    if (!groups[dir]) groups[dir] = [];
+    groups[dir].push(f);
+  });
+
+  el.innerHTML = Object.entries(groups).map(([dir, files]) => {
+    return '<div class="card">' +
+      '<div class="card-title">📁 ' + esc(dir) + '</div>' +
+      '<div class="file-tree">' +
+        files.map(f => {
+          const name = f.path.split('/').pop();
+          const sizeKb = (f.size / 1024).toFixed(1);
+          return '<div class="file-item" onclick="previewFile(\'' + esc(f.path) + '\', this)">' +
+            '<span>' + (name.endsWith('.md') ? '📄 ' : '⚙️ ') + esc(name) + '</span>' +
+            '<span style="color:var(--text-dim);">' + sizeKb + 'kb · ' + timeAgo(f.modified) + '</span>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function previewFile(filePath, el) {
+  const existing = el.parentNode.querySelector('.code-preview');
+  if (existing) { existing.remove(); return; }
+  try {
+    const fullPath = filePath.startsWith('.claude/') ? filePath : '.claude/' + filePath;
+    // Use a generic file read — we read via the agent-system files detail
+    const r = await fetch('/api/agent-system/file?path=' + encodeURIComponent(fullPath));
+    const d = await r.json();
+    const pre = document.createElement('div');
+    pre.className = 'code-preview';
+    pre.textContent = d.content || 'Empty file';
+    el.parentNode.insertBefore(pre, el.nextSibling);
+  } catch { }
+}
+
+// PulseOS SDK
+if (window.PulseOS) {
+  PulseOS.onInput('data', function(incoming) { console.log('Agent Dashboard input:', incoming); });
+  PulseOS.onDataChanged(function() { loadAll(); });
+}
+
+// Initial load + polling
+loadAll();
+setInterval(loadAll, 5000);
+</script>
+</body>
+</html>

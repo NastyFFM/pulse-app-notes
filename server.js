@@ -3848,6 +3848,96 @@ ${recent}`;
     return jsonRes(res, { messages });
   }
 
+  // ── Agent System Introspection (for Agent Dashboard) ──
+  if (url === '/api/agent-system/agents' && req.method === 'GET') {
+    try {
+      const agentsDir = path.join(ROOT, '.claude', 'agents');
+      const agents = [];
+      if (fs.existsSync(agentsDir)) {
+        for (const f of fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'))) {
+          const content = fs.readFileSync(path.join(agentsDir, f), 'utf8');
+          const fm = content.match(/^---\n([\s\S]*?)\n---/);
+          const body = content.split('---').slice(2).join('---').trim();
+          let meta = {};
+          if (fm) {
+            fm[1].split('\n').forEach(line => {
+              const [k, ...v] = line.split(':');
+              if (k && v.length) meta[k.trim()] = v.join(':').trim();
+            });
+          }
+          agents.push({ file: f, ...meta, body: body.substring(0, 500) });
+        }
+      }
+      return jsonRes(res, { agents });
+    } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+  }
+
+  if (url === '/api/agent-system/skills' && req.method === 'GET') {
+    try {
+      const skillsDir = path.join(ROOT, '.claude', 'skills');
+      const skills = [];
+      if (fs.existsSync(skillsDir)) {
+        for (const d of fs.readdirSync(skillsDir, { withFileTypes: true })) {
+          if (!d.isDirectory()) continue;
+          const skillFile = path.join(skillsDir, d.name, 'SKILL.md');
+          if (!fs.existsSync(skillFile)) continue;
+          const content = fs.readFileSync(skillFile, 'utf8');
+          const fm = content.match(/^---\n([\s\S]*?)\n---/);
+          let meta = {};
+          if (fm) {
+            fm[1].split('\n').forEach(line => {
+              const [k, ...v] = line.split(':');
+              if (k && v.length) meta[k.trim()] = v.join(':').trim();
+            });
+          }
+          skills.push({ id: d.name, ...meta });
+        }
+      }
+      return jsonRes(res, { skills });
+    } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+  }
+
+  if (url === '/api/agent-system/mcp' && req.method === 'GET') {
+    try {
+      const mcpFile = path.join(ROOT, '.mcp.json');
+      const mcp = fs.existsSync(mcpFile) ? JSON.parse(fs.readFileSync(mcpFile, 'utf8')) : {};
+      return jsonRes(res, mcp);
+    } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+  }
+
+  if (url === '/api/agent-system/files' && req.method === 'GET') {
+    try {
+      const claudeDir = path.join(ROOT, '.claude');
+      const files = [];
+      const walk = (dir, prefix) => {
+        if (!fs.existsSync(dir)) return;
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+          const rel = prefix ? prefix + '/' + entry.name : entry.name;
+          if (entry.isDirectory()) {
+            if (entry.name === 'worktrees' || entry.name === 'servers') continue;
+            walk(path.join(dir, entry.name), rel);
+          } else if (entry.name.endsWith('.md') || entry.name.endsWith('.json')) {
+            const stat = fs.statSync(path.join(dir, entry.name));
+            files.push({ path: '.claude/' + rel, size: stat.size, modified: stat.mtime.toISOString() });
+          }
+        }
+      };
+      walk(claudeDir, '');
+      return jsonRes(res, { files });
+    } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+  }
+
+  if (url.startsWith('/api/agent-system/file') && req.method === 'GET') {
+    try {
+      const filePath = new URL('http://x' + url).searchParams.get('path') || '';
+      if (!filePath.startsWith('.claude/') || filePath.includes('..')) return jsonRes(res, { error: 'Invalid path' }, 400);
+      const fullPath = path.join(ROOT, filePath);
+      if (!fs.existsSync(fullPath)) return jsonRes(res, { error: 'Not found' }, 404);
+      const content = fs.readFileSync(fullPath, 'utf8');
+      return jsonRes(res, { path: filePath, content });
+    } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+  }
+
   // ── Agent Context (dynamische API-Doku für ClaudeOS) ──
   if (url === '/api/agent-context' && req.method === 'GET') {
     // Cache: Antwort wird im Speicher gehalten und nur bei Änderungen invalidiert

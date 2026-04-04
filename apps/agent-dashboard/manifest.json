@@ -1,0 +1,10 @@
+{
+  "name": "Agent Dashboard",
+  "icon": "🤖",
+  "color": "#8b5cf6",
+  "description": "Transparenter Viewer für das Agent-System: Workers, Agents, Skills, MCP, Files",
+  "inputs": [{ "id": "data", "desc": "Agent-System Events empfangen" }],
+  "outputs": [{ "id": "status", "desc": "Agent-System Status" }],
+  "dataFiles": ["state"],
+  "pulseSubscriptions": []
+}
