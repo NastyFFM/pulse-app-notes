@@ -7,7 +7,9 @@
       "icon": "📈",
       "author": "pulseos",
       "builtin": true,
-      "stacks": ["github-pages"],
+      "stacks": [
+        "github-pages"
+      ],
       "progressiveStage": 1,
       "instructions": "→ data/templates/progressive-default.md"
     },
@@ -70,7 +72,9 @@
       "instructions": "",
       "id": "testtemplate",
       "author": "user",
-      "createdAt": "2026-03-30T14:46:27.699Z"
+      "createdAt": "2026-03-30T14:46:27.699Z",
+      "publishedAt": "2026-04-02T13:55:54.799Z",
+      "source": "https://github.com/NastyFFM/pulse-template-testtemplate"
     },
     {
       "name": "vercel",
@@ -124,7 +128,7 @@
       "id": "fly-io",
       "author": "user",
       "createdAt": "2026-03-31T16:50:00.000Z",
-      "updatedAt": "2026-03-31T17:09:46.184Z"
+      "updatedAt": "2026-04-02T13:02:22.161Z"
     },
     {
       "name": "Heroku",
@@ -148,6 +152,72 @@
       "id": "railway",
       "author": "user",
       "createdAt": "2026-04-01T16:41:32.943Z"
+    },
+    {
+      "id": "static-portfolio-github-pages",
+      "name": "Static portfolio github pages",
+      "description": "Static portfolio on github pages",
+      "icon": "📄",
+      "author": "user",
+      "stacks": [
+        "github-pages"
+      ],
+      "progressiveStage": 1,
+      "instructions": "Static portfolio on github pages\n\n--- Progressive Stage: 1 ---\nDetected Stacks: github-pages",
+      "createdAt": "2026-04-02T11:30:56.631Z",
+      "publishedAt": "2026-04-02T13:56:07.778Z",
+      "source": "https://github.com/NastyFFM/pulse-template-static-portfolio-github-pages"
+    },
+    {
+      "name": "Saas Test",
+      "description": "Saas Test",
+      "icon": "📋",
+      "stacks": [
+        "railway",
+        "supabase"
+      ],
+      "instructions": "erst starten als frontendapplication dann progressive deployment je nachdem was der user brauchtqwfqwfwq",
+      "id": "saas-test",
+      "author": "user",
+      "createdAt": "2026-04-02T11:35:54.921Z",
+      "updatedAt": "2026-04-02T13:02:55.356Z"
+    },
+    {
+      "name": "Test Template PW",
+      "description": "Playwright test template",
+      "icon": "📋",
+      "stacks": [],
+      "instructions": "",
+      "id": "test-template-pw",
+      "author": "user",
+      "createdAt": "2026-04-02T17:29:49.499Z"
+    },
+    {
+      "name": "PW-Test-1775151109597",
+      "description": "Playwright test",
+      "icon": "🧪",
+      "stacks": [],
+      "id": "pw-test-1775151109597",
+      "author": "user",
+      "createdAt": "2026-04-02T17:31:49.966Z"
+    },
+    {
+      "name": "PW-Test-1775152988345",
+      "description": "Playwright test",
+      "icon": "🧪",
+      "stacks": [],
+      "id": "pw-test-1775152988345",
+      "author": "user",
+      "createdAt": "2026-04-02T18:03:08.882Z"
+    },
+    {
+      "name": "PW-Test-1775324278419",
+      "description": "Playwright test",
+      "icon": "🧪",
+      "stacks": [],
+      "id": "pw-test-1775324278419",
+      "author": "user",
+      "createdAt": "2026-04-04T17:37:58.610Z"
     }
   ]
 }

@@ -9,7 +9,15 @@
       "installed": true,
       "position": 0,
       "visibility": "public",
-      "allowedUsers": []
+      "allowedUsers": [],
+      "template": "heroku",
+      "stacks": [],
+      "source": "https://github.com/NastyFFM/pulse-app-notes",
+      "publishedAt": "2026-04-01T15:35:05.713Z",
+      "deployUrl": "https://pulse-app-notes.herokuapp.com",
+      "deployDashboardUrl": "https://dashboard.heroku.com/apps/pulse-app-notes",
+      "deployProvider": "heroku",
+      "deployedAt": "2026-04-01T15:35:39.900Z"
     },
     {
       "id": "tasks",
@@ -20,17 +28,6 @@
       "installed": true,
       "position": 1,
       "visibility": "private",
-      "allowedUsers": []
-    },
-    {
-      "id": "calendar",
-      "name": "Calendar",
-      "icon": "C",
-      "color": "#1a1a3d",
-      "description": "Termine und Events",
-      "installed": true,
-      "position": 2,
-      "visibility": "public",
       "allowedUsers": []
     },
     {
@@ -95,7 +92,14 @@
       "installed": true,
       "position": 7,
       "visibility": "private",
-      "allowedUsers": []
+      "allowedUsers": [],
+      "template": "full-stack",
+      "stacks": [
+        "vercel",
+        "supabase",
+        "stripe",
+        "cloudflare"
+      ]
     },
     {
       "id": "settings",
@@ -327,7 +331,11 @@
       "color": "#8b5cf6",
       "description": "Apps von Kontakten entdecken",
       "installed": true,
-      "position": 27
+      "position": 27,
+      "template": "static-portfolio-github-pages",
+      "stacks": [
+        "github-pages"
+      ]
     },
     {
       "id": "workers",
@@ -339,7 +347,14 @@
       "installed": true,
       "position": 4,
       "visibility": "private",
-      "allowedUsers": []
+      "allowedUsers": [],
+      "template": "full-stack",
+      "stacks": [
+        "vercel",
+        "supabase",
+        "stripe",
+        "cloudflare"
+      ]
     },
     {
       "id": "fitness",
@@ -397,7 +412,16 @@
       "created": true,
       "position": 34,
       "visibility": "private",
-      "allowedUsers": []
+      "allowedUsers": [],
+      "source": "https://github.com/NastyFFM/pulse-app-graph-habit-review",
+      "publishedAt": "2026-04-01T14:09:32.001Z",
+      "template": "full-stack",
+      "stacks": [
+        "vercel",
+        "supabase",
+        "stripe",
+        "cloudflare"
+      ]
     },
     {
       "id": "countdown",
@@ -469,7 +493,176 @@
       "description": "Links sammeln mit Tags, Suche und Kategorien",
       "installed": true,
       "created": true,
+      "position": 35,
+      "template": "full-stack",
+      "stacks": [
+        "vercel",
+        "supabase",
+        "stripe",
+        "cloudflare"
+      ]
+    },
+    {
+      "id": "demo",
+      "name": "Würfel",
+      "icon": "🎲",
+      "color": "#e74c3c",
+      "description": "Virtueller Würfel — tippe zum Würfeln",
+      "installed": true,
+      "source": "https://github.com/NastyFFM/pulse-app-demo",
+      "installedAt": "2026-03-31T14:08:25.837Z",
       "position": 35
+    },
+    {
+      "id": "stopwatch",
+      "name": "Stopwatch",
+      "icon": "⏱",
+      "color": "#1a2a1a",
+      "description": "Stoppuhr mit Runden-Tracking",
+      "installed": true,
+      "source": "https://github.com/NastyFFM/pulse-app-stopwatch",
+      "installedAt": "2026-03-31T14:10:31.752Z",
+      "position": 36
+    },
+    {
+      "id": "calendar",
+      "name": "Calendar",
+      "icon": "C",
+      "color": "#1a1a3d",
+      "description": "Termine und Events",
+      "installed": true,
+      "source": "https://github.com/NastyFFM/pulse-app-calendar",
+      "installedAt": "2026-03-31T14:24:26.948Z",
+      "position": 37,
+      "template": "heroku",
+      "stacks": [
+        "heroku"
+      ],
+      "deployUrl": "https://pulse-app-calendar.herokuapp.com",
+      "deployDashboardUrl": "https://dashboard.heroku.com/apps/pulse-app-calendar",
+      "deployProvider": "heroku",
+      "deployedAt": "2026-03-31T21:16:39.147Z"
+    },
+    {
+      "id": "colorpicker",
+      "name": "Color Picker",
+      "icon": "🎨",
+      "color": "#7c3aed",
+      "description": "Pick, mix, and save colors with hex, RGB, and HSL support",
+      "installed": true,
+      "created": true,
+      "position": 20,
+      "visibility": "private",
+      "allowedUsers": [],
+      "template": "vercel",
+      "stacks": [
+        "vercel"
+      ]
+    },
+    {
+      "id": "color-picker",
+      "name": "Color Picker",
+      "icon": "🎨",
+      "color": "#3B82F6",
+      "description": "Farbwähler mit Hex, RGB und HSL Unterstützung",
+      "installed": true,
+      "created": true,
+      "position": 39
+    },
+    {
+      "id": "roll-the-dice",
+      "name": "Roll The Dice",
+      "icon": "🎲",
+      "color": "#E53E3E",
+      "description": "Würfelspiel — roll one or multiple dice with animations",
+      "installed": true,
+      "created": true,
+      "position": 40,
+      "template": "vercel",
+      "stacks": [
+        "vercel"
+      ]
+    },
+    {
+      "id": "roll-the-dice",
+      "name": "Roll the Dice",
+      "icon": "🎲",
+      "color": "#1a1a2e",
+      "description": "Würfelspiel mit 1–6 Würfeln, Statistiken und Wurf-Historie",
+      "installed": true,
+      "created": true,
+      "position": 40,
+      "visibility": "private",
+      "allowedUsers": []
+    },
+    {
+      "id": "calculator",
+      "name": "Calculator",
+      "icon": "🧮",
+      "color": "#1a1a2e",
+      "description": "Einfacher Taschenrechner mit Grundrechenarten",
+      "installed": true,
+      "created": true,
+      "position": 42,
+      "visibility": "private",
+      "allowedUsers": [],
+      "template": "full-stack",
+      "stacks": [
+        "vercel",
+        "supabase",
+        "stripe",
+        "cloudflare"
+      ]
+    },
+    {
+      "id": "urlaubsplaner",
+      "name": "Urlaubsplaner",
+      "icon": "U",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 43
+    },
+    {
+      "id": "eine-tetris-von-links-nach-rechts",
+      "name": "eine tetris von links nach rechts",
+      "icon": "E",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 44
+    },
+    {
+      "id": "pong-spiel",
+      "name": "pong spiel",
+      "icon": "P",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 45
+    },
+    {
+      "id": "videostreming-portsl-delux-modern-high-qualite-premium-player-heroe-at-the-top-kategories-etc-like-modern-streaming-platoform",
+      "name": "VideoStreming portsl delux, modern high qualite premium player. heroe at the top kategories etc like modern streaming platoform",
+      "icon": "V",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 46
+    },
+    {
+      "id": "test-orchestrator",
+      "name": "test-orchestrator",
+      "icon": "T",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 47
     }
   ]
 }
