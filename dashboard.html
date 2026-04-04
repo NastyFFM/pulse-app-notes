@@ -2902,10 +2902,10 @@ function quickCreateApp() {
           setTimeout(() => {
             const win = openWindows.find(w => w.appId === d.appId);
             if (win) {
-              editWin(win.winId);
-              // Mark as new app so first message uses orchestrator
+              // Mark as new app BEFORE opening editor so first message uses orchestrator
               const panel = document.getElementById('edit-' + win.winId);
               if (panel) panel.dataset.newapp = 'true';
+              editWin(win.winId);
             }
           }, 500);
         }
