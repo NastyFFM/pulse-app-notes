@@ -8627,11 +8627,30 @@ function copyInstall(repo, btn) {
     } catch { return jsonRes(res, { error: 'Worker not found' }, 404); }
   }
 
+  // Update worker status (used by orchestrator to report progress)
+  if (workerMatch && req.method === 'PUT') {
+    return readBody(req, b => {
+      const wFile = path.join(workersDir, workerMatch[1] + '.json');
+      try {
+        const existing = JSON.parse(fs.readFileSync(wFile, 'utf8'));
+        const updates = JSON.parse(b);
+        if (updates.progress) existing.progress = updates.progress;
+        if (updates.phases) existing.phases = updates.phases;
+        if (updates.status) existing.status = updates.status;
+        if (updates.result) existing.result = updates.result;
+        existing.log = existing.log || [];
+        existing.log.push({ time: new Date().toISOString(), type: 'update', text: updates.progress || 'Status update' });
+        fs.writeFileSync(wFile, JSON.stringify(existing, null, 2));
+        return jsonRes(res, { ok: true });
+      } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+    });
+  }
+
   // Create + start worker
   if (url === '/api/workers' && req.method === 'POST') {
     return readBody(req, b => {
       try {
-        const { task, model, maxDuration, appId: editAppId, template, editMode, setupStack } = JSON.parse(b);
+        const { task, model, maxDuration, appId: editAppId, template, editMode, setupStack, orchestrated } = JSON.parse(b);
         if (!task) return jsonRes(res, { error: 'task required' }, 400);
 
         const id = 'worker-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
@@ -8707,9 +8726,75 @@ function copyInstall(repo, btn) {
           } catch {}
         }
 
-        // Setup-Stack Agent: special interactive prompt
+        // Orchestrated mode: use agent definitions for multi-phase build
         let workerPrompt;
-        if (setupStack) {
+        const useOrchestrator = orchestrated || (!editMode && !setupStack);
+
+        if (useOrchestrator && !setupStack) {
+          // Load agent definitions
+          const agentsDir = path.join(ROOT, '.claude', 'agents');
+          const loadAgent = (name) => {
+            try { return fs.readFileSync(path.join(agentsDir, name + '.md'), 'utf8'); } catch { return ''; }
+          };
+          const codeGenAgent = loadAgent('code-generator');
+          const testAgent = loadAgent('test-writer');
+          const reviewAgent = loadAgent('code-reviewer');
+          const deployAgent = loadAgent('deploy-configurator');
+
+          const resolvedDir = editMode && editAppId ? resolveAppDir(editAppId) : '';
+          const appDir = resolvedDir || (USERDATA + '/apps/<name>');
+
+          workerPrompt = `Du bist der PulseOS Orchestrator. Du koordinierst 4 Phasen um eine App zu bauen.
+
+AUFGABE: ${task}
+ARBEITSVERZEICHNIS: ${ROOT}
+${resolvedDir ? 'APP-VERZEICHNIS: ' + resolvedDir : ''}
+${templateContent ? '\n--- TEMPLATE ---\n' + templateContent + '\n--- ENDE ---\n' : ''}
+
+## Dein Workflow — 4 Phasen
+
+### Phase 1: Code generieren
+Nutze den Agent-Tool mit subagent_type "general-purpose" und isolation "worktree":
+Prompt: Die Aufgabe + folgende Instruktionen aus dem code-generator Agent:
+${codeGenAgent ? codeGenAgent.split('---').slice(2).join('---').trim() : 'Generiere den App-Code nach PulseOS-Konventionen.'}
+
+Nach Phase 1: Update den Worker-Status:
+curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d '{"progress":"Phase 1/4 done: Code generiert","phases":[{"name":"Code","status":"done"}]}'
+
+### Phase 2: Tests schreiben
+Nutze den Agent-Tool:
+${testAgent ? testAgent.split('---').slice(2).join('---').trim() : 'Schreibe Playwright Tests.'}
+
+Fuehre die Tests aus: npx playwright test
+Bei roten Tests: Analysiere und fixe (max 3 Versuche).
+
+Update Status: "Phase 2/4 done: Tests gruen"
+
+### Phase 3: Review
+Pruefe den Code selbst nach diesen Kriterien:
+${reviewAgent ? reviewAgent.split('---').slice(2).join('---').trim() : 'Review auf Qualitaet und Sicherheit.'}
+
+Bei BLOCKER: Gehe zurueck zu Phase 1, fixe das Problem. Max 3 Runden.
+Bei GO: Weiter zu Phase 4.
+
+Update Status: "Phase 3/4 done: Review GO"
+
+### Phase 4: Abschluss
+- Stelle sicher die App ist in data/apps.json registriert
+- Schreibe eine Zusammenfassung als "result" in den Worker-Status
+- Setze status auf "done"
+
+FORTSCHRITT:
+- Aktualisiere den Worker-File regelmaessig: ${workerFile}
+- Setze "progress" auf den aktuellen Schritt
+- Fuege Log-Eintraege hinzu
+- Am Ende: "status": "done", "result": "Zusammenfassung"
+
+CSS-VARIABLEN: var(--bg), var(--text), var(--teal), var(--border), var(--bg-card)
+
+STARTE JETZT mit Phase 1.`;
+
+        } else if (setupStack) {
           const stacksFile2 = path.join(ROOT, 'data', 'tech-stacks.json');
           const stackData2 = safeReadJSON(stacksFile2, '{"stacks":[]}');
           const stackInfo = (stackData2.stacks || []).find(s => s.id === setupStack);
@@ -8857,12 +8942,16 @@ STARTE JETZT mit der Aufgabe.`;
         const modelFlag = workerData.model || 'sonnet'; // claude CLI accepts: haiku, sonnet, opus
         const mcpConfig = path.join(ROOT, '.mcp.json');
         const mcpFlags = fs.existsSync(mcpConfig) ? ['--mcp-config', mcpConfig] : [];
+        const allowedTools = useOrchestrator
+          ? 'Bash,Read,Write,Edit,Glob,Grep,Agent'
+          : 'Bash,Read,Write,Edit,Glob,Grep';
+        const maxTurns = useOrchestrator ? '80' : '50';
         const proc = spawn(claudePath, [
           '-p',
           '--model', modelFlag,
-          '--allowedTools', 'Bash,Read,Write,Edit,Glob,Grep',
+          '--allowedTools', allowedTools,
           ...mcpFlags,
-          '--max-turns', '50',
+          '--max-turns', maxTurns,
           workerPrompt
         ], {
           cwd: ROOT,

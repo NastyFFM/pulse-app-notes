@@ -2448,9 +2448,15 @@ async function sendEdit(winId) {
         try {
           const wr = await fetch('/api/workers/' + workerId);
           const w = await wr.json();
-          // Show live progress in spinner
-          if (w.progress && spinner.parentNode) {
-            spinner.textContent = '⏳ ' + w.progress;
+          // Show live progress in spinner (with phases if orchestrated)
+          if (spinner.parentNode) {
+            if (w.phases && w.phases.length > 0) {
+              const phaseIcons = w.phases.map(p => p.status === 'done' ? '✅' : p.status === 'running' ? '⏳' : '⬜').join('');
+              const currentPhase = w.phases.find(p => p.status === 'running') || w.phases[w.phases.length - 1];
+              spinner.innerHTML = '<div style="font-size:11px;">' + phaseIcons + '</div><div>' + (w.progress || currentPhase?.name || 'Arbeitet...') + '</div>';
+            } else if (w.progress) {
+              spinner.textContent = '⏳ ' + w.progress;
+            }
           }
           if (w.status === 'done') {
             clearTimeout(pollTimeout);
