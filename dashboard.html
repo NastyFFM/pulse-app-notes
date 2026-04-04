@@ -817,7 +817,7 @@ body {
 .suggestion-item.type-stale { border-left: 2px solid var(--amber); }
 .suggestion-item.type-empty { border-left: 2px solid var(--text-muted); }
 
-/* ═══ Launcher Overlay (Cmd+Space) ═══ */
+/* ═══ Launcher Overlay (Cmd+L) ═══ */
 .launcher-overlay {
   position: fixed;
   inset: 0;
@@ -2722,7 +2722,7 @@ document.addEventListener('keydown', e => {
     if (systemChatOpen) toggleSystemChat();
     return;
   }
-  if (isMeta && e.key === ' ') { e.preventDefault(); toggleLauncher(); return; }
+  if (isMeta && e.key === 'l') { e.preventDefault(); toggleLauncher(); return; }
   if (isMeta && e.key === 'k') { e.preventDefault(); toggleSystemChat(); return; }
   if (isMeta && e.key === 'g') { e.preventDefault(); const app = state?.apps?.find(a => a.id === 'projects'); if (app) openApp(app); return; }
   if (isMeta && e.key === 't') { e.preventDefault(); cycleTheme(); return; }
@@ -2769,7 +2769,7 @@ function showShortcutOverlay() {
     el.id = 'shortcutOverlay';
     el.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:80000;background:var(--bg-surface);border:1px solid var(--teal);border-radius:8px;padding:14px 20px;display:flex;gap:20px;font:11px var(--font);color:var(--text-dim);backdrop-filter:blur(8px);transition:opacity .15s;';
     el.innerHTML =
-      '<div><span style="color:var(--teal);font-weight:600;">Space</span> Launcher</div>' +
+      '<div><span style="color:var(--teal);font-weight:600;">L</span> Launcher</div>' +
       '<div><span style="color:var(--teal);font-weight:600;">Tab</span> Fenster</div>' +
       '<div><span style="color:var(--teal);font-weight:600;">W</span> Schliessen</div>' +
       '<div><span style="color:var(--teal);font-weight:600;">K</span> Chat</div>' +
@@ -3291,7 +3291,7 @@ const tutorialSteps = [
   {
     chapter: 'Fenster-System',
     title: 'Spotlight Launcher',
-    text: 'Cmd+Space oeffnet den Spotlight-Launcher.\n\nTippe den Namen einer App um sie sofort zu finden und zu oeffnen. Wie Spotlight auf macOS.',
+    text: 'Cmd+L oeffnet den App-Launcher.\n\nTippe den Namen einer App um sie sofort zu finden und zu oeffnen.',
     pos: 'center',
     action: 'try-launcher'
   },
@@ -3328,7 +3328,7 @@ const tutorialSteps = [
   {
     chapter: 'Power-User',
     title: 'Keyboard Shortcuts',
-    text: 'Cmd+Space  App-Launcher oeffnen\nCmd+Tab    Naechstes Fenster\nCmd+W      Fenster schliessen\nCmd+K      Agent-Chat oeffnen\nCmd+G      Projects oeffnen\nEsc        Overlay schliessen\n\nHalte Cmd/Ctrl gedrueckt fuer eine Shortcut-Uebersicht.',
+    text: 'Cmd+L      App-Launcher oeffnen\nCmd+Tab    Naechstes Fenster\nCmd+W      Fenster schliessen\nCmd+K      Agent-Chat oeffnen\nCmd+G      Projects oeffnen\nEsc        Overlay schliessen\n\nHalte Cmd/Ctrl gedrueckt fuer eine Shortcut-Uebersicht.',
     pos: 'center'
   },
   {
