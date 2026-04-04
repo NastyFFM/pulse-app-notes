@@ -1,14 +1,17 @@
-# Progress: Phase 2 — Orchestrator-Worker
+# Progress: Phase 3 — Self-Improvement
 
-## Status: 🔄 In Progress
+## Status: ✅ Komplett
 
 | # | Schritt | Status | Notizen |
 |---|---------|--------|---------|
-| 1 | Orchestrator-Prompt bauen | ⏳ pending | |
-| 2 | Worker-Spawn anpassen | ⏳ pending | |
-| 3 | Multi-Step Progress UI | ⏳ pending | |
-| 4 | Playwright Test | ⏳ pending | |
+| 1 | PulseOS-Improve Skill | ✅ done | .claude/skills/pulseos-improve/SKILL.md |
+| 2 | System-Dateien editierbar | ✅ done | Auto-Detect via Keywords im Worker-Task |
+| 3 | Safety: Review-Loop | ✅ done | Syntax-Check + Tests + Rollback im Orchestrator |
+| 4 | Template im Store | ✅ done | "PulseOS Verbessern" Template erstellt |
+| 5 | Playwright Test | ✅ done | 8/8 passed |
 
 ## Log
 - **Planner:** plan.md geschrieben
 - **Tracker:** progress.md initialisiert
+- **Coder:** Skill, Worker-Erkennung, Safety-Rules, Template
+- **Reviewer:** Playwright 8/8 grün, Syntax OK

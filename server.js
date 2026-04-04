@@ -8744,12 +8744,23 @@ function copyInstall(repo, btn) {
           const resolvedDir = editMode && editAppId ? resolveAppDir(editAppId) : '';
           const appDir = resolvedDir || (USERDATA + '/apps/<name>');
 
-          workerPrompt = `Du bist der PulseOS Orchestrator. Du koordinierst 4 Phasen um eine App zu bauen.
+          // Detect self-improvement tasks
+          const selfImproveKeywords = ['pulseos', 'dashboard', 'server.js', 'dock', 'launcher', 'window manager', 'system', 'shortcut', 'topbar', 'sidebar'];
+          const isSelfImprove = selfImproveKeywords.some(k => taskLower.includes(k));
+          let selfImproveContext = '';
+          if (isSelfImprove) {
+            try {
+              selfImproveContext = fs.readFileSync(path.join(ROOT, '.claude', 'skills', 'pulseos-improve', 'SKILL.md'), 'utf8');
+              selfImproveContext = '\n\n--- SELF-IMPROVEMENT SKILL ---\n' + selfImproveContext.split('---').slice(2).join('---').trim() + '\n--- ENDE SELF-IMPROVEMENT ---\n';
+            } catch {}
+          }
+
+          workerPrompt = `Du bist der PulseOS Orchestrator. Du koordinierst 4 Phasen um ${isSelfImprove ? 'PulseOS zu verbessern' : 'eine App zu bauen'}.
 
 AUFGABE: ${task}
 ARBEITSVERZEICHNIS: ${ROOT}
 ${resolvedDir ? 'APP-VERZEICHNIS: ' + resolvedDir : ''}
-${templateContent ? '\n--- TEMPLATE ---\n' + templateContent + '\n--- ENDE ---\n' : ''}
+${templateContent ? '\n--- TEMPLATE ---\n' + templateContent + '\n--- ENDE ---\n' : ''}${selfImproveContext}
 
 ## Dein Workflow — 4 Phasen
 
@@ -8776,11 +8787,11 @@ ${reviewAgent ? reviewAgent.split('---').slice(2).join('---').trim() : 'Review a
 
 Bei BLOCKER: Gehe zurueck zu Phase 1, fixe das Problem. Max 3 Runden.
 Bei GO: Weiter zu Phase 4.
-
+${isSelfImprove ? '\nSAFETY bei System-Dateien:\n- Syntax-Check nach jeder Aenderung: node -c server.js\n- Playwright Tests MUESSEN gruen sein: npx playwright test\n- Bei Test-Failure: git checkout -- <datei> und nochmal versuchen\n- NIEMALS data/*.json editieren (Runtime State)\n' : ''}
 Update Status: "Phase 3/4 done: Review GO"
 
 ### Phase 4: Abschluss
-- Stelle sicher die App ist in data/apps.json registriert
+${isSelfImprove ? '- Syntax-Check: node -c server.js\n- Tests: npx playwright test\n- Wenn gruen: committen' : '- Stelle sicher die App ist in data/apps.json registriert'}
 - Schreibe eine Zusammenfassung als "result" in den Worker-Status
 - Setze status auf "done"
 

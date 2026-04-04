@@ -1,29 +1,30 @@
-# Plan: Phase 2 — Orchestrator-Worker
+# Plan: Phase 3 — Self-Improvement
 
 ## Context
-Der aktuelle Worker (`POST /api/workers`) spawnt einen einzigen `claude -p` Prozess mit monolithischem Prompt. Phase 2 baut das um zu einem Orchestrator der die 4 Agents aus Phase 1 sequentiell aufruft.
+PulseOS soll sich selbst verbessern können. Der App-Maker kann nicht nur Apps in `apps/` bauen, sondern auch `dashboard.html`, `server.js` und andere System-Dateien editieren. Ein "Improve PulseOS" Skill gibt dem Worker die Erlaubnis und das Wissen dafür.
 
 ## Schritte
 
-### 1. Orchestrator-Prompt bauen
-- Neuer Prompt-Builder in server.js der statt eines monolithischen Prompts einen Orchestrator-Flow beschreibt
-- Der Orchestrator liest die Agent-Definitionen aus `.claude/agents/`
-- Flow: code-generator → test-writer → code-reviewer → Fix-Loop
+### 1. PulseOS-Improve Skill anlegen
+- `.claude/skills/pulseos-improve/SKILL.md`
+- Beschreibt: welche System-Dateien editiert werden dürfen
+- Regeln: Tests müssen grün bleiben, Review-Loop pflicht
+- Referenziert die Architektur aus CLAUDE.md
 
-### 2. Worker-Spawn anpassen
-- `POST /api/workers` bekommt neuen `mode: "orchestrated"` Parameter
-- Bei `orchestrated`: Orchestrator-Prompt statt monolithischer Prompt
-- Bei `editMode: true` (bestehende Apps editieren): bleibt wie bisher (einzelner Worker)
-- Progress-Updates pro Phase in worker.json
+### 2. System-Dateien als editierbar markieren
+- Worker-Prompt erweitern: wenn Task "PulseOS" oder "Dashboard" oder "Server" enthält → PulseOS-Improve Skill laden
+- Erlaubte Dateien: dashboard.html, server.js, apps/*/index.html, .claude/*
+- Verbotene Dateien: data/*.json (Runtime-State), node_modules
 
-### 3. Multi-Step Progress im Edit-Chat
-- Worker-JSON bekommt `phases` Array mit Status pro Phase
-- Edit-Chat zeigt: "Phase 1/4: Code generieren..." → "Phase 2/4: Tests..." etc.
-- Polling liest `w.phases` und zeigt aktuellen Schritt
+### 3. Safety: Review-Loop erzwingen
+- Bei System-Dateien: code-reviewer Agent MUSS GO geben
+- Playwright Tests MÜSSEN grün sein nach jeder Änderung
+- Automatischer Rollback bei Test-Failure (git stash)
 
-### 4. Playwright Test
-- Test: Worker mit orchestrated mode erstellen → Phasen durchlaufen → done
+### 4. "PulseOS verbessern" als Template im Store
+- Neues Template in data/templates.json
+- Beschreibung: "Verbessere PulseOS selbst — Dashboard, Server, Apps"
+- Im App-Editor wählbar wenn man PulseOS-System-Dateien ändern will
 
-## Betroffene Dateien
-- server.js — Worker-Spawn (~Z.8600), Orchestrator-Prompt
-- dashboard.html — Edit-Chat Multi-Step Progress
+### 5. Playwright Test
+- Test: Worker mit PulseOS-Improve Task → ändert eine System-Datei → Tests grün
