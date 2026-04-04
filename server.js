@@ -8860,7 +8860,7 @@ ${templateContent ? '\n--- TEMPLATE ---\n' + templateContent + '\n--- ENDE ---\n
 ### Phase 0: Git-Setup
 Erstelle einen isolierten Feature-Branch fuer diese Aenderung:
 \`\`\`
-BRANCH_NAME="feature/${appId || 'new-app'}-$(date +%s)"
+BRANCH_NAME="feature/${editAppId || 'new-app'}-$(date +%s)"
 cd ${ROOT}
 git checkout -b "$BRANCH_NAME"
 \`\`\`
