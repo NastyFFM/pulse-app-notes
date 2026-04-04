@@ -1,48 +1,30 @@
-# Plan: Agent Dashboard — Transparenter Viewer für das Agent-System
-
-## Context
-Ein neues Dashboard das alle internen Prozesse des App-Makers sichtbar macht: laufende Worker, Agents, Skills, MCP Server, .md Files, Fortschritt — alles in Echtzeit.
+# Plan: Phase 4 — Deploy-Pipeline + Git-Workflow
 
 ## Schritte
 
-### 1. Neue App: `apps/agent-dashboard/`
-- PulseOS App (vanilla HTML/CSS/JS)
-- Tabs: Workers | Agents | Skills | MCP | Files
+### 1. Worker erstellt Feature-Branch
+- Orchestrator-Prompt erweitern: `git checkout -b feature/<appId>` vor Phase 1
+- Nach Phase 4: `git add + commit` auf dem Feature-Branch
+- Worker-JSON bekommt `branch` Feld für Tracking
 
-### 2. Tab: Workers (Live)
-- Polling `/api/workers` alle 3s
-- Jeder Worker: Status, Progress, Task, Phasen-Icons, Log
-- Laufende Worker mit Live-Progress
-- Abgeschlossene Worker mit Ergebnis
+### 2. Auto-PR nach Abschluss
+- Nach erfolgreichem Build: `gh pr create` via Bash im Worker
+- PR Title: "feat: <app-name> — <beschreibung>"
+- PR Body: Phasen-Report (was gebaut, Tests, Review-Ergebnis)
+- Link zur PR im Worker-Result + Edit-Chat
 
-### 3. Tab: Agents
-- Liest `.claude/agents/*.md` via API
-- Zeigt: Name, Description, Model, Tools, Isolation
-- Frontmatter-Parsing im Browser
+### 3. Edit-Chat zeigt PR-Link
+- Nach Worker-Done: PR-URL als klickbarer Link im Chat
+- User kann direkt zur PR navigieren
 
-### 4. Tab: Skills
-- Liest `.claude/skills/*/SKILL.md` via API
-- Zeigt: Name, Description, Aktivierungsbedingung
-- Status: aktiv/inaktiv
+### 4. `/build-app` Slash-Command aktivieren
+- Bereits in .claude/commands/build-app.md definiert
+- Testen ob es funktioniert: `/build-app test-app "Eine Test-App"`
 
-### 5. Tab: MCP
-- Liest `.mcp.json` via API
-- Zeigt registrierte MCP Server + Status
-- Railway MCP, Playwright MCP, PulseOS MCP
-
-### 6. Tab: Files
-- Listet alle .md Files in `.claude/` Verzeichnis
-- Inline-Viewer für jede Datei
-- Zeigt Verknüpfungen (welcher Agent nutzt welchen Skill)
-
-### 7. Server: API Endpoints für Agent-System Introspection
-- `GET /api/agent-system/agents` — liest .claude/agents/*.md
-- `GET /api/agent-system/skills` — liest .claude/skills/*/SKILL.md
-- `GET /api/agent-system/mcp` — liest .mcp.json
-- `GET /api/agent-system/files` — listet alle .md Files
+### 5. Branch-Schutz dokumentieren
+- CLAUDE.md oder .claude/settings.json: main/develop geschützt
+- Worker darf nicht direkt in main pushen
 
 ## Betroffene Dateien
-- `apps/agent-dashboard/index.html` — NEU
-- `apps/agent-dashboard/manifest.json` — NEU
-- `server.js` — 4 neue API Endpoints
-- `data/apps.json` — App registrieren
+- server.js — Orchestrator-Prompt (Git-Workflow Instruktionen)
+- dashboard.html — PR-Link im Edit-Chat anzeigen

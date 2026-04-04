@@ -143,12 +143,12 @@ function renderWorkers(el) {
 
     return '<div class="card">' +
       '<div class="card-title"><span class="status-dot ' + statusClass + '"></span> ' + esc(w.id) + ' <span class="badge ' + badge + '">' + (w.status || 'unknown') + '</span></div>' +
-      '<div class="card-meta">' + esc(w.model || 'sonnet') + ' · ' + timeAgo(w.startedAt) + (w.finishedAt ? ' · Dauer: ' + Math.round((new Date(w.finishedAt) - new Date(w.startedAt))/1000) + 's' : '') + '</div>' +
+      '<div class="card-meta">' + esc(w.model || 'sonnet') + ' · ' + timeAgo(w.startedAt) + (w.finishedAt ? ' · Dauer: ' + Math.round((new Date(w.finishedAt) - new Date(w.startedAt))/1000) + 's' : '') + (w.branch ? ' · 🌿 ' + esc(w.branch) : '') + '</div>' +
       '<div class="card-body">' +
         '<div style="margin-bottom:4px;"><strong>Task:</strong> ' + esc((w.task || '').substring(0, 150)) + '</div>' +
         (w.progress ? '<div style="margin-bottom:4px;"><strong>Progress:</strong> ' + esc(w.progress) + '</div>' : '') +
         (phases ? '<div style="margin-bottom:4px;">Phasen: ' + phases + '</div>' : '') +
-        (w.result ? '<div style="margin-bottom:4px;"><strong>Result:</strong> ' + esc((w.result || '').substring(0, 200)) + '</div>' : '') +
+        (w.result ? '<div style="margin-bottom:4px;"><strong>Result:</strong> ' + (w.result || '').substring(0, 300).replace(/(https:\/\/github\.com\/[^\s"]+)/g, '<a href="$1" target="_blank" style="color:var(--teal);">$1</a>') + '</div>' : '') +
       '</div>' +
       (w.log && w.log.length > 0 ? '<details style="margin-top:6px;"><summary style="font-size:10px;cursor:pointer;color:var(--text-dim);">Log (' + w.log.length + ' entries)</summary><div style="max-height:150px;overflow-y:auto;margin-top:4px;">' +
         w.log.slice(-10).map(l => '<div class="log-line"><span class="log-time">' + (l.time ? new Date(l.time).toLocaleTimeString() : '') + '</span>' + esc(l.text || l.type || '') + '</div>').join('') +
