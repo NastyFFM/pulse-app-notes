@@ -2432,12 +2432,10 @@ async function sendEdit(winId) {
     await fetch('/app/' + appId + '/api/edit-chat', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(existing) });
   } catch {}
 
-  // Send to worker — detect if app is fresh (use orchestrator) or existing (edit mode)
-  let isNewApp = false;
-  try {
-    const chatData = await fetch('/app/' + appId + '/api/edit-chat').then(r => r.ok ? r.json() : { messages: [] }).catch(() => ({ messages: [] }));
-    isNewApp = !chatData.messages || chatData.messages.filter(m => m.from === 'agent').length === 0;
-  } catch {}
+  // Send to worker — check if app is fresh (orchestrator) or existing (edit)
+  const editPanelEl = document.getElementById('edit-' + winId);
+  const isNewApp = editPanelEl && editPanelEl.dataset.newapp === 'true';
+  if (isNewApp) editPanelEl.dataset.newapp = 'false'; // Only first message uses orchestrator
   try {
     const workerBody = isNewApp
       ? { task: 'Erstelle die App "' + appId + '": ' + text, model: 'sonnet', appId, template: tpl, orchestrated: true }
@@ -2903,7 +2901,12 @@ function quickCreateApp() {
           // Auto-open editor after short delay for window to render
           setTimeout(() => {
             const win = openWindows.find(w => w.appId === d.appId);
-            if (win) editWin(win.winId);
+            if (win) {
+              editWin(win.winId);
+              // Mark as new app so first message uses orchestrator
+              const panel = document.getElementById('edit-' + win.winId);
+              if (panel) panel.dataset.newapp = 'true';
+            }
           }, 500);
         }
         addFeed('App erstellt: ' + d.name, 'create');
