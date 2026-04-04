@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@playwright/mcp": "^0.0.70",
     "@playwright/test": "^1.59.1"
   }
 }

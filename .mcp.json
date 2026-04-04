@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "pulseos": {
+      "command": "node",
+      "args": ["/Users/chris.pohl/Documents/GitHub/PulseOS/.claude/servers/pulseos-mcp.js"],
+      "env": {
+        "PULSEOS_URL": "http://localhost:3000"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest", "--url", "http://localhost:3000"]
+    }
+  }
+}

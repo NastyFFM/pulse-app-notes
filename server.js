@@ -8772,14 +8772,23 @@ ${codeGenAgent ? codeGenAgent.split('---').slice(2).join('---').trim() : 'Generi
 Nach Phase 1: Update den Worker-Status:
 curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d '{"progress":"Phase 1/4 done: Code generiert","phases":[{"name":"Code","status":"done"}]}'
 
-### Phase 2: Tests schreiben
-Nutze den Agent-Tool:
-${testAgent ? testAgent.split('---').slice(2).join('---').trim() : 'Schreibe Playwright Tests.'}
+### Phase 2: Visuell pruefen + Tests
+Du hast Playwright MCP verfuegbar (mcp__playwright Tools). Nutze es um zu SEHEN ob deine Aenderung funktioniert:
 
-Fuehre die Tests aus: npx playwright test
+1. Oeffne http://localhost:3000 mit Playwright MCP (browser_navigate)
+2. Mache einen Screenshot (browser_screenshot) und pruefe visuell ob die Aenderung sichtbar ist
+3. Interagiere mit dem UI (browser_click, browser_hover) um die Aenderung zu testen
+4. Wenn die Aenderung NICHT sichtbar/funktional ist:
+   - Analysiere warum (falscher Selektor? CSS Problem? JS Fehler?)
+   - Gehe zurueck zu Phase 1 und fixe es
+   - Pruefe erneut visuell
+   - Max 3 Runden, dann melde was nicht funktioniert
+
+Ausserdem: Bestehende Tests muessen gruen bleiben:
+npx playwright test
 Bei roten Tests: Analysiere und fixe (max 3 Versuche).
 
-Update Status: "Phase 2/4 done: Tests gruen"
+Update Status: "Phase 2/4 done: Visuell geprueft + Tests gruen"
 
 ### Phase 3: Review
 Pruefe den Code selbst nach diesen Kriterien:
@@ -8954,7 +8963,7 @@ STARTE JETZT mit der Aufgabe.`;
         const mcpConfig = path.join(ROOT, '.mcp.json');
         const mcpFlags = fs.existsSync(mcpConfig) ? ['--mcp-config', mcpConfig] : [];
         const allowedTools = useOrchestrator
-          ? 'Bash,Read,Write,Edit,Glob,Grep,Agent'
+          ? 'Bash,Read,Write,Edit,Glob,Grep,Agent,mcp__playwright'
           : 'Bash,Read,Write,Edit,Glob,Grep';
         const maxTurns = useOrchestrator ? '80' : '50';
         const proc = spawn(claudePath, [
