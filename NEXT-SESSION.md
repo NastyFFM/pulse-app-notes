@@ -22,7 +22,16 @@ Starte mit Schritt 1: Template-Datenmodell erweitern
 
 Wichtig:
 - Immer NUR einen Schritt, dann testen wir zusammen
-- Nutze das agentische System: planner → code-generator → test-writer → code-reviewer
+- JEDER Schritt wird mit dem vollen agentischen Orchestrator-Flow umgesetzt:
+  1. Worker registrieren (POST /api/workers mit registerOnly)
+  2. planner Agent → PLAN.md erstellen
+  3. code-generator Agent → Code schreiben
+  4. progress-tracker Agent → PROGRESS.md updaten
+  5. test-writer Agent → Playwright Tests schreiben + grün
+  6. code-reviewer Agent → GO/NO-GO Review
+  7. Git commit
+  Worker-Status bei jeder Phase updaten (PUT /api/workers/:id mit phases[])
+  damit Monitor, Graph, Kanban, Files im Edit-Panel live mitlesen.
 - Server: node server.js (Port 3000)
 - Dashboard: http://localhost:3000
 ```
