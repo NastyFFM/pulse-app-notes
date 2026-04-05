@@ -51,6 +51,19 @@ Wenn BLOCKER vorhanden: VERDICT ist immer NO-GO.
 - Wird bestehendes Verhalten gebrochen?
 - Sind andere Apps betroffen?
 
+## Plan-Integration
+Wenn ein PLAN.md im App-Verzeichnis existiert:
+- Lies deinen zugewiesenen Task (TASK-ID)
+- Schreibe nach Abschluss deinen Block in PROGRESS.md:
+  ```
+  ## TASK-XXX — code-reviewer
+  status: done
+  completed: {ISO-timestamp}
+  verdict: GO | NO-GO
+  blockers: [liste oder "keine"]
+  warnings: [liste]
+  ```
+
 ## Regeln
 - Sei streng bei BLOCKER (Sicherheit, Crashes, Data Loss)
 - Sei pragmatisch bei WARNING (Style, Naming, Minor Issues)

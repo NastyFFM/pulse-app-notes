@@ -62,6 +62,19 @@ test('Worker creation', async ({ request }) => {
 - Bei roten Tests: analysiere den Fehler, versuche zu fixen (max 3 Versuche)
 - Wenn nach 3 Versuchen noch rot: melde FAILED mit Fehlerdetails
 
+## Plan-Integration
+Wenn ein PLAN.md im App-Verzeichnis existiert:
+- Lies deinen zugewiesenen Task (TASK-ID)
+- Schreibe nach Abschluss deinen Block in PROGRESS.md:
+  ```
+  ## TASK-XXX — test-writer
+  status: done
+  completed: {ISO-timestamp}
+  files_created: [tests/app.spec.ts]
+  notes: X Tests, alle gruen
+  ```
+- Veraendere NIEMALS Bloecke anderer Agents oder PLAN.md
+
 ## Output
 Melde am Ende:
 - X Tests geschrieben

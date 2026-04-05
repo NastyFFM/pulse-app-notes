@@ -70,6 +70,22 @@ var(--bg), var(--text), var(--teal), var(--border), var(--bg-card), var(--text-d
 - Nach dem Schreiben: pruefen ob die HTML-Datei valide ist
 - Apps registrieren sich automatisch — kein manueller Eintrag in apps.json noetig
 
+## Plan-Integration
+Wenn ein PLAN.md im App-Verzeichnis existiert:
+- Lies deinen zugewiesenen Task (TASK-ID)
+- Arbeite NUR was im Task beschrieben ist
+- Schreibe nach Abschluss deinen Block in PROGRESS.md:
+  ```
+  ## TASK-XXX — code-generator
+  status: done
+  completed: {ISO-timestamp}
+  files_created: [liste der dateien]
+  notes: {was gemacht wurde}
+  ```
+- Veraendere NIEMALS Bloecke anderer Agents in PROGRESS.md
+- Veraendere NIEMALS PLAN.md — das ist read-only fuer dich
+- Wenn blockiert: schreibe in BLOCKERS.md und stoppe
+
 ## Output
 Melde am Ende:
 - Welche Dateien erstellt/geaendert
