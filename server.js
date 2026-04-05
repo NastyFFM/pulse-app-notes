@@ -2458,6 +2458,22 @@ if (window.PulseOS) {
     });
   }
 
+  // ── Read .md files from app root (PLAN.md, PROGRESS.md, etc.) ──
+  const appFilesMatch = url.match(/^\/api\/app-files\/([a-z0-9-]+)\/([A-Za-z0-9_.-]+)$/);
+  if (appFilesMatch && req.method === 'GET') {
+    const appId = appFilesMatch[1];
+    const filename = appFilesMatch[2];
+    const allowed = ['PLAN.md', 'PROGRESS.md', 'DECISIONS.md', 'BLOCKERS.md', 'README.md'];
+    if (!allowed.includes(filename)) return jsonRes(res, { error: 'File not allowed: ' + filename }, 403);
+    const appDir = resolveAppDir(appId);
+    const filePath = path.join(appDir, filename);
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8' });
+      return res.end(content);
+    } catch { return jsonRes(res, { error: 'File not found: ' + filename }, 404); }
+  }
+
   // ── Sync GitHub Repos (list all pulse-app-* repos) ──
   if (url === '/api/apps/github-sync' && req.method === 'GET') {
     const profile = safeReadJSON(path.join(ROOT, 'data', 'profile.json'), '{}');
