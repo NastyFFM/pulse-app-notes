@@ -1,4 +1,4 @@
-# Nächste Session — Edit-Panel 2.0
+# Nächste Session — Template System 2.0
 
 ## Prompt (kopieren und in neue Claude Code Session einfügen):
 
@@ -6,52 +6,68 @@
 Wir arbeiten an PulseOS (feature/app-maker-v2 Branch).
 Lies plan.md und progress.md für den aktuellen Stand.
 
-Nächste Aufgabe: Edit-Panel 2.0 — den App Editor ins Edit-Panel integrieren.
+Nächste Aufgabe: Template System 2.0 — Schritt für Schritt.
 
-Was zu tun ist:
-- Das Edit-Panel (Stift-Button pro App-Fenster) in dashboard.html erweitern
-- Aktuell: nur Chat + Deploy/Publish Buttons
-- Neu: Tabs im Panel — Chat, Monitor, Graph, Kanban, Files, Git
-- Code aus pulse-app-app-editor/index.html portieren
-- App-ID kommt automatisch aus panel.dataset.appid (kein Dropdown nötig)
-- Deploy/Publish/Template bleiben als Actions im Chat-Tab
-- Polling nur wenn Panel offen ist
-- Auch den Worker-Monitor Bug fixen (zeigt keine Worker im iframe)
+Kontext:
+- Edit-Panel 2.0 ist fertig (8 Tabs: Chat, Monitor, Graph, Kanban, Files, Git, Settings)
+- PulseTV wurde als Test-App mit dem agentischen Flow gebaut
+- Templates definieren aktuell nur Stack + Instruktionen
+- Wir erweitern Templates zur vollständigen Projekt-Blaupause
 
-Relevante Dateien:
-- dashboard.html: Edit-Panel ab ~Zeile 2110 (editWin, sendEdit, loadEditChat)
-- pulse-app-app-editor/index.html: Source für Monitor, Graph, Kanban, Files, Git Tabs
-- server.js: APIs (/api/workers, /api/git/branches, /api/app-files/:appId/:filename)
+Starte mit Schritt 1: Template-Datenmodell erweitern
+- data/templates.json — neue Felder: agents, scaffold, envVars, git, monitoring
+- server.js — API-Validation anpassen
+- Abwärtskompatibel (alte Templates bekommen Defaults)
+- Danach zusammen testen!
 
-Nutze das agentische System: code-generator → test-writer → code-reviewer.
-Server starten: node server.js (Port 3000)
+Wichtig:
+- Immer NUR einen Schritt, dann testen wir zusammen
+- Nutze das agentische System: planner → code-generator → test-writer → code-reviewer
+- Server: node server.js (Port 3000)
+- Dashboard: http://localhost:3000
 ```
 
 ## Kontext für die nächste Session
 
-### Was existiert
-- Edit-Panel: dashboard.html Zeile 2110-2560
-  - editWin(winId) — öffnet/schließt Panel
-  - sendEdit(winId) — sendet Chat an Worker
-  - loadEditChat(winId, appId) — lädt Chat-History
-  - SSE-Listener für Live-Updates
-  - Deploy/Publish/Template Buttons
-- App Editor (standalone): pulse-app-app-editor/index.html (45KB)
-  - 5 Tabs: Monitor, Graph, Kanban, Files, Git
-  - pollWorkers() alle 3s, pollGit() alle 10s
-  - renderMonitor(), renderGraph(), renderKanban(), renderGit()
-  - Mini-Markdown-Renderer (renderMarkdownSafe)
+### Was fertig ist
+- Edit-Panel 2.0: dashboard.html (8 Tabs, Resize, Settings)
+- Agentischer Build-Flow funktioniert end-to-end
+- PulseTV gebaut + 6/6 Tests + XSS-Fix + committed
+- server.js: /api/git/branches?appId= für app-spezifisches Repo
 
-### Was portiert werden muss
-1. Tab-Leiste ins Edit-Panel (Chat als Default-Tab)
-2. Monitor-Tab: Worker-Karten + Phasen (gefiltert auf aktuelle App)
-3. Graph-Tab: SVG Agent-Graph mit Pulse-Animation
-4. Kanban-Tab: Tasks aus PLAN.md der aktuellen App
-5. Files-Tab: PLAN.md/PROGRESS.md/DECISIONS.md Viewer
-6. Git-Tab: Branch-Visualisierung
+### Aktuelles Template-Datenmodell
+```json
+{ "id", "name", "description", "icon", "stacks", "instructions", "author", "builtin", "source" }
+```
 
-### Herausforderungen
-- Edit-Panel ist ein schmales Sidebar-Panel (~350px breit) — UI muss kompakter sein
-- CSS darf Dashboard nicht brechen (scoped styles nötig)
-- Polling nur wenn Panel offen ist (Performance)
-- App-ID: panel.dataset.appid (automatisch gesetzt beim Öffnen)
+### Neues Template-Datenmodell (zu implementieren)
+```json
+{
+  "id", "name", "description", "icon", "author", "stacks", "instructions", "source",
+  "agents": { "phases": [...], "phaseConfig": {...}, "orchestrated": true },
+  "scaffold": { "files": [...], "directories": [...] },
+  "envVars": [{ "key", "label", "required" }],
+  "git": { "strategy", "branchPattern", "autoCommit", "autoPR" },
+  "monitoring": { "planFile", "progressFile", "decisionsFile", "taskPattern" }
+}
+```
+
+### Template-Repo-Struktur (Ziel)
+```
+pulse-template-{id}/
+├── template.json       ← Erweiterte Metadaten
+├── instructions.md     ← Build-Instruktionen
+├── scaffold/           ← Dateien für App-Create
+│   ├── index.html
+│   ├── manifest.json
+│   └── data/state.json
+└── agents/             ← (Optional) Custom Agents
+```
+
+### 6 Schritte (einer pro Runde)
+1. Template-Datenmodell erweitern
+2. PulseTV als Template exportieren
+3. Template-Import von GitHub
+4. Template-Maker Chat-Agent
+5. "Aus Template erstellen" im Dashboard
+6. Build-App liest Template-Config

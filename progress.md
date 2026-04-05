@@ -1,6 +1,6 @@
 # Progress: feature/app-maker-v2 — Gesamtübersicht
 
-## Erledigte Phasen ✅
+## Erledigte Phasen
 
 | Phase | Was | Commits |
 |-------|-----|---------|
@@ -10,76 +10,53 @@
 | 4 | Git-Workflow (Feature-Branches, Auto-PR) | aef3c3d, 8ad305b |
 | - | Agent Dashboard (Workers, Agents, Skills, MCP, Files) | e66ce1d |
 | - | Smart Autodetect (orchestriert vs quick) | f3ce7a6 |
-| - | Launcher Shortcut Cmd+L | 91729ab |
-| - | Orchestrator-Detection Fix (data-newapp) | b4df862 |
 | 5 | Eigenständige Apps vs System-Apps | 905f0ce |
 | 6 | /build-app Command Fix + Agent-Tool Integration | 199f49c, 63d0e4f |
 | 7 | Plan-first Architektur (planner + progress-tracker) | 4f48c86 |
 | 8 | App Editor Dashboard (Monitor, Graph, Kanban, Files, Git) | 82838d7, 0ade96c |
+| **9** | **Edit-Panel 2.0 — 8 Tabs, Resize, Settings** | **04659a5** |
 
-## Session 2026-04-05 — Was gebaut wurde
+## Session 2026-04-05 — Edit-Panel 2.0
 
-### Neue Features
-- **Eigenständige Apps**: quickCreateApp() + showCreateDialog() mit Radio (Standalone/System)
-- **Plan-first Flow**: planner + progress-tracker Agents, PLAN.md/PROGRESS.md/DECISIONS.md pro App
-- **`/build-app` Command**: Nutzt Agent-Tool Subagents, Worker-API für Dashboard-Tracking, registerOnly
-- **App Editor**: 5-Tab Dashboard (Build Monitor, Agent Graph, Kanban, Files, Git)
-- **Git API**: GET /api/git/branches — Branches, Commits, Refs
-- **App Files API**: GET /api/app-files/:appId/:filename — .md Dateien aus App-Root
+### Was gebaut wurde
+- **Edit-Panel 2.0**: 8 Tabs (Chat, Monitor, Graph, Kanban, Files, Git, Settings)
+- **Resizable Panel**: Drag-Handle zwischen Panel und App-Iframe
+- **Settings-Tab**: Deploy, Publish, Template-Auswahl, Env Vars, App Info
+- **Monitor-Tab**: Worker-Karten mit Phase-Bar + Log-Stream (3s Poll)
+- **Graph-Tab**: SVG Agent-Graph, nutzt worker.phases[] statt Text-Heuristik
+- **Kanban-Tab**: Tasks aus PLAN.md, auto-reload via SSE
+- **Files-Tab**: PLAN.md/PROGRESS.md/DECISIONS.md mit XSS-safe Markdown-Renderer
+- **Git-Tab**: App-spezifisches Repo via ?appId= Query-Param
+- **PulseTV App**: Gebaut mit agentischem Flow (Plan→Code→Test→Review→Git), 6/6 Tests grün, XSS gefixt
+- **server.js**: /api/git/branches akzeptiert ?appId= für App-spezifisches Repo
 
-### Apps gebaut (alle standalone, Plan-first)
-- **Pomo Timer** (pulse-app-pomo-timer) — 7/7 Tests
-- **Habit Tracker** (pulse-app-habit-tracker) — 5/5 Tests
-- **Expense Splitter** (pulse-app-expense-splitter) — 5/5 Tests, 11 Tasks
-- **App Editor** (pulse-app-app-editor) — 5/5 Tests, 9 Tasks
+### Bugfixes während Session
+- Graph: Nutzt jetzt worker.phases[] Array statt Log-Text-Heuristik
+- Graph: Filtert auf App-spezifische Worker (nicht alle)
+- Kanban: Reload bei jedem SSE-Event + Tab-Wechsel
+- Files: Bessere Empty-States ("wird vom Worker erstellt")
 
-### Architektur-Änderungen
-- 2 neue Agents: planner.md, progress-tracker.md
-- Alle Worker-Agents schreiben PROGRESS.md Blöcke
-- server.js: resolveAppDir() für standalone, registerOnly, app-files, git API
-- Security Fixes: Command Injection, Path Validation, quoted rm -rf
+### Architektur
+- ~200 Zeilen ep-* CSS (scoped, kein Dashboard-Breakage)
+- ~530 Zeilen JS (Tab-System, Polling-Lifecycle, alle Renderer)
+- Per-Window State auf panel._epState
+- data-agent Attribute statt IDs für SVG (Multi-Window safe)
+- Polling: Monitor/Graph/Kanban teilen Worker-Poll (3s), Git eigener Poll (10s)
 
 ## Bekannte Issues
-- ~~Apps werden im PulseOS-Repo erstellt statt eigenständig~~ ✅
 - Dashboard flackert bei Polling
 - Self-Improve Playwright-Verifikation noch nicht zuverlässig
-- App Editor: Worker-Monitor zeigt nicht korrekt in iframe (JS-Fehler?)
-- App Editor: Toter Code (2x Markdown-Renderer)
+- Graph-Animationen könnten smoother sein (Übergang zwischen Phasen)
 
-## Nächste Session: Edit-Panel 2.0
+## Nächste Session: Template System 2.0
 
-Das Edit-Panel (Stift-Button pro App) wird zum integrierten Editor:
-- Chat + Monitor + Graph + Kanban + Files + Git in einem Panel
-- App-ID automatisch aus dem Fenster-Kontext
-- Deploy/Publish/Template als Actions im Chat-Tab
-- Hauptdatei: dashboard.html (Edit-Panel ~Zeile 2110-2560)
+Templates werden zur vollständigen Projekt-Blaupause. Schrittweise:
 
-## Architektur-Stand
-```
-.claude/
-├── agents/
-│   ├── planner.md            ← NEU: Plant vor Code
-│   ├── progress-tracker.md   ← NEU: Session-Kontinuität
-│   ├── code-generator.md     (+ Plan-Integration)
-│   ├── test-writer.md        (+ Plan-Integration)
-│   ├── deploy-configurator.md
-│   └── code-reviewer.md      (+ Plan-Integration)
-├── skills/ (railway, vercel, pulseos-improve)
-├── commands/
-│   └── build-app.md          ← Plan-first Flow
-└── servers/
-    └── pulseos-mcp.js
+1. **Template-Datenmodell erweitern** — agents, scaffold, envVars, git, monitoring Felder
+2. **PulseTV als Template exportieren** — Proof of Concept
+3. **Template-Import von GitHub** — Klonen + Registrieren
+4. **Template-Maker Chat-Agent** — Chat-basierte Template-Erstellung
+5. **"Aus Template erstellen"** — Im Dashboard
+6. **Build-App liest Template-Config** — Dynamische Phasen/Agents
 
-Standalone Apps: ~/Documents/GitHub/pulse-app-<name>/
-  ├── index.html, manifest.json, data/state.json
-  ├── PLAN.md, PROGRESS.md, DECISIONS.md
-  └── .git/ (eigenes Repo)
-
-Worker-Flow (Plan-first):
-  planner → PLAN.md →
-  progress-tracker → NEXT_TASKS →
-  code-generator (Tasks) → PROGRESS.md →
-  test-writer → Tests grün →
-  code-reviewer → GO/NO-GO →
-  git commit
-```
+Immer erst testen nach jedem Schritt!
