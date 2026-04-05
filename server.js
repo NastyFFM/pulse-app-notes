@@ -8856,28 +8856,16 @@ ${editAppId ? 'APP-ID: ' + editAppId : ''}
 WICHTIG: Nach Phase 0 arbeitest du im WORKTREE-Verzeichnis ($WORKTREE_DIR). Alle Dateiaenderungen dort machen, nicht im Hauptrepo!
 ${templateContent ? '\n--- TEMPLATE ---\n' + templateContent + '\n--- ENDE ---\n' : ''}${selfImproveContext}
 
-## Dein Workflow — 5 Phasen
-
-### Phase 0: Git-Setup
-Erstelle einen isolierten Feature-Branch fuer diese Aenderung:
-\`\`\`
-BRANCH_NAME="feature/${editAppId || 'new-app'}-$(date +%s)"
-cd ${ROOT}
-WORKTREE_DIR="${ROOT}/.claude/worktrees/worker-${id}"
-git worktree add "$WORKTREE_DIR" -b "$BRANCH_NAME"
-cd "$WORKTREE_DIR"
-\`\`\`
-Speichere den Branch-Namen — du brauchst ihn spaeter fuer Push und PR.
-Update den Worker mit dem Branch-Namen:
-curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d "{\"progress\":\"Phase 0/5 done: Branch erstellt\",\"branch\":\"$BRANCH_NAME\"}"
+## Dein Workflow — 4 Phasen
 
 ### Phase 1: Code generieren
-Nutze den Agent-Tool mit subagent_type "general-purpose" und isolation "worktree":
-Prompt: Die Aufgabe + folgende Instruktionen aus dem code-generator Agent:
+Arbeite DIREKT im Hauptrepo (${ROOT}), damit der User die App LIVE sieht.
+App-Verzeichnis: ${ROOT}/apps/${editAppId || '<name>'}/
+
 ${codeGenAgent ? codeGenAgent.split('---').slice(2).join('---').trim() : 'Generiere den App-Code nach PulseOS-Konventionen.'}
 
 Nach Phase 1: Update den Worker-Status:
-curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d '{"progress":"Phase 1/5 done: Code generiert","phases":[{"name":"Code","status":"done"}]}'
+curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d '{"progress":"Phase 1/4 done: Code generiert","phases":[{"name":"Code","status":"done"}]}'
 
 ### Phase 2: Visuell pruefen + Tests
 Du hast Playwright MCP verfuegbar (mcp__playwright Tools). Nutze es um zu SEHEN ob deine Aenderung funktioniert:
@@ -8895,7 +8883,7 @@ Ausserdem: Bestehende Tests muessen gruen bleiben:
 npx playwright test
 Bei roten Tests: Analysiere und fixe (max 3 Versuche).
 
-Update Status: "Phase 2/5 done: Visuell geprueft + Tests gruen"
+Update Status: "Phase 2/4 done: Visuell geprueft + Tests gruen"
 
 ### Phase 3: Review
 Pruefe den Code selbst nach diesen Kriterien:
@@ -8904,32 +8892,24 @@ ${reviewAgent ? reviewAgent.split('---').slice(2).join('---').trim() : 'Review a
 Bei BLOCKER: Gehe zurueck zu Phase 1, fixe das Problem. Max 3 Runden.
 Bei GO: Weiter zu Phase 4.
 ${isSelfImprove ? '\nSAFETY bei System-Dateien:\n- Syntax-Check nach jeder Aenderung: node -c server.js\n- Playwright Tests MUESSEN gruen sein: npx playwright test\n- Bei Test-Failure: git checkout -- <datei> und nochmal versuchen\n- NIEMALS data/*.json editieren (Runtime State)\n' : ''}
-Update Status: "Phase 3/5 done: Review GO"
+Update Status: "Phase 3/4 done: Review GO"
 
-### Phase 4: Git + PR
-Committe alle Aenderungen und erstelle einen Pull Request:
-\`\`\`
-cd "$WORKTREE_DIR"
-# Stage alle relevanten Dateien (NICHT data/workers/, NICHT .claude/worktrees/)
-git add apps/ data/apps.json data/tech-stacks.json
-git add -u  # staged bereits getrackte Dateien die geaendert wurden
-git reset HEAD data/workers/  # workers/ ausschliessen
-git reset HEAD .claude/worktrees/  # worktrees/ ausschliessen
-git commit -m "feat: <app-name> — <kurze beschreibung der aenderung>"
-git push -u origin "$BRANCH_NAME"
-PR_URL=$(gh pr create --title "feat: <app-name>" --body "## Was wurde gebaut\\n\\n<zusammenfassung der phasen>\\n\\n## Phasen\\n- Phase 0: Branch erstellt\\n- Phase 1: Code generiert\\n- Phase 2: Visuell geprueft\\n- Phase 3: Review GO\\n\\n🤖 Erstellt von PulseOS Worker ${id}" 2>&1 | tail -1)
-echo "PR URL: $PR_URL"
-\`\`\`
-Update den Worker mit der PR-URL:
-curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d "{\"progress\":\"Phase 4/5 done: PR erstellt\",\"result\":\"PR: $PR_URL\"}"
-
-### Phase 5: Report + Cleanup
+### Phase 4: Git + PR + Report
+Erstelle einen Feature-Branch, committe die Aenderungen und erstelle einen PR:
 \`\`\`
 cd ${ROOT}
-git worktree remove "$WORKTREE_DIR" --force 2>/dev/null || true
+BRANCH_NAME="feature/${editAppId || 'new-app'}-$(date +%s)"
+git checkout -b "$BRANCH_NAME"
+git add apps/${editAppId || '*'}/
+git add data/apps.json 2>/dev/null || true
+git commit -m "feat: ${editAppId || 'new-app'} — <kurze beschreibung>"
+git push -u origin "$BRANCH_NAME"
+PR_URL=$(gh pr create --title "feat: ${editAppId || 'new-app'}" --body "## Phasen\\n- Phase 1: Code generiert\\n- Phase 2: Visuell geprueft\\n- Phase 3: Review GO\\n\\n🤖 PulseOS Worker ${id}" --base feature/app-maker-v2 2>&1 | tail -1)
+git checkout -
+echo "PR: $PR_URL"
 \`\`\`
-Schreibe die finale Zusammenfassung mit PR-URL in den Worker und setze status auf "done":
-curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d "{\"status\":\"done\",\"progress\":\"Phase 5/5 done: Fertig\",\"result\":\"App gebaut und PR erstellt: $PR_URL\"}"
+Setze status auf "done" mit PR-URL:
+curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d "{\"status\":\"done\",\"progress\":\"Phase 4/4 done: PR erstellt\",\"result\":\"App gebaut und PR erstellt: $PR_URL\",\"branch\":\"$BRANCH_NAME\"}"
 
 FORTSCHRITT:
 - Aktualisiere den Worker-File regelmaessig: ${workerFile}
