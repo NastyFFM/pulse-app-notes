@@ -1,30 +1,31 @@
-# Plan: Phase 4 — Deploy-Pipeline + Git-Workflow
+# Plan: Nächste Session — Eigenständige Apps + Deploy
 
-## Schritte
+## Aktueller Stand (2026-04-04)
+- Branch: feature/app-maker-v2
+- Phase 1-4 implementiert und verifiziert
+- Agent-Infrastruktur: 4 Agents, 3 Deploy-Skills, /build-app Command
+- Orchestrator: 4-Phasen-Flow (Code → Test → Review → Git+PR)
+- Smart Autodetect: Keywords entscheiden ob orchestriert oder quick
+- Agent Dashboard: Live-Monitoring aller Worker, Agents, Skills, MCP, Files
+- Playwright MCP für visuelle Verifikation
 
-### 1. Worker erstellt Feature-Branch
-- Orchestrator-Prompt erweitern: `git checkout -b feature/<appId>` vor Phase 1
-- Nach Phase 4: `git add + commit` auf dem Feature-Branch
-- Worker-JSON bekommt `branch` Feld für Tracking
+## Nächste Schritte
 
-### 2. Auto-PR nach Abschluss
-- Nach erfolgreichem Build: `gh pr create` via Bash im Worker
-- PR Title: "feat: <app-name> — <beschreibung>"
-- PR Body: Phasen-Report (was gebaut, Tests, Review-Ergebnis)
-- Link zur PR im Worker-Result + Edit-Chat
+### 1. Eigenständige Apps (Default) vs System-Apps
+- quickCreateApp() fragt: "🏠 System-App (in PulseOS)" oder "📦 Eigenständig (eigenes Repo)"
+- Default: Eigenständig
+- Eigenständig: ~/Documents/GitHub/pulse-app-<name>/, eigenes Git-Repo
+- System: apps/<name>/ im PulseOS-Repo (wie bisher)
+- Server braucht neuen Parameter: `standalone: true/false`
+- Orchestrator-Prompt anpassen: Arbeitsverzeichnis je nach Typ
 
-### 3. Edit-Chat zeigt PR-Link
-- Nach Worker-Done: PR-URL als klickbarer Link im Chat
-- User kann direkt zur PR navigieren
+### 2. Self-Improve mit Playwright MCP verifizieren
+- Worker ändert dashboard.html → Playwright prüft visuell → Fix-Loop
+- Der Tooltip-Test der vorher fehlschlug nochmal versuchen
 
-### 4. `/build-app` Slash-Command aktivieren
-- Bereits in .claude/commands/build-app.md definiert
-- Testen ob es funktioniert: `/build-app test-app "Eine Test-App"`
+### 3. Dashboard-Flackern fixen
+- Polling (5s) durch SSE ersetzen für Worker-Updates
+- Oder: nur DOM-Diff statt innerHTML-Replace
 
-### 5. Branch-Schutz dokumentieren
-- CLAUDE.md oder .claude/settings.json: main/develop geschützt
-- Worker darf nicht direkt in main pushen
-
-## Betroffene Dateien
-- server.js — Orchestrator-Prompt (Git-Workflow Instruktionen)
-- dashboard.html — PR-Link im Edit-Chat anzeigen
+### 4. /build-app Command testen
+- Slash-Command in Claude Code Session testen
