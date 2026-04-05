@@ -8,6 +8,14 @@ Du deployest diese App progressiv. Eskaliere nur wenn noetig.
 - Die App ist sofort live unter: `https://{owner}.github.io/pulse-app-{appId}/`
 - WICHTIG: Nur fuer Frontend-Apps. Wenn die App nur HTML/CSS/JS ist, STOPPE hier.
 
+### GitHub Pages Frontend-Anforderungen
+Damit die App auf github.io korrekt laeuft:
+- Alle Pfade muessen relativ sein (kein `/api/...` — das gibt es auf GitHub Pages nicht)
+- Daten werden direkt im HTML/JS gespeichert (localStorage) oder von externen APIs geladen
+- Kein Node.js/Server-Code — nur statische HTML/CSS/JS-Dateien
+- Falls die App PulseOS-APIs nutzt (fetch('/app/...')), muessen diese fuer GitHub Pages durch localStorage oder Mock-Daten ersetzt werden
+- Optional: Ein `.nojekyll` Datei im Root erstellen damit GitHub Pages keine Jekyll-Verarbeitung macht
+
 ## Stage 2: Railway/Vercel (Backend noetig)
 - Nur wenn die App einen Server braucht (Node.js, API, etc.)
 - Erstelle railway.json mit Build/Start Commands

@@ -1141,6 +1141,55 @@ body {
 .ep-env-textarea { width:100%; height:70px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:9px; font-family:monospace; padding:6px; resize:vertical; box-sizing:border-box; }
 .ep-env-textarea:focus { border-color:var(--teal); outline:none; }
 .ep-settings-info { font-size:10px; color:var(--text); line-height:1.8; }
+.ep-tpl-details { margin-top:6px; font-size:9px; }
+.ep-tpl-details .ep-tpl-group { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:6px 8px; margin-bottom:4px; }
+.ep-tpl-details .ep-tpl-group-title { font-weight:700; color:var(--teal); margin-bottom:3px; font-size:9px; text-transform:uppercase; letter-spacing:0.05em; }
+.ep-tpl-details .ep-tpl-row { display:flex; justify-content:space-between; color:var(--text-dim); line-height:1.6; }
+.ep-tpl-details .ep-tpl-val { color:var(--text); font-family:monospace; font-size:9px; }
+.ep-tpl-details .ep-tpl-badge { display:inline-block; padding:1px 5px; border-radius:3px; background:rgba(78,205,196,0.12); color:var(--teal); font-size:8px; margin:1px 2px 1px 0; }
+.ep-tpl-details .ep-tpl-badge.dim { background:rgba(255,255,255,0.05); color:var(--text-dim); }
+.ep-accounts-list { display:flex; flex-direction:column; gap:4px; }
+.ep-account-card { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--bg); font-size:10px; }
+.ep-account-icon { font-size:14px; width:20px; text-align:center; flex-shrink:0; }
+.ep-account-info { flex:1; min-width:0; }
+.ep-account-name { font-weight:600; color:var(--text); }
+.ep-account-token { font-size:8px; color:var(--text-dim); font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ep-account-status { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.ep-account-status.ready { background:#27ae60; box-shadow:0 0 4px rgba(39,174,96,0.5); }
+.ep-account-status.missing { background:#e74c3c; box-shadow:0 0 4px rgba(231,76,60,0.5); }
+.ep-account-remove { font-size:9px; padding:2px 6px; border-radius:4px; border:1px solid rgba(231,76,60,0.3); background:transparent; color:#e74c3c; cursor:pointer; flex-shrink:0; opacity:0.6; transition:opacity 0.2s; }
+.ep-account-remove:hover { opacity:1; background:rgba(231,76,60,0.1); }
+.ep-app-links { display:flex; flex-direction:column; gap:4px; }
+.ep-app-link { display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:6px; border:1px solid var(--border); background:var(--bg); font-size:10px; text-decoration:none; color:var(--text); transition:border-color 0.2s; cursor:pointer; }
+.ep-app-link:hover { border-color:var(--teal); }
+.ep-app-link-icon { font-size:13px; width:18px; text-align:center; flex-shrink:0; }
+.ep-app-link-info { flex:1; min-width:0; }
+.ep-app-link-label { font-weight:600; font-size:10px; }
+.ep-app-link-url { font-size:8px; color:var(--teal); font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ep-app-link-badge { font-size:8px; padding:1px 6px; border-radius:3px; flex-shrink:0; }
+.ep-app-link-badge.live { background:rgba(39,174,96,0.15); color:#27ae60; }
+.ep-app-link-badge.repo { background:rgba(78,205,196,0.12); color:var(--teal); }
+.ep-app-link-badge.pending { background:rgba(255,255,255,0.05); color:var(--text-dim); }
+.ep-tpl-edit { margin-top:6px; background:var(--bg); border:1px solid var(--teal); border-radius:8px; padding:8px; font-size:10px; }
+.ep-tpl-edit label { display:block; color:var(--text-dim); font-size:9px; text-transform:uppercase; letter-spacing:0.04em; margin:6px 0 2px; }
+.ep-tpl-edit label:first-child { margin-top:0; }
+.ep-tpl-edit input, .ep-tpl-edit textarea, .ep-tpl-edit select { width:100%; padding:4px 6px; background:var(--bg-card); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:10px; font-family:inherit; box-sizing:border-box; }
+.ep-tpl-edit textarea { height:50px; resize:vertical; font-family:monospace; font-size:9px; }
+.ep-tpl-edit .ep-tpl-edit-actions { display:flex; gap:4px; margin-top:8px; justify-content:flex-end; }
+.ep-tpl-edit .ep-tpl-edit-btn { padding:3px 10px; border-radius:4px; border:none; font-size:9px; cursor:pointer; }
+.ep-tpl-edit .ep-tpl-edit-save { background:var(--teal); color:var(--bg); font-weight:600; }
+.ep-tpl-edit .ep-tpl-edit-cancel { background:var(--bg-card); color:var(--text-dim); border:1px solid var(--border); }
+.ep-tpl-edit .ep-tpl-edit-delete { background:transparent; color:#e74c3c; border:1px solid rgba(231,76,60,0.3); }
+.tpl-del-option { display:block; width:100%; text-align:left; padding:6px 10px; border:none; background:none; color:var(--text); font-size:10px; cursor:pointer; border-radius:4px; line-height:1.4; }
+.tpl-del-option:hover { background:rgba(255,255,255,0.05); }
+.tm-banner { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; background:linear-gradient(135deg, rgba(78,205,196,0.15), rgba(78,205,196,0.05)); border:1px solid rgba(78,205,196,0.3); border-radius:8px; margin-bottom:8px; font-size:10px; font-weight:600; color:var(--teal); }
+.tm-exit-btn { font-size:9px; padding:2px 8px; border-radius:4px; border:1px solid rgba(78,205,196,0.3); background:transparent; color:var(--teal); cursor:pointer; }
+.tm-exit-btn:hover { background:rgba(78,205,196,0.15); }
+.tm-quick-btn { display:inline-block; margin:3px 4px 3px 0; padding:4px 10px; border-radius:6px; border:1px solid var(--teal); background:rgba(78,205,196,0.08); color:var(--teal); font-size:10px; cursor:pointer; transition:all 0.2s; }
+.tm-quick-btn:hover { background:var(--teal); color:var(--bg); }
+.ep-collapse-arrow { float:right; transition:transform 0.2s; font-size:10px; }
+.ep-settings-section:not(.ep-collapsed) .ep-collapse-arrow { transform:rotate(90deg); }
+.ep-settings-section.ep-collapsed .ep-collapse-body { display:none; }
 .ep-info-label { color:var(--text-dim); font-weight:600; min-width:45px; display:inline-block; }
 
 /* Resize handles */
@@ -2289,17 +2338,30 @@ function openApp(app, opts) {
           '<div class="ep-settings-title">Template</div>' +
           '<div class="ep-settings-row">' +
             '<select class="edit-template" id="edit-tpl-' + winId + '" onchange="saveTemplateChoice(\'' + winId + '\', this.value)" style="flex:1;"><option value="frontend">Laden...</option></select>' +
+            '<button class="edit-action-btn" onclick="showEditTemplate(\'' + winId + '\')" title="Template bearbeiten">✎</button>' +
             '<button class="edit-action-btn" onclick="showCreateTemplate(\'' + winId + '\')" title="Neues Template erstellen">+ Neu</button>' +
           '</div>' +
           '<div class="ep-settings-hint">Template bestimmt Build-Methode und Deploy-Ziel</div>' +
+          '<div id="ep-tpl-edit-' + winId + '" class="ep-tpl-edit" style="display:none;"></div>' +
+          '<div id="ep-tpl-details-' + winId + '" class="ep-tpl-details"></div>' +
         '</div>' +
-        /* Environment Variables */
+        /* Accounts / Services */
         '<div class="ep-settings-section">' +
-          '<div class="ep-settings-title">Environment Variables</div>' +
-          '<div id="ep-env-wrap-' + winId + '">' +
+          '<div class="ep-settings-title">Accounts &amp; Services</div>' +
+          '<div id="ep-accounts-' + winId + '" class="ep-accounts-list">Laden...</div>' +
+        '</div>' +
+        /* Environment Variables (collapsed by default) */
+        '<div class="ep-settings-section ep-collapsed">' +
+          '<div class="ep-settings-title ep-collapse-toggle" onclick="this.parentElement.classList.toggle(\'ep-collapsed\')" style="cursor:pointer;user-select:none;">Environment Variables <span class="ep-collapse-arrow">▸</span></div>' +
+          '<div class="ep-collapse-body" id="ep-env-wrap-' + winId + '">' +
             '<textarea class="ep-env-textarea" id="edit-envtxt-' + winId + '" placeholder="KEY=value (eine pro Zeile)" spellcheck="false"></textarea>' +
             '<button class="ep-settings-btn-sm" onclick="saveEnvVars(\'' + app.id + '\',\'' + winId + '\')">Speichern</button>' +
           '</div>' +
+        '</div>' +
+        /* App Links (dynamic) */
+        '<div class="ep-settings-section">' +
+          '<div class="ep-settings-title">Links &amp; Deployment</div>' +
+          '<div id="ep-app-links-' + winId + '" class="ep-app-links">Laden...</div>' +
         '</div>' +
         /* App Info */
         '<div class="ep-settings-section">' +
@@ -2406,6 +2468,8 @@ function editWin(winId) {
   const appId = panel.dataset.appid;
   loadEditChat(winId, appId);
   loadTemplateDropdown(winId);
+  loadAccountsList(winId);
+  loadAppLinks(winId);
   renderEditActions(winId, appId);
   document.getElementById('edit-inp-' + winId)?.focus();
   // Load kanban data in background
@@ -2429,6 +2493,495 @@ function editWin(winId) {
     };
     panel._chatSSE = chatSSE;
   }
+}
+
+// Cache templates per window for detail rendering
+const _tplCache = {};
+
+function renderTemplateDetails(winId, tpl) {
+  const el = document.getElementById('ep-tpl-details-' + winId);
+  if (!el || !tpl) return;
+  const badges = (arr) => (arr || []).map(v => '<span class="ep-tpl-badge">' + v + '</span>').join('');
+  const boolBadge = (v, label) => '<span class="ep-tpl-badge' + (v ? '' : ' dim') + '">' + (v ? '✓' : '✗') + ' ' + label + '</span>';
+  const envRows = (tpl.envVars || []).map(e =>
+    '<div class="ep-tpl-row"><span>' + e.key + '</span><span class="ep-tpl-val">' + (e.required ? 'required' : 'optional') + '</span></div>'
+  ).join('') || '<div class="ep-tpl-row" style="color:var(--text-dim)">Keine</div>';
+
+  el.innerHTML =
+    '<div class="ep-tpl-group">' +
+      '<div class="ep-tpl-group-title">Agent Phasen</div>' +
+      badges(tpl.agents?.phases || []) +
+    '</div>' +
+    '<div class="ep-tpl-group">' +
+      '<div class="ep-tpl-group-title">Scaffold</div>' +
+      '<div class="ep-tpl-row"><span>Dateien</span></div>' +
+      badges(tpl.scaffold?.files || []) +
+      '<div class="ep-tpl-row" style="margin-top:3px"><span>Verzeichnisse</span></div>' +
+      badges(tpl.scaffold?.directories || []) +
+    '</div>' +
+    '<div class="ep-tpl-group">' +
+      '<div class="ep-tpl-group-title">Git</div>' +
+      boolBadge(tpl.git?.autoBranch, 'Auto-Branch') +
+      boolBadge(tpl.git?.autoCommit, 'Auto-Commit') +
+      boolBadge(tpl.git?.autoPR, 'Auto-PR') +
+      '<div class="ep-tpl-row" style="margin-top:3px"><span>Prefix</span><span class="ep-tpl-val">' + (tpl.git?.branchPrefix || 'feature/') + '</span></div>' +
+    '</div>' +
+    '<div class="ep-tpl-group">' +
+      '<div class="ep-tpl-group-title">Monitoring</div>' +
+      '<div class="ep-tpl-row"><span>Log-Level</span><span class="ep-tpl-val">' + (tpl.monitoring?.logLevel || 'normal') + '</span></div>' +
+      '<div class="ep-tpl-row"><span>Watch</span></div>' +
+      badges(tpl.monitoring?.watchFiles || []) +
+    '</div>' +
+    (tpl.envVars?.length ? '<div class="ep-tpl-group"><div class="ep-tpl-group-title">Env Vars (Template)</div>' + envRows + '</div>' : '') +
+    ((tpl.deploySteps || []).length ? '<div class="ep-tpl-group"><div class="ep-tpl-group-title">Deploy-Steps</div>' +
+      (tpl.deploySteps || []).map((s, i) =>
+        '<div class="ep-tpl-row"><span>' + (i+1) + '. ' + s.name + '</span><span class="ep-tpl-val">' + s.action + '</span></div>' +
+        (s.urlPattern ? '<div class="ep-tpl-row"><span></span><span class="ep-tpl-val" style="font-size:8px;color:var(--teal);">' + s.urlPattern + '</span></div>' : '')
+      ).join('') + '</div>' : '');
+}
+
+async function showEditTemplate(winId) {
+  const editEl = document.getElementById('ep-tpl-edit-' + winId);
+  const detailsEl = document.getElementById('ep-tpl-details-' + winId);
+  if (!editEl) return;
+  // Toggle off
+  if (editEl.style.display !== 'none') { editEl.style.display = 'none'; if (detailsEl) detailsEl.style.display = ''; return; }
+
+  const tpls = _tplCache[winId] || [];
+  const selId = document.getElementById('edit-tpl-' + winId)?.value;
+  const tpl = tpls.find(t => t.id === selId);
+  if (!tpl) return;
+
+  if (detailsEl) detailsEl.style.display = 'none';
+  editEl.style.display = '';
+
+  // Also start a template-maker chat session in edit mode
+  try {
+    const r = await fetch('/api/template-maker/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templateId: tpl.id })
+    });
+    const d = await r.json();
+    if (d.ok && d.sessionId) {
+      enterTemplateMakerMode(winId, d.sessionId);
+    }
+  } catch (e) { console.error('showEditTemplate chat error:', e); }
+
+  // Initialize deploy steps from template
+  _tplEditDeploySteps[winId] = [...(tpl.deploySteps || [])];
+
+  const ro = tpl.builtin ? 'readonly' : '';
+  editEl.innerHTML =
+    '<label>Name</label>' +
+    '<input id="tpl-ed-name-' + winId + '" value="' + (tpl.name || '').replace(/"/g, '&quot;') + '" ' + ro + '>' +
+    '<label>Beschreibung</label>' +
+    '<input id="tpl-ed-desc-' + winId + '" value="' + (tpl.description || '').replace(/"/g, '&quot;') + '">' +
+    '<label>Icon</label>' +
+    '<input id="tpl-ed-icon-' + winId + '" value="' + (tpl.icon || '') + '" maxlength="3" style="width:50px;">' +
+    '<label>Stacks (kommagetrennt)</label>' +
+    '<input id="tpl-ed-stacks-' + winId + '" value="' + (tpl.stacks || []).join(', ') + '">' +
+    '<label>Agent-Phasen (kommagetrennt)</label>' +
+    '<input id="tpl-ed-phases-' + winId + '" value="' + (tpl.agents?.phases || []).join(', ') + '">' +
+    '<label>Scaffold-Dateien (kommagetrennt)</label>' +
+    '<input id="tpl-ed-scaffold-' + winId + '" value="' + (tpl.scaffold?.files || []).join(', ') + '">' +
+    '<label>Env Vars (KEY=beschreibung, eine pro Zeile)</label>' +
+    '<textarea id="tpl-ed-envvars-' + winId + '">' + (tpl.envVars || []).map(v => v.key + '=' + (v.description || '')).join('\n') + '</textarea>' +
+    '<label>Git</label>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+      '<label style="display:inline-flex;align-items:center;gap:3px;font-size:9px;margin:0;"><input type="checkbox" id="tpl-ed-branch-' + winId + '"' + (tpl.git?.autoBranch ? ' checked' : '') + '> Auto-Branch</label>' +
+      '<label style="display:inline-flex;align-items:center;gap:3px;font-size:9px;margin:0;"><input type="checkbox" id="tpl-ed-commit-' + winId + '"' + (tpl.git?.autoCommit ? ' checked' : '') + '> Auto-Commit</label>' +
+      '<label style="display:inline-flex;align-items:center;gap:3px;font-size:9px;margin:0;"><input type="checkbox" id="tpl-ed-pr-' + winId + '"' + (tpl.git?.autoPR ? ' checked' : '') + '> Auto-PR</label>' +
+    '</div>' +
+    '<label>Monitoring Log-Level</label>' +
+    '<select id="tpl-ed-loglevel-' + winId + '">' +
+      '<option value="normal"' + (tpl.monitoring?.logLevel === 'normal' ? ' selected' : '') + '>normal</option>' +
+      '<option value="verbose"' + (tpl.monitoring?.logLevel === 'verbose' ? ' selected' : '') + '>verbose</option>' +
+    '</select>' +
+    '<label>Deploy-Steps</label>' +
+    '<div id="tpl-ed-deploysteps-' + winId + '" style="font-size:9px;">' +
+    ((tpl.deploySteps || []).length
+      ? (tpl.deploySteps || []).map((s, i) =>
+          '<div style="display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid var(--border);">' +
+          '<span style="flex:1;">' + (i+1) + '. ' + s.name + ' <span style="color:var(--text-dim);">(' + s.action + ')</span></span>' +
+          '<button onclick="removeTplDeployStep(\'' + winId + '\',' + i + ')" style="border:none;background:none;color:#e74c3c;cursor:pointer;font-size:10px;">✕</button></div>'
+        ).join('')
+      : '<div style="color:var(--text-dim);padding:3px 0;">Keine Deploy-Steps definiert</div>') +
+    '</div>' +
+    '<div style="display:flex;gap:4px;margin-top:4px;">' +
+    '<button class="ep-tpl-edit-btn" onclick="addTplDeployStep(\'' + winId + '\',\'github-pages\')" style="font-size:8px;padding:2px 6px;background:var(--bg-card);color:var(--text-dim);border:1px solid var(--border);">+ GitHub Pages</button>' +
+    '<button class="ep-tpl-edit-btn" onclick="addTplDeployStep(\'' + winId + '\',\'railway\')" style="font-size:8px;padding:2px 6px;background:var(--bg-card);color:var(--text-dim);border:1px solid var(--border);">+ Railway</button>' +
+    '<button class="ep-tpl-edit-btn" onclick="addTplDeployStep(\'' + winId + '\',\'vercel\')" style="font-size:8px;padding:2px 6px;background:var(--bg-card);color:var(--text-dim);border:1px solid var(--border);">+ Vercel</button>' +
+    '</div>' +
+    '<div class="ep-tpl-edit-actions">' +
+      '<button class="ep-tpl-edit-btn ep-tpl-edit-delete" onclick="deleteTemplateMenu(\'' + winId + '\',\'' + tpl.id + '\',' + (tpl.publishedAt ? 'true' : 'false') + ',' + (tpl.builtin ? 'true' : 'false') + ')">' + (tpl.builtin ? 'Verwalten ▾' : 'Löschen ▾') + '</button>' +
+      '<button class="ep-tpl-edit-btn ep-tpl-edit-cancel" onclick="showEditTemplate(\'' + winId + '\')">Abbrechen</button>' +
+      '<button class="ep-tpl-edit-btn ep-tpl-edit-save" onclick="saveEditTemplate(\'' + winId + '\',\'' + tpl.id + '\')">Speichern</button>' +
+    '</div>';
+}
+
+// Track deploy steps per window during editing
+const _tplEditDeploySteps = {};
+
+const _deployStepPresets = {
+  'github-pages': [
+    { name: 'GitHub Repo erstellen', action: 'github-publish', command: 'gh repo create ${githubUser}/pulse-app-${appId} --public --source ${appDir} --push', description: 'Code auf GitHub pushen' },
+    { name: 'GitHub Pages aktivieren', action: 'github-pages', command: 'gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f source.branch=main -f source.path=/', description: 'App live unter https://${githubUser}.github.io/pulse-app-${appId}/', urlPattern: 'https://${githubUser}.github.io/pulse-app-${appId}/' }
+  ],
+  'railway': [
+    { name: 'GitHub Repo erstellen', action: 'github-publish', command: 'gh repo create ${githubUser}/pulse-app-${appId} --public --source ${appDir} --push', description: 'Code auf GitHub pushen' },
+    { name: 'Railway Deploy', action: 'railway-deploy', command: 'railway up --detach', description: 'App auf Railway deployen', urlPattern: 'https://pulse-app-${appId}-production.up.railway.app' }
+  ],
+  'vercel': [
+    { name: 'GitHub Repo erstellen', action: 'github-publish', command: 'gh repo create ${githubUser}/pulse-app-${appId} --public --source ${appDir} --push', description: 'Code auf GitHub pushen' },
+    { name: 'Vercel Deploy', action: 'vercel-deploy', command: 'vercel --prod --yes --token ${VERCEL_TOKEN}', description: 'App auf Vercel deployen', urlPattern: 'https://pulse-app-${appId}.vercel.app' }
+  ]
+};
+
+function addTplDeployStep(winId, preset) {
+  if (!_tplEditDeploySteps[winId]) {
+    const tpls = _tplCache[winId] || [];
+    const selId = document.getElementById('edit-tpl-' + winId)?.value;
+    const tpl = tpls.find(t => t.id === selId);
+    _tplEditDeploySteps[winId] = [...(tpl?.deploySteps || [])];
+  }
+  const steps = _tplEditDeploySteps[winId];
+  const presetSteps = _deployStepPresets[preset] || [];
+  for (const s of presetSteps) {
+    if (!steps.some(existing => existing.action === s.action)) steps.push(s);
+  }
+  _renderDeploySteps(winId);
+}
+
+function removeTplDeployStep(winId, index) {
+  if (!_tplEditDeploySteps[winId]) {
+    const tpls = _tplCache[winId] || [];
+    const selId = document.getElementById('edit-tpl-' + winId)?.value;
+    const tpl = tpls.find(t => t.id === selId);
+    _tplEditDeploySteps[winId] = [...(tpl?.deploySteps || [])];
+  }
+  _tplEditDeploySteps[winId].splice(index, 1);
+  _renderDeploySteps(winId);
+}
+
+function _renderDeploySteps(winId) {
+  const el = document.getElementById('tpl-ed-deploysteps-' + winId);
+  if (!el) return;
+  const steps = _tplEditDeploySteps[winId] || [];
+  el.innerHTML = steps.length
+    ? steps.map((s, i) =>
+        '<div style="display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid var(--border);">' +
+        '<span style="flex:1;">' + (i+1) + '. ' + s.name + ' <span style="color:var(--text-dim);">(' + s.action + ')</span></span>' +
+        '<button onclick="removeTplDeployStep(\'' + winId + '\',' + i + ')" style="border:none;background:none;color:#e74c3c;cursor:pointer;font-size:10px;">✕</button></div>'
+      ).join('')
+    : '<div style="color:var(--text-dim);padding:3px 0;">Keine Deploy-Steps definiert</div>';
+}
+
+async function saveEditTemplate(winId, tplId) {
+  const g = (id) => document.getElementById(id)?.value?.trim() || '';
+  const update = {
+    name: g('tpl-ed-name-' + winId),
+    description: g('tpl-ed-desc-' + winId),
+    icon: g('tpl-ed-icon-' + winId),
+    stacks: g('tpl-ed-stacks-' + winId).split(/[,\s]+/).map(s => s.trim()).filter(s => s),
+    agents: { phases: g('tpl-ed-phases-' + winId).split(/[,\s]+/).map(s => s.trim()).filter(s => s) },
+    scaffold: { files: g('tpl-ed-scaffold-' + winId).split(/[,\s]+/).map(s => s.trim()).filter(s => s) },
+    envVars: g('tpl-ed-envvars-' + winId).split('\n').filter(l => l.includes('=')).map(l => {
+      const [key, ...rest] = l.split('=');
+      return { key: key.trim(), required: true, description: rest.join('=').trim() };
+    }),
+    git: {
+      autoBranch: document.getElementById('tpl-ed-branch-' + winId)?.checked || false,
+      autoCommit: document.getElementById('tpl-ed-commit-' + winId)?.checked || false,
+      autoPR: document.getElementById('tpl-ed-pr-' + winId)?.checked || false
+    },
+    monitoring: { logLevel: g('tpl-ed-loglevel-' + winId) || 'normal' },
+    deploySteps: _tplEditDeploySteps[winId] || undefined
+  };
+  try {
+    const r = await fetch('/api/templates/' + tplId, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(update)
+    });
+    const d = await r.json();
+    if (d.ok) {
+      // Close edit, refresh
+      document.getElementById('ep-tpl-edit-' + winId).style.display = 'none';
+      document.getElementById('ep-tpl-details-' + winId).style.display = '';
+      // Invalidate cache and reload
+      delete _tplCache[winId];
+      delete _tplEditDeploySteps[winId];
+      // Also exit template maker chat if active
+      exitTemplateMakerMode(winId);
+      loadTemplateDropdown(winId);
+      // If template was already published, ask user if they want to push to GitHub
+      const tpl = d.template;
+      if (tpl && tpl.publishedAt && tpl.source) {
+        if (confirm('Template lokal gespeichert.\n\nAuch auf GitHub aktualisieren?\n(' + tpl.source + ')')) {
+          try {
+            const pubRes = await fetch('/api/templates/' + tplId + '/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            const pubData = await pubRes.json();
+            if (pubData.ok) { alert('Auf GitHub aktualisiert!'); }
+            else { alert('GitHub-Push fehlgeschlagen: ' + (pubData.error || 'Unbekannt')); }
+          } catch (pubErr) { alert('GitHub-Push fehlgeschlagen: ' + pubErr.message); }
+        }
+      }
+    } else { alert('Fehler: ' + (d.error || 'Unbekannt')); }
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+function deleteTemplateMenu(winId, tplId, isPublished, isBuiltin) {
+  // Remove existing menu
+  document.getElementById('tpl-delete-menu')?.remove();
+  const btn = document.querySelector('.ep-tpl-edit-delete');
+  if (!btn) return;
+  const rect = btn.getBoundingClientRect();
+  const menu = document.createElement('div');
+  menu.id = 'tpl-delete-menu';
+  menu.style.cssText = 'position:fixed;z-index:100000;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,0.4);font-size:10px;min-width:220px;left:' + rect.left + 'px;top:' + (rect.bottom + 4) + 'px;';
+
+  let options = '';
+  if (isBuiltin) {
+    options = '<div style="padding:4px 8px;color:var(--text-dim);font-size:9px;font-weight:600;">BUILTIN TEMPLATE</div>' +
+      '<button class="tpl-del-option" onclick="resetTemplateDefaults(\'' + winId + '\',\'' + tplId + '\')">🔄 Auf Defaults zurücksetzen<br><span style="font-size:8px;color:var(--text-dim);">Alle Änderungen verwerfen</span></button>' +
+      (isPublished ? '<button class="tpl-del-option" onclick="deleteTemplateGithub(\'' + winId + '\',\'' + tplId + '\')">📦 Von GitHub entfernen<br><span style="font-size:8px;color:var(--text-dim);">Unpublish — bleibt lokal</span></button>' : '') +
+      '<button class="tpl-del-option" onclick="publishTemplateFromMenu(\'' + winId + '\',\'' + tplId + '\')">' + (isPublished ? '🔄 Auf GitHub aktualisieren' : '📦 Auf GitHub publishen') + '<br><span style="font-size:8px;color:var(--text-dim);">Als pulse-template-' + tplId + '</span></button>';
+  } else {
+    options = '<div style="padding:4px 8px;color:var(--text-dim);font-size:9px;font-weight:600;">TEMPLATE VERWALTEN</div>' +
+      '<button class="tpl-del-option" onclick="deleteTemplateLocal(\'' + winId + '\',\'' + tplId + '\')">🗑 Lokal löschen' + (isPublished ? '<br><span style="font-size:8px;color:var(--text-dim);">Bleibt auf GitHub — kann neu installiert werden</span>' : '') + '</button>' +
+      (isPublished ? '<button class="tpl-del-option" onclick="deleteTemplateGithub(\'' + winId + '\',\'' + tplId + '\')">📦 Von GitHub entfernen<br><span style="font-size:8px;color:var(--text-dim);">Bleibt lokal erhalten</span></button>' : '') +
+      (isPublished ? '<button class="tpl-del-option" style="color:#e74c3c;" onclick="deleteTemplateBoth(\'' + winId + '\',\'' + tplId + '\')">⚠ Überall löschen<br><span style="font-size:8px;color:var(--text-dim);">Lokal + GitHub Repo</span></button>' : '') +
+      '<hr style="border:none;border-top:1px solid var(--border);margin:4px 0;">' +
+      '<button class="tpl-del-option" onclick="publishTemplateFromMenu(\'' + winId + '\',\'' + tplId + '\')">' + (isPublished ? '🔄 Auf GitHub aktualisieren' : '📦 Auf GitHub publishen') + '<br><span style="font-size:8px;color:var(--text-dim);">Als pulse-template-' + tplId + '</span></button>';
+  }
+  menu.innerHTML = options;
+  document.body.appendChild(menu);
+  // Close on click outside
+  setTimeout(() => document.addEventListener('click', function _close(e) {
+    if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', _close); }
+  }), 50);
+}
+
+async function resetTemplateDefaults(winId, tplId) {
+  document.getElementById('tpl-delete-menu')?.remove();
+  if (!confirm('Template "' + tplId + '" auf Defaults zurücksetzen? Alle Änderungen werden verworfen.')) return;
+  try {
+    // PUT with empty object — server will apply defaults
+    await fetch('/api/templates/' + tplId, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deploySteps: [], updatedAt: null })
+    });
+    document.getElementById('ep-tpl-edit-' + winId).style.display = 'none';
+    document.getElementById('ep-tpl-details-' + winId).style.display = '';
+    delete _tplCache[winId];
+    loadTemplateDropdown(winId);
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+async function publishTemplateFromMenu(winId, tplId) {
+  document.getElementById('tpl-delete-menu')?.remove();
+  try {
+    const r = await fetch('/api/templates/' + tplId + '/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const d = await r.json();
+    if (d.ok) {
+      alert('Template auf GitHub published!');
+      delete _tplCache[winId];
+      loadTemplateDropdown(winId);
+    } else { alert('Fehler: ' + (d.error || 'Unbekannt')); }
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+async function deleteTemplateLocal(winId, tplId) {
+  document.getElementById('tpl-delete-menu')?.remove();
+  if (!confirm('Template "' + tplId + '" lokal löschen?')) return;
+  try {
+    await fetch('/api/templates/' + tplId, { method: 'DELETE' });
+    document.getElementById('ep-tpl-edit-' + winId).style.display = 'none';
+    document.getElementById('ep-tpl-details-' + winId).style.display = '';
+    exitTemplateMakerMode(winId);
+    delete _tplCache[winId];
+    loadTemplateDropdown(winId);
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+async function deleteTemplateGithub(winId, tplId) {
+  document.getElementById('tpl-delete-menu')?.remove();
+  if (!confirm('Template "' + tplId + '" von GitHub entfernen? (Repo wird gelöscht)')) return;
+  try {
+    const r = await fetch('/api/templates/' + tplId + '/unpublish', { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) {
+      alert('Von GitHub entfernt. Template bleibt lokal.');
+      delete _tplCache[winId];
+      loadTemplateDropdown(winId);
+    } else { alert('Fehler: ' + (d.error || 'Unbekannt')); }
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+async function deleteTemplateBoth(winId, tplId) {
+  document.getElementById('tpl-delete-menu')?.remove();
+  if (!confirm('Template "' + tplId + '" ÜBERALL löschen? (Lokal + GitHub Repo)')) return;
+  try {
+    // First unpublish from GitHub
+    await fetch('/api/templates/' + tplId + '/unpublish', { method: 'POST' }).catch(() => {});
+    // Then delete locally
+    await fetch('/api/templates/' + tplId, { method: 'DELETE' });
+    document.getElementById('ep-tpl-edit-' + winId).style.display = 'none';
+    document.getElementById('ep-tpl-details-' + winId).style.display = '';
+    exitTemplateMakerMode(winId);
+    delete _tplCache[winId];
+    loadTemplateDropdown(winId);
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+async function loadAppLinks(winId) {
+  const el = document.getElementById('ep-app-links-' + winId);
+  if (!el) return;
+  const panel = document.getElementById('edit-' + winId);
+  const appId = panel?.dataset?.appid;
+  if (!appId) { el.innerHTML = '<div style="font-size:9px;color:var(--text-dim)">Keine App</div>'; return; }
+  try {
+    const [appsRes, tplRes, profileRes] = await Promise.all([
+      fetch('/api/apps').then(r => r.json()),
+      fetch('/api/templates').then(r => r.json()),
+      fetch('/api/profile').then(r => r.json()).catch(() => ({}))
+    ]);
+    const app = (appsRes.apps || []).find(a => a.id === appId) || {};
+    const tpl = (tplRes.templates || []).find(t => t.id === (app.template || 'frontend'));
+    const ghUser = profileRes.github || 'NastyFFM';
+    const links = [];
+
+    // PulseOS local
+    links.push({ icon: '💻', label: 'PulseOS Lokal', url: 'http://localhost:3000/app/' + appId, badge: 'live', badgeText: 'Live' });
+
+    // GitHub Repo
+    if (app.source) {
+      links.push({ icon: '📦', label: 'GitHub Repo', url: app.source, badge: 'repo', badgeText: 'Repo' });
+    }
+
+    // Deploy URL (Railway/Vercel)
+    if (app.deployUrl) {
+      links.push({ icon: '🚀', label: 'Deployed App', url: app.deployUrl, badge: 'live', badgeText: 'Live' });
+    }
+    if (app.railwayUrl) {
+      links.push({ icon: '🚂', label: 'Railway', url: app.railwayUrl, badge: 'live', badgeText: 'Live' });
+    }
+    if (app.vercelUrl) {
+      links.push({ icon: '▲', label: 'Vercel', url: app.vercelUrl, badge: 'live', badgeText: 'Live' });
+    }
+
+    // GitHub Pages — derive from source or template deploySteps
+    const ghPagesStep = (tpl?.deploySteps || []).find(s => s.action === 'github-pages');
+    if (ghPagesStep && app.source) {
+      const repoName = app.source.split('/').pop() || ('pulse-app-' + appId);
+      const ghPagesUrl = 'https://' + ghUser + '.github.io/' + repoName + '/';
+      links.push({ icon: '🌐', label: 'GitHub Pages', url: ghPagesUrl, badge: 'live', badgeText: 'Pages' });
+    } else if (ghPagesStep) {
+      const ghPagesUrl = 'https://' + ghUser + '.github.io/pulse-app-' + appId + '/';
+      links.push({ icon: '🌐', label: 'GitHub Pages', url: ghPagesUrl, badge: 'pending', badgeText: 'Noch nicht deployed' });
+    }
+
+    // Railway Dashboard
+    if (app.railwayProjectId) {
+      links.push({ icon: '📊', label: 'Railway Dashboard', url: 'https://railway.com/project/' + app.railwayProjectId, badge: 'repo', badgeText: 'Dashboard' });
+    }
+
+    // Template deploy steps that haven't been deployed yet
+    const deployedActions = new Set();
+    if (app.source) deployedActions.add('github-publish');
+    if (app.deployUrl || app.railwayUrl) deployedActions.add('railway-deploy');
+    if (app.vercelUrl) deployedActions.add('vercel-deploy');
+    if (ghPagesStep && app.source) deployedActions.add('github-pages');
+
+    for (const step of (tpl?.deploySteps || [])) {
+      if (!deployedActions.has(step.action)) {
+        links.push({ icon: '⏳', label: step.name, url: null, badge: 'pending', badgeText: 'Ausstehend' });
+      }
+    }
+
+    if (!links.length) {
+      el.innerHTML = '<div style="font-size:9px;color:var(--text-dim)">Keine Links konfiguriert</div>';
+      return;
+    }
+
+    el.innerHTML = links.map(l =>
+      (l.url
+        ? '<a class="ep-app-link" href="' + l.url + '" target="_blank">'
+        : '<div class="ep-app-link" style="opacity:0.5;">') +
+      '<span class="ep-app-link-icon">' + l.icon + '</span>' +
+      '<div class="ep-app-link-info">' +
+        '<div class="ep-app-link-label">' + l.label + '</div>' +
+        (l.url ? '<div class="ep-app-link-url">' + l.url + '</div>' : '') +
+      '</div>' +
+      '<span class="ep-app-link-badge ' + l.badge + '">' + l.badgeText + '</span>' +
+      (l.url ? '</a>' : '</div>')
+    ).join('');
+  } catch (e) {
+    console.error('loadAppLinks error:', e);
+    el.innerHTML = '<div style="font-size:9px;color:var(--text-dim)">Fehler beim Laden</div>';
+  }
+}
+
+async function loadAccountsList(winId) {
+  const el = document.getElementById('ep-accounts-' + winId);
+  if (!el) return;
+  try {
+    const [stacksRes, envRes] = await Promise.all([
+      fetch('/api/stacks').then(r => r.json()),
+      fetch('/api/env').then(r => r.json())
+    ]);
+    const stacks = stacksRes.stacks || [];
+    if (!stacks.length) { el.innerHTML = '<div style="font-size:9px;color:var(--text-dim)">Keine Services konfiguriert</div>'; return; }
+    el.innerHTML = stacks.map(s => {
+      const vars = s.requiredEnvVars || [];
+      const allSet = vars.length > 0 && vars.every(v => envRes[v]);
+      const anySet = vars.some(v => envRes[v]);
+      const status = vars.length === 0 ? 'ready' : (allSet ? 'ready' : 'missing');
+      const tokenPreview = vars.map(v => {
+        const val = envRes[v];
+        if (!val) return v + ': nicht gesetzt';
+        return v + ': ****' + val.slice(-6);
+      }).join(' | ');
+      return '<div class="ep-account-card">' +
+        '<span class="ep-account-icon">' + (s.icon || '☁') + '</span>' +
+        '<div class="ep-account-info">' +
+          '<div class="ep-account-name">' + s.name + '</div>' +
+          '<div class="ep-account-token">' + tokenPreview + '</div>' +
+        '</div>' +
+        '<div class="ep-account-status ' + status + '" title="' + (allSet ? 'Bereit' : 'Token fehlt') + '"></div>' +
+        (anySet ? '<button class="ep-account-remove" onclick="removeAccount(\'' + winId + '\',\'' + s.id + '\')" title="Token entfernen">✗</button>' : '') +
+      '</div>';
+    }).join('');
+  } catch (e) {
+    console.error('loadAccountsList error:', e);
+    el.innerHTML = '<div style="font-size:9px;color:var(--text-dim)">Fehler beim Laden</div>';
+  }
+}
+
+async function removeAccount(winId, stackId) {
+  if (!confirm('Token fuer diesen Service wirklich entfernen?')) return;
+  try {
+    const [stacksRes, envRes] = await Promise.all([
+      fetch('/api/stacks').then(r => r.json()),
+      fetch('/api/env').then(r => r.json())
+    ]);
+    const stack = (stacksRes.stacks || []).find(s => s.id === stackId);
+    if (!stack) return;
+    // Remove all env vars for this stack
+    const vars = stack.requiredEnvVars || [];
+    const updated = { ...envRes };
+    vars.forEach(v => { delete updated[v]; });
+    await fetch('/api/env', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated)
+    });
+    // Reload accounts list and env textarea
+    loadAccountsList(winId);
+    // Also refresh the env textarea
+    const textarea = document.getElementById('edit-envtxt-' + winId);
+    if (textarea) {
+      textarea.value = Object.entries(updated).map(([k,v]) => k + '=' + v).join('\n');
+    }
+  } catch (e) { console.error('removeAccount error:', e); }
 }
 
 async function loadTemplateDropdown(winId) {
@@ -2458,10 +3011,14 @@ async function loadTemplateDropdown(winId) {
     const r = await fetch('/api/templates');
     const data = await r.json();
     const tpls = data.templates || [];
+    _tplCache[winId] = tpls;
     if (tpls.length) {
       select.innerHTML = tpls.map(t =>
         '<option value="' + t.id + '"' + (t.id === savedTemplate ? ' selected' : '') + '>' + (t.icon || '') + ' ' + t.name + '</option>'
       ).join('');
+      // Render details for selected template
+      const selected = tpls.find(t => t.id === savedTemplate) || tpls[0];
+      renderTemplateDetails(winId, selected);
     } else {
       select.innerHTML = '<option value="frontend">PulseOS Frontend</option>';
     }
@@ -2475,13 +3032,21 @@ async function saveTemplateChoice(winId, templateId) {
   const editPanel = document.getElementById('edit-' + winId);
   const appId = editPanel?.dataset?.appid;
   if (!appId || !templateId) return;
-  // Get template stacks
+  // Get template stacks + render details
   let stacks = [];
   try {
-    const r = await fetch('/api/templates');
-    const data = await r.json();
-    const tpl = (data.templates || []).find(t => t.id === templateId);
-    if (tpl) stacks = tpl.stacks || [];
+    let tpls = _tplCache[winId];
+    if (!tpls) {
+      const r = await fetch('/api/templates');
+      const data = await r.json();
+      tpls = data.templates || [];
+      _tplCache[winId] = tpls;
+    }
+    const tpl = tpls.find(t => t.id === templateId);
+    if (tpl) {
+      stacks = tpl.stacks || [];
+      renderTemplateDetails(winId, tpl);
+    }
   } catch {}
   // Save to app
   try {
@@ -2498,46 +3063,159 @@ function showCreateTemplate(winId) {
   modal.id = 'tpl-create-modal';
   modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);';
   modal.innerHTML = '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;width:420px;max-width:90vw;">' +
-    '<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px;">Neues Deployment-Template</div>' +
-    '<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Beschreibe in natuerlicher Sprache was du deployen willst. Die KI erkennt automatisch die benoetigten Stacks.</div>' +
-    '<textarea id="tpl-prompt-input" style="width:100%;height:120px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;resize:vertical;font-family:inherit;" placeholder="Beispiele:\n• Simple Node.js app on Railway, no auth\n• React SaaS with Supabase auth and Stripe payments\n• Static portfolio on GitHub Pages\n• Full-stack Next.js with database and user management"></textarea>' +
+    '<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px;">Template Maker</div>' +
+    '<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Beschreibe dein Template — der Template Maker fuehrt dich Schritt fuer Schritt durch alle Einstellungen.</div>' +
+    '<textarea id="tpl-prompt-input" style="width:100%;height:100px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;resize:vertical;font-family:inherit;" placeholder="Beispiele:\n• Simple Node.js app on Railway\n• SaaS with Supabase auth and Stripe payments\n• Static portfolio on GitHub Pages"></textarea>' +
     '<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;">' +
     '<button onclick="document.getElementById(\'tpl-create-modal\').remove()" style="padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-size:12px;">Abbrechen</button>' +
-    '<button id="tpl-create-btn" onclick="generateTemplate(\'' + winId + '\')" style="padding:6px 14px;border-radius:6px;border:none;background:var(--teal);color:var(--bg);cursor:pointer;font-size:12px;font-weight:600;">Erstellen</button>' +
+    '<button id="tpl-create-btn" onclick="startTemplateMaker(\'' + winId + '\')" style="padding:6px 14px;border-radius:6px;border:none;background:var(--teal);color:var(--bg);cursor:pointer;font-size:12px;font-weight:600;">Template Maker starten</button>' +
     '</div></div>';
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
   document.getElementById('tpl-prompt-input').focus();
 }
 
-async function generateTemplate(winId) {
+async function startTemplateMaker(winId) {
   const input = document.getElementById('tpl-prompt-input');
   const prompt = input?.value.trim();
   if (!prompt) return;
   const btn = document.getElementById('tpl-create-btn');
-  btn.textContent = 'Generiere...';
+  btn.textContent = 'Starte...';
   btn.disabled = true;
   try {
-    const r = await fetch('/api/templates/generate', {
+    const r = await fetch('/api/template-maker/start', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt })
     });
     const d = await r.json();
-    if (d.ok) {
+    if (d.ok && d.sessionId) {
       document.getElementById('tpl-create-modal')?.remove();
-      loadTemplateDropdown(winId);
-      setTimeout(() => {
-        const sel = document.getElementById('edit-tpl-' + winId);
-        if (sel && d.template?.id) { sel.value = d.template.id; saveTemplateChoice(winId, d.template.id); }
-      }, 500);
+      // Switch to chat tab in template-maker mode
+      enterTemplateMakerMode(winId, d.sessionId);
     } else {
       alert('Fehler: ' + (d.error || 'Unbekannt'));
-      btn.textContent = 'Erstellen'; btn.disabled = false;
+      btn.textContent = 'Template Maker starten'; btn.disabled = false;
     }
   } catch (e) {
     alert('Fehler: ' + e.message);
-    btn.textContent = 'Erstellen'; btn.disabled = false;
+    btn.textContent = 'Template Maker starten'; btn.disabled = false;
   }
+}
+
+function enterTemplateMakerMode(winId, sessionId) {
+  const panel = document.getElementById('edit-' + winId);
+  if (!panel) return;
+  if (!panel._epState) panel._epState = {};
+  panel._epState.templateMakerSession = sessionId;
+
+  // Switch to chat tab
+  const tabs = panel.querySelectorAll('.ep-tab');
+  const panels = panel.querySelectorAll('.ep-tab-panel');
+  tabs.forEach(t => t.classList.toggle('active', t.dataset.eptab === 'chat'));
+  panels.forEach(p => p.classList.toggle('active', p.dataset.eptab === 'chat'));
+
+  // Show template-maker banner in chat area
+  const msgsEl = document.getElementById('edit-msgs-' + winId);
+  if (msgsEl) {
+    msgsEl.innerHTML = '<div class="tm-banner">📋 Template Maker <button class="tm-exit-btn" onclick="exitTemplateMakerMode(\'' + winId + '\')">✕ Beenden</button></div>';
+  }
+
+  // Load initial messages
+  tmPollMessages(winId, sessionId);
+
+  // Start polling
+  panel._epState.tmPollTimer = setInterval(() => tmPollMessages(winId, sessionId), 2000);
+}
+
+function exitTemplateMakerMode(winId) {
+  const panel = document.getElementById('edit-' + winId);
+  if (!panel?._epState) return;
+  clearInterval(panel._epState.tmPollTimer);
+  panel._epState.templateMakerSession = null;
+  panel._epState.tmPollTimer = null;
+  delete _tmLastMsgHash[winId];
+  // Restore normal chat
+  const msgsEl = document.getElementById('edit-msgs-' + winId);
+  if (msgsEl) msgsEl.innerHTML = '<div class="edit-welcome">Was moechtest du aendern?</div>';
+  // Refresh template dropdown
+  loadTemplateDropdown(winId);
+  loadAccountsList(winId);
+}
+
+let _tmLastMsgHash = {};
+
+async function tmPollMessages(winId, sessionId) {
+  try {
+    const r = await fetch('/api/template-maker/' + sessionId);
+    const session = await r.json();
+    if (!session.messages) return;
+
+    // Build a hash from message count + last message text to detect any change
+    const lastMsg = session.messages[session.messages.length - 1];
+    const hash = session.messages.length + ':' + (lastMsg?.text || '').slice(0, 50) + ':' + (lastMsg?.pending || false);
+    if (_tmLastMsgHash[winId] === hash) return;
+    _tmLastMsgHash[winId] = hash;
+
+    const msgsEl = document.getElementById('edit-msgs-' + winId);
+    if (!msgsEl) return;
+
+    // Re-render all messages (keep banner)
+    let html = '<div class="tm-banner">📋 Template Maker' +
+      (session.status === 'done' ? ' — Fertig!' : ' — Schritt: ' + session.step) +
+      '<button class="tm-exit-btn" onclick="exitTemplateMakerMode(\'' + winId + '\')">✕ Beenden</button></div>';
+
+    for (const msg of session.messages) {
+      if (msg.pending) {
+        // Show thinking indicator
+        html += '<div class="edit-msg-agent" style="opacity:0.5;font-style:italic;">' + msg.text + '</div>';
+        continue;
+      }
+      const cls = msg.from === 'agent' ? 'edit-msg-agent' : 'edit-msg-user';
+      // Parse markdown-like formatting
+      let text = msg.text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>');
+      // Render quick-reply buttons
+      text = text.replace(/\[BUTTON:([^\]]+)\]/g, (_, label) =>
+        '<button class="tm-quick-btn" onclick="tmQuickReply(\'' + winId + '\',\'' + sessionId + '\',\'' + label.replace(/'/g, "\\'") + '\')">' + label + '</button>'
+      );
+      html += '<div class="' + cls + '">' + text + '</div>';
+    }
+
+    msgsEl.innerHTML = html;
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+
+    // If done, auto-refresh template dropdown
+    if (session.status === 'done') {
+      clearInterval(document.getElementById('edit-' + winId)?._epState?.tmPollTimer);
+      loadTemplateDropdown(winId);
+    }
+  } catch (e) { console.error('tmPollMessages error:', e); }
+}
+
+async function tmSendMessage(winId) {
+  const panel = document.getElementById('edit-' + winId);
+  const sessionId = panel?._epState?.templateMakerSession;
+  if (!sessionId) return;
+  const inp = document.getElementById('edit-inp-' + winId);
+  const text = inp?.value.trim();
+  if (!text) return;
+  inp.value = '';
+
+  try {
+    await fetch('/api/template-maker/' + sessionId + '/message', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    // Immediate poll
+    tmPollMessages(winId, sessionId);
+  } catch (e) { console.error('tmSendMessage error:', e); }
+}
+
+function tmQuickReply(winId, sessionId, text) {
+  const inp = document.getElementById('edit-inp-' + winId);
+  if (inp) inp.value = text;
+  tmSendMessage(winId);
 }
 
 async function renderEditActions(winId, appId) {
@@ -2635,6 +3313,10 @@ async function sendEditPublish(winId) {
 }
 
 async function sendEdit(winId) {
+  // If template-maker mode is active, route to TM
+  const tmPanel = document.getElementById('edit-' + winId);
+  if (tmPanel?._epState?.templateMakerSession) { tmSendMessage(winId); return; }
+
   const input = document.getElementById('edit-inp-' + winId);
   let text = input?.value.trim();
   if (!text) return;
@@ -3663,6 +4345,7 @@ function quickCreateApp() {
   modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:20px;z-index:10001;min-width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.5);';
   modal.innerHTML = '<div style="font-weight:600;margin-bottom:12px;">Neue App</div>' +
     '<input id="quickAppName" type="text" placeholder="App Name eingeben..." style="width:100%;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;box-sizing:border-box;" autofocus>' +
+    '<select id="quickAppTemplate" style="width:100%;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;box-sizing:border-box;margin-top:8px;"><option value="">Laden...</option></select>' +
     '<div style="display:flex;gap:12px;margin-top:10px;font-size:12px;">' +
     '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text-dim);">' +
     '<input type="radio" name="quickAppType" value="standalone" checked style="accent-color:var(--teal);"> 📦 Eigenständig</label>' +
@@ -3676,6 +4359,19 @@ function quickCreateApp() {
   document.body.appendChild(modal);
   const input = document.getElementById('quickAppName');
   input.focus();
+  // Load templates into quick-create dropdown
+  (async () => {
+    try {
+      const [tplRes, profileRes] = await Promise.all([fetch('/api/templates').then(r=>r.json()), fetch('/api/profile').then(r=>r.json()).catch(()=>({}))]);
+      const sel = document.getElementById('quickAppTemplate');
+      if (!sel) return;
+      const tpls = tplRes.templates || [];
+      const defaultTpl = profileRes.defaultTemplate || 'frontend';
+      sel.innerHTML = tpls.map(t =>
+        '<option value="' + t.id + '"' + (t.id === defaultTpl ? ' selected' : '') + '>' + (t.icon || '📋') + ' ' + t.name + (t.hasStarter ? ' ★' : '') + '</option>'
+      ).join('');
+    } catch {}
+  })();
   // Update hint when radio changes
   modal.querySelectorAll('input[name="quickAppType"]').forEach(r => r.addEventListener('change', () => {
     const hint = document.getElementById('quickAppTypeHint');
@@ -3688,10 +4384,11 @@ function quickCreateApp() {
     const name = input.value.trim();
     if (!name) return;
     const standalone = modal.querySelector('input[name="quickAppType"]:checked')?.value === 'standalone';
+    const template = document.getElementById('quickAppTemplate')?.value || undefined;
     const status = document.getElementById('quickCreateStatus');
     status.textContent = 'Erstelle...'; status.style.color = 'var(--teal)';
     try {
-      const r = await fetch('/api/apps/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, standalone }) });
+      const r = await fetch('/api/apps/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, standalone, template }) });
       const d = await r.json();
       if (d.ok) {
         modal.remove();

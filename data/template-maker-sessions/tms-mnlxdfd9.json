@@ -1,0 +1,104 @@
+{
+  "id": "tms-mnlxdfd9",
+  "status": "active",
+  "step": "edit-free",
+  "editMode": true,
+  "prompt": "",
+  "draft": {
+    "id": "ich-m-chte-dass-die",
+    "name": "PulseOSForAll2",
+    "description": "Ich möchte, dass die Gitarre das ist. Eine einfache POS ist die App, die auf Gitta the published wird und zwar nicht nur als Repo. Das ist das Besondere, sondern auch bei den Github iOS Seiten bei dem User in seinen Apps. Jetzt gibt es ein Problem. natürlich können POS Apps immer Daten speichern, wenn sie unter POS laufen. Aber natürlich nicht, wenn sie bei Gitta iO laufen, deswegen gibt es einen zusätzlichen Schritt. Alle Apps müssen als progressive Web Apps installiert werden können. Alle Apps können werden die User Daten als Cookies speichern und bieten die Möglichkeit an ein Back-up downloaden oder ein Back-up wieder hochzuladen, damit man auf einem anderen Browser weitermachen kann. Das ist eine Standard Funktionalität in diesem Template, dass die Apps so angelegt werden müssen also frontend mit Vanilla, CSS, HTML und Vanilla, Java, Skript und Publish of Gitarre als Repo und als öffentliche App unter github IO",
+    "icon": "📄",
+    "stacks": [
+      "github-pages"
+    ],
+    "progressiveStage": 1,
+    "agents": {
+      "phases": [
+        "planning",
+        "coding",
+        "testing",
+        "review"
+      ],
+      "planAgent": "planner",
+      "codeAgent": "code-generator",
+      "testAgent": "test-writer",
+      "reviewAgent": "code-reviewer"
+    },
+    "scaffold": {
+      "files": [
+        "index.html",
+        "manifest.json",
+        "data/state.json"
+      ],
+      "directories": [
+        "data/"
+      ]
+    },
+    "envVars": [],
+    "git": {
+      "autoBranch": false,
+      "autoCommit": true,
+      "autoPR": false,
+      "branchPrefix": "feature/"
+    },
+    "monitoring": {
+      "logLevel": "normal",
+      "watchFiles": [
+        "index.html",
+        "manifest.json"
+      ],
+      "taskPattern": "## Tasks"
+    },
+    "author": "user",
+    "createdAt": "2026-04-05T14:49:14.017Z",
+    "instructions": "→ data/templates/ich-m-chte-dass-die.md",
+    "hasStarter": true,
+    "source": "https://github.com/NastyFFM/pulse-template-ich-m-chte-dass-die",
+    "publishedAt": "2026-04-05T15:00:28.866Z",
+    "updatedAt": "2026-04-05T15:38:07.793Z",
+    "deploySteps": [
+      {
+        "name": "GitHub Repo erstellen",
+        "action": "github-publish",
+        "command": "gh repo create pulse-app-{appId} --public --source=. --push",
+        "description": "Erstellt ein öffentliches GitHub Repository und pushed den App-Code"
+      },
+      {
+        "name": "GitHub Pages aktivieren",
+        "action": "github-pages",
+        "command": "gh api repos/{owner}/{repo}/pages -X POST -f source.branch=main -f source.path=/",
+        "description": "Aktiviert GitHub Pages für das Repository",
+        "urlPattern": "https://{owner}.github.io/{repo}/"
+      }
+    ]
+  },
+  "messages": [
+    {
+      "from": "agent",
+      "text": "✏️ **Template \"PulseOSForAll2\" bearbeiten**\n\nWas moechtest du aendern? Du kannst z.B. sagen:\n• \"Fuege GitHub Pages Deploy hinzu\"\n• \"Aendere die Stacks auf railway, supabase\"\n• \"Deploy soll auf GitHub Pages laufen\"\n• \"Entferne den Test-Step\"\n\nOder klicke direkt in die Felder rechts.\n\n[BUTTON:Deploy-Steps bearbeiten] [BUTTON:Stacks aendern] [BUTTON:Fertig]",
+      "time": "2026-04-05T15:37:27.309Z"
+    },
+    {
+      "from": "user",
+      "text": "Die    App soll nicht nur als GitHub Repo gepusht werden sondern auch als   Frontend-App auf github.io laufen",
+      "time": "2026-04-05T15:37:31.101Z"
+    },
+    {
+      "from": "agent",
+      "text": "Template **PulseOSForAll2** wurde aktualisiert! Ich habe folgende Änderungen vorgenommen:\n\n- **Stack hinzugefügt:** `github-pages`\n- **2 Deploy-Schritte ergänzt:**\n  1. 🔨 *GitHub Repo erstellen* — Pusht den App-Code als öffentliches Repository\n  2. 🌐 *GitHub Pages aktivieren* — Hostet die App live unter `https://{owner}.github.io/{repo}/`\n\nApps die mit diesem Template gebaut werden, sind nach dem Deploy sowohl als GitHub Repo als auch als live Frontend unter github.io verfügbar.",
+      "time": "2026-04-05T15:38:15.241Z"
+    },
+    {
+      "from": "user",
+      "text": "bist du fertig?",
+      "time": "2026-04-05T15:39:06.940Z"
+    },
+    {
+      "from": "agent",
+      "text": "Ja, bin fertig! ✅ Das Template **PulseOSForAll2** ist vollständig konfiguriert:\n\n- Stack: `github-pages`\n- Deploy-Schritte: GitHub Repo erstellen → GitHub Pages aktivieren\n\nKeine weiteren Änderungen nötig.",
+      "time": "2026-04-05T15:39:11.469Z"
+    }
+  ],
+  "createdAt": "2026-04-05T15:37:27.309Z"
+}

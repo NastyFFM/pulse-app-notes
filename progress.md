@@ -15,48 +15,64 @@
 | 7 | Plan-first Architektur (planner + progress-tracker) | 4f48c86 |
 | 8 | App Editor Dashboard (Monitor, Graph, Kanban, Files, Git) | 82838d7, 0ade96c |
 | **9** | **Edit-Panel 2.0 — 8 Tabs, Resize, Settings** | **04659a5** |
+| **10** | **Template System 2.0 — Schritt 1 + Template Maker + Deploy-Steps** | *pending* |
 
-## Session 2026-04-05 — Edit-Panel 2.0
+## Session 2026-04-05 — Template System 2.0
 
 ### Was gebaut wurde
-- **Edit-Panel 2.0**: 8 Tabs (Chat, Monitor, Graph, Kanban, Files, Git, Settings)
-- **Resizable Panel**: Drag-Handle zwischen Panel und App-Iframe
-- **Settings-Tab**: Deploy, Publish, Template-Auswahl, Env Vars, App Info
-- **Monitor-Tab**: Worker-Karten mit Phase-Bar + Log-Stream (3s Poll)
-- **Graph-Tab**: SVG Agent-Graph, nutzt worker.phases[] statt Text-Heuristik
-- **Kanban-Tab**: Tasks aus PLAN.md, auto-reload via SSE
-- **Files-Tab**: PLAN.md/PROGRESS.md/DECISIONS.md mit XSS-safe Markdown-Renderer
-- **Git-Tab**: App-spezifisches Repo via ?appId= Query-Param
-- **PulseTV App**: Gebaut mit agentischem Flow (Plan→Code→Test→Review→Git), 6/6 Tests grün, XSS gefixt
-- **server.js**: /api/git/branches akzeptiert ?appId= für App-spezifisches Repo
 
-### Bugfixes während Session
-- Graph: Nutzt jetzt worker.phases[] Array statt Log-Text-Heuristik
-- Graph: Filtert auf App-spezifische Worker (nicht alle)
-- Kanban: Reload bei jedem SSE-Event + Tab-Wechsel
-- Files: Bessere Empty-States ("wird vom Worker erstellt")
+#### Template-Datenmodell 2.0
+- `applyTemplateDefaults()` — 6 neue Felder: agents, scaffold, envVars, git, monitoring, deploySteps
+- 4 Builtin-Templates mit spezifischen Werten
+- Abwärtskompatibel: alte Templates bekommen Defaults beim GET
+- POST/PUT/generate Routes wenden Defaults an
+
+#### Template Maker Agent (Chat-geführt)
+- `POST /api/template-maker/start` — neue Session oder Edit-Mode (templateId)
+- `POST /api/template-maker/{id}/message` — AI-Agent Routing wenn alive, State Machine Fallback
+- `GET /api/template-maker/{id}` — Session + Messages lesen
+- `/api/chat-respond` erkennt `tms-*` chatIds → routet Antworten in TM-Sessions
+- Chat-Agent bekommt vollen Template-Kontext (Stacks, Deploy-Steps, Scaffold, Env Vars)
+- Dashboard: Template-Maker Chat-Modus mit Banner, Polling, Quick-Reply Buttons
+
+#### Deploy-Steps (strukturierte Deployment-Anweisungen)
+- `deploySteps[]` Array pro Template
+- Actions: github-publish, github-pages, railway-deploy, vercel-deploy, supabase-setup, stripe-setup
+- Jeder Step hat: name, action, command, description, urlPattern
+- Edit-Formular: Deploy-Steps Liste mit Add/Remove + Preset-Buttons (GitHub Pages, Railway, Vercel)
+
+#### App Links & Deployment UI
+- "Links & Deployment" Sektion im Settings-Tab
+- Klickbare URLs: PulseOS Lokal, GitHub Repo, GitHub Pages, Railway, Vercel, Dashboard
+- Ausstehende Deploy-Steps als "Pending" angezeigt
+- Dynamisch aus App-Metadaten + Template-DeploySteps
+
+#### Template Lifecycle (Löschen/Publish/Reset)
+- Dropdown-Menü für alle Templates (Builtin + User)
+- User: Lokal löschen / GitHub entfernen / Überall löschen / Publishen
+- Builtin: Defaults zurücksetzen / GitHub entfernen / Publishen
+- Speichern fragt bei published Templates ob GitHub aktualisiert werden soll
+
+#### Weitere UI-Verbesserungen
+- Accounts & Services Sektion (Token-Status, maskiert, Entfernen-Button)
+- Environment Variables collapsed by default (Sicherheit)
+- Quick-Create App mit Template-Dropdown + Profile-Default
+- Template Edit-Formular (alle 2.0 Felder editierbar)
+- Chat-Polling Fix (Hash-basiert statt nur Message-Count)
 
 ### Architektur
-- ~200 Zeilen ep-* CSS (scoped, kein Dashboard-Breakage)
-- ~530 Zeilen JS (Tab-System, Polling-Lifecycle, alle Renderer)
-- Per-Window State auf panel._epState
-- data-agent Attribute statt IDs für SVG (Multi-Window safe)
-- Polling: Monitor/Graph/Kanban teilen Worker-Poll (3s), Git eigener Poll (10s)
+- ~250 Zeilen `applyTemplateDefaults` + Template-Maker Endpoints in server.js
+- ~200 Zeilen Template-Maker State Machine (Fallback wenn kein Agent)
+- ~150 Zeilen Chat-Agent-Routing (chat-queue → TM-Session)
+- ~300 Zeilen Dashboard UI (Template Edit, App Links, Accounts, Deploy-Steps)
+- Chat-Agent Integration: Nachrichten → chat-queue.json → guitest-chat Agent → chat-respond → TM-Session
 
 ## Bekannte Issues
+- Template-Name aus Voice-Input kann unbrauchbar sein (z.B. "ich-m-chte-dass-die")
+- Template Maker State Machine versteht nur einfache Phrasen (Fallback — echter Agent funktioniert)
 - Dashboard flackert bei Polling
-- Self-Improve Playwright-Verifikation noch nicht zuverlässig
-- Graph-Animationen könnten smoother sein (Übergang zwischen Phasen)
 
-## Nächste Session: Template System 2.0
-
-Templates werden zur vollständigen Projekt-Blaupause. Schrittweise:
-
-1. **Template-Datenmodell erweitern** — agents, scaffold, envVars, git, monitoring Felder
-2. **PulseTV als Template exportieren** — Proof of Concept
-3. **Template-Import von GitHub** — Klonen + Registrieren
-4. **Template-Maker Chat-Agent** — Chat-basierte Template-Erstellung
-5. **"Aus Template erstellen"** — Im Dashboard
-6. **Build-App liest Template-Config** — Dynamische Phasen/Agents
-
-Immer erst testen nach jedem Schritt!
+## Nächste Session
+- Schritt 2: PulseTV als Template exportieren
+- Schritt 3: Template-Import von GitHub
+- Schritt 4: Build-App liest Template-Config (Phasen/Agents dynamisch)

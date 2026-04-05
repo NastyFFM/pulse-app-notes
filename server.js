@@ -2627,10 +2627,50 @@ if (window.PulseOS) {
     });
   }
 
+  // ── Template Defaults (Template System 2.0) ──
+  function applyTemplateDefaults(tpl) {
+    // agents: which phases and agent definitions to use
+    if (!tpl.agents) tpl.agents = {};
+    const a = tpl.agents;
+    if (!a.phases) a.phases = ['planning', 'coding', 'testing', 'review'];
+    if (!a.planAgent) a.planAgent = 'planner';
+    if (!a.codeAgent) a.codeAgent = 'code-generator';
+    if (!a.testAgent) a.testAgent = 'test-writer';
+    if (!a.reviewAgent) a.reviewAgent = 'code-reviewer';
+
+    // scaffold: files and directories created on app init
+    if (!tpl.scaffold) tpl.scaffold = {};
+    if (!tpl.scaffold.files) tpl.scaffold.files = ['index.html', 'manifest.json'];
+    if (!tpl.scaffold.directories) tpl.scaffold.directories = ['data/'];
+
+    // envVars: required environment variables
+    if (!tpl.envVars) tpl.envVars = [];
+
+    // git: version control strategy
+    if (!tpl.git) tpl.git = {};
+    if (tpl.git.autoBranch === undefined) tpl.git.autoBranch = true;
+    if (!tpl.git.branchPrefix) tpl.git.branchPrefix = 'feature/';
+    if (tpl.git.autoCommit === undefined) tpl.git.autoCommit = true;
+    if (tpl.git.autoPR === undefined) tpl.git.autoPR = false;
+
+    // monitoring: what to watch during build
+    if (!tpl.monitoring) tpl.monitoring = {};
+    if (!tpl.monitoring.watchFiles) tpl.monitoring.watchFiles = ['index.html', 'manifest.json'];
+    if (!tpl.monitoring.taskPattern) tpl.monitoring.taskPattern = '## Tasks';
+    if (!tpl.monitoring.logLevel) tpl.monitoring.logLevel = 'normal';
+
+    // deploySteps: ordered deployment actions
+    if (!tpl.deploySteps) tpl.deploySteps = [];
+
+    return tpl;
+  }
+
   // ── Template CRUD API ──
   const templatesFile = path.join(ROOT, 'data', 'templates.json');
   if (url === '/api/templates' && req.method === 'GET') {
     const data = safeReadJSON(templatesFile, '{"templates":[]}');
+    // Apply defaults to all templates on read
+    data.templates = (data.templates || []).map(t => applyTemplateDefaults(t));
     return jsonRes(res, data);
   }
   if (url === '/api/templates' && req.method === 'POST') {
@@ -2642,6 +2682,8 @@ if (window.PulseOS) {
         tpl.id = tpl.id || tpl.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
         tpl.author = tpl.author || 'user';
         tpl.createdAt = new Date().toISOString();
+        // Apply Template 2.0 defaults
+        applyTemplateDefaults(tpl);
         // Prevent duplicate IDs
         data.templates = data.templates.filter(t => t.id !== tpl.id);
         data.templates.push(tpl);
@@ -2701,9 +2743,11 @@ if (window.PulseOS) {
         const data = safeReadJSON(templatesFile, '{"templates":[]}');
         const idx = data.templates.findIndex(t => t.id === tplMatch[1]);
         if (idx < 0) return jsonRes(res, { error: 'Template not found' }, 404);
-        if (data.templates[idx].builtin) { if (update.instructions) data.templates[idx].instructions = update.instructions; if (update.stacks) data.templates[idx].stacks = update.stacks; }
+        if (data.templates[idx].builtin) { if (update.instructions) data.templates[idx].instructions = update.instructions; if (update.stacks) data.templates[idx].stacks = update.stacks; if (update.agents) data.templates[idx].agents = update.agents; if (update.scaffold) data.templates[idx].scaffold = update.scaffold; if (update.envVars) data.templates[idx].envVars = update.envVars; if (update.git) data.templates[idx].git = update.git; if (update.monitoring) data.templates[idx].monitoring = update.monitoring; if (update.deploySteps) data.templates[idx].deploySteps = update.deploySteps; }
         else Object.assign(data.templates[idx], update);
         data.templates[idx].updatedAt = new Date().toISOString();
+        // Ensure defaults for any missing fields
+        applyTemplateDefaults(data.templates[idx]);
         fs.writeFileSync(templatesFile, JSON.stringify(data, null, 2));
         jsonRes(res, { ok: true, template: data.templates[idx] });
       } catch (e) { jsonRes(res, { error: e.message }, 400); }
@@ -2744,6 +2788,8 @@ if (window.PulseOS) {
           instructions: prompt + '\n\n--- Progressive Stage: ' + stage + ' ---\nDetected Stacks: ' + detectedStacks.join(', '),
           createdAt: new Date().toISOString()
         };
+        // Apply Template 2.0 defaults
+        applyTemplateDefaults(template);
         const data = safeReadJSON(templatesFile, '{"templates":[]}');
         data.templates = (data.templates || []).filter(t => t.id !== id);
         data.templates.push(template);
@@ -2773,6 +2819,468 @@ if (window.PulseOS) {
     data.templates = data.templates.filter(t => t.id !== tplMatch[1]);
     fs.writeFileSync(templatesFile, JSON.stringify(data, null, 2));
     return jsonRes(res, { ok: true });
+  }
+
+  // ── Template Maker — Chat-geführte Template-Erstellung ──
+  const TM_DIR = path.join(ROOT, 'data', 'template-maker-sessions');
+  try { fs.mkdirSync(TM_DIR, { recursive: true }); } catch {}
+
+  // Stack detection (shared with /api/templates/generate)
+  const tmStackKeywords = {
+    'railway': ['railway', 'node.js', 'node', 'express', 'backend', 'server', 'api'],
+    'vercel': ['vercel', 'next.js', 'nextjs', 'next'],
+    'supabase': ['supabase', 'database', 'db', 'auth', 'user management', 'users', 'login'],
+    'stripe': ['stripe', 'payment', 'payments', 'billing', 'subscription', 'saas'],
+    'cloudflare': ['cloudflare', 'workers', 'edge'],
+    'netlify': ['netlify', 'serverless'],
+    'github-pages': ['github pages', 'static', 'portfolio', 'landing page', 'frontend only']
+  };
+
+  function tmDetectStacks(prompt) {
+    const lower = prompt.toLowerCase();
+    const stacks = [];
+    for (const [stack, keywords] of Object.entries(tmStackKeywords)) {
+      if (keywords.some(k => lower.includes(k))) stacks.push(stack);
+    }
+    return stacks;
+  }
+
+  function tmDetectStage(stacks) {
+    if (stacks.includes('stripe')) return 4;
+    if (stacks.includes('supabase')) return 3;
+    if (stacks.some(s => ['railway', 'vercel', 'netlify', 'cloudflare'].includes(s))) return 2;
+    return 1;
+  }
+
+  function tmDefaultScaffold(stacks) {
+    const files = ['index.html', 'manifest.json', 'data/state.json'];
+    const dirs = ['data/'];
+    if (stacks.some(s => ['railway', 'vercel', 'netlify'].includes(s))) {
+      files.push('package.json', 'server.js');
+    }
+    if (stacks.some(s => ['vercel'].includes(s))) {
+      files.push('next.config.js', 'app/page.tsx', 'app/layout.tsx');
+      dirs.push('app/', 'public/');
+    }
+    if (stacks.includes('railway')) {
+      files.push('railway.json');
+    }
+    if (stacks.includes('supabase')) {
+      files.push('lib/supabase.js');
+      dirs.push('lib/');
+    }
+    return { files: [...new Set(files)], directories: [...new Set(dirs)] };
+  }
+
+  function tmDefaultEnvVars(stacks) {
+    const vars = [];
+    if (stacks.includes('railway')) vars.push({ key: 'RAILWAY_TOKEN', required: true, description: 'Railway API Token' });
+    if (stacks.includes('vercel')) vars.push({ key: 'VERCEL_TOKEN', required: true, description: 'Vercel API Token' });
+    if (stacks.includes('supabase')) {
+      vars.push({ key: 'SUPABASE_URL', required: true, description: 'Supabase Project URL' });
+      vars.push({ key: 'SUPABASE_ANON_KEY', required: true, description: 'Supabase Anonymous Key' });
+    }
+    if (stacks.includes('stripe')) {
+      vars.push({ key: 'STRIPE_SECRET_KEY', required: true, description: 'Stripe Secret Key' });
+      vars.push({ key: 'STRIPE_PUBLISHABLE_KEY', required: true, description: 'Stripe Publishable Key' });
+    }
+    if (stacks.includes('cloudflare')) vars.push({ key: 'CLOUDFLARE_API_TOKEN', required: true, description: 'Cloudflare API Token' });
+    if (stacks.includes('netlify')) vars.push({ key: 'NETLIFY_AUTH_TOKEN', required: true, description: 'Netlify Auth Token' });
+    return vars;
+  }
+
+  // Step definitions for the state machine
+  const TM_STEPS = ['confirm-basics', 'scaffold', 'agents', 'env-vars', 'git', 'monitoring', 'scaffold-files', 'deploy', 'done'];
+
+  function tmGenerateQuestion(step, draft) {
+    switch (step) {
+      case 'confirm-basics':
+        return '📋 **Template erkannt:**\n\n' +
+          '• **Name:** ' + draft.name + '\n' +
+          '• **Beschreibung:** ' + draft.description + '\n' +
+          '• **Stacks:** ' + (draft.stacks.length ? draft.stacks.join(', ') : 'Keine (PulseOS Frontend)') + '\n' +
+          '• **Progressive Stage:** ' + (draft.progressiveStage || 1) + '\n\n' +
+          'Stimmt das so?\n\n[BUTTON:Ja, weiter] [BUTTON:Name ändern] [BUTTON:Stacks ändern]';
+
+      case 'scaffold':
+        return '📁 **Starter-Dateien:**\n\n' +
+          (draft.scaffold.files || []).map(f => '• `' + f + '`').join('\n') + '\n\n' +
+          'Verzeichnisse: ' + (draft.scaffold.directories || []).map(d => '`' + d + '`').join(', ') + '\n\n' +
+          'Sollen diese Dateien im Starter-Projekt angelegt werden?\n\n[BUTTON:Ja, weiter] [BUTTON:Dateien anpassen]';
+
+      case 'agents':
+        return '🤖 **Build-Phasen:**\n\n' +
+          (draft.agents.phases || []).map(p => '• ' + p).join('\n') + '\n\n' +
+          'Agents: Planner → Code-Generator → Test-Writer → Reviewer\n\n' +
+          'Passt das für dieses Template?\n\n[BUTTON:Ja, weiter] [BUTTON:Phasen anpassen]';
+
+      case 'env-vars':
+        if (!draft.envVars || !draft.envVars.length) {
+          return '🔑 **Environment Variables:**\n\nKeine Env-Vars für dieses Template nötig.\n\n[BUTTON:Ja, weiter] [BUTTON:Vars hinzufügen]';
+        }
+        return '🔑 **Environment Variables:**\n\n' +
+          draft.envVars.map(v => '• `' + v.key + '` — ' + v.description + (v.required ? ' *(required)*' : ' *(optional)*')).join('\n') + '\n\n' +
+          'Stimmen die benötigten Variablen?\n\n[BUTTON:Ja, weiter] [BUTTON:Vars anpassen]';
+
+      case 'git':
+        return '🔀 **Git-Strategie:**\n\n' +
+          '• Auto-Branch: ' + (draft.git.autoBranch ? '✓' : '✗') + '\n' +
+          '• Branch-Prefix: `' + draft.git.branchPrefix + '`\n' +
+          '• Auto-Commit: ' + (draft.git.autoCommit ? '✓' : '✗') + '\n' +
+          '• Auto-PR: ' + (draft.git.autoPR ? '✓' : '✗') + '\n\n' +
+          '[BUTTON:Ja, weiter] [BUTTON:Git anpassen]';
+
+      case 'monitoring':
+        return '📊 **Monitoring:**\n\n' +
+          '• Watch-Files: ' + (draft.monitoring.watchFiles || []).map(f => '`' + f + '`').join(', ') + '\n' +
+          '• Log-Level: ' + draft.monitoring.logLevel + '\n\n' +
+          '[BUTTON:Ja, weiter] [BUTTON:Monitoring anpassen]';
+
+      case 'scaffold-files':
+        return '🏗️ **Starter-Dateien werden erstellt...**\n\nDas Template wird jetzt gespeichert und die Starter-Dateien angelegt.';
+
+      case 'deploy':
+        return '🚀 **Template auf GitHub publishen?**\n\n' +
+          'Erstellt ein Repo `pulse-template-' + draft.id + '` mit:\n' +
+          '• `template.json` — Template-Konfiguration\n' +
+          '• `instructions.md` — Build-Anleitung\n' +
+          '• `starter/` — Starter-Dateien zum Klonen\n\n' +
+          'Andere können das Template dann installieren.\n\n[BUTTON:Ja, publishen] [BUTTON:Nein, nur lokal]';
+
+      case 'done':
+        return '✅ **Template "' + draft.name + '" erstellt!**\n\n' +
+          '• Template-ID: `' + draft.id + '`\n' +
+          (draft.source ? '• GitHub: ' + draft.source + '\n' : '') +
+          '• Stacks: ' + (draft.stacks.length ? draft.stacks.join(', ') : 'Frontend only') + '\n\n' +
+          'Du kannst das Template jetzt im Dropdown auswählen um neue Apps damit zu erstellen.';
+
+      default: return 'Nächster Schritt...';
+    }
+  }
+
+  function tmParseResponse(step, text, draft) {
+    const lower = text.toLowerCase().trim();
+    const isYes = /^(ja|yes|ok|weiter|passt|stimmt|gut|ja,?\s*weiter|ja,?\s*publishen)/.test(lower);
+    const isNo = /^(nein|no|nicht|nur lokal|nein,?\s*nur)/.test(lower);
+
+    switch (step) {
+      case 'confirm-basics':
+        if (lower.includes('name ändern') || lower.includes('name:')) {
+          const nameMatch = text.match(/name:\s*(.+)/i);
+          if (nameMatch) { draft.name = nameMatch[1].trim(); draft.id = draft.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+          return { nextStep: 'confirm-basics', draft };
+        }
+        if (lower.includes('stacks ändern') || lower.includes('stack')) {
+          return { nextStep: 'confirm-basics', draft, agentMsg: 'Welche Stacks soll das Template nutzen? (z.B. railway, supabase, vercel, stripe, github-pages)\n\nAktuell: ' + (draft.stacks.join(', ') || 'keine') };
+        }
+        if (isYes) return { nextStep: 'scaffold', draft };
+        // Try to parse stacks from freetext
+        const newStacks = tmDetectStacks(text);
+        if (newStacks.length) { draft.stacks = newStacks; draft.progressiveStage = tmDetectStage(newStacks); draft.scaffold = tmDefaultScaffold(newStacks); draft.envVars = tmDefaultEnvVars(newStacks); }
+        // Check if name change
+        if (text.length < 60 && !text.includes(' ')) { draft.name = text; draft.id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
+        return { nextStep: 'confirm-basics', draft };
+
+      case 'scaffold':
+        if (isYes) return { nextStep: 'agents', draft };
+        if (lower.includes('anpassen') || lower.includes('dateien')) {
+          return { nextStep: 'scaffold', draft, agentMsg: 'Welche Dateien sollen im Starter sein? (kommagetrennt, z.B. `index.html, server.js, package.json`)' };
+        }
+        // Parse comma-separated file list
+        const files = text.split(/[,\n]+/).map(f => f.trim().replace(/^`|`$/g, '')).filter(f => f);
+        if (files.length) { draft.scaffold.files = files; }
+        return { nextStep: 'agents', draft };
+
+      case 'agents':
+        if (isYes) return { nextStep: 'env-vars', draft };
+        if (lower.includes('anpassen') || lower.includes('phasen')) {
+          return { nextStep: 'agents', draft, agentMsg: 'Welche Phasen? (kommagetrennt, z.B. `planning, coding, testing, review`)' };
+        }
+        const phases = text.split(/[,\n]+/).map(p => p.trim().toLowerCase()).filter(p => p);
+        if (phases.length) { draft.agents.phases = phases; }
+        return { nextStep: 'env-vars', draft };
+
+      case 'env-vars':
+        if (isYes) return { nextStep: 'git', draft };
+        if (lower.includes('anpassen') || lower.includes('hinzufügen') || lower.includes('vars')) {
+          return { nextStep: 'env-vars', draft, agentMsg: 'Welche Env-Vars? Format: `KEY=beschreibung` (eine pro Zeile)' };
+        }
+        // Parse KEY=description lines
+        const varLines = text.split(/\n/).map(l => l.trim()).filter(l => l.includes('='));
+        if (varLines.length) {
+          draft.envVars = varLines.map(l => {
+            const [key, ...rest] = l.split('=');
+            return { key: key.trim(), required: true, description: rest.join('=').trim() || key.trim() };
+          });
+        }
+        return { nextStep: 'git', draft };
+
+      case 'git':
+        if (isYes) return { nextStep: 'monitoring', draft };
+        if (lower.includes('anpassen') || lower.includes('git')) {
+          return { nextStep: 'git', draft, agentMsg: 'Git-Optionen anpassen:\n• `branch on/off` — Auto-Branch\n• `commit on/off` — Auto-Commit\n• `pr on/off` — Auto-PR\n• `prefix feature/` — Branch-Prefix' };
+        }
+        if (lower.includes('branch on')) draft.git.autoBranch = true;
+        if (lower.includes('branch off')) draft.git.autoBranch = false;
+        if (lower.includes('commit on')) draft.git.autoCommit = true;
+        if (lower.includes('commit off')) draft.git.autoCommit = false;
+        if (lower.includes('pr on')) draft.git.autoPR = true;
+        if (lower.includes('pr off')) draft.git.autoPR = false;
+        const prefixMatch = text.match(/prefix\s+(\S+)/i);
+        if (prefixMatch) draft.git.branchPrefix = prefixMatch[1];
+        return { nextStep: 'monitoring', draft };
+
+      case 'monitoring':
+        if (isYes) return { nextStep: 'scaffold-files', draft };
+        if (lower.includes('anpassen')) {
+          return { nextStep: 'monitoring', draft, agentMsg: 'Monitoring anpassen:\n• Watch-Files: kommagetrennt\n• Log-Level: `normal` oder `verbose`' };
+        }
+        if (lower.includes('verbose')) draft.monitoring.logLevel = 'verbose';
+        if (lower.includes('normal')) draft.monitoring.logLevel = 'normal';
+        const watchFiles = text.split(/[,\n]+/).map(f => f.trim().replace(/^`|`$/g, '')).filter(f => f && !f.includes(' '));
+        if (watchFiles.length) draft.monitoring.watchFiles = watchFiles;
+        return { nextStep: 'scaffold-files', draft };
+
+      case 'deploy':
+        if (isYes || lower.includes('publish')) return { nextStep: 'done', draft, action: 'publish' };
+        return { nextStep: 'done', draft };
+
+      case 'edit-free': {
+        // Free-form edit mode — parse user intent and modify draft
+        if (isYes || lower === 'fertig' || lower === 'done' || lower === 'speichern') {
+          return { nextStep: 'scaffold-files', draft };
+        }
+
+        let response = '';
+
+        // Deploy steps
+        if (lower.includes('deploy') || lower.includes('github pages') || lower.includes('github-pages') || lower.includes('railway') || lower.includes('vercel')) {
+          if (!draft.deploySteps) draft.deploySteps = [];
+          if (lower.includes('github pages') || lower.includes('github-pages')) {
+            const hasGhPages = draft.deploySteps.some(s => s.action === 'github-pages');
+            if (!hasGhPages) {
+              draft.deploySteps.push(
+                { name: 'GitHub Repo erstellen', action: 'github-publish', command: 'gh repo create ${githubUser}/pulse-app-${appId} --public --source ${appDir} --push', description: 'Code auf GitHub pushen' },
+                { name: 'GitHub Pages aktivieren', action: 'github-pages', command: 'gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f source.branch=main -f source.path=/', description: 'App live unter https://${githubUser}.github.io/pulse-app-${appId}/', urlPattern: 'https://${githubUser}.github.io/pulse-app-${appId}/' }
+              );
+              if (!draft.stacks.includes('github-pages')) draft.stacks.push('github-pages');
+              response += 'GitHub Pages Deploy hinzugefuegt! App wird unter `https://{user}.github.io/pulse-app-{id}/` live sein.\n\n';
+            } else { response += 'GitHub Pages ist bereits in den Deploy-Steps.\n\n'; }
+          }
+          if (lower.includes('railway')) {
+            const hasRailway = draft.deploySteps.some(s => s.action === 'railway-deploy');
+            if (!hasRailway) {
+              draft.deploySteps.push({ name: 'Railway Deploy', action: 'railway-deploy', command: 'railway up --detach', description: 'App auf Railway deployen', urlPattern: 'https://pulse-app-${appId}-production.up.railway.app' });
+              if (!draft.stacks.includes('railway')) draft.stacks.push('railway');
+              const hasRailwayEnv = (draft.envVars || []).some(v => v.key === 'RAILWAY_TOKEN');
+              if (!hasRailwayEnv) draft.envVars.push({ key: 'RAILWAY_TOKEN', required: true, description: 'Railway API Token' });
+              response += 'Railway Deploy hinzugefuegt!\n\n';
+            }
+          }
+          if (lower.includes('vercel')) {
+            const hasVercel = draft.deploySteps.some(s => s.action === 'vercel-deploy');
+            if (!hasVercel) {
+              draft.deploySteps.push({ name: 'Vercel Deploy', action: 'vercel-deploy', command: 'vercel --prod --yes --token ${VERCEL_TOKEN}', description: 'App auf Vercel deployen', urlPattern: 'https://pulse-app-${appId}.vercel.app' });
+              if (!draft.stacks.includes('vercel')) draft.stacks.push('vercel');
+              response += 'Vercel Deploy hinzugefuegt!\n\n';
+            }
+          }
+          if (!response) response = 'Deploy-Steps aktualisiert.\n\n';
+        }
+
+        // Stacks
+        if (lower.includes('stacks') && (lower.includes('änder') || lower.includes('setz') || lower.includes('auf '))) {
+          const newStacks = tmDetectStacks(text);
+          if (newStacks.length) {
+            draft.stacks = newStacks;
+            draft.envVars = tmDefaultEnvVars(newStacks);
+            draft.scaffold = tmDefaultScaffold(newStacks);
+            response += 'Stacks geaendert auf: ' + newStacks.join(', ') + '\n\n';
+          }
+        }
+
+        // Name
+        if (lower.includes('name') && (lower.includes('änder') || lower.includes('setz') || lower.includes(':'))) {
+          const nameMatch = text.match(/name[:\s]+(.+)/i);
+          if (nameMatch) {
+            draft.name = nameMatch[1].trim();
+            draft.id = draft.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+            response += 'Name geaendert auf: ' + draft.name + '\n\n';
+          }
+        }
+
+        // Phases
+        if (lower.includes('phase') || lower.includes('test') && lower.includes('entfern')) {
+          if (lower.includes('entfern') && lower.includes('test')) {
+            draft.agents.phases = draft.agents.phases.filter(p => p !== 'testing');
+            response += 'Testing-Phase entfernt.\n\n';
+          }
+        }
+
+        // Remove deploy step
+        if (lower.includes('entfern') && lower.includes('deploy')) {
+          const before = (draft.deploySteps || []).length;
+          if (lower.includes('github pages')) draft.deploySteps = (draft.deploySteps || []).filter(s => s.action !== 'github-pages');
+          else if (lower.includes('railway')) draft.deploySteps = (draft.deploySteps || []).filter(s => s.action !== 'railway-deploy');
+          else if (lower.includes('vercel')) draft.deploySteps = (draft.deploySteps || []).filter(s => s.action !== 'vercel-deploy');
+          if ((draft.deploySteps || []).length < before) response += 'Deploy-Step entfernt.\n\n';
+        }
+
+        if (response) {
+          // Show current state
+          const dSteps = (draft.deploySteps || []).map(s => '• ' + s.name + (s.urlPattern ? ' → `' + s.urlPattern + '`' : '')).join('\n') || 'Keine';
+          response += '**Aktueller Stand:**\n• Stacks: ' + (draft.stacks.join(', ') || 'keine') +
+            '\n• Deploy-Steps:\n' + dSteps +
+            '\n\nWas moechtest du noch aendern?\n\n[BUTTON:Fertig]';
+          return { nextStep: 'edit-free', draft, agentMsg: response };
+        }
+
+        return { nextStep: 'edit-free', draft, agentMsg: 'Ich habe das nicht ganz verstanden. Versuche z.B.:\n• "Fuege GitHub Pages Deploy hinzu"\n• "Stacks aendern auf railway, supabase"\n• "Entferne den Test-Step"\n• "Fertig" zum Speichern\n\n[BUTTON:Deploy-Steps bearbeiten] [BUTTON:Fertig]' };
+      }
+
+      default:
+        return { nextStep: step, draft };
+    }
+  }
+
+  // POST /api/template-maker/start
+  if (url === '/api/template-maker/start' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { prompt, templateId } = JSON.parse(b);
+
+        let draft;
+        let editMode = false;
+
+        if (templateId) {
+          // Edit existing template — load it as draft
+          const tplData = safeReadJSON(templatesFile, '{"templates":[]}');
+          const existing = (tplData.templates || []).find(t => t.id === templateId);
+          if (!existing) return jsonRes(res, { error: 'Template not found' }, 404);
+          draft = JSON.parse(JSON.stringify(existing)); // deep clone
+          applyTemplateDefaults(draft);
+          editMode = true;
+        } else {
+          // New template from prompt
+          if (!prompt) return jsonRes(res, { error: 'prompt or templateId required' }, 400);
+          const stacks = tmDetectStacks(prompt);
+          const stage = tmDetectStage(stacks);
+          const words = prompt.replace(/[^a-zA-Z0-9äöüÄÖÜß\s]/g, '').split(/\s+/).filter(w => w.length > 2).slice(0, 4);
+          const name = words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || 'Custom Template';
+          const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+          draft = {
+            id, name, description: prompt,
+            icon: stage >= 4 ? '💼' : stage >= 3 ? '🔐' : stage >= 2 ? '🚀' : '📄',
+            stacks, progressiveStage: stage,
+            agents: { phases: ['planning', 'coding', 'testing', 'review'], planAgent: 'planner', codeAgent: 'code-generator', testAgent: 'test-writer', reviewAgent: 'code-reviewer' },
+            scaffold: tmDefaultScaffold(stacks),
+            envVars: tmDefaultEnvVars(stacks),
+            git: { autoBranch: stage >= 2, branchPrefix: 'feature/', autoCommit: true, autoPR: stage >= 2 },
+            monitoring: { watchFiles: ['index.html', 'manifest.json', ...(stage >= 2 ? ['PLAN.md', 'PROGRESS.md'] : [])], taskPattern: '## Tasks', logLevel: stage >= 3 ? 'verbose' : 'normal' },
+            deploySteps: []
+          };
+        }
+
+        const sessionId = 'tms-' + Date.now().toString(36);
+        const firstMsg = editMode
+          ? { from: 'agent', text: '✏️ **Template "' + draft.name + '" bearbeiten**\n\nWas moechtest du aendern? Du kannst z.B. sagen:\n• "Fuege GitHub Pages Deploy hinzu"\n• "Aendere die Stacks auf railway, supabase"\n• "Deploy soll auf GitHub Pages laufen"\n• "Entferne den Test-Step"\n\nOder klicke direkt in die Felder rechts.\n\n[BUTTON:Deploy-Steps bearbeiten] [BUTTON:Stacks aendern] [BUTTON:Fertig]', time: new Date().toISOString() }
+          : { from: 'agent', text: tmGenerateQuestion('confirm-basics', draft), time: new Date().toISOString() };
+        const session = { id: sessionId, status: 'active', step: editMode ? 'edit-free' : 'confirm-basics', editMode, prompt: prompt || '', draft, messages: [firstMsg], createdAt: new Date().toISOString() };
+        fs.writeFileSync(path.join(TM_DIR, sessionId + '.json'), JSON.stringify(session, null, 2));
+
+        return jsonRes(res, { ok: true, sessionId, draft, editMode });
+      } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+    });
+  }
+
+  // GET /api/template-maker/:sessionId
+  const tmGetMatch = url.match(/^\/api\/template-maker\/(tms-[a-z0-9]+)$/);
+  if (tmGetMatch && req.method === 'GET') {
+    const sessionFile = path.join(TM_DIR, tmGetMatch[1] + '.json');
+    if (!fs.existsSync(sessionFile)) return jsonRes(res, { error: 'Session not found' }, 404);
+    return jsonRes(res, JSON.parse(fs.readFileSync(sessionFile, 'utf8')));
+  }
+
+  // POST /api/template-maker/:sessionId/message
+  const tmMsgMatch = url.match(/^\/api\/template-maker\/(tms-[a-z0-9]+)\/message$/);
+  if (tmMsgMatch && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { text } = JSON.parse(b);
+        if (!text) return jsonRes(res, { error: 'text required' }, 400);
+        const sessionId = tmMsgMatch[1];
+        const sessionFile = path.join(TM_DIR, sessionId + '.json');
+        if (!fs.existsSync(sessionFile)) return jsonRes(res, { error: 'Session not found' }, 404);
+        const session = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
+        if (session.status !== 'active') return jsonRes(res, { error: 'Session is ' + session.status }, 400);
+
+        // Add user message to session
+        session.messages.push({ from: 'user', text, time: new Date().toISOString() });
+        fs.writeFileSync(sessionFile, JSON.stringify(session, null, 2));
+
+        // Check if a real chat agent is alive (status can be 'alive' or 'running')
+        const agents = safeReadJSON(path.join(ROOT, 'data', 'agents.json'), { agents: [] });
+        const chatAgent = (agents.agents || []).find(a => a.type === 'chat' && (a.status === 'alive' || a.status === 'running'));
+
+        if (chatAgent) {
+          // ── Route to real AI agent via chat-queue ──
+          const draft = session.draft || {};
+          const draftSummary = 'Template: ' + (draft.name || 'unnamed') + ' (id: ' + (draft.id || '?') + ')\n' +
+            'Stacks: ' + (draft.stacks || []).join(', ') + '\n' +
+            'Deploy-Steps: ' + (draft.deploySteps || []).map(s => s.name + ' (' + s.action + ')').join(', ') + '\n' +
+            'Scaffold: ' + (draft.scaffold?.files || []).join(', ') + '\n' +
+            'Env Vars: ' + (draft.envVars || []).map(v => v.key).join(', ') + '\n' +
+            'Git: autoBranch=' + (draft.git?.autoBranch) + ' autoCommit=' + (draft.git?.autoCommit) + ' autoPR=' + (draft.git?.autoPR);
+
+          const agentMessage = '[TEMPLATE-EDIT: ' + (draft.id || sessionId) + ']\n' +
+            draftSummary + '\n\n' +
+            'User sagt: ' + text + '\n\n---\n' +
+            'Du bearbeitest das PulseOS Template "' + (draft.name || '') + '".\n' +
+            'Wenn du Aenderungen machst, aktualisiere das Template via:\n' +
+            'curl -s -X PUT http://localhost:3000/api/templates/' + (draft.id || '') + ' -H "Content-Type: application/json" -d \'<updated fields as JSON>\'\n' +
+            'Fuer Deploy-Schritte nutze das "deploySteps" Array im Template. Jeder Step hat: name, action, command, description, urlPattern.\n' +
+            'Bekannte actions: github-publish, github-pages, railway-deploy, vercel-deploy, supabase-setup, stripe-setup.\n' +
+            'GitHub Pages = Code als Repo pushen UND die App live unter https://{user}.github.io/{repo}/ hosten.\n' +
+            'Antworte dem User kurz auf Deutsch was du geaendert hast.';
+
+          const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
+          const queue = safeReadJSON(queueFile, { pending: [] });
+          if (!queue.pending) queue.pending = [];
+          const msgId = 'tmmsg-' + Date.now();
+          queue.pending.push({
+            chatId: sessionId,
+            msgId: msgId,
+            text: agentMessage,
+            user: 'template-maker',
+            source: 'template-maker',
+            status: 'queued',
+            created: new Date().toISOString()
+          });
+          fs.writeFileSync(queueFile, JSON.stringify(queue, null, 2));
+
+          // Add a "thinking" indicator
+          session.messages.push({ from: 'agent', text: '🤔 Denke nach...', time: new Date().toISOString(), pending: true });
+          fs.writeFileSync(sessionFile, JSON.stringify(session, null, 2));
+
+          return jsonRes(res, { ok: true, step: session.step, status: 'active', routed: 'agent', messageCount: session.messages.length });
+        }
+
+        // ── Fallback: State Machine (when no chat agent is alive) ──
+        const result = tmParseResponse(session.step, text, session.draft);
+        session.draft = result.draft;
+        session.step = result.nextStep;
+
+        if (result.agentMsg) {
+          session.messages.push({ from: 'agent', text: result.agentMsg, time: new Date().toISOString() });
+        } else {
+          session.messages.push({ from: 'agent', text: tmGenerateQuestion(result.nextStep, session.draft), time: new Date().toISOString() });
+        }
+        if (result.nextStep === 'done') session.status = 'done';
+
+        fs.writeFileSync(sessionFile, JSON.stringify(session, null, 2));
+        return jsonRes(res, { ok: true, step: session.step, status: session.status, messageCount: session.messages.length });
+      } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+    });
   }
 
   // ── Tech-Stack Registry + Status ──
@@ -4691,6 +5199,34 @@ PulseOS.onDataChanged(function() {});
         const { chatId, msgId, text } = JSON.parse(b);
         if (!chatId || !msgId || !text) return jsonRes(res, { ok: false, error: 'chatId, msgId, text required' });
 
+        // ── Template-Maker session routing ──
+        if (chatId.startsWith('tms-')) {
+          const tmSessionFile = path.join(ROOT, 'data', 'template-maker-sessions', chatId + '.json');
+          if (fs.existsSync(tmSessionFile)) {
+            const session = JSON.parse(fs.readFileSync(tmSessionFile, 'utf8'));
+            // Remove "thinking" indicator
+            session.messages = session.messages.filter(m => !m.pending);
+            // Add agent response
+            session.messages.push({ from: 'agent', text, time: new Date().toISOString() });
+            // Reload template draft from disk (agent may have updated it via PUT /api/templates)
+            try {
+              const tplData = safeReadJSON(path.join(ROOT, 'data', 'templates.json'), '{"templates":[]}');
+              const updated = (tplData.templates || []).find(t => t.id === session.draft?.id);
+              if (updated) session.draft = updated;
+            } catch {}
+            fs.writeFileSync(tmSessionFile, JSON.stringify(session, null, 2));
+            console.log('[template-maker] Agent response written for session ' + chatId);
+          }
+          // Remove from queue
+          const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
+          const queue = safeReadJSON(queueFile, { pending: [] });
+          queue.pending = queue.pending.filter(p => p.msgId !== msgId);
+          fs.writeFileSync(queueFile, JSON.stringify(queue, null, 2));
+          orchestratorLastResponse = Date.now();
+          return jsonRes(res, { ok: true });
+        }
+
+        // ── Normal dashboard chat ──
         // Write response to chat.json
         const chatFile = path.join(resolveAppDir('chat'), 'data', 'chat.json');
         const data = safeReadJSON(chatFile, { activeChat: 'chat-1', chats: [] });
