@@ -1,0 +1,20 @@
+{
+  "name": "PulseTV",
+  "icon": "📺",
+  "color": "#e50914",
+  "description": "Video-Suche und Player — Echtzeit YouTube-Suche mit eingebettetem Player",
+  "inputs": [
+    { "id": "search-query", "desc": "Suchanfrage von externen Apps" },
+    { "id": "play-video", "desc": "Video-ID direkt abspielen" }
+  ],
+  "outputs": [
+    { "id": "now-playing", "desc": "Aktuell gespieltes Video (id, title, channel)" },
+    { "id": "search-results", "desc": "Suchergebnisse als Array" }
+  ],
+  "dataFiles": ["state"],
+  "pulseSubscriptions": [],
+  "skills": [
+    { "id": "search-video", "name": "Video suchen", "action": "read", "dataFile": "state" },
+    { "id": "play-video", "name": "Video abspielen", "action": "write", "dataFile": "state" }
+  ]
+}

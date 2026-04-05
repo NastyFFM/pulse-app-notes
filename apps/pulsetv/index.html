@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PulseTV</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --tv-red: #e50914;
+    --tv-red-dim: rgba(229,9,20,0.15);
+    --tv-dark: #141414;
+    --tv-player-bg: #000;
+    --tv-online: #4caf50;
+  }
+
+  body {
+    background: var(--bg, #0a0a0a);
+    color: var(--text, #e5e5e5);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--bg-card, #1a1a1a);
+    border-bottom: 1px solid var(--border, #2a2a2a);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--tv-red);
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+  }
+
+  .logo span { color: var(--text, #e5e5e5); }
+
+  .search-wrap {
+    flex: 1;
+    position: relative;
+    max-width: 480px;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 8px 36px 8px 12px;
+    background: var(--bg, #0a0a0a);
+    border: 1px solid var(--border, #2a2a2a);
+    border-radius: 6px;
+    color: var(--text, #e5e5e5);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-input:focus {
+    border-color: var(--tv-red);
+  }
+
+  .search-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim, #666);
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  .search-status {
+    font-size: 11px;
+    color: var(--text-dim, #666);
+    white-space: nowrap;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .btn-icon {
+    background: none;
+    border: 1px solid var(--border, #2a2a2a);
+    color: var(--text-dim, #666);
+    border-radius: 6px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .btn-icon:hover { border-color: var(--tv-red); color: var(--tv-red); }
+
+  /* Main Layout */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Sidebar: Results */
+  .sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border, #2a2a2a);
+    overflow: hidden;
+  }
+
+  .sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border, #2a2a2a);
+    flex-shrink: 0;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 8px;
+    background: none;
+    border: none;
+    color: var(--text-dim, #666);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+  }
+  .tab-btn.active {
+    color: var(--tv-red);
+    border-bottom-color: var(--tv-red);
+  }
+
+  .results-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .results-list::-webkit-scrollbar { width: 4px; }
+  .results-list::-webkit-scrollbar-track { background: transparent; }
+  .results-list::-webkit-scrollbar-thumb { background: var(--border, #2a2a2a); border-radius: 2px; }
+
+  .result-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 4px;
+  }
+  .result-item:hover { background: var(--bg-card, #1a1a1a); }
+  .result-item.active { background: var(--tv-red-dim); }
+
+  .result-thumb {
+    width: 100px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background: var(--bg-card, #1a1a1a);
+  }
+
+  .result-thumb-placeholder {
+    width: 100px;
+    height: 56px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background: var(--bg-card, #1a1a1a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim, #666);
+    font-size: 20px;
+  }
+
+  .result-info { flex: 1; min-width: 0; }
+
+  .result-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text, #e5e5e5);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+
+  .result-meta {
+    font-size: 11px;
+    color: var(--text-dim, #666);
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .result-duration {
+    font-size: 10px;
+    color: var(--tv-red);
+    margin-top: 2px;
+  }
+
+  .result-add-queue {
+    display: none;
+    background: none;
+    border: 1px solid var(--border, #2a2a2a);
+    color: var(--text-dim, #666);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+    align-self: center;
+    transition: all 0.2s;
+  }
+  .result-item:hover .result-add-queue { display: block; }
+  .result-add-queue:hover { border-color: var(--teal, #4ecdc4); color: var(--teal, #4ecdc4); }
+
+  /* Empty / Loading States */
+  .state-msg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: var(--text-dim, #666);
+    font-size: 13px;
+    gap: 8px;
+    text-align: center;
+    padding: 16px;
+  }
+  .state-msg .icon { font-size: 32px; }
+
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--border, #2a2a2a);
+    border-top-color: var(--tv-red);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Player Area */
+  .player-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--tv-dark, #141414);
+  }
+
+  .player-container {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 */
+    background: var(--tv-player-bg, #000);
+    flex-shrink: 0;
+  }
+
+  .player-iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: none;
+  }
+
+  .player-placeholder {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim, #666);
+    gap: 12px;
+    background: var(--tv-player-bg, #000);
+  }
+
+  .player-placeholder .big-icon { font-size: 48px; opacity: 0.3; }
+  .player-placeholder p { font-size: 14px; opacity: 0.5; }
+
+  /* Now Playing Info */
+  .now-playing {
+    padding: 12px 16px;
+    flex-shrink: 0;
+  }
+
+  .np-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .np-meta {
+    font-size: 12px;
+    color: var(--text-dim, #666);
+  }
+
+  /* Queue */
+  .queue-section {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--border, #2a2a2a);
+  }
+
+  .queue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim, #666);
+    flex-shrink: 0;
+  }
+
+  .queue-clear {
+    background: none;
+    border: none;
+    color: var(--text-dim, #666);
+    cursor: pointer;
+    font-size: 11px;
+    transition: color 0.2s;
+  }
+  .queue-clear:hover { color: var(--tv-red); }
+
+  .queue-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 8px 8px;
+  }
+  .queue-list::-webkit-scrollbar { width: 4px; }
+  .queue-list::-webkit-scrollbar-thumb { background: var(--border, #2a2a2a); border-radius: 2px; }
+
+  .queue-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-dim, #666);
+    transition: all 0.15s;
+  }
+  .queue-item:hover { background: var(--bg-card, #1a1a1a); color: var(--text, #e5e5e5); }
+  .queue-item .q-num { font-size: 10px; width: 16px; text-align: center; flex-shrink: 0; }
+  .queue-item .q-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .queue-item .q-remove {
+    background: none; border: none; color: transparent; cursor: pointer; font-size: 12px; padding: 0 2px;
+    transition: color 0.2s;
+  }
+  .queue-item:hover .q-remove { color: var(--tv-red); }
+
+  /* Instance Selector */
+  .instance-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 16px;
+    font-size: 11px;
+    color: var(--text-dim, #666);
+    background: var(--bg-card, #1a1a1a);
+    border-bottom: 1px solid var(--border, #2a2a2a);
+    flex-shrink: 0;
+  }
+
+  .instance-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-dim, #666);
+    flex-shrink: 0;
+  }
+  .instance-dot.online { background: var(--tv-online, #4caf50); }
+  .instance-dot.error { background: var(--tv-red); }
+
+  /* Backup Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--bg-card, #1a1a1a);
+    border: 1px solid var(--border, #2a2a2a);
+    border-radius: 10px;
+    padding: 20px;
+    width: 320px;
+    max-width: 90vw;
+  }
+
+  .modal h3 { font-size: 15px; margin-bottom: 12px; }
+
+  .modal-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+
+  .btn {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: var(--tv-red); color: #fff; }
+  .btn-primary:hover { background: #c00712; }
+  .btn-secondary { background: var(--border, #2a2a2a); color: var(--text, #e5e5e5); }
+  .btn-secondary:hover { background: #333; }
+  .btn-close {
+    background: none; border: none; color: var(--text-dim, #666); font-size: 16px;
+    cursor: pointer; float: right; margin-top: -4px;
+  }
+
+  .file-input-label {
+    display: block;
+    padding: 8px 14px;
+    border: 1px dashed var(--border, #2a2a2a);
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-dim, #666);
+    transition: all 0.2s;
+  }
+  .file-input-label:hover { border-color: var(--teal, #4ecdc4); color: var(--teal, #4ecdc4); }
+  #backup-file-input { display: none; }
+
+  /* Search history chips */
+  .history-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+  }
+  .chip {
+    background: var(--bg-card, #1a1a1a);
+    border: 1px solid var(--border, #2a2a2a);
+    border-radius: 12px;
+    padding: 4px 10px;
+    font-size: 11px;
+    color: var(--text-dim, #666);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .chip:hover { border-color: var(--tv-red); color: var(--tv-red); }
+
+  @media (max-width: 600px) {
+    .sidebar { width: 100%; }
+    .main { flex-direction: column; }
+    .player-area { display: none; }
+    .player-area.mobile-show { display: flex; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">Pulse<span>TV</span></div>
+  <div class="search-wrap">
+    <input class="search-input" id="search-input" type="text" placeholder="Videos suchen..." autocomplete="off" />
+    <span class="search-icon">🔍</span>
+  </div>
+  <span class="search-status" id="search-status"></span>
+  <div class="header-actions">
+    <button class="btn-icon" id="btn-backup" title="Backup">💾</button>
+    <button class="btn-icon" id="btn-settings" title="Einstellungen">⚙️</button>
+  </div>
+</div>
+
+<!-- Instance Bar -->
+<div class="instance-bar">
+  <span class="instance-dot" id="instance-dot"></span>
+  <span id="instance-label">Verbinde...</span>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <button class="tab-btn active" id="tab-search" onclick="switchTab('search')">🔍 Suche</button>
+      <button class="tab-btn" id="tab-queue" onclick="switchTab('queue')">📋 Queue</button>
+      <button class="tab-btn" id="tab-history" onclick="switchTab('history')">🕐 Verlauf</button>
+    </div>
+
+    <!-- Search Results -->
+    <div class="results-list" id="panel-search">
+      <div class="state-msg">
+        <span class="icon">📺</span>
+        <span>Suche nach Videos um zu starten</span>
+      </div>
+    </div>
+
+    <!-- Queue -->
+    <div class="results-list" id="panel-queue" style="display:none">
+      <div class="queue-section" style="border:none;flex:1">
+        <div class="queue-header">
+          <span>Warteschlange</span>
+          <button class="queue-clear" onclick="clearQueue()">Leeren</button>
+        </div>
+        <div class="queue-list" id="queue-list">
+          <div class="state-msg">
+            <span class="icon">📋</span>
+            <span>Queue ist leer</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="results-list" id="panel-history" style="display:none">
+      <div id="history-content">
+        <div class="state-msg">
+          <span class="icon">🕐</span>
+          <span>Noch keine Suchen</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player Area -->
+  <div class="player-area">
+    <div class="player-container">
+      <div class="player-placeholder" id="player-placeholder">
+        <span class="big-icon">▶</span>
+        <p>Video auswählen um abzuspielen</p>
+      </div>
+      <iframe
+        id="player-iframe"
+        class="player-iframe"
+        style="display:none"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+      ></iframe>
+    </div>
+
+    <div class="now-playing" id="now-playing" style="display:none">
+      <div class="np-title" id="np-title">-</div>
+      <div class="np-meta" id="np-meta">-</div>
+    </div>
+
+    <div class="queue-section" id="next-up-section" style="display:none">
+      <div class="queue-header">
+        <span>Als nächstes</span>
+        <button class="queue-clear" onclick="skipToNext()">Weiter ▶</button>
+      </div>
+      <div class="queue-list" id="next-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Backup Modal -->
+<div class="modal-overlay" id="backup-modal">
+  <div class="modal">
+    <button class="btn-close" onclick="closeBackup()">✕</button>
+    <h3>💾 Backup</h3>
+    <p style="font-size:12px;color:var(--text-dim,#666);margin-bottom:8px">
+      Speichere deinen Suchverlauf und deine Queue als JSON-Datei.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="downloadBackup()">⬇ Backup herunterladen</button>
+      <label class="file-input-label">
+        ⬆ Backup wiederherstellen
+        <input type="file" id="backup-file-input" accept=".json" onchange="restoreBackup(event)">
+      </label>
+      <button class="btn btn-secondary" onclick="closeBackup()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <button class="btn-close" onclick="closeSettings()">✕</button>
+    <h3>⚙️ Einstellungen</h3>
+    <div style="margin-top:12px;display:flex;flex-direction:column;gap:12px">
+      <label style="font-size:13px">
+        Autoplay
+        <input type="checkbox" id="autoplay-toggle" style="margin-left:8px" onchange="toggleAutoplay()">
+      </label>
+      <label style="font-size:13px">
+        Invidious Instanz
+        <select id="instance-select" style="margin-left:8px;background:var(--bg,#0a0a0a);color:var(--text,#e5e5e5);border:1px solid var(--border,#2a2a2a);border-radius:4px;padding:4px" onchange="changeInstance()">
+          <option value="auto">Auto (Fallback)</option>
+          <option value="https://inv.nadeko.net">inv.nadeko.net</option>
+          <option value="https://invidious.privacyredirect.com">privacyredirect.com</option>
+          <option value="https://vid.puffyan.us">vid.puffyan.us</option>
+          <option value="https://yt.cdaut.de">yt.cdaut.de</option>
+        </select>
+      </label>
+      <label style="font-size:13px">
+        Suchverlauf löschen
+        <button class="btn btn-secondary" onclick="clearHistory();closeSettings()" style="margin-left:8px;padding:4px 10px;font-size:12px">Löschen</button>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeSettings()">Fertig</button>
+    </div>
+  </div>
+</div>
+
+<script src="/sdk.js"></script>
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+const INVIDIOUS_INSTANCES = [
+  'https://inv.nadeko.net',
+  'https://invidious.privacyredirect.com',
+  'https://yt.cdaut.de',
+  'https://invidious.nerdvpn.de'
+];
+
+let state = {
+  currentVideo: null,
+  queue: [],
+  searchHistory: [],
+  lastQuery: '',
+  volume: 80,
+  autoplay: true,
+  preferredInstance: 'auto'
+};
+
+let currentInstance = INVIDIOUS_INSTANCES[0];
+let instanceIndex = 0;
+let searchResults = [];
+let debounceTimer = null;
+let activeTab = 'search';
+let isSearching = false;
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+async function init() {
+  await loadState();
+  renderHistory();
+  renderQueue();
+  setupSearchInput();
+  testInstance();
+
+  // Restore settings UI
+  document.getElementById('autoplay-toggle').checked = state.autoplay;
+  if (state.preferredInstance !== 'auto') {
+    document.getElementById('instance-select').value = state.preferredInstance;
+  }
+
+  // Restore last video if any
+  if (state.currentVideo) {
+    playVideo(state.currentVideo, false);
+  }
+
+  // PulseOS Graph: receive search query from outside
+  PulseOS.onInput('search-query', (q) => {
+    document.getElementById('search-input').value = q;
+    doSearch(q);
+  });
+
+  // PulseOS Graph: play specific video ID
+  PulseOS.onInput('play-video', (videoId) => {
+    if (typeof videoId === 'string') {
+      playVideoById(videoId);
+    }
+  });
+
+  // React to external data changes
+  PulseOS.onDataChanged(() => loadState());
+}
+
+// ─── State Persistence ───────────────────────────────────────────────────────
+async function loadState() {
+  try {
+    const loaded = await PulseOS.loadState();
+    if (loaded && typeof loaded === 'object') {
+      state = { ...state, ...loaded };
+    }
+  } catch (e) {
+    // Fallback: localStorage
+    const raw = localStorage.getItem('pulsetv_state');
+    if (raw) state = { ...state, ...JSON.parse(raw) };
+  }
+}
+
+async function saveState() {
+  try {
+    await PulseOS.saveState(state);
+  } catch (e) {
+    localStorage.setItem('pulsetv_state', JSON.stringify(state));
+  }
+  // Also save to cookie as lightweight backup
+  const mini = {
+    lastQuery: state.lastQuery,
+    searchHistory: state.searchHistory.slice(0, 10),
+    autoplay: state.autoplay,
+    preferredInstance: state.preferredInstance
+  };
+  document.cookie = 'pulsetv=' + encodeURIComponent(JSON.stringify(mini)) + ';max-age=31536000;path=/';
+}
+
+// ─── Instance Management ─────────────────────────────────────────────────────
+async function testInstance() {
+  const dot = document.getElementById('instance-dot');
+  const label = document.getElementById('instance-label');
+
+  if (state.preferredInstance !== 'auto') {
+    currentInstance = state.preferredInstance;
+    dot.className = 'instance-dot';
+    label.textContent = new URL(currentInstance).hostname;
+    const ok = await pingInstance(currentInstance);
+    dot.className = 'instance-dot ' + (ok ? 'online' : 'error');
+    if (!ok && state.preferredInstance !== 'auto') {
+      label.textContent += ' (offline — Fallback aktiv)';
+      await autoSelectInstance();
+    }
+    return;
+  }
+
+  await autoSelectInstance();
+}
+
+async function autoSelectInstance() {
+  const dot = document.getElementById('instance-dot');
+  const label = document.getElementById('instance-label');
+  dot.className = 'instance-dot';
+  label.textContent = 'Prüfe Instanzen...';
+
+  for (let i = 0; i < INVIDIOUS_INSTANCES.length; i++) {
+    const inst = INVIDIOUS_INSTANCES[i];
+    const ok = await pingInstance(inst);
+    if (ok) {
+      currentInstance = inst;
+      instanceIndex = i;
+      dot.className = 'instance-dot online';
+      label.textContent = new URL(inst).hostname + ' ✓';
+      return;
+    }
+  }
+
+  // All failed — still set one, will show errors on search
+  currentInstance = INVIDIOUS_INSTANCES[0];
+  dot.className = 'instance-dot error';
+  label.textContent = 'Keine Instanz erreichbar';
+}
+
+async function pingInstance(url) {
+  try {
+    const r = await fetch(url + '/api/v1/search?q=test&fields=videoId&type=video', {
+      signal: AbortSignal.timeout(3000)
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function nextInstance() {
+  instanceIndex = (instanceIndex + 1) % INVIDIOUS_INSTANCES.length;
+  currentInstance = INVIDIOUS_INSTANCES[instanceIndex];
+  document.getElementById('instance-label').textContent = 'Wechsle zu ' + new URL(currentInstance).hostname + '...';
+}
+
+// ─── Search ──────────────────────────────────────────────────────────────────
+function setupSearchInput() {
+  const input = document.getElementById('search-input');
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    clearTimeout(debounceTimer);
+    if (q.length < 2) {
+      if (q.length === 0) showSearchPlaceholder();
+      return;
+    }
+    debounceTimer = setTimeout(() => doSearch(q), 400);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      clearTimeout(debounceTimer);
+      const q = input.value.trim();
+      if (q.length >= 2) doSearch(q);
+    }
+    if (e.key === 'Escape') {
+      input.value = '';
+      showSearchPlaceholder();
+    }
+  });
+}
+
+async function doSearch(query) {
+  if (isSearching) return;
+  isSearching = true;
+
+  switchTab('search');
+  showSearchLoading();
+
+  const status = document.getElementById('search-status');
+  status.textContent = '⏳';
+
+  let results = [];
+  try {
+    let tries = 0;
+    while (tries < INVIDIOUS_INSTANCES.length) {
+      try {
+        const url = `${currentInstance}/api/v1/search?q=${encodeURIComponent(query)}&type=video&fields=videoId,title,author,lengthSeconds,videoThumbnails`;
+        const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        results = await r.json();
+        if (!Array.isArray(results)) throw new Error('Bad response');
+        break;
+      } catch (e) {
+        tries++;
+        await nextInstance();
+      }
+    }
+  } finally {
+    isSearching = false;
+    status.textContent = '';
+  }
+
+  if (results.length === 0) {
+    showSearchEmpty(query);
+  } else {
+    searchResults = results;
+    renderResults(results);
+
+    // Save to history
+    const q = query.trim();
+    state.lastQuery = q;
+    if (!state.searchHistory.includes(q)) {
+      state.searchHistory.unshift(q);
+      if (state.searchHistory.length > 20) state.searchHistory.pop();
+    }
+    await saveState();
+    renderHistory();
+  }
+
+  // PulseOS: emit search results
+  PulseOS.emit('search-results', results.slice(0, 10).map(v => ({
+    id: v.videoId,
+    title: v.title,
+    channel: v.author
+  })));
+}
+
+function showSearchPlaceholder() {
+  document.getElementById('panel-search').innerHTML = `
+    <div class="state-msg">
+      <span class="icon">📺</span>
+      <span>Suche nach Videos um zu starten</span>
+    </div>`;
+}
+
+function showSearchLoading() {
+  document.getElementById('panel-search').innerHTML = `
+    <div class="state-msg">
+      <div class="spinner"></div>
+      <span>Suche...</span>
+    </div>`;
+}
+
+function showSearchEmpty(query) {
+  document.getElementById('panel-search').innerHTML = `
+    <div class="state-msg">
+      <span class="icon">🔍</span>
+      <span>Keine Ergebnisse für "<strong>${escHtml(query)}</strong>"</span>
+    </div>`;
+}
+
+// ─── Render Results ──────────────────────────────────────────────────────────
+function renderResults(videos) {
+  const list = document.getElementById('panel-search');
+  if (!videos || videos.length === 0) { showSearchPlaceholder(); return; }
+
+  // Build DOM nodes directly — never serialize video data into onclick attributes
+  list.innerHTML = '';
+  videos.forEach((v, i) => {
+    const thumb = getBestThumb(v.videoThumbnails);
+    const dur = formatDuration(v.lengthSeconds || 0);
+    const isActive = state.currentVideo && state.currentVideo.id === v.videoId;
+
+    const videoObj = { id: v.videoId, title: v.title, channel: v.author, duration: v.lengthSeconds || 0 };
+
+    const item = document.createElement('div');
+    item.className = 'result-item' + (isActive ? ' active' : '');
+    item.addEventListener('click', () => playVideo(videoObj));
+
+    const thumbEl = document.createElement('div');
+    if (thumb) {
+      const img = document.createElement('img');
+      img.className = 'result-thumb';
+      img.src = thumb;
+      img.loading = 'lazy';
+      img.onerror = () => { img.style.display = 'none'; };
+      thumbEl.appendChild(img);
+    } else {
+      thumbEl.className = 'result-thumb-placeholder';
+      thumbEl.textContent = '▶';
+    }
+    item.appendChild(thumbEl);
+
+    const info = document.createElement('div');
+    info.className = 'result-info';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'result-title';
+    titleEl.textContent = v.title || '';
+    info.appendChild(titleEl);
+
+    const metaEl = document.createElement('div');
+    metaEl.className = 'result-meta';
+    metaEl.textContent = v.author || '';
+    info.appendChild(metaEl);
+
+    if (dur) {
+      const durEl = document.createElement('div');
+      durEl.className = 'result-duration';
+      durEl.textContent = dur;
+      info.appendChild(durEl);
+    }
+
+    item.appendChild(info);
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'result-add-queue';
+    addBtn.title = 'Zur Queue';
+    addBtn.textContent = '+';
+    addBtn.addEventListener('click', (e) => { e.stopPropagation(); addToQueue(videoObj); });
+    item.appendChild(addBtn);
+
+    list.appendChild(item);
+  });
+}
+
+function getBestThumb(thumbs) {
+  if (!thumbs || !thumbs.length) return null;
+  // Prefer medium quality
+  const pref = ['medium', 'default', 'high', 'maxres'];
+  for (const q of pref) {
+    const t = thumbs.find(t => t.quality === q);
+    if (t) return t.url;
+  }
+  return thumbs[0]?.url || null;
+}
+
+// ─── Player ──────────────────────────────────────────────────────────────────
+async function playVideo(video, saveIt = true) {
+  state.currentVideo = video;
+  if (saveIt) await saveState();
+
+  document.getElementById('player-placeholder').style.display = 'none';
+  const iframe = document.getElementById('player-iframe');
+  iframe.style.display = 'block';
+  iframe.src = `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&rel=0`;
+
+  document.getElementById('now-playing').style.display = 'block';
+  document.getElementById('np-title').textContent = video.title || video.id;
+  document.getElementById('np-meta').textContent = video.channel || '';
+
+  // Emit to PulseOS graph
+  PulseOS.emit('now-playing', video);
+
+  // Highlight in results
+  renderResults(searchResults);
+
+  // Update next-up
+  renderNextUp();
+}
+
+async function playVideoById(videoId) {
+  // Try to find in current results
+  const found = searchResults.find(v => v.videoId === videoId);
+  if (found) {
+    playVideo({ id: found.videoId, title: found.title, channel: found.author, duration: found.lengthSeconds });
+    return;
+  }
+  // Otherwise play directly
+  playVideo({ id: videoId, title: videoId, channel: '' });
+}
+
+// ─── Queue ───────────────────────────────────────────────────────────────────
+async function addToQueue(video) {
+  if (state.queue.some(v => v.id === video.id)) return;
+  state.queue.push(video);
+  await saveState();
+  renderQueue();
+  renderNextUp();
+
+  // Flash the queue tab
+  const tab = document.getElementById('tab-queue');
+  tab.textContent = `📋 Queue (${state.queue.length})`;
+}
+
+function renderQueue() {
+  const tab = document.getElementById('tab-queue');
+  tab.textContent = state.queue.length > 0 ? `📋 Queue (${state.queue.length})` : '📋 Queue';
+
+  const list = document.getElementById('queue-list');
+  if (state.queue.length === 0) {
+    list.innerHTML = `<div class="state-msg"><span class="icon">📋</span><span>Queue ist leer</span></div>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  state.queue.forEach((v, i) => {
+    const item = document.createElement('div');
+    item.className = 'queue-item';
+    item.addEventListener('click', () => playFromQueue(i));
+
+    const num = document.createElement('span');
+    num.className = 'q-num';
+    num.textContent = i + 1;
+
+    const title = document.createElement('span');
+    title.className = 'q-title';
+    title.textContent = v.title || v.id;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'q-remove';
+    removeBtn.title = 'Entfernen';
+    removeBtn.textContent = '✕';
+    removeBtn.addEventListener('click', (e) => { e.stopPropagation(); removeFromQueue(i); });
+
+    item.appendChild(num);
+    item.appendChild(title);
+    item.appendChild(removeBtn);
+    list.appendChild(item);
+  });
+}
+
+async function playFromQueue(index) {
+  const video = state.queue[index];
+  if (!video) return;
+  state.queue.splice(index, 1);
+  await saveState();
+  playVideo(video);
+  renderQueue();
+}
+
+async function removeFromQueue(index) {
+  state.queue.splice(index, 1);
+  await saveState();
+  renderQueue();
+  renderNextUp();
+}
+
+async function clearQueue() {
+  state.queue = [];
+  await saveState();
+  renderQueue();
+  renderNextUp();
+}
+
+async function skipToNext() {
+  if (state.queue.length === 0) return;
+  const next = state.queue.shift();
+  await saveState();
+  playVideo(next);
+  renderQueue();
+  renderNextUp();
+}
+
+function renderNextUp() {
+  const section = document.getElementById('next-up-section');
+  const list = document.getElementById('next-list');
+  if (state.queue.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'flex';
+  list.innerHTML = '';
+  state.queue.slice(0, 3).forEach((v, i) => {
+    const item = document.createElement('div');
+    item.className = 'queue-item';
+    item.addEventListener('click', () => playFromQueue(i));
+
+    const num = document.createElement('span');
+    num.className = 'q-num';
+    num.textContent = i + 1;
+
+    const title = document.createElement('span');
+    title.className = 'q-title';
+    title.textContent = v.title || v.id;
+
+    item.appendChild(num);
+    item.appendChild(title);
+    list.appendChild(item);
+  });
+}
+
+// ─── History ─────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const content = document.getElementById('history-content');
+  if (!state.searchHistory || state.searchHistory.length === 0) {
+    content.innerHTML = `<div class="state-msg"><span class="icon">🕐</span><span>Noch keine Suchen</span></div>`;
+    return;
+  }
+
+  content.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'history-chips';
+  state.searchHistory.forEach(q => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.textContent = q;
+    chip.addEventListener('click', () => useHistory(q));
+    wrap.appendChild(chip);
+  });
+  content.appendChild(wrap);
+}
+
+function useHistory(query) {
+  document.getElementById('search-input').value = query;
+  doSearch(query);
+  switchTab('search');
+}
+
+async function clearHistory() {
+  state.searchHistory = [];
+  await saveState();
+  renderHistory();
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  ['search', 'queue', 'history'].forEach(t => {
+    document.getElementById('panel-' + t).style.display = t === tab ? '' : 'none';
+    const btn = document.getElementById('tab-' + t);
+    btn.classList.toggle('active', t === tab);
+  });
+}
+
+// ─── Settings ────────────────────────────────────────────────────────────────
+async function toggleAutoplay() {
+  state.autoplay = document.getElementById('autoplay-toggle').checked;
+  await saveState();
+}
+
+async function changeInstance() {
+  state.preferredInstance = document.getElementById('instance-select').value;
+  await saveState();
+  testInstance();
+}
+
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+
+// ─── Backup ──────────────────────────────────────────────────────────────────
+function downloadBackup() {
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'pulsetv-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  closeBackup();
+}
+
+function restoreBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      // Only merge known keys to prevent injection of arbitrary state
+      const allowed = ['currentVideo', 'queue', 'searchHistory', 'lastQuery', 'volume', 'autoplay', 'preferredInstance'];
+      const safe = {};
+      allowed.forEach(k => { if (k in data) safe[k] = data[k]; });
+      state = { ...state, ...safe };
+      await saveState();
+      renderHistory();
+      renderQueue();
+      document.getElementById('autoplay-toggle').checked = state.autoplay;
+      closeBackup();
+      alert('Backup wiederhergestellt ✓');
+    } catch {
+      alert('Ungültige Backup-Datei');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function closeBackup() {
+  document.getElementById('backup-modal').classList.remove('open');
+}
+
+// ─── Utils ───────────────────────────────────────────────────────────────────
+function formatDuration(seconds) {
+  if (!seconds) return '';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(str) {
+  return String(str).replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+// ─── Button Listeners ────────────────────────────────────────────────────────
+document.getElementById('btn-backup').addEventListener('click', () => {
+  document.getElementById('backup-modal').classList.add('open');
+});
+
+document.getElementById('btn-settings').addEventListener('click', () => {
+  document.getElementById('settings-modal').classList.add('open');
+});
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', (e) => {
+    if (e.target === m) m.classList.remove('open');
+  });
+});
+
+// ─── Start ───────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
