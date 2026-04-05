@@ -2462,21 +2462,29 @@ if (window.PulseOS) {
   if (url === '/api/git/branches' && req.method === 'GET') {
     try {
       const { execSync } = require('child_process');
+      // Resolve git directory: use app's own repo if appId provided and it has .git
+      const gitParams = new URL(req.url, 'http://localhost').searchParams;
+      const qAppId = gitParams.get('appId');
+      let gitCwd = ROOT;
+      if (qAppId) {
+        const appDir = resolveAppDir(qAppId);
+        if (fs.existsSync(path.join(appDir, '.git'))) gitCwd = appDir;
+      }
       // Get all branches with last commit info
-      const branchRaw = execSync('git branch -a --format="%(refname:short)|%(objectname:short)|%(committerdate:iso)|%(subject)|%(HEAD)"', { cwd: ROOT, encoding: 'utf8', timeout: 5000 });
+      const branchRaw = execSync('git branch -a --format="%(refname:short)|%(objectname:short)|%(committerdate:iso)|%(subject)|%(HEAD)"', { cwd: gitCwd, encoding: 'utf8', timeout: 5000 });
       const branches = branchRaw.trim().split('\n').filter(l => l.trim()).map(line => {
         const [name, hash, date, subject, head] = line.split('|');
         return { name: name.trim(), hash, date, subject, current: head === '*' };
       });
       // Get recent commits with branch decoration (last 50)
-      const logRaw = execSync('git log --all --oneline --graph --decorate -50', { cwd: ROOT, encoding: 'utf8', timeout: 5000 });
+      const logRaw = execSync('git log --all --oneline --graph --decorate -50', { cwd: gitCwd, encoding: 'utf8', timeout: 5000 });
       // Get commit graph data for visualization
-      const commitRaw = execSync('git log --all --format="%H|%h|%P|%D|%s|%ci|%an" -80', { cwd: ROOT, encoding: 'utf8', timeout: 5000 });
+      const commitRaw = execSync('git log --all --format="%H|%h|%P|%D|%s|%ci|%an" -80', { cwd: gitCwd, encoding: 'utf8', timeout: 5000 });
       const commits = commitRaw.trim().split('\n').filter(l => l.trim()).map(line => {
         const [hash, short, parents, refs, subject, date, author] = line.split('|');
         return { hash, short, parents: (parents || '').split(' ').filter(Boolean), refs: (refs || '').trim(), subject, date, author };
       });
-      const currentBranch = execSync('git branch --show-current', { cwd: ROOT, encoding: 'utf8', timeout: 3000 }).trim();
+      const currentBranch = execSync('git branch --show-current', { cwd: gitCwd, encoding: 'utf8', timeout: 3000 }).trim();
       return jsonRes(res, { branches, commits, currentBranch, graph: logRaw });
     } catch (e) { return jsonRes(res, { error: e.message }, 500); }
   }
