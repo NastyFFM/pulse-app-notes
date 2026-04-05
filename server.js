@@ -8771,8 +8771,23 @@ function copyInstall(repo, btn) {
   if (url === '/api/workers' && req.method === 'POST') {
     return readBody(req, b => {
       try {
-        const { task, model, maxDuration, appId: editAppId, template, editMode, setupStack, orchestrated, standalone } = JSON.parse(b);
+        const { task, model, maxDuration, appId: editAppId, template, editMode, setupStack, orchestrated, standalone, registerOnly } = JSON.parse(b);
         if (!task) return jsonRes(res, { error: 'task required' }, 400);
+
+        // registerOnly: just create the worker entry, don't spawn a process
+        // Used by /build-app command which runs agents in the current Claude Code session
+        if (registerOnly) {
+          const regId = 'worker-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+          const regFile = path.join(workersDir, regId + '.json');
+          const regData = {
+            id: regId, task, status: 'running', model: model || 'sonnet', pid: null,
+            progress: 'Gestartet (extern gesteuert)', log: [{ time: new Date().toISOString(), type: 'start', text: 'Worker registriert: ' + task.substring(0, 80) }],
+            result: null, startedAt: new Date().toISOString(), finishedAt: null, createdBy: 'build-app', branch: null
+          };
+          fs.writeFileSync(regFile, JSON.stringify(regData, null, 2));
+          broadcast('dashboard', { type: 'worker-update', workerId: regId, status: 'running' });
+          return jsonRes(res, { ok: true, worker: regData });
+        }
 
         const id = 'worker-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
         const workerFile = path.join(workersDir, id + '.json');
