@@ -8852,7 +8852,8 @@ function copyInstall(repo, btn) {
 
 AUFGABE: ${task}
 ARBEITSVERZEICHNIS: ${ROOT}
-${resolvedDir ? 'APP-VERZEICHNIS: ' + resolvedDir : ''}
+${editAppId ? 'APP-ID: ' + editAppId : ''}
+WICHTIG: Nach Phase 0 arbeitest du im WORKTREE-Verzeichnis ($WORKTREE_DIR). Alle Dateiaenderungen dort machen, nicht im Hauptrepo!
 ${templateContent ? '\n--- TEMPLATE ---\n' + templateContent + '\n--- ENDE ---\n' : ''}${selfImproveContext}
 
 ## Dein Workflow — 5 Phasen
@@ -8862,7 +8863,9 @@ Erstelle einen isolierten Feature-Branch fuer diese Aenderung:
 \`\`\`
 BRANCH_NAME="feature/${editAppId || 'new-app'}-$(date +%s)"
 cd ${ROOT}
-git checkout -b "$BRANCH_NAME"
+WORKTREE_DIR="${ROOT}/.claude/worktrees/worker-${id}"
+git worktree add "$WORKTREE_DIR" -b "$BRANCH_NAME"
+cd "$WORKTREE_DIR"
 \`\`\`
 Speichere den Branch-Namen — du brauchst ihn spaeter fuer Push und PR.
 Update den Worker mit dem Branch-Namen:
@@ -8906,7 +8909,7 @@ Update Status: "Phase 3/5 done: Review GO"
 ### Phase 4: Git + PR
 Committe alle Aenderungen und erstelle einen Pull Request:
 \`\`\`
-cd ${ROOT}
+cd "$WORKTREE_DIR"
 # Stage alle relevanten Dateien (NICHT data/workers/, NICHT .claude/worktrees/)
 git add apps/ data/apps.json data/tech-stacks.json
 git add -u  # staged bereits getrackte Dateien die geaendert wurden
@@ -8923,7 +8926,7 @@ curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: applica
 ### Phase 5: Report + Cleanup
 \`\`\`
 cd ${ROOT}
-git checkout -  # zurueck zum urspruenglichen Branch
+git worktree remove "$WORKTREE_DIR" --force 2>/dev/null || true
 \`\`\`
 Schreibe die finale Zusammenfassung mit PR-URL in den Worker und setze status auf "done":
 curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d "{\"status\":\"done\",\"progress\":\"Phase 5/5 done: Fertig\",\"result\":\"App gebaut und PR erstellt: $PR_URL\"}"

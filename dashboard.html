@@ -2432,13 +2432,19 @@ async function sendEdit(winId) {
     await fetch('/app/' + appId + '/api/edit-chat', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(existing) });
   } catch {}
 
-  // Send to worker — check if app is fresh (orchestrator) or existing (edit)
+  // Send to worker — smart autodetect: orchestrated for big changes, quick for small edits
   const editPanelEl = document.getElementById('edit-' + winId);
   const isNewApp = editPanelEl && editPanelEl.dataset.newapp === 'true';
-  if (isNewApp) editPanelEl.dataset.newapp = 'false'; // Only first message uses orchestrator
+  const textLower = text.toLowerCase();
+  const orchestrateKeywords = ['erstelle', 'baue', 'füge hinzu', 'integriere', 'auth', 'api', 'deploy', 'refactor', 'neue funktion', 'feature', 'komplett', 'umbauen', 'add', 'create', 'build', 'implement'];
+  const quickKeywords = ['ändere', 'fixe', 'farbe', 'color', 'text', 'größe', 'size', 'position', 'style', 'css', 'font', 'margin', 'padding', 'border', 'icon', 'titel', 'title'];
+  const wantsOrchestrate = isNewApp || orchestrateKeywords.some(k => textLower.includes(k));
+  const wantsQuick = quickKeywords.some(k => textLower.includes(k));
+  const useOrchestrated = wantsOrchestrate && !wantsQuick;
+  if (isNewApp) editPanelEl.dataset.newapp = 'false';
   try {
-    const workerBody = isNewApp
-      ? { task: 'Erstelle die App "' + appId + '": ' + text, model: 'sonnet', appId, template: tpl, orchestrated: true }
+    const workerBody = useOrchestrated
+      ? { task: 'Erstelle/Erweitere die App "' + appId + '": ' + text, model: 'sonnet', appId, template: tpl, orchestrated: true }
       : { task: 'Modifiziere die App "' + appId + '": ' + text, model: 'sonnet', appId, template: tpl, editMode: true };
     const r = await fetch('/api/workers', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

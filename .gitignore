@@ -38,6 +38,11 @@ bower_components
 # Compiled binary addons (https://nodejs.org/api/addons.html)
 build/Release
 
+# Worker worktrees
+.claude/worktrees/
+data/workers/
+test-results/
+
 # Dependency directories
 node_modules/
 jspm_packages/
