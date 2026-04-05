@@ -12,9 +12,10 @@
 | - | Smart Autodetect (orchestriert vs quick) | f3ce7a6 |
 | - | Launcher Shortcut Cmd+L | 91729ab |
 | - | Orchestrator-Detection Fix (data-newapp) | b4df862 |
+| 5 | Eigenständige Apps vs System-Apps | pending |
 
 ## Bekannte Issues
-- Apps werden im PulseOS-Repo erstellt statt eigenständig (nächste Session)
+- ~~Apps werden im PulseOS-Repo erstellt statt eigenständig~~ ✅ Gelöst
 - Dashboard flackert bei Polling
 - Self-Improve Playwright-Verifikation noch nicht zuverlässig
 - Worker wechselt Branch im Hauptrepo (git checkout -b statt worktree)

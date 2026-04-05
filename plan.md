@@ -11,13 +11,14 @@
 
 ## Nächste Schritte
 
-### 1. Eigenständige Apps (Default) vs System-Apps
-- quickCreateApp() fragt: "🏠 System-App (in PulseOS)" oder "📦 Eigenständig (eigenes Repo)"
-- Default: Eigenständig
-- Eigenständig: ~/Documents/GitHub/pulse-app-<name>/, eigenes Git-Repo
-- System: apps/<name>/ im PulseOS-Repo (wie bisher)
-- Server braucht neuen Parameter: `standalone: true/false`
-- Orchestrator-Prompt anpassen: Arbeitsverzeichnis je nach Typ
+### 1. ✅ Eigenständige Apps (Default) vs System-Apps
+- quickCreateApp() + showCreateDialog(): Radio-Buttons "📦 Eigenständig" (default) / "🏠 System-App"
+- /api/apps/create akzeptiert `standalone: true` → erstellt in ~/Documents/GitHub/pulse-app-<name>/
+- Git-Repo wird automatisch initialisiert
+- apps.json speichert `standalone: true` + `path` für externe Apps
+- resolveAppDir() prüft standalone-Pfad zuerst
+- Orchestrator-Prompt: Phase 1 + Phase 4 standalone-aware
+- sendEdit() übergibt standalone-Flag an Worker
 
 ### 2. Self-Improve mit Playwright MCP verifizieren
 - Worker ändert dashboard.html → Playwright prüft visuell → Fix-Loop

@@ -16,6 +16,18 @@ const USERDATA = process.env.USERDATA ? path.resolve(process.env.USERDATA) : pat
 
 // Resolve app path: userdata/apps/ first (user apps), then apps/ (system apps)
 function resolveAppDir(appId) {
+  // Check for standalone app (external repo) first
+  try {
+    const appsData = safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}');
+    const appEntry = (appsData.apps || []).find(a => a.id === appId);
+    if (appEntry && appEntry.standalone && appEntry.path) {
+      const standaloneBase = path.join(require('os').homedir(), 'Documents', 'GitHub');
+      const resolved = path.resolve(appEntry.path);
+      if (resolved.startsWith(standaloneBase + path.sep) && fs.existsSync(resolved)) {
+        return resolved;
+      }
+    }
+  } catch {}
   const userApp = path.join(USERDATA, 'apps', appId);
   const sysApp = path.join(ROOT, 'apps', appId);
   const userExists = fs.existsSync(path.join(userApp, 'index.html'));
@@ -2036,7 +2048,7 @@ const server = http.createServer(async (req, res) => {
 
         // Check for index.html
         if (!fs.existsSync(path.join(appDir, 'index.html'))) {
-          execSync(`rm -rf ${appDir}`);
+          execSync(`rm -rf "${appDir}"`);
           return jsonRes(res, { ok: false, error: 'No index.html found in repo' });
         }
 
@@ -2256,14 +2268,19 @@ const server = http.createServer(async (req, res) => {
   if (url === '/api/apps/create' && req.method === 'POST') {
     return readBody(req, b => {
       try {
-        const { name, description, icon, color, template, stacks } = JSON.parse(b);
+        const { name, description, icon, color, template, stacks, standalone } = JSON.parse(b);
         if (!name) { res.writeHead(400); return res.end(JSON.stringify({ error: 'name required' })); }
         const appId = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-        // Check both dirs for existing app
+        // Standalone: ~/Documents/GitHub/pulse-app-<name>/
+        const STANDALONE_BASE = path.join(require('os').homedir(), 'Documents', 'GitHub');
+        const standaloneDir = standalone ? path.join(STANDALONE_BASE, 'pulse-app-' + appId) : null;
+        // Check all dirs for existing app
         if (fs.existsSync(path.join(ROOT, 'apps', appId)) || fs.existsSync(path.join(USERDATA, 'apps', appId)))
           return jsonRes(res, { ok: false, error: 'App exists: ' + appId });
-        // New apps always go to userdata/apps/
-        const appDir = path.join(USERDATA, 'apps', appId);
+        if (standaloneDir && fs.existsSync(standaloneDir))
+          return jsonRes(res, { ok: false, error: 'Standalone repo exists: pulse-app-' + appId });
+        // Determine app directory
+        const appDir = standaloneDir || path.join(USERDATA, 'apps', appId);
 
         fs.mkdirSync(appDir, { recursive: true });
         fs.mkdirSync(path.join(appDir, 'data'), { recursive: true });
@@ -2287,14 +2304,19 @@ const server = http.createServer(async (req, res) => {
           const appsData = safeReadJSON(appsFile, '{"apps":[]}');
           const apps = appsData.apps || [];
           const appEntry = { id: appId, name, icon: manifest.icon, color: manifest.color, description: manifest.description, installed: true, created: true, position: apps.length };
+          if (standalone) { appEntry.standalone = true; appEntry.path = standaloneDir; }
           if (template) appEntry.template = template;
           if (stacks && stacks.length) appEntry.stacks = stacks;
           apps.push(appEntry);
           if (appsData.apps) appsData.apps = apps;
           fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
+          // Init git for standalone starter apps
+          if (standaloneDir) {
+            try { require('child_process').execSync('git init && git add -A && git commit -m "Initial commit: ' + appId + '"', { cwd: standaloneDir, stdio: 'pipe' }); } catch (e) { console.error('[standalone] git init failed:', e.message); }
+          }
           invalidateAgentContextCache();
           broadcast('dashboard', { type: 'app-installed', appId, name });
-          return jsonRes(res, { ok: true, appId, name, fromStarter: true });
+          return jsonRes(res, { ok: true, appId, name, fromStarter: true, standalone: !!standaloneDir });
         }
 
         // Generate template HTML
@@ -2356,11 +2378,19 @@ if (window.PulseOS) {
         }, null, 2));
         fs.writeFileSync(path.join(appDir, 'data', 'state.json'), '{}');
 
+        // Init git repo for standalone apps
+        if (standaloneDir) {
+          try {
+            require('child_process').execSync('git init && git add -A && git commit -m "Initial commit: ' + appId + '"', { cwd: standaloneDir, stdio: 'pipe' });
+          } catch {}
+        }
+
         // Register
         const appsFile = path.join(ROOT, 'data', 'apps.json');
         const appsData = safeReadJSON(appsFile, '{"apps":[]}');
         const apps = appsData.apps || [];
         const appEntry = { id: appId, name, icon: appIcon, color: appColor, description: description || '', installed: true, created: true, position: apps.length };
+        if (standalone) { appEntry.standalone = true; appEntry.path = standaloneDir; }
         if (template) appEntry.template = template;
         if (stacks && stacks.length) appEntry.stacks = stacks;
         apps.push(appEntry);
@@ -2368,7 +2398,7 @@ if (window.PulseOS) {
         fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
         invalidateAgentContextCache();
         broadcast('dashboard', { type: 'app-installed', appId, name });
-        jsonRes(res, { ok: true, appId, name });
+        jsonRes(res, { ok: true, appId, name, standalone: !!standaloneDir });
       } catch (e) { res.writeHead(500); res.end(JSON.stringify({ error: e.message })); }
     });
   }
@@ -2390,7 +2420,7 @@ if (window.PulseOS) {
     }
     // Remove directory and registry entry
     const { execSync } = require('child_process');
-    try { execSync(`rm -rf ${appDir}`); } catch {}
+    try { execSync(`rm -rf "${appDir}"`); } catch {}
     appsData.apps = apps.filter(a => a.id !== appId);
     fs.writeFileSync(appsFile, JSON.stringify(appsData, null, 2));
     broadcast('dashboard', { type: 'app-uninstalled', appId });
@@ -8741,7 +8771,7 @@ function copyInstall(repo, btn) {
   if (url === '/api/workers' && req.method === 'POST') {
     return readBody(req, b => {
       try {
-        const { task, model, maxDuration, appId: editAppId, template, editMode, setupStack, orchestrated } = JSON.parse(b);
+        const { task, model, maxDuration, appId: editAppId, template, editMode, setupStack, orchestrated, standalone } = JSON.parse(b);
         if (!task) return jsonRes(res, { error: 'task required' }, 400);
 
         const id = 'worker-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
@@ -8835,7 +8865,17 @@ function copyInstall(repo, btn) {
           const deployAgent = loadAgent('deploy-configurator');
 
           const resolvedDir = editMode && editAppId ? resolveAppDir(editAppId) : '';
-          const appDir = resolvedDir || (USERDATA + '/apps/<name>');
+          // For standalone apps, resolve the external path
+          let standaloneAppDir = '';
+          if (standalone && editAppId) {
+            try {
+              const ad = safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}');
+              const ae = (ad.apps || []).find(a => a.id === editAppId);
+              if (ae && ae.standalone && ae.path) standaloneAppDir = ae.path;
+            } catch {}
+          }
+          const appDir = standaloneAppDir || resolvedDir || (USERDATA + '/apps/<name>');
+          const isStandaloneApp = !!standaloneAppDir;
 
           // Detect self-improvement tasks
           const selfImproveKeywords = ['pulseos', 'dashboard', 'server.js', 'dock', 'launcher', 'window manager', 'system', 'shortcut', 'topbar', 'sidebar'];
@@ -8853,14 +8893,19 @@ function copyInstall(repo, btn) {
 AUFGABE: ${task}
 ARBEITSVERZEICHNIS: ${ROOT}
 ${editAppId ? 'APP-ID: ' + editAppId : ''}
-WICHTIG: Nach Phase 0 arbeitest du im WORKTREE-Verzeichnis ($WORKTREE_DIR). Alle Dateiaenderungen dort machen, nicht im Hauptrepo!
+WICHTIG: Alle Dateiaenderungen im angegebenen App-Verzeichnis machen.
 ${templateContent ? '\n--- TEMPLATE ---\n' + templateContent + '\n--- ENDE ---\n' : ''}${selfImproveContext}
 
 ## Dein Workflow — 4 Phasen
 
 ### Phase 1: Code generieren
-Arbeite DIREKT im Hauptrepo (${ROOT}), damit der User die App LIVE sieht.
-App-Verzeichnis: ${ROOT}/apps/${editAppId || '<name>'}/
+${isStandaloneApp
+  ? `Diese App ist EIGENSTÄNDIG (eigenes Git-Repo).
+App-Verzeichnis: ${standaloneAppDir}/
+WICHTIG: Alle Dateien in ${standaloneAppDir}/ erstellen/bearbeiten, NICHT in apps/!
+Der PulseOS-Server served diese App automatisch ueber /app/${editAppId}.`
+  : `Arbeite DIREKT im Hauptrepo (${ROOT}), damit der User die App LIVE sieht.
+App-Verzeichnis: ${ROOT}/apps/${editAppId || '<name>'}/`}
 
 ${codeGenAgent ? codeGenAgent.split('---').slice(2).join('---').trim() : 'Generiere den App-Code nach PulseOS-Konventionen.'}
 
@@ -8895,19 +8940,9 @@ ${isSelfImprove ? '\nSAFETY bei System-Dateien:\n- Syntax-Check nach jeder Aende
 Update Status: "Phase 3/4 done: Review GO"
 
 ### Phase 4: Git + PR + Report
-Erstelle einen Feature-Branch, committe die Aenderungen und erstelle einen PR:
-\`\`\`
-cd ${ROOT}
-BRANCH_NAME="feature/${editAppId || 'new-app'}-$(date +%s)"
-git checkout -b "$BRANCH_NAME"
-git add apps/${editAppId || '*'}/
-git add data/apps.json 2>/dev/null || true
-git commit -m "feat: ${editAppId || 'new-app'} — <kurze beschreibung>"
-git push -u origin "$BRANCH_NAME"
-PR_URL=$(gh pr create --title "feat: ${editAppId || 'new-app'}" --body "## Phasen\\n- Phase 1: Code generiert\\n- Phase 2: Visuell geprueft\\n- Phase 3: Review GO\\n\\n🤖 PulseOS Worker ${id}" --base feature/app-maker-v2 2>&1 | tail -1)
-git checkout -
-echo "PR: $PR_URL"
-\`\`\`
+` + (isStandaloneApp
+  ? 'Die App hat ein EIGENES Git-Repo. Committe dort:\n```\ncd ' + standaloneAppDir + '\ngit add -A\ngit commit -m "feat: <kurze beschreibung>"\n# Optional: GitHub Repo erstellen und pushen\ngh repo create pulse-app-' + editAppId + ' --public --source=. --push 2>/dev/null || echo "Repo exists or gh not configured"\n```'
+  : 'Erstelle einen Feature-Branch, committe die Aenderungen und erstelle einen PR:\n```\ncd ' + ROOT + '\nBRANCH_NAME="feature/' + (editAppId || 'new-app') + '-$(date +%s)"\ngit checkout -b "$BRANCH_NAME"\ngit add apps/' + (editAppId || '*') + '/\ngit add data/apps.json 2>/dev/null || true\ngit commit -m "feat: ' + (editAppId || 'new-app') + ' - <kurze beschreibung>"\ngit push -u origin "$BRANCH_NAME"\nPR_URL=$(gh pr create --title "feat: ' + (editAppId || 'new-app') + '" --body "## Phasen\\n- Phase 1: Code generiert\\n- Phase 2: Visuell geprueft\\n- Phase 3: Review GO\\n\\n PulseOS Worker ' + id + '" --base feature/app-maker-v2 2>&1 | tail -1)\ngit checkout -\necho "PR: $PR_URL"\n```') + `
 Setze status auf "done" mit PR-URL:
 curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d "{\"status\":\"done\",\"progress\":\"Phase 4/4 done: PR erstellt\",\"result\":\"App gebaut und PR erstellt: $PR_URL\",\"branch\":\"$BRANCH_NAME\"}"
 
@@ -8919,7 +8954,7 @@ FORTSCHRITT:
 
 CSS-VARIABLEN: var(--bg), var(--text), var(--teal), var(--border), var(--bg-card)
 
-STARTE JETZT mit Phase 0.`;
+STARTE JETZT mit Phase 1.`;
 
         } else if (setupStack) {
           const stacksFile2 = path.join(ROOT, 'data', 'tech-stacks.json');

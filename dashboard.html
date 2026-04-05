@@ -2442,10 +2442,12 @@ async function sendEdit(winId) {
   const wantsQuick = quickKeywords.some(k => textLower.includes(k));
   const useOrchestrated = wantsOrchestrate && !wantsQuick;
   if (isNewApp) editPanelEl.dataset.newapp = 'false';
+  const appInfo = state.apps?.find(a => a.id === appId);
+  const isStandalone = appInfo?.standalone || false;
   try {
     const workerBody = useOrchestrated
-      ? { task: 'Erstelle/Erweitere die App "' + appId + '": ' + text, model: 'sonnet', appId, template: tpl, orchestrated: true }
-      : { task: 'Modifiziere die App "' + appId + '": ' + text, model: 'sonnet', appId, template: tpl, editMode: true };
+      ? { task: 'Erstelle/Erweitere die App "' + appId + '": ' + text, model: 'sonnet', appId, template: tpl, orchestrated: true, standalone: isStandalone }
+      : { task: 'Modifiziere die App "' + appId + '": ' + text, model: 'sonnet', appId, template: tpl, editMode: true, standalone: isStandalone };
     const r = await fetch('/api/workers', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(workerBody)
@@ -2881,21 +2883,35 @@ function quickCreateApp() {
   modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:20px;z-index:10001;min-width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.5);';
   modal.innerHTML = '<div style="font-weight:600;margin-bottom:12px;">Neue App</div>' +
     '<input id="quickAppName" type="text" placeholder="App Name eingeben..." style="width:100%;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;box-sizing:border-box;" autofocus>' +
+    '<div style="display:flex;gap:12px;margin-top:10px;font-size:12px;">' +
+    '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text-dim);">' +
+    '<input type="radio" name="quickAppType" value="standalone" checked style="accent-color:var(--teal);"> 📦 Eigenständig</label>' +
+    '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text-dim);">' +
+    '<input type="radio" name="quickAppType" value="system" style="accent-color:var(--teal);"> 🏠 System-App</label>' +
+    '</div>' +
+    '<div id="quickAppTypeHint" style="font-size:10px;color:var(--text-dim);margin-top:4px;">Eigenes Git-Repo in ~/Documents/GitHub/pulse-app-…</div>' +
     '<div id="quickCreateStatus" style="font-size:11px;min-height:16px;margin-top:8px;color:var(--text-dim);">Enter drücken zum Erstellen</div>' +
     '<div style="display:flex;justify-content:flex-end;margin-top:8px;">' +
     '<button onclick="document.getElementById(\'quickCreateModal\').remove()" style="padding:6px 14px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;">Abbrechen</button></div>';
   document.body.appendChild(modal);
   const input = document.getElementById('quickAppName');
   input.focus();
+  // Update hint when radio changes
+  modal.querySelectorAll('input[name="quickAppType"]').forEach(r => r.addEventListener('change', () => {
+    const hint = document.getElementById('quickAppTypeHint');
+    if (r.value === 'standalone' && r.checked) hint.textContent = 'Eigenes Git-Repo in ~/Documents/GitHub/pulse-app-…';
+    else if (r.checked) hint.textContent = 'Im PulseOS-Repo unter apps/…';
+  }));
   input.onkeydown = async (e) => {
     if (e.key === 'Escape') { modal.remove(); return; }
     if (e.key !== 'Enter') return;
     const name = input.value.trim();
     if (!name) return;
+    const standalone = modal.querySelector('input[name="quickAppType"]:checked')?.value === 'standalone';
     const status = document.getElementById('quickCreateStatus');
     status.textContent = 'Erstelle...'; status.style.color = 'var(--teal)';
     try {
-      const r = await fetch('/api/apps/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+      const r = await fetch('/api/apps/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, standalone }) });
       const d = await r.json();
       if (d.ok) {
         modal.remove();
@@ -2938,6 +2954,11 @@ function showCreateDialog() {
     '<div style="display:flex;gap:8px;margin-bottom:8px;">' +
     '<input id="createIcon" type="text" placeholder="Icon (1 Buchstabe)" maxlength="2" style="width:60px;padding:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;text-align:center;">' +
     '<input id="createColor" type="color" value="#1a2a3a" style="width:40px;height:36px;border:none;background:none;cursor:pointer;"></div>' +
+    '<div style="display:flex;gap:12px;margin-bottom:8px;font-size:12px;">' +
+    '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text-dim);">' +
+    '<input type="radio" name="createAppType" value="standalone" checked style="accent-color:var(--teal);"> 📦 Eigenständig</label>' +
+    '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text-dim);">' +
+    '<input type="radio" name="createAppType" value="system" style="accent-color:var(--teal);"> 🏠 System-App</label></div>' +
     '<div id="createStatus" style="font-size:11px;margin:8px 0;min-height:16px;"></div>' +
     '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
     '<button onclick="document.getElementById(\'createModal\').remove()" style="padding:6px 12px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:11px;">Abbrechen</button>' +
@@ -2972,7 +2993,8 @@ async function doCreateApp() {
   statusEl.textContent = 'Erstelle...'; statusEl.style.color = 'var(--teal)';
   try {
     const template = document.getElementById('createTemplate')?.value || undefined;
-    const r = await fetch('/api/apps/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: appName, description: desc, icon: icon || undefined, color, template }) });
+    const standalone = document.querySelector('input[name="createAppType"]:checked')?.value === 'standalone';
+    const r = await fetch('/api/apps/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: appName, description: desc, icon: icon || undefined, color, template, standalone }) });
     const d = await r.json();
     if (d.ok) {
       statusEl.textContent = d.name + ' erstellt!'; statusEl.style.color = 'var(--green)';
