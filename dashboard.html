@@ -1159,6 +1159,13 @@ body {
 .ep-account-status.missing { background:#e74c3c; box-shadow:0 0 4px rgba(231,76,60,0.5); }
 .ep-account-remove { font-size:9px; padding:2px 6px; border-radius:4px; border:1px solid rgba(231,76,60,0.3); background:transparent; color:#e74c3c; cursor:pointer; flex-shrink:0; opacity:0.6; transition:opacity 0.2s; }
 .ep-account-remove:hover { opacity:1; background:rgba(231,76,60,0.1); }
+.ep-mcp-list { display:flex; flex-direction:column; gap:4px; }
+.ep-mcp-card { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--bg); font-size:10px; }
+.ep-mcp-icon { font-size:13px; width:18px; text-align:center; flex-shrink:0; }
+.ep-mcp-info { flex:1; min-width:0; }
+.ep-mcp-name { font-weight:600; color:var(--text); }
+.ep-mcp-cmd { font-size:8px; color:var(--text-dim); font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ep-mcp-status { width:8px; height:8px; border-radius:50%; flex-shrink:0; background:#27ae60; box-shadow:0 0 4px rgba(39,174,96,0.5); }
 .ep-app-links { display:flex; flex-direction:column; gap:4px; }
 .ep-app-link { display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:6px; border:1px solid var(--border); background:var(--bg); font-size:10px; text-decoration:none; color:var(--text); transition:border-color 0.2s; cursor:pointer; }
 .ep-app-link:hover { border-color:var(--teal); }
@@ -2324,14 +2331,13 @@ function openApp(app, opts) {
       '</div>' +
       /* ── Settings Tab ── */
       '<div class="ep-tab-panel ep-tab-settings" data-eptab="settings" style="overflow-y:auto;">' +
-        /* Deploy & Publish */
+        /* Deploy */
         '<div class="ep-settings-section">' +
-          '<div class="ep-settings-title">Deploy & Publish</div>' +
+          '<div class="ep-settings-title">Deploy</div>' +
           '<div class="ep-settings-row">' +
-            '<button class="ep-settings-btn" onclick="sendEditDeploy(\'' + winId + '\')">🚀 Deploy</button>' +
-            '<button class="ep-settings-btn" onclick="sendEditPublish(\'' + winId + '\')">📦 Publish to GitHub</button>' +
+            '<button class="ep-settings-btn" id="ep-deploy-btn-' + winId + '" onclick="runDeploy(\'' + winId + '\',\'' + app.id + '\')">🚀 Deploy (Template-Steps)</button>' +
           '</div>' +
-          '<div class="edit-app-actions" id="edit-actions-' + winId + '"></div>' +
+          '<div id="ep-deploy-status-' + winId + '" style="font-size:9px;color:var(--text-dim);margin-top:4px;"></div>' +
         '</div>' +
         /* Template */
         '<div class="ep-settings-section">' +
@@ -2349,6 +2355,11 @@ function openApp(app, opts) {
         '<div class="ep-settings-section">' +
           '<div class="ep-settings-title">Accounts &amp; Services</div>' +
           '<div id="ep-accounts-' + winId + '" class="ep-accounts-list">Laden...</div>' +
+        '</div>' +
+        /* MCP Servers */
+        '<div class="ep-settings-section">' +
+          '<div class="ep-settings-title">MCP Servers</div>' +
+          '<div id="ep-mcp-' + winId + '" class="ep-mcp-list">Laden...</div>' +
         '</div>' +
         /* Environment Variables (collapsed by default) */
         '<div class="ep-settings-section ep-collapsed">' +
@@ -2380,21 +2391,7 @@ function openApp(app, opts) {
       '</div>' +
       /* ── Graph Tab ── */
       '<div class="ep-tab-panel ep-tab-graph" data-eptab="graph" style="overflow-y:auto;padding:6px;">' +
-        '<svg class="ep-graph-svg" viewBox="0 0 300 280" xmlns="http://www.w3.org/2000/svg">' +
-          '<g class="ep-graph-lines">' +
-            '<line data-agent="planner" class="ep-graph-line idle" x1="150" y1="110" x2="150" y2="65"/>' +
-            '<line data-agent="code-generator" class="ep-graph-line idle" x1="170" y1="118" x2="220" y2="85"/>' +
-            '<line data-agent="test-writer" class="ep-graph-line idle" x1="170" y1="145" x2="220" y2="185"/>' +
-            '<line data-agent="code-reviewer" class="ep-graph-line idle" x1="150" y1="155" x2="150" y2="205"/>' +
-            '<line data-agent="progress-tracker" class="ep-graph-line idle" x1="130" y1="118" x2="80" y2="85"/>' +
-          '</g>' +
-          '<g data-agent="orchestrator" class="ep-graph-node idle" transform="translate(150,130)"><circle r="28" fill="rgba(78,205,196,0.08)" stroke="#4ecdc4" stroke-width="2"/><text x="0" y="-3" text-anchor="middle" fill="#4ecdc4" font-size="14">🎯</text><text x="0" y="11" text-anchor="middle" fill="#4ecdc4" font-size="8" font-weight="700">Orchestrator</text></g>' +
-          '<g data-agent="planner" class="ep-graph-node idle" transform="translate(150,40)"><circle r="22" fill="rgba(52,152,219,0.08)" stroke="#3498db" stroke-width="2"/><text x="0" y="-2" text-anchor="middle" fill="#3498db" font-size="12">📋</text><text x="0" y="10" text-anchor="middle" fill="#3498db" font-size="7" font-weight="600">planner</text></g>' +
-          '<g data-agent="code-generator" class="ep-graph-node idle" transform="translate(250,65)"><circle r="22" fill="rgba(230,126,34,0.08)" stroke="#e67e22" stroke-width="2"/><text x="0" y="-2" text-anchor="middle" fill="#e67e22" font-size="12">⚡</text><text x="0" y="10" text-anchor="middle" fill="#e67e22" font-size="7" font-weight="600">code-gen</text></g>' +
-          '<g data-agent="test-writer" class="ep-graph-node idle" transform="translate(250,205)"><circle r="22" fill="rgba(155,89,182,0.08)" stroke="#9b59b6" stroke-width="2"/><text x="0" y="-2" text-anchor="middle" fill="#9b59b6" font-size="12">🧪</text><text x="0" y="10" text-anchor="middle" fill="#9b59b6" font-size="7" font-weight="600">test-writer</text></g>' +
-          '<g data-agent="code-reviewer" class="ep-graph-node idle" transform="translate(150,230)"><circle r="22" fill="rgba(241,196,15,0.08)" stroke="#f1c40f" stroke-width="2"/><text x="0" y="-2" text-anchor="middle" fill="#f1c40f" font-size="12">🔍</text><text x="0" y="10" text-anchor="middle" fill="#f1c40f" font-size="7" font-weight="600">reviewer</text></g>' +
-          '<g data-agent="progress-tracker" class="ep-graph-node idle" transform="translate(50,65)"><circle r="22" fill="rgba(39,174,96,0.08)" stroke="#27ae60" stroke-width="2"/><text x="0" y="-2" text-anchor="middle" fill="#27ae60" font-size="12">📊</text><text x="0" y="10" text-anchor="middle" fill="#27ae60" font-size="7" font-weight="600">progress</text></g>' +
-        '</svg>' +
+        '<div id="ep-graph-container-' + winId + '"></div>' +
         '<div class="ep-graph-status" id="ep-graph-status-' + winId + '">Kein aktiver Agent</div>' +
       '</div>' +
       /* ── Kanban Tab ── */
@@ -2469,6 +2466,7 @@ function editWin(winId) {
   loadEditChat(winId, appId);
   loadTemplateDropdown(winId);
   loadAccountsList(winId);
+  loadMcpServers(winId);
   loadAppLinks(winId);
   renderEditActions(winId, appId);
   document.getElementById('edit-inp-' + winId)?.focus();
@@ -2869,15 +2867,21 @@ async function loadAppLinks(winId) {
       links.push({ icon: '▲', label: 'Vercel', url: app.vercelUrl, badge: 'live', badgeText: 'Live' });
     }
 
-    // GitHub Pages — derive from source or template deploySteps
-    const ghPagesStep = (tpl?.deploySteps || []).find(s => s.action === 'github-pages');
-    if (ghPagesStep && app.source) {
-      const repoName = app.source.split('/').pop() || ('pulse-app-' + appId);
-      const ghPagesUrl = 'https://' + ghUser + '.github.io/' + repoName + '/';
-      links.push({ icon: '🌐', label: 'GitHub Pages', url: ghPagesUrl, badge: 'live', badgeText: 'Pages' });
-    } else if (ghPagesStep) {
-      const ghPagesUrl = 'https://' + ghUser + '.github.io/pulse-app-' + appId + '/';
-      links.push({ icon: '🌐', label: 'GitHub Pages', url: ghPagesUrl, badge: 'pending', badgeText: 'Noch nicht deployed' });
+    // GitHub Pages — from deployResults, pagesUrl, or template deploySteps
+    if (app.pagesUrl) {
+      links.push({ icon: '🌐', label: 'GitHub Pages', url: app.pagesUrl, badge: 'live', badgeText: 'Pages' });
+    } else {
+      const ghPagesStep = (tpl?.deploySteps || []).find(s => s.action === 'github-pages');
+      const ghPagesResult = (app.deployResults || []).find(r => r.action === 'github-pages' && r.success);
+      if (ghPagesResult?.url) {
+        links.push({ icon: '🌐', label: 'GitHub Pages', url: ghPagesResult.url, badge: 'live', badgeText: 'Pages' });
+      } else if (ghPagesStep && app.source) {
+        const repoName = app.source.split('/').pop() || ('pulse-app-' + appId);
+        const ghPagesUrl = 'https://' + ghUser + '.github.io/' + repoName + '/';
+        links.push({ icon: '🌐', label: 'GitHub Pages', url: ghPagesUrl, badge: 'live', badgeText: 'Pages' });
+      } else if (ghPagesStep) {
+        links.push({ icon: '🌐', label: 'GitHub Pages', url: null, badge: 'pending', badgeText: 'Noch nicht deployed' });
+      }
     }
 
     // Railway Dashboard
@@ -2890,11 +2894,15 @@ async function loadAppLinks(winId) {
     if (app.source) deployedActions.add('github-publish');
     if (app.deployUrl || app.railwayUrl) deployedActions.add('railway-deploy');
     if (app.vercelUrl) deployedActions.add('vercel-deploy');
-    if (ghPagesStep && app.source) deployedActions.add('github-pages');
+    if (app.pagesUrl) deployedActions.add('github-pages');
+    // Also check deployResults
+    for (const r of (app.deployResults || [])) {
+      if (r.success) deployedActions.add(r.action);
+    }
 
     for (const step of (tpl?.deploySteps || [])) {
       if (!deployedActions.has(step.action)) {
-        links.push({ icon: '⏳', label: step.name, url: null, badge: 'pending', badgeText: 'Ausstehend' });
+        links.push({ icon: '⏳', label: step.name + (step.stage > 1 ? ' (Stage ' + step.stage + ')' : ''), url: null, badge: 'pending', badgeText: 'Ausstehend' });
       }
     }
 
@@ -2918,6 +2926,37 @@ async function loadAppLinks(winId) {
   } catch (e) {
     console.error('loadAppLinks error:', e);
     el.innerHTML = '<div style="font-size:9px;color:var(--text-dim)">Fehler beim Laden</div>';
+  }
+}
+
+async function loadMcpServers(winId) {
+  const el = document.getElementById('ep-mcp-' + winId);
+  if (!el) return;
+  try {
+    const r = await fetch('/api/agent-system/mcp');
+    const data = await r.json();
+    const servers = data.mcpServers || {};
+    const names = Object.keys(servers);
+    if (!names.length) { el.innerHTML = '<div style="font-size:9px;color:var(--text-dim)">Keine MCP Server konfiguriert</div>'; return; }
+
+    const icons = { pulseos: '🟢', playwright: '🎭', railway: '🚂', slack: '💬', github: '📦', notion: '📝', linear: '📊', figma: '🎨' };
+
+    el.innerHTML = names.map(name => {
+      const cfg = servers[name];
+      const cmd = cfg.command ? cfg.command + ' ' + (cfg.args || []).join(' ') : cfg.url || '';
+      const icon = icons[name] || '🔌';
+      const shortCmd = cmd.length > 60 ? '...' + cmd.slice(-57) : cmd;
+      return '<div class="ep-mcp-card">' +
+        '<span class="ep-mcp-icon">' + icon + '</span>' +
+        '<div class="ep-mcp-info">' +
+          '<div class="ep-mcp-name">' + name + '</div>' +
+          '<div class="ep-mcp-cmd" title="' + cmd.replace(/"/g, '&quot;') + '">' + shortCmd + '</div>' +
+        '</div>' +
+        '<div class="ep-mcp-status" title="Konfiguriert"></div>' +
+      '</div>';
+    }).join('');
+  } catch (e) {
+    el.innerHTML = '<div style="font-size:9px;color:var(--text-dim)">Fehler: ' + e.message + '</div>';
   }
 }
 
@@ -3287,6 +3326,38 @@ async function loadEditChat(winId, appId) {
   } catch {}
 }
 
+async function runDeploy(winId, appId) {
+  const btn = document.getElementById('ep-deploy-btn-' + winId);
+  const status = document.getElementById('ep-deploy-status-' + winId);
+  if (!btn || !appId) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ Deploying...';
+  if (status) status.textContent = 'Deploy läuft...';
+  try {
+    const r = await fetch('/api/apps/' + appId + '/deploy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const d = await r.json();
+    if (d.deploySteps && d.results) {
+      const ok = d.results.filter(r => r.success).length;
+      const total = d.results.length;
+      btn.textContent = '🚀 Deploy (' + ok + '/' + total + ' ✅)';
+      const lines = d.results.map(r => (r.success ? '✅' : '❌') + ' ' + r.name + (r.url ? ' → ' + r.url : '')).join('<br>');
+      if (status) status.innerHTML = lines;
+      // Refresh links section
+      loadAppLinks(winId);
+    } else if (d.error) {
+      btn.textContent = '🚀 Deploy';
+      if (status) status.innerHTML = '❌ ' + d.error;
+    } else {
+      btn.textContent = '🚀 Deploy';
+      if (status) status.textContent = d.agentDeploy ? 'Deploy-Agent gestartet — siehe Chat' : 'Deploy ausgeführt';
+    }
+  } catch (e) {
+    btn.textContent = '🚀 Deploy';
+    if (status) status.textContent = '❌ ' + e.message;
+  }
+  btn.disabled = false;
+}
+
 async function sendEditDeploy(winId) {
   const panel = document.getElementById('edit-' + winId);
   const appId = panel?.dataset.appid;
@@ -3490,8 +3561,69 @@ async function saveEnvVars(appId, winId) {
 /*  Edit-Panel 2.0 — Tab System, Monitor, Graph, Kanban, Files, Git      */
 /* ═══════════════════════════════════════════════════════════════════════ */
 
-const EP_PHASES = ['Plan', 'Code', 'Test', 'Review', 'Git'];
-const EP_PHASE_AGENT = { Plan:'planner', Code:'code-generator', Test:'test-writer', Review:'code-reviewer', Git:'progress-tracker' };
+// Dynamic phases — loaded from template, with fallback defaults
+let EP_PHASES = ['Planning', 'Coding', 'Testing', 'Review', 'Git'];
+let EP_PHASE_AGENT = { Planning:'planner', Coding:'code-generator', Testing:'test-writer', Review:'code-reviewer', Git:'progress-tracker' };
+
+const EP_PHASE_ICONS = { planning:'📋', coding:'⚡', testing:'🧪', review:'🔍', deploy:'🚀', git:'📊' };
+const EP_PHASE_COLORS = { planning:'#3498db', coding:'#e67e22', testing:'#9b59b6', review:'#f1c40f', deploy:'#27ae60', git:'#95a5a6' };
+
+function epLoadPhaseConfig(winId) {
+  // Try to get template phases from cache
+  const tpls = _tplCache[winId] || [];
+  const panel = document.getElementById('edit-' + winId);
+  const appId = panel?.dataset?.appid;
+  if (!appId || !tpls.length) return;
+
+  // Find app's template
+  try {
+    const app = state.apps?.find(a => a.id === appId);
+    const tpl = app?.template ? tpls.find(t => t.id === app.template) : tpls[0];
+    if (tpl?.agents?.phases) {
+      const phases = tpl.agents.phases.map(p => p.charAt(0).toUpperCase() + p.slice(1));
+      if (tpl.deploySteps?.length) phases.push('Deploy');
+      phases.push('Git');
+      EP_PHASES = phases;
+
+      EP_PHASE_AGENT = {};
+      const agentMap = { Planning: tpl.agents.planAgent, Coding: tpl.agents.codeAgent, Testing: tpl.agents.testAgent, Review: tpl.agents.reviewAgent };
+      for (const p of phases) {
+        EP_PHASE_AGENT[p] = agentMap[p] || p.toLowerCase();
+      }
+      EP_PHASE_AGENT.Deploy = 'deploy-configurator';
+      EP_PHASE_AGENT.Git = 'progress-tracker';
+    }
+  } catch {}
+}
+
+function epRenderDynamicGraph(winId) {
+  const container = document.getElementById('ep-graph-container-' + winId);
+  if (!container) return;
+  epLoadPhaseConfig(winId);
+
+  const agents = EP_PHASES.filter(p => p !== 'Git'); // Git is implicit
+  const count = agents.length;
+  const cx = 150, cy = 140, radius = 90;
+
+  let lines = '', nodes = '';
+  agents.forEach((phase, i) => {
+    const angle = (-Math.PI / 2) + (i / count) * 2 * Math.PI;
+    const x = Math.round(cx + radius * Math.cos(angle));
+    const y = Math.round(cy + radius * Math.sin(angle));
+    const phaseLower = phase.toLowerCase();
+    const color = EP_PHASE_COLORS[phaseLower] || '#95a5a6';
+    const icon = EP_PHASE_ICONS[phaseLower] || '⚙';
+    const agentName = EP_PHASE_AGENT[phase] || phaseLower;
+
+    lines += '<line data-agent="' + agentName + '" class="ep-graph-line idle" x1="' + cx + '" y1="' + cy + '" x2="' + x + '" y2="' + y + '"/>';
+    nodes += '<g data-agent="' + agentName + '" class="ep-graph-node idle" transform="translate(' + x + ',' + y + ')"><circle r="22" fill="' + color + '11" stroke="' + color + '" stroke-width="2"/><text x="0" y="-2" text-anchor="middle" fill="' + color + '" font-size="12">' + icon + '</text><text x="0" y="10" text-anchor="middle" fill="' + color + '" font-size="7" font-weight="600">' + phase + '</text></g>';
+  });
+
+  container.innerHTML = '<svg class="ep-graph-svg" viewBox="0 0 300 280" xmlns="http://www.w3.org/2000/svg">' +
+    '<g class="ep-graph-lines">' + lines + '</g>' +
+    '<g data-agent="orchestrator" class="ep-graph-node idle" transform="translate(' + cx + ',' + cy + ')"><circle r="28" fill="rgba(78,205,196,0.08)" stroke="#4ecdc4" stroke-width="2"/><text x="0" y="-3" text-anchor="middle" fill="#4ecdc4" font-size="14">🎯</text><text x="0" y="11" text-anchor="middle" fill="#4ecdc4" font-size="8" font-weight="700">Orchestrator</text></g>' +
+    nodes + '</svg>';
+}
 
 function epFmtTime(ts) {
   if (!ts) return '--:--';
@@ -3508,16 +3640,18 @@ function epDetectPhase(worker) {
     const running = worker.phases.find(p => p.status === 'running');
     if (running) {
       const name = running.name.replace(/\+.*/, '').trim(); // "Git+PR" → "Git"
-      const mapped = { 'Plan': 'Plan', 'Code': 'Code', 'Tests': 'Test', 'Test': 'Test', 'Review': 'Review', 'Git': 'Git', 'Git+PR': 'Git' };
-      if (mapped[name]) return mapped[name];
+      const capitalized = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+      if (EP_PHASES.includes(capitalized)) return capitalized;
+      if (EP_PHASES.includes(name)) return name;
     }
     // If no running, find last done
     const donePhases = worker.phases.filter(p => p.status === 'done');
     if (donePhases.length) {
       const last = donePhases[donePhases.length - 1];
       const name = last.name.replace(/\+.*/, '').trim();
-      const mapped = { 'Plan': 'Plan', 'Code': 'Code', 'Tests': 'Test', 'Test': 'Test', 'Review': 'Review', 'Git': 'Git', 'Git+PR': 'Git' };
-      if (mapped[name]) return mapped[name];
+      const capitalized = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+      if (EP_PHASES.includes(capitalized)) return capitalized;
+      if (EP_PHASES.includes(name)) return name;
     }
   }
   // 2. Check explicit phase field
@@ -3565,6 +3699,7 @@ function epSwitchTab(winId, tabName) {
   epStopAllPolling(winId);
   if (tabName === 'monitor' || tabName === 'graph' || tabName === 'kanban') {
     epStartWorkerPoll(winId);
+    if (tabName === 'graph') epRenderDynamicGraph(winId);
     if (tabName === 'kanban') epLoadPlanMd(winId, panel.dataset.appid); // always fresh load
   } else if (tabName === 'git') {
     epStartGitPoll(winId);
@@ -3720,7 +3855,7 @@ function epRenderGraph(winId, workers) {
   if (!svg) return;
   const appId = panel.dataset.appid;
 
-  const allAgents = ['orchestrator', 'planner', 'code-generator', 'test-writer', 'code-reviewer', 'progress-tracker'];
+  const allAgents = ['orchestrator', ...Object.values(EP_PHASE_AGENT)];
   const active = new Set();
 
   // Only consider workers for THIS app that are actually running
@@ -3731,8 +3866,11 @@ function epRenderGraph(winId, workers) {
       active.add('orchestrator');
       w.phases.forEach(p => {
         if (p.status === 'running' || p.status === 'done') {
-          const mapped = { 'Plan':'planner', 'Code':'code-generator', 'Tests':'test-writer', 'Test':'test-writer', 'Review':'code-reviewer', 'Git':'progress-tracker', 'Git+PR':'progress-tracker' };
-          if (mapped[p.name]) active.add(mapped[p.name]);
+          // Dynamic mapping: phase name → agent name from EP_PHASE_AGENT
+          const pName = p.name.replace(/\+.*/, '').trim();
+          const pCapitalized = pName.charAt(0).toUpperCase() + pName.slice(1).toLowerCase();
+          const agent = EP_PHASE_AGENT[pCapitalized] || EP_PHASE_AGENT[pName] || pName.toLowerCase();
+          if (agent) active.add(agent);
         }
       });
     } else {

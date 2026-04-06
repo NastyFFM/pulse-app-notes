@@ -2662,6 +2662,9 @@ if (window.PulseOS) {
     // deploySteps: ordered deployment actions
     if (!tpl.deploySteps) tpl.deploySteps = [];
 
+    // progressive: deploy steps incrementally by stage
+    if (tpl.progressive === undefined) tpl.progressive = true;
+
     return tpl;
   }
 
@@ -3506,6 +3509,109 @@ if (window.PulseOS) {
     const appsFile = path.join(ROOT, 'data', 'apps.json');
     const appsData = safeReadJSON(appsFile, '{"apps":[]}');
     const app = (appsData.apps || []).find(a => a.id === appId);
+
+    // ── Template deploySteps — execute if available ──
+    if (app?.template) {
+      const tplData = safeReadJSON(path.join(ROOT, 'data', 'templates.json'), '{"templates":[]}');
+      const tpl = (tplData.templates || []).find(t => t.id === app.template);
+      if (tpl) applyTemplateDefaults(tpl);
+
+      if (tpl?.deploySteps?.length) {
+        const envData = safeReadJSON(path.join(ROOT, 'data', '.env.json'), '{}');
+        const vars = {
+          appId, appDir, githubUser, owner: githubUser,
+          repo: repoName, repoName,
+          ...envData
+        };
+        const sub = (str) => str.replace(/\$\{(\w+)\}/g, (_, k) => vars[k] || '');
+
+        // Filter by progressive stage
+        const currentStage = app.progressiveStage || tpl.progressiveStage || 1;
+        const steps = tpl.progressive !== false
+          ? tpl.deploySteps.filter(s => (s.stage || 1) <= currentStage)
+          : tpl.deploySteps;
+
+        if (steps.length) {
+          const results = [];
+          const chatFile = path.join(resolveAppDir(appId), 'data', 'edit-chat.json');
+
+          // Auto-init git repo if github-publish step exists and no .git yet
+          if (steps.some(s => s.action === 'github-publish') && !fs.existsSync(path.join(appDir, '.git'))) {
+            try { execSync('cd ' + appDir + ' && git init && git add -A && git commit -m "Initial commit from PulseOS"', { encoding: 'utf8', env: { ...process.env, PATH: extPath } }); } catch {}
+          }
+
+          // Helper: append message to edit-chat
+          const chatMsg = (text) => {
+            try {
+              const chat = safeReadJSON(chatFile, '[]');
+              const msgs = Array.isArray(chat) ? chat : (chat.messages || []);
+              msgs.push({ from: 'agent', text, time: new Date().toISOString() });
+              fs.writeFileSync(chatFile, JSON.stringify(Array.isArray(chat) ? msgs : { ...chat, messages: msgs }, null, 2));
+              broadcast(appId, { type: 'change', file: 'edit-chat.json', time: Date.now() });
+            } catch {}
+          };
+
+          chatMsg('🚀 **Deploy gestartet** — ' + steps.length + ' Step' + (steps.length > 1 ? 's' : '') + (tpl.progressive !== false ? ' (Stage ' + currentStage + ')' : ''));
+
+          for (let i = 0; i < steps.length; i++) {
+            const step = steps[i];
+            const stepNum = (i + 1) + '/' + steps.length;
+            chatMsg('⏳ Step ' + stepNum + ': ' + step.name + '...');
+
+            if (step.command) {
+              const cmd = sub(step.command);
+              try {
+                const output = execSync(cmd, { encoding: 'utf8', cwd: appDir, timeout: 120000, env: { ...process.env, PATH: extPath, ...envData } });
+                const url = step.urlPattern ? sub(step.urlPattern) : null;
+                results.push({ action: step.action, name: step.name, success: true, url, output: output.slice(0, 500) });
+                chatMsg('✅ Step ' + stepNum + ': ' + step.name + (url ? ' → ' + url : ''));
+
+                // Save URLs to app metadata
+                if (step.action === 'github-publish') {
+                  app.source = 'https://github.com/' + githubUser + '/' + repoName;
+                  app.publishedAt = new Date().toISOString();
+                }
+                if (step.action === 'github-pages' && url) {
+                  app.pagesUrl = url;
+                }
+                if ((step.action === 'railway-deploy' || step.action === 'vercel-deploy') && url) {
+                  app.deployUrl = url;
+                }
+              } catch (cmdErr) {
+                results.push({ action: step.action, name: step.name, success: false, error: cmdErr.message.slice(0, 300) });
+                chatMsg('❌ Step ' + stepNum + ': ' + step.name + ' fehlgeschlagen — ' + cmdErr.message.slice(0, 100));
+              }
+            } else {
+              // Step without command (manual/info step)
+              results.push({ action: step.action, name: step.name, success: true, note: 'manual' });
+              chatMsg('ℹ️ Step ' + stepNum + ': ' + step.name + ' — ' + (step.description || 'Manueller Schritt'));
+            }
+          }
+
+          // Save deploy results to app
+          app.deployResults = results;
+          const appsData2 = safeReadJSON(appsFile, '{"apps":[]}');
+          const appIdx = (appsData2.apps || []).findIndex(a => a.id === appId);
+          if (appIdx >= 0) {
+            if (app.source) appsData2.apps[appIdx].source = app.source;
+            if (app.publishedAt) appsData2.apps[appIdx].publishedAt = app.publishedAt;
+            if (app.pagesUrl) appsData2.apps[appIdx].pagesUrl = app.pagesUrl;
+            if (app.deployUrl) appsData2.apps[appIdx].deployUrl = app.deployUrl;
+            appsData2.apps[appIdx].deployResults = results;
+          }
+          fs.writeFileSync(appsFile, JSON.stringify(appsData2, null, 2));
+
+          // Summary
+          const successCount = results.filter(r => r.success).length;
+          const urls = results.filter(r => r.url).map(r => r.url);
+          chatMsg('🏁 **Deploy fertig** — ' + successCount + '/' + results.length + ' Steps erfolgreich' + (urls.length ? '\n\n' + urls.map(u => '🔗 ' + u).join('\n') : ''));
+
+          return jsonRes(res, { ok: true, deploySteps: true, results, urls });
+        }
+      }
+    }
+
+    // ── Fallback: Stack-based deploy (legacy) ──
     // Get stacks from app or from template
     let appStacks = (app?.stacks || []).filter(Boolean);
     if (!appStacks.length && app?.template) {
@@ -9452,18 +9558,43 @@ function copyInstall(repo, btn) {
         const useOrchestrator = orchestrated || (!editMode && !setupStack);
 
         if (useOrchestrator && !setupStack) {
-          // Load agent definitions
+          // Load agent definitions dynamically from template
           const agentsDir = path.join(ROOT, '.claude', 'agents');
           const loadAgent = (name) => {
-            try { return fs.readFileSync(path.join(agentsDir, name + '.md'), 'utf8'); } catch { return ''; }
+            try { const raw = fs.readFileSync(path.join(agentsDir, name + '.md'), 'utf8'); return raw.split('---').slice(2).join('---').trim(); } catch { return ''; }
           };
-          const codeGenAgent = loadAgent('code-generator');
-          const testAgent = loadAgent('test-writer');
-          const reviewAgent = loadAgent('code-reviewer');
-          const deployAgent = loadAgent('deploy-configurator');
+
+          // Load template config for this app
+          let tplConfig = null;
+          if (editAppId) {
+            try {
+              const ad = safeReadJSON(path.join(ROOT, 'data', 'apps.json'), '{"apps":[]}');
+              const ae = (ad.apps || []).find(a => a.id === editAppId);
+              if (ae?.template) {
+                const td = safeReadJSON(path.join(ROOT, 'data', 'templates.json'), '{"templates":[]}');
+                tplConfig = (td.templates || []).find(t => t.id === ae.template);
+                if (tplConfig) applyTemplateDefaults(tplConfig);
+              }
+            } catch {}
+          }
+          if (!tplConfig) {
+            tplConfig = { agents: { phases: ['planning', 'coding', 'testing', 'review'], planAgent: 'planner', codeAgent: 'code-generator', testAgent: 'test-writer', reviewAgent: 'code-reviewer' }, deploySteps: [] };
+            applyTemplateDefaults(tplConfig);
+          }
+
+          const phases = tplConfig.agents.phases || ['planning', 'coding', 'testing', 'review'];
+          const phaseAgentMap = { planning: 'planAgent', coding: 'codeAgent', testing: 'testAgent', review: 'reviewAgent' };
+          const totalPhases = phases.length + (tplConfig.deploySteps?.length ? 1 : 0) + 1; // +1 for git, +1 for deploy if steps
+
+          // Load agent definitions dynamically
+          const agentDefs = {};
+          for (const phase of phases) {
+            const agentKey = phaseAgentMap[phase];
+            const agentName = agentKey ? tplConfig.agents[agentKey] : null;
+            if (agentName) agentDefs[phase] = loadAgent(agentName);
+          }
 
           const resolvedDir = editMode && editAppId ? resolveAppDir(editAppId) : '';
-          // For standalone apps, resolve the external path
           let standaloneAppDir = '';
           if (standalone && editAppId) {
             try {
@@ -9486,7 +9617,69 @@ function copyInstall(repo, btn) {
             } catch {}
           }
 
-          workerPrompt = `Du bist der PulseOS Orchestrator. Du koordinierst 4 Phasen um ${isSelfImprove ? 'PulseOS zu verbessern' : 'eine App zu bauen'}.
+          // App directory context
+          const appDirContext = isStandaloneApp
+            ? `Diese App ist EIGENSTÄNDIG (eigenes Git-Repo).\nApp-Verzeichnis: ${standaloneAppDir}/\nWICHTIG: Alle Dateien in ${standaloneAppDir}/ erstellen/bearbeiten, NICHT in apps/!\nDer PulseOS-Server served diese App automatisch ueber /app/${editAppId}.`
+            : `Arbeite DIREKT im Hauptrepo (${ROOT}), damit der User die App LIVE sieht.\nApp-Verzeichnis: ${ROOT}/apps/${editAppId || '<name>'}/`;
+
+          // ── Build dynamic phase prompts ──
+          let phasePrompts = '';
+          let phaseIdx = 1;
+
+          for (const phase of phases) {
+            const phaseName = phase.charAt(0).toUpperCase() + phase.slice(1);
+            const agentInstructions = agentDefs[phase] || '';
+
+            phasePrompts += `\n### Phase ${phaseIdx}: ${phaseName}\n`;
+
+            if (phase === 'planning') {
+              phasePrompts += `Erstelle einen Plan fuer die Aufgabe.\n\n`;
+              phasePrompts += `1. Erstelle PLAN.md im App-Verzeichnis mit:\n   - Ziel der Aufgabe\n   - Technische Schritte\n   - Dateien die erstellt/geaendert werden\n2. Erstelle PROGRESS.md (leer, wird spaeter befuellt)\n3. Erstelle DECISIONS.md mit Architektur-Entscheidungen\n\n`;
+              if (agentInstructions) phasePrompts += agentInstructions + '\n\n';
+            } else if (phase === 'coding') {
+              phasePrompts += appDirContext + '\n\n';
+              if (agentInstructions) phasePrompts += agentInstructions + '\n\n';
+              else phasePrompts += 'Generiere den App-Code nach PulseOS-Konventionen.\n\n';
+            } else if (phase === 'testing') {
+              phasePrompts += `Du hast Playwright MCP verfuegbar (mcp__playwright Tools). Nutze es um zu SEHEN ob deine Aenderung funktioniert:\n\n`;
+              phasePrompts += `1. Oeffne http://localhost:3000 mit Playwright MCP (browser_navigate)\n2. Mache einen Screenshot (browser_screenshot) und pruefe visuell\n3. Interagiere mit dem UI (browser_click, browser_hover)\n4. Max 3 Fix-Runden wenn etwas nicht funktioniert\n\n`;
+              phasePrompts += `Bestehende Tests: npx playwright test\nBei roten Tests: Analysiere und fixe (max 3 Versuche).\n\n`;
+              if (agentInstructions) phasePrompts += agentInstructions + '\n\n';
+            } else if (phase === 'review') {
+              if (agentInstructions) phasePrompts += agentInstructions + '\n\n';
+              else phasePrompts += 'Review auf Qualitaet, Sicherheit und PulseOS-Konventionen.\n\n';
+              phasePrompts += `Bei BLOCKER: Gehe zurueck zur Coding-Phase, fixe das Problem. Max 3 Runden.\nBei GO: Weiter zur naechsten Phase.\n\n`;
+              if (isSelfImprove) phasePrompts += 'SAFETY bei System-Dateien:\n- Syntax-Check: node -c server.js\n- Playwright Tests MUESSEN gruen sein\n- NIEMALS data/*.json editieren\n\n';
+            } else {
+              // Custom phase — use agent instructions if available
+              if (agentInstructions) phasePrompts += agentInstructions + '\n\n';
+              else phasePrompts += `Fuehre die Phase "${phaseName}" aus.\n\n`;
+            }
+
+            phasePrompts += `Update Status: curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d '{"progress":"Phase ${phaseIdx}/${totalPhases} done: ${phaseName}","phases":[${phases.slice(0, phaseIdx).map(p => '{"name":"' + p + '","status":"done"}').join(',')},${phases.slice(phaseIdx).map(p => '{"name":"' + p + '","status":"pending"}').join(',')}]}'\n`;
+            phaseIdx++;
+          }
+
+          // Deploy phase (if template has deploySteps)
+          if (tplConfig.deploySteps?.length) {
+            phasePrompts += `\n### Phase ${phaseIdx}: Deploy\n`;
+            phasePrompts += `Das Template definiert folgende Deploy-Steps:\n`;
+            tplConfig.deploySteps.forEach((s, i) => {
+              phasePrompts += `${i + 1}. ${s.name} (${s.action})${s.urlPattern ? ' → ' + s.urlPattern : ''}${s.stage ? ' [Stage ' + s.stage + ']' : ''}\n`;
+            });
+            phasePrompts += `\nFuehre das Deployment aus:\ncurl -s -X POST http://localhost:3000/api/apps/${editAppId}/deploy -H 'Content-Type: application/json' -d '{}'\n`;
+            phasePrompts += `Das Ergebnis enthaelt die Live-URLs. Melde sie im Chat.\n\n`;
+            phaseIdx++;
+          }
+
+          // Git phase (always last)
+          phasePrompts += `\n### Phase ${phaseIdx}: Git + PR\n`;
+          phasePrompts += isStandaloneApp
+            ? `Die App hat ein EIGENES Git-Repo. Committe dort:\n\`\`\`\ncd ${standaloneAppDir}\ngit add -A\ngit commit -m "feat: <kurze beschreibung>"\ngh repo create pulse-app-${editAppId} --public --source=. --push 2>/dev/null || echo "Repo exists"\n\`\`\`\n`
+            : `Committe im Hauptrepo:\n\`\`\`\ncd ${ROOT}\ngit add apps/${editAppId || '*'}/ data/apps.json\ngit commit -m "feat: ${editAppId || 'new-app'} - <beschreibung>"\n\`\`\`\n`;
+          phasePrompts += `\nSetze Worker auf done:\ncurl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d '{"status":"done","progress":"Alle ${totalPhases} Phasen done"}'\n`;
+
+          workerPrompt = `Du bist der PulseOS Orchestrator. Du koordinierst ${totalPhases} Phasen um ${isSelfImprove ? 'PulseOS zu verbessern' : 'eine App zu bauen'}.
 
 AUFGABE: ${task}
 ARBEITSVERZEICHNIS: ${ROOT}
@@ -9494,61 +9687,14 @@ ${editAppId ? 'APP-ID: ' + editAppId : ''}
 WICHTIG: Alle Dateiaenderungen im angegebenen App-Verzeichnis machen.
 ${templateContent ? '\n--- TEMPLATE ---\n' + templateContent + '\n--- ENDE ---\n' : ''}${selfImproveContext}
 
-## Dein Workflow — 4 Phasen
-
-### Phase 1: Code generieren
-${isStandaloneApp
-  ? `Diese App ist EIGENSTÄNDIG (eigenes Git-Repo).
-App-Verzeichnis: ${standaloneAppDir}/
-WICHTIG: Alle Dateien in ${standaloneAppDir}/ erstellen/bearbeiten, NICHT in apps/!
-Der PulseOS-Server served diese App automatisch ueber /app/${editAppId}.`
-  : `Arbeite DIREKT im Hauptrepo (${ROOT}), damit der User die App LIVE sieht.
-App-Verzeichnis: ${ROOT}/apps/${editAppId || '<name>'}/`}
-
-${codeGenAgent ? codeGenAgent.split('---').slice(2).join('---').trim() : 'Generiere den App-Code nach PulseOS-Konventionen.'}
-
-Nach Phase 1: Update den Worker-Status:
-curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d '{"progress":"Phase 1/4 done: Code generiert","phases":[{"name":"Code","status":"done"}]}'
-
-### Phase 2: Visuell pruefen + Tests
-Du hast Playwright MCP verfuegbar (mcp__playwright Tools). Nutze es um zu SEHEN ob deine Aenderung funktioniert:
-
-1. Oeffne http://localhost:3000 mit Playwright MCP (browser_navigate)
-2. Mache einen Screenshot (browser_screenshot) und pruefe visuell ob die Aenderung sichtbar ist
-3. Interagiere mit dem UI (browser_click, browser_hover) um die Aenderung zu testen
-4. Wenn die Aenderung NICHT sichtbar/funktional ist:
-   - Analysiere warum (falscher Selektor? CSS Problem? JS Fehler?)
-   - Gehe zurueck zu Phase 1 und fixe es
-   - Pruefe erneut visuell
-   - Max 3 Runden, dann melde was nicht funktioniert
-
-Ausserdem: Bestehende Tests muessen gruen bleiben:
-npx playwright test
-Bei roten Tests: Analysiere und fixe (max 3 Versuche).
-
-Update Status: "Phase 2/4 done: Visuell geprueft + Tests gruen"
-
-### Phase 3: Review
-Pruefe den Code selbst nach diesen Kriterien:
-${reviewAgent ? reviewAgent.split('---').slice(2).join('---').trim() : 'Review auf Qualitaet und Sicherheit.'}
-
-Bei BLOCKER: Gehe zurueck zu Phase 1, fixe das Problem. Max 3 Runden.
-Bei GO: Weiter zu Phase 4.
-${isSelfImprove ? '\nSAFETY bei System-Dateien:\n- Syntax-Check nach jeder Aenderung: node -c server.js\n- Playwright Tests MUESSEN gruen sein: npx playwright test\n- Bei Test-Failure: git checkout -- <datei> und nochmal versuchen\n- NIEMALS data/*.json editieren (Runtime State)\n' : ''}
-Update Status: "Phase 3/4 done: Review GO"
-
-### Phase 4: Git + PR + Report
-` + (isStandaloneApp
-  ? 'Die App hat ein EIGENES Git-Repo. Committe dort:\n```\ncd ' + standaloneAppDir + '\ngit add -A\ngit commit -m "feat: <kurze beschreibung>"\n# Optional: GitHub Repo erstellen und pushen\ngh repo create pulse-app-' + editAppId + ' --public --source=. --push 2>/dev/null || echo "Repo exists or gh not configured"\n```'
-  : 'Erstelle einen Feature-Branch, committe die Aenderungen und erstelle einen PR:\n```\ncd ' + ROOT + '\nBRANCH_NAME="feature/' + (editAppId || 'new-app') + '-$(date +%s)"\ngit checkout -b "$BRANCH_NAME"\ngit add apps/' + (editAppId || '*') + '/\ngit add data/apps.json 2>/dev/null || true\ngit commit -m "feat: ' + (editAppId || 'new-app') + ' - <kurze beschreibung>"\ngit push -u origin "$BRANCH_NAME"\nPR_URL=$(gh pr create --title "feat: ' + (editAppId || 'new-app') + '" --body "## Phasen\\n- Phase 1: Code generiert\\n- Phase 2: Visuell geprueft\\n- Phase 3: Review GO\\n\\n PulseOS Worker ' + id + '" --base feature/app-maker-v2 2>&1 | tail -1)\ngit checkout -\necho "PR: $PR_URL"\n```') + `
-Setze status auf "done" mit PR-URL:
-curl -s http://localhost:3000/api/workers/${id} -X PUT -H 'Content-Type: application/json' -d "{\"status\":\"done\",\"progress\":\"Phase 4/4 done: PR erstellt\",\"result\":\"App gebaut und PR erstellt: $PR_URL\",\"branch\":\"$BRANCH_NAME\"}"
+## Dein Workflow — ${totalPhases} Phasen (${phases.join(' → ')}${tplConfig.deploySteps?.length ? ' → Deploy' : ''} → Git)
+${phasePrompts}
 
 FORTSCHRITT:
 - Aktualisiere den Worker-File regelmaessig: ${workerFile}
 - Setze "progress" auf den aktuellen Schritt
 - Fuege Log-Eintraege hinzu
-- Am Ende: "status": "done", "result": "Zusammenfassung + PR-URL"
+- Am Ende: "status": "done", "result": "Zusammenfassung"
 
 CSS-VARIABLEN: var(--bg), var(--text), var(--teal), var(--border), var(--bg-card)
 

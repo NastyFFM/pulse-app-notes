@@ -51,17 +51,20 @@
         "taskPattern": "## Tasks",
         "logLevel": "normal"
       },
+      "progressive": true,
       "deploySteps": [
         {
           "name": "GitHub Repo erstellen",
           "action": "github-publish",
-          "command": "gh repo create ${githubUser}/pulse-app-${appId} --public --source ${appDir} --push",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
           "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
         },
         {
           "name": "GitHub Pages aktivieren",
           "action": "github-pages",
-          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f source.branch=main -f source.path=/",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f source.branch=main -f source.path=/ 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f source.branch=main -f source.path=/ 2>/dev/null || echo pages-already-enabled",
           "description": "Aktiviert GitHub Pages — App ist live unter https://${githubUser}.github.io/pulse-app-${appId}/",
           "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
         }
@@ -113,17 +116,20 @@
         "taskPattern": "## Tasks",
         "logLevel": "normal"
       },
+      "progressive": false,
       "deploySteps": [
         {
           "name": "GitHub Repo erstellen",
           "action": "github-publish",
-          "command": "gh repo create ${githubUser}/pulse-app-${appId} --public --source ${appDir} --push",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
           "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
         },
         {
           "name": "GitHub Pages aktivieren",
           "action": "github-pages",
-          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f source.branch=main -f source.path=/",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f source.branch=main -f source.path=/ 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f source.branch=main -f source.path=/ 2>/dev/null || echo pages-already-enabled",
           "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
           "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
         }
@@ -214,12 +220,14 @@
         {
           "name": "GitHub Repo erstellen",
           "action": "github-publish",
-          "command": "gh repo create ${githubUser}/pulse-app-${appId} --public --source ${appDir} --push",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
           "description": "Code auf GitHub pushen"
         },
         {
           "name": "Vercel Deploy",
           "action": "vercel-deploy",
+          "stage": 2,
           "command": "vercel --prod --yes --token ${VERCEL_TOKEN}",
           "description": "Frontend auf Vercel deployen",
           "urlPattern": "https://pulse-app-${appId}.vercel.app"
@@ -227,14 +235,14 @@
         {
           "name": "Supabase Setup",
           "action": "supabase-setup",
-          "description": "Supabase-Projekt verbinden (URL + Anon Key in Env Vars)",
-          "when": "stage >= 3"
+          "stage": 3,
+          "description": "Supabase-Projekt verbinden (URL + Anon Key in Env Vars)"
         },
         {
           "name": "Stripe Integration",
           "action": "stripe-setup",
-          "description": "Stripe Webhook + Keys konfigurieren",
-          "when": "stage >= 4"
+          "stage": 4,
+          "description": "Stripe Webhook + Keys konfigurieren"
         }
       ]
     },
@@ -306,12 +314,14 @@
         {
           "name": "GitHub Repo erstellen",
           "action": "github-publish",
-          "command": "gh repo create ${githubUser}/pulse-app-${appId} --public --source ${appDir} --push",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
           "description": "Code auf GitHub pushen"
         },
         {
           "name": "Railway Deploy",
           "action": "railway-deploy",
+          "stage": 2,
           "command": "railway up --detach",
           "description": "Next.js App auf Railway deployen",
           "urlPattern": "https://pulse-app-${appId}-production.up.railway.app"
