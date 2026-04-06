@@ -1159,6 +1159,21 @@ body {
 .ep-account-status.missing { background:#e74c3c; box-shadow:0 0 4px rgba(231,76,60,0.5); }
 .ep-account-remove { font-size:9px; padding:2px 6px; border-radius:4px; border:1px solid rgba(231,76,60,0.3); background:transparent; color:#e74c3c; cursor:pointer; flex-shrink:0; opacity:0.6; transition:opacity 0.2s; }
 .ep-account-remove:hover { opacity:1; background:rgba(231,76,60,0.1); }
+.ep-agents-list { display:flex; flex-direction:column; gap:4px; }
+.ep-agent-card { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--bg); font-size:10px; cursor:pointer; transition:border-color 0.2s; }
+.ep-agent-card:hover { border-color:var(--teal); }
+.ep-agent-card.editing { border-color:var(--teal); background:var(--bg-card); }
+.ep-agent-icon { font-size:13px; width:18px; text-align:center; flex-shrink:0; }
+.ep-agent-info { flex:1; min-width:0; }
+.ep-agent-name { font-weight:600; color:var(--text); }
+.ep-agent-desc { font-size:8px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ep-agent-edit-area { margin-top:4px; }
+.ep-agent-edit-area textarea { width:100%; height:180px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:monospace; font-size:9px; padding:6px; resize:vertical; box-sizing:border-box; }
+.ep-agent-edit-actions { display:flex; gap:4px; margin-top:4px; justify-content:flex-end; }
+.ep-agent-edit-btn { padding:3px 10px; border-radius:4px; border:none; font-size:9px; cursor:pointer; }
+.ep-agent-save { background:var(--teal); color:var(--bg); font-weight:600; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+.ep-agent-cancel { background:var(--bg-card); color:var(--text-dim); border:1px solid var(--border); }
 .ep-mcp-list { display:flex; flex-direction:column; gap:4px; }
 .ep-mcp-card { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--bg); font-size:10px; }
 .ep-mcp-icon { font-size:13px; width:18px; text-align:center; flex-shrink:0; }
@@ -1197,6 +1212,9 @@ body {
 .ep-collapse-arrow { float:right; transition:transform 0.2s; font-size:10px; }
 .ep-settings-section:not(.ep-collapsed) .ep-collapse-arrow { transform:rotate(90deg); }
 .ep-settings-section.ep-collapsed .ep-collapse-body { display:none; }
+.ep-filter-input { width:100%; padding:4px 6px; margin-bottom:4px; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:9px; outline:none; box-sizing:border-box; }
+.ep-filter-input:focus { border-color:var(--teal); }
+.ep-filter-input::placeholder { color:var(--text-dim); }
 .ep-info-label { color:var(--text-dim); font-weight:600; min-width:45px; display:inline-block; }
 
 /* Resize handles */
@@ -2352,14 +2370,30 @@ function openApp(app, opts) {
           '<div id="ep-tpl-details-' + winId + '" class="ep-tpl-details"></div>' +
         '</div>' +
         /* Accounts / Services */
-        '<div class="ep-settings-section">' +
-          '<div class="ep-settings-title">Accounts &amp; Services</div>' +
-          '<div id="ep-accounts-' + winId + '" class="ep-accounts-list">Laden...</div>' +
+        '<div class="ep-settings-section ep-collapsed">' +
+          '<div class="ep-settings-title ep-collapse-toggle" onclick="this.parentElement.classList.toggle(\'ep-collapsed\')" style="cursor:pointer;user-select:none;">Accounts &amp; Services <span class="ep-collapse-arrow">▸</span></div>' +
+          '<div class="ep-collapse-body" id="ep-accounts-' + winId + '" class="ep-accounts-list">Laden...</div>' +
+        '</div>' +
+        /* Agents */
+        '<div class="ep-settings-section ep-collapsed">' +
+          '<div class="ep-settings-title ep-collapse-toggle" onclick="this.parentElement.classList.toggle(\'ep-collapsed\')" style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;"><span>Agents <span class="ep-collapse-arrow">▸</span></span><button class="ep-settings-btn-sm" onclick="event.stopPropagation();showCreateAgent(\'' + winId + '\')" style="font-size:8px;padding:1px 6px;">+ Neu</button></div>' +
+          '<div class="ep-collapse-body">' +
+            '<input type="text" class="ep-filter-input" placeholder="Agent filtern..." oninput="epFilterList(this,\'ep-agents-' + winId + '\')">' +
+            '<div id="ep-agents-' + winId + '" class="ep-agents-list">Laden...</div>' +
+          '</div>' +
+        '</div>' +
+        /* Skills */
+        '<div class="ep-settings-section ep-collapsed">' +
+          '<div class="ep-settings-title ep-collapse-toggle" onclick="this.parentElement.classList.toggle(\'ep-collapsed\')" style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;"><span>Skills <span class="ep-collapse-arrow">▸</span></span><button class="ep-settings-btn-sm" onclick="event.stopPropagation();showCreateSkill(\'' + winId + '\')" style="font-size:8px;padding:1px 6px;">+ Neu</button></div>' +
+          '<div class="ep-collapse-body">' +
+            '<input type="text" class="ep-filter-input" placeholder="Skill filtern..." oninput="epFilterList(this,\'ep-skills-' + winId + '\')">' +
+            '<div id="ep-skills-' + winId + '" class="ep-agents-list">Laden...</div>' +
+          '</div>' +
         '</div>' +
         /* MCP Servers */
-        '<div class="ep-settings-section">' +
-          '<div class="ep-settings-title">MCP Servers</div>' +
-          '<div id="ep-mcp-' + winId + '" class="ep-mcp-list">Laden...</div>' +
+        '<div class="ep-settings-section ep-collapsed">' +
+          '<div class="ep-settings-title ep-collapse-toggle" onclick="this.parentElement.classList.toggle(\'ep-collapsed\')" style="cursor:pointer;user-select:none;">MCP Servers <span class="ep-collapse-arrow">▸</span></div>' +
+          '<div class="ep-collapse-body" id="ep-mcp-' + winId + '" class="ep-mcp-list">Laden...</div>' +
         '</div>' +
         /* Environment Variables (collapsed by default) */
         '<div class="ep-settings-section ep-collapsed">' +
@@ -2370,17 +2404,19 @@ function openApp(app, opts) {
           '</div>' +
         '</div>' +
         /* App Links (dynamic) */
-        '<div class="ep-settings-section">' +
-          '<div class="ep-settings-title">Links &amp; Deployment</div>' +
-          '<div id="ep-app-links-' + winId + '" class="ep-app-links">Laden...</div>' +
+        '<div class="ep-settings-section ep-collapsed">' +
+          '<div class="ep-settings-title ep-collapse-toggle" onclick="this.parentElement.classList.toggle(\'ep-collapsed\')" style="cursor:pointer;user-select:none;">Links &amp; Deployment <span class="ep-collapse-arrow">▸</span></div>' +
+          '<div class="ep-collapse-body" id="ep-app-links-' + winId + '" class="ep-app-links">Laden...</div>' +
         '</div>' +
         /* App Info */
-        '<div class="ep-settings-section">' +
-          '<div class="ep-settings-title">App Info</div>' +
-          '<div class="ep-settings-info">' +
-            '<div><span class="ep-info-label">ID:</span> ' + app.id + '</div>' +
-            '<div><span class="ep-info-label">Name:</span> ' + (app.name || app.id) + '</div>' +
-            (app.standalone ? '<div><span class="ep-info-label">Typ:</span> Standalone (eigenes Repo)</div>' : '<div><span class="ep-info-label">Typ:</span> System-App</div>') +
+        '<div class="ep-settings-section ep-collapsed">' +
+          '<div class="ep-settings-title ep-collapse-toggle" onclick="this.parentElement.classList.toggle(\'ep-collapsed\')" style="cursor:pointer;user-select:none;">App Info <span class="ep-collapse-arrow">▸</span></div>' +
+          '<div class="ep-collapse-body">' +
+            '<div class="ep-settings-info">' +
+              '<div><span class="ep-info-label">ID:</span> ' + app.id + '</div>' +
+              '<div><span class="ep-info-label">Name:</span> ' + (app.name || app.id) + '</div>' +
+              (app.standalone ? '<div><span class="ep-info-label">Typ:</span> Standalone (eigenes Repo)</div>' : '<div><span class="ep-info-label">Typ:</span> System-App</div>') +
+            '</div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -2466,6 +2502,8 @@ function editWin(winId) {
   loadEditChat(winId, appId);
   loadTemplateDropdown(winId);
   loadAccountsList(winId);
+  loadAgentsList(winId);
+  loadSkillsList(winId);
   loadMcpServers(winId);
   loadAppLinks(winId);
   renderEditActions(winId, appId);
@@ -2535,7 +2573,78 @@ function renderTemplateDetails(winId, tpl) {
       (tpl.deploySteps || []).map((s, i) =>
         '<div class="ep-tpl-row"><span>' + (i+1) + '. ' + s.name + '</span><span class="ep-tpl-val">' + s.action + '</span></div>' +
         (s.urlPattern ? '<div class="ep-tpl-row"><span></span><span class="ep-tpl-val" style="font-size:8px;color:var(--teal);">' + s.urlPattern + '</span></div>' : '')
-      ).join('') + '</div>' : '');
+      ).join('') + '</div>' : '') +
+    renderTplMiniGraph(tpl);
+}
+
+function renderTplMiniGraph(tpl) {
+  const phases = (tpl.agents?.phases || []).map(p => p.charAt(0).toUpperCase() + p.slice(1));
+  if (tpl.deploySteps?.length) phases.push('Deploy');
+  phases.push('Git');
+  const count = phases.length;
+  if (!count) return '';
+
+  const cx = 100, cy = 95, radius = 65;
+  const colors = { Planning:'#3498db', Coding:'#e67e22', Testing:'#9b59b6', Review:'#f1c40f', Deploy:'#27ae60', Git:'#95a5a6' };
+  const icons = { Planning:'📋', Coding:'⚡', Testing:'🧪', Review:'🔍', Deploy:'🚀', Git:'📊' };
+
+  // Map phases to agent names for labels
+  const agentMap = { Planning: tpl.agents?.planAgent, Coding: tpl.agents?.codeAgent, Testing: tpl.agents?.testAgent, Review: tpl.agents?.reviewAgent, Deploy: 'deploy', Git: 'git' };
+
+  let lines = '', nodes = '';
+  phases.forEach((phase, i) => {
+    const angle = (-Math.PI / 2) + (i / count) * 2 * Math.PI;
+    const x = Math.round(cx + radius * Math.cos(angle));
+    const y = Math.round(cy + radius * Math.sin(angle));
+    const color = colors[phase] || '#95a5a6';
+    const icon = icons[phase] || '⚙';
+    const agentName = agentMap[phase] || phase.toLowerCase();
+    lines += '<line x1="' + cx + '" y1="' + cy + '" x2="' + x + '" y2="' + y + '" stroke="' + color + '" stroke-width="1" opacity="0.3"/>';
+    nodes += '<g transform="translate(' + x + ',' + y + ')"><circle r="16" fill="' + color + '11" stroke="' + color + '" stroke-width="1.5"/><text x="0" y="-1" text-anchor="middle" fill="' + color + '" font-size="10">' + icon + '</text><text x="0" y="9" text-anchor="middle" fill="' + color + '" font-size="5" font-weight="600">' + agentName + '</text></g>';
+  });
+
+  // Check for missing agents
+  const agentNames = [tpl.agents?.planAgent, tpl.agents?.codeAgent, tpl.agents?.testAgent, tpl.agents?.reviewAgent].filter(Boolean);
+  let missingHtml = '';
+  // We'll check asynchronously and update — for now show the graph
+  // The missing check happens in renderTemplateDetails caller via _checkMissingAgents
+
+  return '<div class="ep-tpl-group"><div class="ep-tpl-group-title">Agent Graph</div>' +
+    '<svg viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-height:160px;">' +
+    lines +
+    '<g transform="translate(' + cx + ',' + cy + ')"><circle r="20" fill="rgba(78,205,196,0.08)" stroke="#4ecdc4" stroke-width="1.5"/><text x="0" y="-2" text-anchor="middle" fill="#4ecdc4" font-size="11">🎯</text><text x="0" y="8" text-anchor="middle" fill="#4ecdc4" font-size="5.5" font-weight="700">Orchestrator</text></g>' +
+    nodes + '</svg>' +
+    '<div class="ep-tpl-missing-agents"></div>' +
+    '</div>';
+}
+
+// Check missing agents async and show warnings
+async function checkMissingAgents(winId, tpl) {
+  const container = document.querySelector('#ep-tpl-details-' + winId + ' .ep-tpl-missing-agents');
+  if (!container) return;
+  try {
+    const r = await fetch('/api/agent-system/agents');
+    const data = await r.json();
+    const existing = new Set((data.agents || []).map(a => a.name));
+    const referenced = [tpl.agents?.planAgent, tpl.agents?.codeAgent, tpl.agents?.testAgent, tpl.agents?.reviewAgent].filter(Boolean);
+    const missing = referenced.filter(n => !existing.has(n));
+    if (missing.length) {
+      container.innerHTML = missing.map(name =>
+        '<div style="display:flex;align-items:center;gap:4px;padding:3px 0;font-size:9px;">' +
+          '<span style="color:#e74c3c;">⚠ Agent "' + name + '" fehlt</span>' +
+          '<button onclick="prefillCreateAgent(\'' + winId + '\',\'' + name + '\')" style="font-size:8px;padding:1px 6px;border-radius:3px;border:1px solid #e74c3c;background:none;color:#e74c3c;cursor:pointer;">Erstellen</button>' +
+        '</div>'
+      ).join('');
+    }
+  } catch {}
+}
+
+function prefillCreateAgent(winId, name) {
+  showCreateAgent(winId);
+  setTimeout(() => {
+    const inp = document.getElementById('ep-agent-new-name-' + winId);
+    if (inp) inp.value = name;
+  }, 100);
 }
 
 async function showEditTemplate(winId) {
@@ -2929,6 +3038,464 @@ async function loadAppLinks(winId) {
   }
 }
 
+async function loadAgentsList(winId) {
+  const el = document.getElementById('ep-agents-' + winId);
+  if (!el) return;
+  try {
+    const [agentsRes, tplRes] = await Promise.all([
+      fetch('/api/agent-system/agents').then(r => r.json()),
+      fetch('/api/templates').then(r => r.json())
+    ]);
+    const agents = agentsRes.agents || [];
+    const templates = tplRes.templates || [];
+    if (!agents.length) { el.innerHTML = '<div style="font-size:9px;color:var(--text-dim)">Keine Agents gefunden</div>'; return; }
+
+    // Build usage map: agent name → list of template names
+    const usageMap = {};
+    for (const t of templates) {
+      const a = t.agents || {};
+      for (const agentName of [a.planAgent, a.codeAgent, a.testAgent, a.reviewAgent].filter(Boolean)) {
+        if (!usageMap[agentName]) usageMap[agentName] = [];
+        usageMap[agentName].push(t.name || t.id);
+      }
+    }
+
+    const icons = { planner:'📋', 'code-generator':'⚡', 'test-writer':'🧪', 'code-reviewer':'🔍', 'deploy-configurator':'🚀', 'progress-tracker':'📊' };
+
+    el.innerHTML = agents.map(a => {
+      const icon = icons[a.name] || '🤖';
+      const used = usageMap[a.name] || [];
+      const usedHint = used.length ? used.length + ' Template' + (used.length > 1 ? 's' : '') : '';
+      return '<div class="ep-agent-card" id="ep-agent-' + winId + '-' + a.name + '">' +
+        '<span class="ep-agent-icon" onclick="toggleAgentEdit(\'' + winId + '\',\'' + a.name + '\')">' + icon + '</span>' +
+        '<div class="ep-agent-info" onclick="toggleAgentEdit(\'' + winId + '\',\'' + a.name + '\')">' +
+          '<div class="ep-agent-name">' + a.name + (usedHint ? ' <span style="font-size:8px;color:var(--text-dim);font-weight:400;">(' + usedHint + ')</span>' : '') +
+            ((a.skills && a.skills.length) ? ' ' + a.skills.map(s => '<span style="font-size:7px;padding:0 3px;border-radius:2px;background:rgba(78,205,196,0.12);color:var(--teal);">' + s + '</span>').join(' ') : '') +
+          '</div>' +
+          '<div class="ep-agent-desc">' + (a.description || '').slice(0, 80) + '</div>' +
+        '</div>' +
+        '<button onclick="event.stopPropagation(); deleteAgent(\'' + winId + '\',\'' + a.name + '\')" style="border:none;background:none;color:' + (used.length ? 'var(--text-dim)' : '#e74c3c') + ';cursor:pointer;font-size:11px;padding:2px 4px;opacity:0.5;" title="' + (used.length ? 'Verwendet von: ' + used.join(', ') : 'Agent löschen') + '">✕</button>' +
+      '</div>';
+    }).join('');
+  } catch (e) {
+    el.innerHTML = '<div style="font-size:9px;color:var(--text-dim)">Fehler: ' + e.message + '</div>';
+  }
+}
+
+async function toggleAgentEdit(winId, agentName) {
+  const card = document.getElementById('ep-agent-' + winId + '-' + agentName);
+  if (!card) return;
+  // Toggle off if already editing
+  const existing = card.querySelector('.ep-agent-edit-area');
+  if (existing) { existing.remove(); card.classList.remove('editing'); return; }
+  // Close other open editors
+  card.parentElement.querySelectorAll('.ep-agent-edit-area').forEach(e => e.remove());
+  card.parentElement.querySelectorAll('.ep-agent-card').forEach(c => c.classList.remove('editing'));
+
+  card.classList.add('editing');
+  // Load agent content + all skills
+  try {
+    const [agentRes, skillsRes] = await Promise.all([
+      fetch('/api/agent-system/agents/' + agentName).then(r => r.json()),
+      fetch('/api/agent-system/skills').then(r => r.json())
+    ]);
+    const content = agentRes.content || '';
+    const allSkills = skillsRes.skills || [];
+    // Parse assigned skills from frontmatter
+    const skillsMatch = content.match(/skills:\n((?:\s+-\s+.+\n)*)/);
+    const assignedSkills = new Set();
+    if (skillsMatch) {
+      skillsMatch[1].replace(/\s+-\s+(.+)/g, (_, s) => assignedSkills.add(s.trim()));
+    }
+
+    const skillListId = 'ep-skill-list-' + winId + '-' + agentName;
+    const skillCheckboxes = allSkills.length
+      ? '<div style="margin-top:4px;"><div style="font-size:8px;color:var(--text-dim);font-weight:600;margin-bottom:2px;">SKILLS ZUWEISEN:</div>' +
+        '<input type="text" class="ep-filter-input" placeholder="Skill filtern..." oninput="epFilterList(this,\'' + skillListId + '\')" style="margin-bottom:3px;">' +
+        '<div id="' + skillListId + '" style="display:flex;flex-wrap:wrap;gap:2px;max-height:120px;overflow-y:auto;">' +
+        allSkills.map(s =>
+          '<label style="display:inline-flex;align-items:center;gap:3px;font-size:8px;color:var(--text-dim);padding:2px 4px;border-radius:3px;border:1px solid var(--border);cursor:pointer;">' +
+          '<input type="checkbox" class="ep-agent-skill-cb" data-skill="' + s.id + '"' + (assignedSkills.has(s.id) ? ' checked' : '') + ' style="width:10px;height:10px;"> ' + (s.name || s.id) +
+          '</label>'
+        ).join('') +
+        '</div></div>'
+      : '';
+
+    const area = document.createElement('div');
+    area.className = 'ep-agent-edit-area';
+    area.innerHTML =
+      '<textarea id="ep-agent-txt-' + winId + '-' + agentName + '">' + content.replace(/</g, '&lt;') + '</textarea>' +
+      skillCheckboxes +
+      '<div style="margin-top:4px;"><input id="ep-agent-improve-' + winId + '-' + agentName + '" placeholder="Anweisung zur Ueberarbeitung (z.B. \'Mache ihn strenger beim Review\')" style="width:100%;padding:4px 6px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:9px;box-sizing:border-box;"></div>' +
+      '<div id="ep-agent-edit-status-' + winId + '-' + agentName + '" style="font-size:8px;color:var(--text-dim);margin-top:2px;min-height:12px;"></div>' +
+      '<div class="ep-agent-edit-actions">' +
+        '<button class="ep-agent-edit-btn ep-agent-cancel" onclick="event.stopPropagation(); toggleAgentEdit(\'' + winId + '\',\'' + agentName + '\')">Abbrechen</button>' +
+        '<button class="ep-agent-edit-btn" onclick="event.stopPropagation(); regenerateAgent(\'' + winId + '\',\'' + agentName + '\')" style="background:var(--bg-card);color:var(--text-dim);border:1px solid var(--border);">Ueberarbeiten</button>' +
+        '<button class="ep-agent-edit-btn ep-agent-save" onclick="event.stopPropagation(); saveAgent(\'' + winId + '\',\'' + agentName + '\')">Speichern</button>' +
+      '</div>';
+    area.onclick = (e) => e.stopPropagation();
+    card.appendChild(area);
+  } catch (e) { console.error('toggleAgentEdit error:', e); }
+}
+
+async function regenerateAgent(winId, agentName) {
+  const textarea = document.getElementById('ep-agent-txt-' + winId + '-' + agentName);
+  const improveInput = document.getElementById('ep-agent-improve-' + winId + '-' + agentName);
+  const statusEl = document.getElementById('ep-agent-edit-status-' + winId + '-' + agentName);
+  const instruction = improveInput?.value.trim() || 'Verbessere diesen Agent';
+  if (!textarea) return;
+  statusEl.innerHTML = '<span style="animation:pulse 1s infinite;">Claude ueberarbeitet...</span>';
+  statusEl.style.color = 'var(--teal)';
+  try {
+    const r = await fetch('/api/agent-system/agents/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: instruction + '\n\nUEBERARBEITE DIESEN BESTEHENDEN AGENT:\n' + textarea.value })
+    });
+    const d = await r.json();
+    if (!d.ok || !d.sessionId) { statusEl.textContent = 'Fehler: ' + (d.error || 'fehlgeschlagen'); statusEl.style.color = '#e74c3c'; return; }
+    const pollId = setInterval(async () => {
+      try {
+        const pr = await fetch('/api/agent-system/agents/generate/' + d.sessionId);
+        const ps = await pr.json();
+        if (ps.output) { textarea.value = ps.output; textarea.scrollTop = textarea.scrollHeight; }
+        if (ps.status === 'done' || ps.status === 'error') {
+          clearInterval(pollId);
+          if (ps.status === 'done') { textarea.value = ps.result || ps.output; statusEl.textContent = 'Ueberarbeitet! Prüfe und klicke Speichern.'; }
+          else { statusEl.textContent = 'Fehler: ' + (ps.error || 'fehlgeschlagen'); statusEl.style.color = '#e74c3c'; }
+        }
+      } catch {}
+    }, 500);
+    setTimeout(() => clearInterval(pollId), 60000);
+  } catch (e) { statusEl.textContent = 'Fehler: ' + e.message; statusEl.style.color = '#e74c3c'; }
+}
+
+async function saveAgent(winId, agentName) {
+  const textarea = document.getElementById('ep-agent-txt-' + winId + '-' + agentName);
+  if (!textarea) return;
+  let content = textarea.value;
+
+  // Collect checked skills from checkboxes
+  const card = document.getElementById('ep-agent-' + winId + '-' + agentName);
+  const checkedSkills = [];
+  if (card) {
+    card.querySelectorAll('.ep-agent-skill-cb:checked').forEach(cb => checkedSkills.push(cb.dataset.skill));
+  }
+
+  // Update skills in frontmatter
+  if (content.includes('---')) {
+    // Remove existing skills block
+    content = content.replace(/skills:\n((?:\s+-\s+.+\n)*)/, '');
+    // Insert skills before closing ---
+    if (checkedSkills.length) {
+      const skillsBlock = 'skills:\n' + checkedSkills.map(s => '  - ' + s).join('\n') + '\n';
+      content = content.replace(/---\n\n/, '---\n' + skillsBlock + '---\n\n');
+      // If that didn't work (no double newline), try another pattern
+      if (!content.includes(skillsBlock)) {
+        const parts = content.split('---');
+        if (parts.length >= 3) {
+          content = '---' + parts[1] + skillsBlock + '---' + parts.slice(2).join('---');
+        }
+      }
+    }
+  }
+
+  try {
+    const r = await fetch('/api/agent-system/agents/' + agentName, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      toggleAgentEdit(winId, agentName);
+      loadAgentsList(winId);
+    } else { alert('Fehler: ' + (d.error || 'Unbekannt')); }
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+async function deleteAgent(winId, agentName) {
+  try {
+    const r = await fetch('/api/agent-system/agents/' + agentName, { method: 'DELETE' });
+    const d = await r.json();
+    if (d.ok) {
+      loadAgentsList(winId);
+    } else if (d.usedBy) {
+      alert('Agent "' + agentName + '" kann nicht gelöscht werden.\n\nVerwendet von Templates:\n• ' + d.usedBy.join('\n• '));
+    } else {
+      alert('Fehler: ' + (d.error || 'Unbekannt'));
+    }
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+function showCreateAgent(winId) {
+  const el = document.getElementById('ep-agents-' + winId);
+  if (!el) return;
+  if (document.getElementById('ep-agent-create-' + winId)) { document.getElementById('ep-agent-create-' + winId).remove(); return; }
+
+  const form = document.createElement('div');
+  form.id = 'ep-agent-create-' + winId;
+  form.style.cssText = 'margin-bottom:6px;padding:8px;background:var(--bg);border:1px solid var(--teal);border-radius:6px;font-size:10px;';
+  form.innerHTML =
+    '<div style="font-size:9px;font-weight:600;color:var(--teal);margin-bottom:6px;">NEUER AGENT</div>' +
+    '<textarea id="ep-agent-prompt-' + winId + '" placeholder="Beschreibe was der Agent tun soll...\n\nBeispiele:\n• Ein Agent der API-Dokumentation generiert\n• Ein Security-Auditor der Code auf Schwachstellen prueft\n• Ein Performance-Tester der Ladezeiten misst" style="width:100%;height:80px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:10px;padding:8px;resize:vertical;box-sizing:border-box;font-family:inherit;"></textarea>' +
+    '<div id="ep-agent-preview-' + winId + '" style="display:none;margin-top:6px;">' +
+      '<div style="font-size:9px;font-weight:600;color:var(--text-dim);margin-bottom:3px;">GENERIERTES ERGEBNIS — pruefen und anpassen:</div>' +
+      '<textarea id="ep-agent-gen-content-' + winId + '" style="width:100%;height:200px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:9px;padding:6px;resize:vertical;box-sizing:border-box;"></textarea>' +
+    '</div>' +
+    '<div id="ep-agent-gen-status-' + winId + '" style="font-size:9px;color:var(--text-dim);margin-top:4px;min-height:14px;"></div>' +
+    '<div class="ep-agent-edit-actions" style="margin-top:6px;">' +
+      '<button class="ep-agent-edit-btn ep-agent-cancel" onclick="document.getElementById(\'ep-agent-create-' + winId + '\').remove()">Abbrechen</button>' +
+      '<button class="ep-agent-edit-btn ep-agent-save" id="ep-agent-gen-btn-' + winId + '" onclick="generateAgent(\'' + winId + '\')">Generieren</button>' +
+    '</div>';
+  el.insertBefore(form, el.firstChild);
+  document.getElementById('ep-agent-prompt-' + winId).focus();
+}
+
+async function generateAgent(winId) {
+  const promptEl = document.getElementById('ep-agent-prompt-' + winId);
+  const previewEl = document.getElementById('ep-agent-preview-' + winId);
+  const contentEl = document.getElementById('ep-agent-gen-content-' + winId);
+  const statusEl = document.getElementById('ep-agent-gen-status-' + winId);
+  const btn = document.getElementById('ep-agent-gen-btn-' + winId);
+  const prompt = promptEl?.value.trim();
+  if (!prompt) return;
+
+  // If preview is visible, this is the "Speichern" step
+  if (previewEl.style.display !== 'none' && contentEl.value.trim()) {
+    let content = contentEl.value.trim();
+    // Strip markdown code fences if Claude wrapped it
+    if (content.startsWith('```')) content = content.replace(/^```\w*\n/, '').replace(/\n```$/, '').trim();
+    // Parse name from frontmatter
+    const nameMatch = content.match(/name:\s*(.+)/);
+    const name = nameMatch ? nameMatch[1].trim().replace(/['"]/g, '') : prompt.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30);
+    try {
+      // Try POST first (new agent), fall back to PUT (existing)
+      let r = await fetch('/api/agent-system/agents', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, content })
+      });
+      let d = await r.json();
+      if (d.error && d.error.includes('existiert bereits')) {
+        // Agent exists — update it
+        r = await fetch('/api/agent-system/agents/' + name, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content })
+        });
+        d = await r.json();
+      }
+      if (d.ok) {
+        document.getElementById('ep-agent-create-' + winId)?.remove();
+        loadAgentsList(winId);
+      } else {
+        statusEl.textContent = 'Fehler: ' + (d.error || 'Unbekannt'); statusEl.style.color = '#e74c3c';
+      }
+    } catch (e) { statusEl.textContent = 'Fehler: ' + e.message; statusEl.style.color = '#e74c3c'; }
+    return;
+  }
+
+  // Start Claude CLI generation (streaming)
+  btn.textContent = 'Generiere...';
+  btn.disabled = true;
+  statusEl.innerHTML = '<span style="animation:pulse 1s infinite;">Claude generiert den Agent...</span>';
+  statusEl.style.color = 'var(--teal)';
+  previewEl.style.display = '';
+  contentEl.value = '';
+
+  try {
+    const r = await fetch('/api/agent-system/agents/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+    const d = await r.json();
+    if (!d.ok || !d.sessionId) {
+      statusEl.textContent = 'Fehler: ' + (d.error || 'Start fehlgeschlagen');
+      statusEl.style.color = '#e74c3c';
+      btn.textContent = 'Generieren'; btn.disabled = false;
+      return;
+    }
+    // Poll for streaming output
+    const pollId = setInterval(async () => {
+      try {
+        const pr = await fetch('/api/agent-system/agents/generate/' + d.sessionId);
+        const ps = await pr.json();
+        if (ps.output) {
+          contentEl.value = ps.output;
+          contentEl.scrollTop = contentEl.scrollHeight;
+          statusEl.innerHTML = '<span style="animation:pulse 1s infinite;">Claude schreibt... (' + ps.output.length + ' Zeichen)</span>';
+        }
+        if (ps.status === 'done' || ps.status === 'error') {
+          clearInterval(pollId);
+          if (ps.status === 'done') {
+            contentEl.value = ps.result || ps.output;
+            btn.textContent = 'Speichern';
+            btn.disabled = false;
+            statusEl.textContent = 'Agent generiert! Prüfe und klicke Speichern.';
+          } else {
+            statusEl.textContent = 'Fehler: ' + (ps.error || 'Generierung fehlgeschlagen');
+            statusEl.style.color = '#e74c3c';
+            btn.textContent = 'Generieren'; btn.disabled = false;
+          }
+        }
+      } catch {}
+    }, 500);
+    // Timeout after 60s
+    setTimeout(() => { clearInterval(pollId); if (btn.disabled) { btn.textContent = 'Generieren'; btn.disabled = false; statusEl.textContent = 'Timeout'; } }, 60000);
+  } catch (e) {
+    statusEl.textContent = 'Fehler: ' + e.message;
+    statusEl.style.color = '#e74c3c';
+    btn.textContent = 'Generieren'; btn.disabled = false;
+  }
+}
+
+async function loadSkillsList(winId) {
+  const el = document.getElementById('ep-skills-' + winId);
+  if (!el) return;
+  try {
+    const r = await fetch('/api/agent-system/skills');
+    const data = await r.json();
+    const skills = data.skills || [];
+    if (!skills.length) { el.innerHTML = '<div style="font-size:9px;color:var(--text-dim)">Keine Skills gefunden</div>'; return; }
+    el.innerHTML = skills.map(s =>
+      '<div class="ep-agent-card" id="ep-skill-' + winId + '-' + s.id + '">' +
+        '<span class="ep-agent-icon" onclick="toggleSkillEdit(\'' + winId + '\',\'' + s.id + '\')">🔧</span>' +
+        '<div class="ep-agent-info" onclick="toggleSkillEdit(\'' + winId + '\',\'' + s.id + '\')">' +
+          '<div class="ep-agent-name">' + (s.name || s.id) + '</div>' +
+          '<div class="ep-agent-desc">' + (s.description || '').slice(0, 80) + '</div>' +
+        '</div>' +
+        '<button onclick="event.stopPropagation(); deleteSkill(\'' + winId + '\',\'' + s.id + '\')" style="border:none;background:none;color:#e74c3c;cursor:pointer;font-size:11px;padding:2px 4px;opacity:0.5;" title="Skill löschen">✕</button>' +
+      '</div>'
+    ).join('');
+  } catch (e) { el.innerHTML = '<div style="font-size:9px;color:var(--text-dim)">Fehler: ' + e.message + '</div>'; }
+}
+
+async function toggleSkillEdit(winId, skillId) {
+  const card = document.getElementById('ep-skill-' + winId + '-' + skillId);
+  if (!card) return;
+  const existing = card.querySelector('.ep-agent-edit-area');
+  if (existing) { existing.remove(); card.classList.remove('editing'); return; }
+  card.parentElement.querySelectorAll('.ep-agent-edit-area').forEach(e => e.remove());
+  card.parentElement.querySelectorAll('.ep-agent-card').forEach(c => c.classList.remove('editing'));
+  card.classList.add('editing');
+  try {
+    const r = await fetch('/api/agent-system/skills/' + skillId);
+    const data = await r.json();
+    const area = document.createElement('div');
+    area.className = 'ep-agent-edit-area';
+    area.innerHTML =
+      '<textarea id="ep-skill-txt-' + winId + '-' + skillId + '">' + (data.content || '').replace(/</g, '&lt;') + '</textarea>' +
+      '<div class="ep-agent-edit-actions">' +
+        '<button class="ep-agent-edit-btn ep-agent-cancel" onclick="event.stopPropagation(); toggleSkillEdit(\'' + winId + '\',\'' + skillId + '\')">Abbrechen</button>' +
+        '<button class="ep-agent-edit-btn ep-agent-save" onclick="event.stopPropagation(); saveSkill(\'' + winId + '\',\'' + skillId + '\')">Speichern</button>' +
+      '</div>';
+    area.onclick = (e) => e.stopPropagation();
+    card.appendChild(area);
+  } catch (e) { console.error('toggleSkillEdit error:', e); }
+}
+
+async function saveSkill(winId, skillId) {
+  const textarea = document.getElementById('ep-skill-txt-' + winId + '-' + skillId);
+  if (!textarea) return;
+  try {
+    const r = await fetch('/api/agent-system/skills/' + skillId, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: textarea.value })
+    });
+    const d = await r.json();
+    if (d.ok) { toggleSkillEdit(winId, skillId); loadSkillsList(winId); }
+    else { alert('Fehler: ' + (d.error || 'Unbekannt')); }
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+async function deleteSkill(winId, skillId) {
+  if (!confirm('Skill "' + skillId + '" löschen?')) return;
+  try {
+    const r = await fetch('/api/agent-system/skills/' + skillId, { method: 'DELETE' });
+    const d = await r.json();
+    if (d.ok) loadSkillsList(winId);
+    else alert('Fehler: ' + (d.error || 'Unbekannt'));
+  } catch (e) { alert('Fehler: ' + e.message); }
+}
+
+function showCreateSkill(winId) {
+  const el = document.getElementById('ep-skills-' + winId);
+  if (!el) return;
+  if (document.getElementById('ep-skill-create-' + winId)) { document.getElementById('ep-skill-create-' + winId).remove(); return; }
+  const form = document.createElement('div');
+  form.id = 'ep-skill-create-' + winId;
+  form.style.cssText = 'margin-bottom:6px;padding:8px;background:var(--bg);border:1px solid var(--teal);border-radius:6px;font-size:10px;';
+  form.innerHTML =
+    '<div style="font-size:9px;font-weight:600;color:var(--teal);margin-bottom:6px;">NEUER SKILL</div>' +
+    '<textarea id="ep-skill-prompt-' + winId + '" placeholder="Beschreibe was der Skill tun soll...\n\nBeispiele:\n• Ein Deploy-Skill fuer Cloudflare Workers\n• Ein Skill der automatisch Tests generiert\n• Ein Skill fuer Datenbank-Migrationen" style="width:100%;height:70px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:10px;padding:8px;resize:vertical;box-sizing:border-box;font-family:inherit;"></textarea>' +
+    '<div id="ep-skill-preview-' + winId + '" style="display:none;margin-top:6px;">' +
+      '<textarea id="ep-skill-gen-content-' + winId + '" style="width:100%;height:180px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:9px;padding:6px;resize:vertical;box-sizing:border-box;"></textarea>' +
+    '</div>' +
+    '<div id="ep-skill-gen-status-' + winId + '" style="font-size:9px;color:var(--text-dim);margin-top:4px;min-height:14px;"></div>' +
+    '<div class="ep-agent-edit-actions" style="margin-top:6px;">' +
+      '<button class="ep-agent-edit-btn ep-agent-cancel" onclick="document.getElementById(\'ep-skill-create-' + winId + '\').remove()">Abbrechen</button>' +
+      '<button class="ep-agent-edit-btn ep-agent-save" id="ep-skill-gen-btn-' + winId + '" onclick="generateSkill(\'' + winId + '\')">Generieren</button>' +
+    '</div>';
+  el.insertBefore(form, el.firstChild);
+  document.getElementById('ep-skill-prompt-' + winId).focus();
+}
+
+async function generateSkill(winId) {
+  const promptEl = document.getElementById('ep-skill-prompt-' + winId);
+  const previewEl = document.getElementById('ep-skill-preview-' + winId);
+  const contentEl = document.getElementById('ep-skill-gen-content-' + winId);
+  const statusEl = document.getElementById('ep-skill-gen-status-' + winId);
+  const btn = document.getElementById('ep-skill-gen-btn-' + winId);
+  const prompt = promptEl?.value.trim();
+  if (!prompt) return;
+
+  // Save step
+  if (previewEl.style.display !== 'none' && contentEl.value.trim()) {
+    let content = contentEl.value.trim();
+    if (content.startsWith('```')) content = content.replace(/^```\w*\n/, '').replace(/\n```$/, '').trim();
+    const nameMatch = content.match(/name:\s*(.+)/);
+    const name = nameMatch ? nameMatch[1].trim().replace(/['"]/g, '') : prompt.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30);
+    try {
+      let r = await fetch('/api/agent-system/skills', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, content })
+      });
+      let d = await r.json();
+      if (d.error && d.error.includes('existiert')) {
+        r = await fetch('/api/agent-system/skills/' + name, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }) });
+        d = await r.json();
+      }
+      if (d.ok) { document.getElementById('ep-skill-create-' + winId)?.remove(); loadSkillsList(winId); }
+      else { statusEl.textContent = 'Fehler: ' + (d.error || 'Unbekannt'); statusEl.style.color = '#e74c3c'; }
+    } catch (e) { statusEl.textContent = 'Fehler: ' + e.message; statusEl.style.color = '#e74c3c'; }
+    return;
+  }
+
+  // Generate step
+  btn.textContent = 'Generiere...'; btn.disabled = true;
+  statusEl.innerHTML = '<span style="animation:pulse 1s infinite;">Claude generiert den Skill...</span>';
+  statusEl.style.color = 'var(--teal)';
+  previewEl.style.display = ''; contentEl.value = '';
+  try {
+    const r = await fetch('/api/agent-system/skills/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+    const d = await r.json();
+    if (!d.ok || !d.sessionId) { statusEl.textContent = 'Fehler: ' + (d.error || 'fehlgeschlagen'); statusEl.style.color = '#e74c3c'; btn.textContent = 'Generieren'; btn.disabled = false; return; }
+    const pollId = setInterval(async () => {
+      try {
+        const pr = await fetch('/api/agent-system/skills/generate/' + d.sessionId);
+        const ps = await pr.json();
+        if (ps.output) { contentEl.value = ps.output; contentEl.scrollTop = contentEl.scrollHeight; statusEl.innerHTML = '<span style="animation:pulse 1s infinite;">Claude schreibt... (' + ps.output.length + ' Zeichen)</span>'; }
+        if (ps.status === 'done' || ps.status === 'error') {
+          clearInterval(pollId);
+          if (ps.status === 'done') { contentEl.value = ps.result || ps.output; btn.textContent = 'Speichern'; btn.disabled = false; statusEl.textContent = 'Skill generiert! Prüfe und klicke Speichern.'; }
+          else { statusEl.textContent = 'Fehler'; statusEl.style.color = '#e74c3c'; btn.textContent = 'Generieren'; btn.disabled = false; }
+        }
+      } catch {}
+    }, 500);
+    setTimeout(() => clearInterval(pollId), 60000);
+  } catch (e) { statusEl.textContent = 'Fehler: ' + e.message; statusEl.style.color = '#e74c3c'; btn.textContent = 'Generieren'; btn.disabled = false; }
+}
+
 async function loadMcpServers(winId) {
   const el = document.getElementById('ep-mcp-' + winId);
   if (!el) return;
@@ -3058,6 +3625,7 @@ async function loadTemplateDropdown(winId) {
       // Render details for selected template
       const selected = tpls.find(t => t.id === savedTemplate) || tpls[0];
       renderTemplateDetails(winId, selected);
+      checkMissingAgents(winId, selected);
     } else {
       select.innerHTML = '<option value="frontend">PulseOS Frontend</option>';
     }
@@ -3085,6 +3653,7 @@ async function saveTemplateChoice(winId, templateId) {
     if (tpl) {
       stacks = tpl.stacks || [];
       renderTemplateDetails(winId, tpl);
+      checkMissingAgents(winId, tpl);
     }
   } catch {}
   // Save to app
@@ -4118,6 +4687,17 @@ async function epLoadEnvVars(winId, appId) {
       }
     }
   } catch {}
+}
+
+function epFilterList(input, listId) {
+  const q = input.value.toLowerCase().trim();
+  const list = document.getElementById(listId);
+  if (!list) return;
+  const items = list.children;
+  for (let i = 0; i < items.length; i++) {
+    const text = items[i].textContent.toLowerCase();
+    items[i].style.display = !q || text.includes(q) ? '' : 'none';
+  }
 }
 
 function epStartResize(e, winId) {

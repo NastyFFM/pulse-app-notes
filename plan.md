@@ -1,82 +1,82 @@
-# Plan: Template System 2.0
+# Plan: Agentic Chat + Graph Editor
 
-## Aktueller Stand (2026-04-05)
+## Aktueller Stand (2026-04-06)
 - Branch: feature/app-maker-v2
-- Phase 1-9 implementiert (inkl. Edit-Panel 2.0)
-- **Schritt 1: Template-Datenmodell ✅**
-- **Template Maker Agent ✅**
-- **Template Edit mit AI-Chat ✅**
-- **Deploy-Steps ✅**
-- **App Links & Deployment UI ✅**
-- **Template Lifecycle (Löschen/Publish/Reset) ✅**
+- Phase 1-10 implementiert (Edit-Panel 2.0, Template System 2.0)
+- Edit-Panel: 8 Tabs (Chat, Monitor, Graph, Kanban, Files, Git, Settings)
+- Templates: Erweitertes Datenmodell, Template Maker, Deploy-Steps, App Links
+- Graph-Tab: Dynamischer SVG Graph (Read-Only, zeigt aktive Agents)
+- Settings: Collapsible Sections, Skill-Filter in Agent-Edit
 
-## Erledigte Schritte
+## Ziel
+Der Chat im Edit-Panel wird von einem konfigurierbaren Agenten-Netzwerk gesteuert.
+Ein visueller Graph Editor definiert Agenten, Verbindungen und Routing.
+Templates liefern Standard-Konfiguration, User können sie im Graph Editor anpassen.
 
-### Schritt 1: Template-Datenmodell erweitern ✅
-- `applyTemplateDefaults()` in server.js — 6 neue Felder: agents, scaffold, envVars, git, monitoring, deploySteps
-- 4 Builtin-Templates mit spezifischen Werten (progressive-default, frontend, full-stack, nextjs-railway)
-- Abwärtskompatibel: alte Templates bekommen Defaults beim GET
-- POST/PUT/generate Routes wenden Defaults an
-- Template-Details im Settings-Tab (Badges, Gruppen)
+## Schritte (einer nach dem anderen, jeweils testen!)
 
-### Template Maker Agent ✅
-- `POST /api/template-maker/start` — Session erstellen (neu oder edit-mode mit templateId)
-- `POST /api/template-maker/{id}/message` — Chat-Routing: AI-Agent wenn alive, State Machine als Fallback
-- `GET /api/template-maker/{id}` — Session lesen
-- Chat-Agent-Integration: Nachrichten gehen an echten guitest-chat Agent mit Template-Kontext
-- `/api/chat-respond` erkennt `tms-*` chatIds und routet Antworten in TM-Sessions
-- Dashboard: Template-Maker Chat-Modus im Edit-Panel (Banner, Polling, Quick-Reply Buttons)
-- Scaffold-Generierung: Starter-Dateien basierend auf Stacks
-- Publish auf GitHub: pulse-template-{id} Repo
+### Schritt 1: Graph Editor Basics
+- Graph-Tab SVG wird interaktiv: Nodes draggbar (mousedown/move/up)
+- Positionen werden auf panel._epState gespeichert
+- Edit-Mode Toggle (View ↔ Edit)
+- **Testen:** Nodes verschieben, Positionen bleiben beim Tab-Wechsel
 
-### Deploy-Steps ✅
-- Neues Template-Feld `deploySteps[]` — strukturierte Deployment-Anweisungen
-- Bekannte Actions: github-publish, github-pages, railway-deploy, vercel-deploy, supabase-setup, stripe-setup
-- Builtins: progressive/frontend → GitHub+Pages, full-stack → GitHub+Vercel+Supabase+Stripe, nextjs-railway → GitHub+Railway
-- Edit-Formular: Deploy-Steps Liste mit Add/Remove Buttons
-- Template-Details: Deploy-Steps Anzeige mit URL-Patterns
+### Schritt 2: Nodes hinzufügen/entfernen
+- "+" Button über dem Graph → Agent-Typ-Auswahl (Dropdown der bekannten Agents)
+- Delete: Rechtsklick oder X-Button auf Node
+- Node-Typen: Router, Planner, Coder, Tester, Reviewer, Deployer, Onboarder, Custom
+- **Testen:** Neuen Node hinzufügen, positionieren, löschen
 
-### App Links & Deployment UI ✅
-- Neue "Links & Deployment" Sektion im Settings-Tab
-- Zeigt alle erreichbaren URLs klickbar: PulseOS Lokal, GitHub Repo, GitHub Pages, Railway, Vercel, Dashboard
-- Ausstehende Deploy-Steps werden als "Pending" angezeigt
-- Dynamisch aus App-Metadaten + Template-DeploySteps generiert
+### Schritt 3: Verbindungen (Edges)
+- Drag von Node-Rand zu anderem Node = neue Edge
+- Edge hat Label/Condition (z.B. "intent=build", "code-done", "review=GO")
+- Edges löschen per Klick + Delete
+- **Testen:** Zwei Nodes verbinden, Edge mit Condition versehen
 
-### Template Lifecycle ✅
-- Löschen-Menü für alle Templates (nicht nur User-Templates)
-- User-Templates: Lokal löschen / Von GitHub entfernen / Überall löschen / Publishen
-- Builtin-Templates: Auf Defaults zurücksetzen / Von GitHub entfernen / Publishen
-- Accounts & Services Sektion: Token-Status, maskierte Werte, Entfernen-Button
-- Environment Variables: Collapsed by default (Sicherheit)
-- Neue App Dialog: Template-Dropdown mit Profile-Default
+### Schritt 4: Node Config Panel
+- Klick auf Node → Config-Bereich unter dem Graph
+- Felder: Agent-Name, zugewiesener .claude/agent, Skills (mit Filter!), Timeout
+- Für Onboarder: Service-Links, Token-Felder
+- **Testen:** Node konfigurieren, Werte bleiben erhalten
 
-### Weitere UI-Verbesserungen ✅
-- Template Edit-Formular: Name, Beschreibung, Icon, Stacks, Phasen, Scaffold, EnvVars, Git, Monitoring, Deploy-Steps
-- Speichern fragt bei published Templates ob auch GitHub aktualisiert werden soll
-- Quick-Create App hat jetzt Template-Dropdown
-- Chat-Polling mit Hash-basiertem Vergleich (statt nur Message-Count)
+### Schritt 5: Graph ↔ Template Sync
+- "Speichern" Button → schreibt Graph in template.agents.graph
+- Beim Öffnen: lädt Graph aus aktuellem Template
+- Template-Wechsel im Settings-Tab → Graph aktualisiert sich
+- **Testen:** Graph editieren, Template wechseln, speichern, neu laden
 
-## Nächste Schritte
+### Schritt 6: Router Agent
+- Neuer Agent: .claude/agents/router.md
+- Analysiert Chat-Nachricht → bestimmt Intent → wählt nächsten Agent
+- Intents: build, fix, deploy, onboard, escalate, question
+- **Testen:** Nachricht im Chat → Router erkennt Intent korrekt
 
-### Schritt 2: PulseTV als Template exportieren
-- GitHub-Repo `pulse-template-youtube-streaming` erstellen
-- template.json + instructions.md + scaffold/ Dateien
-- **Testen:** Repo auf GitHub prüfen, Template in PulseOS sichtbar
+### Schritt 7: Onboarder Agent
+- Neuer Agent: .claude/agents/onboarder.md
+- Prüft welche Services im Template definiert sind
+- Für fehlende Services: Link zur Anmeldeseite → Token-Seite → Auto-Speichern
+- **Testen:** Template mit Supabase → User hat kein Token → Onboarding-Chat
 
-### Schritt 3: Template-Import von GitHub
-- POST /api/templates/import — klont Repo, liest template.json, registriert
-- **Testen:** Template importieren, im Settings-Tab sichtbar
+### Schritt 8: Chat nutzt Graph-Config
+- sendEdit() liest Graph aus Template
+- Router bestimmt Agent-Kette
+- Agents werden sequentiell/parallel ausgeführt (je nach Edges)
+- Worker-Status zeigt Graph-Fortschritt
+- **Testen:** "Baue Feature X" → Planner→Coder→Tester→Reviewer→Git im Graph sichtbar
 
-### Schritt 4: Build-App liest Template-Config
-- .claude/commands/build-app.md liest Phasen/Agents aus Template
-- Worker nutzt Template-Instruktionen + deploySteps
-- **Testen:** App bauen mit Custom-Template, Edit-Panel zeigt richtige Phasen
+### Schritt 9: Worktree/Git Integration
+- Agents arbeiten in Feature-Branches (git worktree)
+- Parallele Tasks in eigenen Worktrees
+- Auto-Merge nach Review GO
+- **Testen:** Parallele Tasks, Branches im Git-Tab sichtbar
+
+### Schritt 10: E2E Integration Test
+- Komplett-Flow: Template laden → Graph konfigurieren → Chat-Nachricht → Build → Deploy
+- **Testen:** Neues Projekt von Template, alles durch den Graph gesteuert
 
 ## Relevante Dateien
-- data/templates.json — Template-Registry (mit Template 2.0 Feldern)
-- data/templates/*.md — Builtin-Instruktionen
-- data/template-maker-sessions/ — Chat-Sessions
-- data/template-starters/ — Scaffold-Dateien
-- data/tech-stacks.json — Deploy-Plattformen
-- server.js — Template-API + Template-Maker + Deploy-Steps
-- dashboard.html — Settings-Tab, Template Edit, App Links, Accounts
+- dashboard.html — Graph-Tab (epRenderDynamicGraph), Chat (sendEdit), Settings
+- server.js — /api/workers, /api/templates, Template-Maker
+- .claude/agents/*.md — Agent-Definitionen (6 existierende + 2 neue: router, onboarder)
+- .claude/commands/build-app.md — Build-Flow (wird Graph-basiert)
+- data/templates.json — Template-Registry (agents.graph Feld)
