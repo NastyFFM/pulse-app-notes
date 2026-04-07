@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AUTO_RELOAD_TEST</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--surface:var(--bg-surface, #111118);--dim:var(--text-dim, rgba(255,255,255,.4));--muted:rgba(255,255,255,.15);--lila:#a855f7;--red:#ef4444;--font:'IBM Plex Mono',monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#ff0000;color:#ff6666;font:13px/1.5 var(--font);height:100vh;display:flex;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:220px;background:#cc0000;border-right:1px solid #ff3333;display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:12px 14px;border-bottom:1px solid #ff3333;display:flex;justify-content:space-between;align-items:center}
+.sidebar-title{font-size:11px;font-weight:600;color:#ff9999;text-transform:uppercase;letter-spacing:.08em}
+.btn-new{background:#ff3333;color:#fff;border:none;padding:3px 10px;border-radius:4px;font:600 10px var(--font);cursor:pointer}
+.btn-new:hover{opacity:.9}
+.note-list{flex:1;overflow-y:auto;padding:4px 0}
+.note-item{padding:8px 14px;cursor:pointer;border-left:2px solid transparent;transition:all .1s}
+.note-item:hover{background:rgba(255,0,0,.2)}
+.note-item.active{background:rgba(255,50,50,.2);border-left-color:#ff3333}
+.note-item-title{font-size:12px;font-weight:500;color:#ffcccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note-item-date{font-size:9px;color:#ff9999;margin-top:2px}
+.note-item-preview{font-size:10px;color:#ff6666;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Editor */
+.editor{flex:1;display:flex;flex-direction:column}
+.editor-toolbar{padding:8px 16px;border-bottom:1px solid #ff3333;display:flex;align-items:center;gap:8px}
+.editor-toolbar input{flex:1;background:none;border:none;color:#ffcccc;font:600 15px var(--font);outline:none}
+.editor-toolbar input::placeholder{color:#ff9999}
+.toolbar-btn{background:rgba(255,0,0,.15);border:1px solid #ff3333;color:#ff9999;padding:3px 8px;border-radius:4px;font:10px var(--font);cursor:pointer;transition:all .15s}
+.toolbar-btn:hover{background:rgba(255,0,0,.3);color:#ffcccc}
+.toolbar-btn.danger:hover{color:#fff;border-color:#ff0000}
+#editor-area{flex:1;padding:16px;background:none;border:none;color:#ffcccc;font:13px/1.7 var(--font);outline:none;resize:none;width:100%}
+#editor-area::placeholder{color:#ff9999}
+.editor-status{padding:4px 16px;border-top:1px solid #ff3333;font-size:9px;color:#ff9999;display:flex;justify-content:space-between}
+.empty-state{flex:1;display:flex;align-items:center;justify-content:center;color:#ff9999;font-size:12px}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-title">Notes</span>
+    <button class="btn-new" onclick="createNote()">+ Neu</button>
+  </div>
+  <div class="note-list" id="noteList"></div>
+</div>
+<div class="editor" id="editorPanel">
+  <div class="empty-state" id="emptyState">Waehle oder erstelle eine Notiz</div>
+</div>
+
+<script>
+const DATA_URL = '/app/notes/api/notes';
+let notes = [];
+let activeId = null;
+let saveTimer = null;
+
+async function loadNotes() {
+  try {
+    const r = await fetch(DATA_URL);
+    if (r.ok) {
+      const data = await r.json();
+      notes = data.notes || [];
+    }
+  } catch { notes = []; }
+  renderList();
+  if (notes.length > 0 && !activeId) selectNote(notes[0].id);
+}
+
+function renderList() {
+  const list = document.getElementById('noteList');
+  list.innerHTML = notes.map(n => {
+    const date = n.updated ? new Date(n.updated).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' }) : '';
+    const preview = (n.content || '').substring(0, 60).replace(/\n/g, ' ');
+    return '<div class="note-item' + (n.id === activeId ? ' active' : '') + '" onclick="selectNote(\'' + n.id + '\')">' +
+      '<div class="note-item-title">' + esc(n.title || 'Ohne Titel') + '</div>' +
+      '<div class="note-item-date">' + date + '</div>' +
+      (preview ? '<div class="note-item-preview">' + esc(preview) + '</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function selectNote(id) {
+  activeId = id;
+  const note = notes.find(n => n.id === id);
+  if (!note) return;
+  const panel = document.getElementById('editorPanel');
+  panel.innerHTML =
+    '<div class="editor-toolbar">' +
+      '<input id="titleInput" value="' + esc(note.title || '') + '" placeholder="Titel..." oninput="updateTitle(this.value)">' +
+      '<button class="toolbar-btn danger" onclick="deleteNote()">loeschen</button>' +
+    '</div>' +
+    '<textarea id="editor-area" placeholder="Schreibe hier..." oninput="updateContent(this.value)">' + esc(note.content || '') + '</textarea>' +
+    '<div class="editor-status"><span id="charCount">' + (note.content || '').length + ' Zeichen</span><span>gespeichert</span></div>';
+  renderList();
+}
+
+function createNote() {
+  const note = {
+    id: 'note-' + Date.now(),
+    title: 'Neue Notiz',
+    content: '',
+    created: new Date().toISOString(),
+    updated: new Date().toISOString()
+  };
+  notes.unshift(note);
+  selectNote(note.id);
+  saveNotes();
+  setTimeout(() => document.getElementById('titleInput')?.select(), 50);
+}
+
+function updateTitle(val) {
+  const note = notes.find(n => n.id === activeId);
+  if (note) { note.title = val; note.updated = new Date().toISOString(); debounceSave(); renderList(); }
+}
+
+function updateContent(val) {
+  const note = notes.find(n => n.id === activeId);
+  if (note) {
+    note.content = val;
+    note.updated = new Date().toISOString();
+    const cc = document.getElementById('charCount');
+    if (cc) cc.textContent = val.length + ' Zeichen';
+    debounceSave();
+  }
+}
+
+function deleteNote() {
+  if (!activeId) return;
+  notes = notes.filter(n => n.id !== activeId);
+  activeId = null;
+  document.getElementById('editorPanel').innerHTML = '<div class="empty-state">Waehle oder erstelle eine Notiz</div>';
+  renderList();
+  saveNotes();
+  if (notes.length > 0) selectNote(notes[0].id);
+}
+
+function debounceSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNotes, 800);
+}
+
+async function saveNotes() {
+  try {
+    await fetch(DATA_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes })
+    });
+  } catch (e) { console.error('Save error:', e); }
+}
+
+function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+loadNotes();
+
+// Auto-reload when data changes externally (e.g. ClaudeOS creates a note)
+if (window.PulseOS && window.PulseOS.onDataChanged) {
+  window.PulseOS.onDataChanged(function() { loadNotes(); });
+}
+</script>
+</body>
+</html>

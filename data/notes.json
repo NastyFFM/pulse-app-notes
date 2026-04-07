@@ -1,0 +1,46 @@
+{
+  "notes": [
+    {
+      "id": "note-1774348912718",
+      "title": "wefwef",
+      "content": "",
+      "created": "2026-03-24T10:41:52.718Z",
+      "updated": "2026-03-24T10:41:53.739Z"
+    },
+    {
+      "id": "note-1774318025671",
+      "title": "tolle Neuigkeiten",
+      "content": "tolle Neuigkeiten",
+      "created": "2026-03-24T02:07:05.671Z",
+      "updated": "2026-03-24T02:07:15.857Z"
+    },
+    {
+      "id": 1,
+      "title": "Test",
+      "content": "cache invalidation test",
+      "date": "2026-03-23"
+    },
+    {
+      "id": "test-2",
+      "title": "Test Notiz",
+      "content": "Erstellt zum Testen\n1. \n- Punkt## # Überschrift 2",
+      "date": "2026-03-24T03:10:00Z",
+      "tags": [],
+      "updated": "2026-04-07T08:32:47.280Z"
+    },
+    {
+      "id": "note-agent-1",
+      "title": "Test vom PulseOS Agent",
+      "content": "Test vom PulseOS Agent",
+      "created": "2026-03-24T12:00:00.000Z",
+      "updated": "2026-03-24T12:00:00.000Z"
+    },
+    {
+      "id": "note-test-27032026",
+      "title": "Testnotiz",
+      "content": "Erstellt via Telegram am 27.03.2026",
+      "created": "2026-03-27T13:58:00.000Z",
+      "updated": "2026-03-27T13:58:00.000Z"
+    }
+  ]
+}
