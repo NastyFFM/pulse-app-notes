@@ -1,16 +1,23 @@
 {
   "name": "Notes",
-  "icon": "N",
-  "color": "#2a1f3d",
-  "description": "Notizen erstellen und bearbeiten",
+  "icon": "📝",
+  "color": "#1a1a2e",
+  "description": "Notizen mit Markdown, Suche, Tags, Auto-Save und Backup/Restore",
   "nodeType": null,
-  "inputs": [{"id":"data","desc":"Beliebige Daten empfangen"}],
-  "outputs": [{"id":"notes","desc":"Alle Notizen"},{"id":"recent-notes","desc":"Notizen der letzten 7 Tage"}],
+  "inputs": [
+    {"id": "data", "desc": "Notiz-Objekt empfangen: { title, content, body, tags }"}
+  ],
+  "outputs": [
+    {"id": "notes", "desc": "Alle Notizen (id, title, updated, tags)"},
+    {"id": "recent-notes", "desc": "Notizen der letzten 7 Tage"}
+  ],
+  "dataFiles": ["notes"],
   "pulseSubscriptions": [],
   "visibility": "public",
   "allowedUsers": [],
   "skills": [
     { "id": "add-note", "name": "Notiz erstellen", "description": "Erstellt eine neue Notiz mit Titel und Inhalt", "action": "write", "dataFile": "notes" },
-    { "id": "list-notes", "name": "Notizen auflisten", "description": "Zeigt alle gespeicherten Notizen", "action": "read", "dataFile": "notes" }
+    { "id": "list-notes", "name": "Notizen auflisten", "description": "Zeigt alle gespeicherten Notizen", "action": "read", "dataFile": "notes" },
+    { "id": "search-notes", "name": "Notizen suchen", "description": "Durchsucht Titel und Inhalt aller Notizen", "action": "read", "dataFile": "notes" }
   ]
 }
