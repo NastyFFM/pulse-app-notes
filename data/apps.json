@@ -10,14 +10,35 @@
       "position": 0,
       "visibility": "public",
       "allowedUsers": [],
-      "template": "heroku",
-      "stacks": [],
+      "template": "advisor-mnopo26u-57df",
+      "stacks": [
+        "railway"
+      ],
       "source": "https://github.com/NastyFFM/pulse-app-notes",
-      "publishedAt": "2026-04-01T15:35:05.713Z",
-      "deployUrl": "https://pulse-app-notes.herokuapp.com",
-      "deployDashboardUrl": "https://dashboard.heroku.com/apps/pulse-app-notes",
-      "deployProvider": "heroku",
-      "deployedAt": "2026-04-01T15:35:39.900Z"
+      "publishedAt": "2026-04-07T14:27:50.006Z",
+      "deployResults": [
+        {
+          "action": "github-publish",
+          "name": "GitHub Repo erstellen",
+          "success": true,
+          "url": null,
+          "output": "branch 'main' set up to track 'origin/main'.\n"
+        },
+        {
+          "action": "github-pages",
+          "name": "GitHub Pages aktivieren",
+          "success": true,
+          "url": "https://NastyFFM.github.io/pulse-app-notes/",
+          "output": "{\"message\":\"GitHub Pages is already enabled.\",\"documentation_url\":\"https://docs.github.com/rest/pages/pages#create-a-apiname-pages-site\",\"status\":\"409\"}"
+        },
+        {
+          "action": "railway-deploy",
+          "name": "Railway Deploy",
+          "success": false,
+          "error": "Warning: failed to refresh OAuth token: Token refresh failed: invalid_grant: grant request is invalid. Please run `railway login` again.\nNo linked project found. Run railway link to connect to a project\n"
+        }
+      ],
+      "pagesUrl": "https://NastyFFM.github.io/pulse-app-notes/"
     },
     {
       "id": "tasks",
@@ -28,7 +49,13 @@
       "installed": true,
       "position": 1,
       "visibility": "private",
-      "allowedUsers": []
+      "allowedUsers": [],
+      "source": "https://github.com/NastyFFM/pulse-app-tasks",
+      "publishedAt": "2026-04-06T12:13:56.319Z",
+      "deployUrl": "https://pulse-app-tasks-production.up.railway.app",
+      "deployDashboardUrl": "https://railway.com/project/",
+      "deployProvider": "railway",
+      "deployedAt": "2026-04-06T12:14:20.366Z"
     },
     {
       "id": "projects",
@@ -39,7 +66,13 @@
       "installed": true,
       "position": 3,
       "visibility": "private",
-      "allowedUsers": []
+      "allowedUsers": [],
+      "source": "https://github.com/NastyFFM/pulse-app-projects",
+      "publishedAt": "2026-04-07T08:51:09.690Z",
+      "deployUrl": "https://pulse-app-projects-production.up.railway.app",
+      "deployDashboardUrl": "https://railway.com/project/",
+      "deployProvider": "railway",
+      "deployedAt": "2026-04-07T08:51:12.100Z"
     },
     {
       "id": "terminal",
@@ -135,9 +168,26 @@
       "position": 9,
       "visibility": "unlisted",
       "allowedUsers": [],
-      "template": "cloudlfare",
-      "stacks": [
-        "next.js cloudflare"
+      "template": "frontend",
+      "stacks": [],
+      "source": "https://github.com/NastyFFM/pulse-app-youtube",
+      "publishedAt": "2026-04-07T09:17:08.974Z",
+      "pagesUrl": "https://NastyFFM.github.io/pulse-app-youtube/",
+      "deployResults": [
+        {
+          "action": "github-publish",
+          "name": "GitHub Repo erstellen",
+          "success": true,
+          "url": null,
+          "output": "branch 'main' set up to track 'origin/main'.\n"
+        },
+        {
+          "action": "github-pages",
+          "name": "GitHub Pages aktivieren",
+          "success": true,
+          "url": "https://NastyFFM.github.io/pulse-app-youtube/",
+          "output": "{\"message\":\"GitHub Pages is already enabled.\",\"documentation_url\":\"https://docs.github.com/rest/pages/pages#create-a-apiname-pages-site\",\"status\":\"409\"}"
+        }
       ]
     },
     {
@@ -232,7 +282,9 @@
       ],
       "deployUrl": "railway.app",
       "deployDashboardUrl": "https://railway.com/project/f8193a3f-64df-4441-bef6-c436079ac452",
-      "deployProvider": "railway"
+      "deployProvider": "railway",
+      "standalone": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/pulse-app-habit-tracker"
     },
     {
       "id": "asteroids",
@@ -880,7 +932,341 @@
       "description": "Podcasts suchen und abspielen",
       "installed": true,
       "created": true,
-      "position": 65
+      "position": 65,
+      "source": "https://github.com/NastyFFM/pulse-app-podcast-finder-and-player",
+      "publishedAt": "2026-04-07T09:54:02.554Z",
+      "deployUrl": "https://pulse-app-podcast-finder-and-player-production.up.railway.app",
+      "deployDashboardUrl": "https://railway.com/project/",
+      "deployProvider": "railway",
+      "deployedAt": "2026-04-07T09:54:59.844Z",
+      "template": "railway",
+      "stacks": [
+        "railway"
+      ],
+      "pagesUrl": "https://NastyFFM.github.io/pulse-app-podcast-finder-and-player/",
+      "deployResults": [
+        {
+          "action": "github-publish",
+          "name": "GitHub Repo erstellen",
+          "success": true,
+          "url": null,
+          "note": "already exists"
+        },
+        {
+          "action": "github-pages",
+          "name": "GitHub Pages aktivieren",
+          "success": true,
+          "url": "https://NastyFFM.github.io/pulse-app-podcast-finder-and-player/",
+          "output": "{\"message\":\"Your current plan does not support GitHub Pages for this repository.\",\"documentation_url\":\"https://docs.github.com/rest/pages/pages#create-a-apiname-pages-site\",\"status\":\"422\"}{\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/pages/pages#update-information-about-a-apiname-pages-site\",\"status\":\"404\"}pages-already-enabled\n"
+        }
+      ]
+    },
+    {
+      "id": "my-test-app",
+      "name": "My Test App",
+      "icon": "M",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": false,
+      "created": true,
+      "position": 66,
+      "standalone": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/pulse-app-my-test-app"
+    },
+    {
+      "id": "testapp-system",
+      "name": "TestApp System",
+      "icon": "T",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": false,
+      "created": true,
+      "position": 67
+    },
+    {
+      "id": "pomo-timer",
+      "name": "Pomo Timer",
+      "icon": "⏱",
+      "color": "#e74c3c",
+      "description": "Timer-App mit 25min Arbeit, 5min Pause, Fortschrittsanzeige",
+      "installed": true,
+      "created": true,
+      "position": 68,
+      "standalone": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/pulse-app-pomo-timer"
+    },
+    {
+      "id": "expense-splitter",
+      "name": "Expense Splitter",
+      "icon": "💸",
+      "color": "#9b59b6",
+      "description": "Ausgaben unter Freunden aufteilen, wer schuldet wem wieviel",
+      "installed": true,
+      "created": true,
+      "position": 69,
+      "standalone": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/pulse-app-expense-splitter"
+    },
+    {
+      "id": "app-editor",
+      "name": "App Editor",
+      "icon": "🔧",
+      "color": "#e67e22",
+      "description": "Build Monitor, Agent-Graph, Kanban, MD-Viewer",
+      "installed": true,
+      "created": true,
+      "position": 70,
+      "standalone": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/pulse-app-app-editor"
+    },
+    {
+      "id": "idea-beaord",
+      "name": "idea beaord",
+      "icon": "I",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 71,
+      "standalone": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/pulse-app-idea-beaord"
+    },
+    {
+      "id": "pulsetv",
+      "name": "PulseTV",
+      "icon": "📺",
+      "color": "#1a1a2e",
+      "description": "YouTube Video Streaming App im Apple TV Stil mit Kategorien, Suche und Watchlist",
+      "installed": true,
+      "created": true,
+      "position": 72,
+      "standalone": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/pulse-app-pulsetv",
+      "template": "ich-m-chte-dass-die",
+      "stacks": [],
+      "deployResults": [
+        {
+          "action": "github-publish",
+          "name": "GitHub Repo erstellen",
+          "success": true,
+          "url": null,
+          "note": "already exists"
+        },
+        {
+          "action": "github-pages",
+          "name": "GitHub Pages aktivieren",
+          "success": true,
+          "url": "https://NastyFFM.github.io/pulse-app-pulsetv/",
+          "note": "assumed enabled"
+        }
+      ],
+      "source": "https://github.com/NastyFFM/pulse-app-pulsetv",
+      "pagesUrl": "https://NastyFFM.github.io/pulse-app-pulsetv/"
+    },
+    {
+      "id": "news-reader-app",
+      "name": "news reader app",
+      "icon": "N",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 73,
+      "standalone": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/pulse-app-news-reader-app",
+      "template": "ich-m-chte-dass-die",
+      "stacks": [],
+      "source": "https://github.com/NastyFFM/pulse-app-news-reader-app",
+      "publishedAt": "2026-04-07T09:10:41.222Z",
+      "pagesUrl": "https://NastyFFM.github.io/pulse-app-news-reader-app/",
+      "deployResults": [
+        {
+          "action": "github-publish",
+          "name": "GitHub Repo erstellen",
+          "success": true,
+          "url": null,
+          "output": "https://github.com/NastyFFM/pulse-app-news-reader-app\nbranch 'main' set up to track 'origin/main'.\n"
+        },
+        {
+          "action": "github-pages",
+          "name": "GitHub Pages aktivieren",
+          "success": true,
+          "url": "https://NastyFFM.github.io/pulse-app-news-reader-app/",
+          "output": "{\"url\":\"https://api.github.com/repos/NastyFFM/pulse-app-news-reader-app/pages\",\"status\":null,\"cname\":null,\"custom_404\":false,\"html_url\":\"https://nastyffm.github.io/pulse-app-news-reader-app/\",\"build_type\":\"legacy\",\"source\":{\"branch\":\"main\",\"path\":\"/\"},\"public\":true,\"protected_domain_state\":null,\"pending_domain_unverified_at\":null,\"https_enforced\":true}"
+        }
+      ]
+    },
+    {
+      "id": "deploy-test",
+      "name": "Deploy Test",
+      "icon": "D",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": false,
+      "created": true,
+      "position": 74,
+      "template": "frontend",
+      "deployResults": [
+        {
+          "action": "github-publish",
+          "name": "GitHub Repo erstellen",
+          "success": true,
+          "url": null,
+          "output": "branch 'main' set up to track 'origin/main'.\n"
+        },
+        {
+          "action": "github-pages",
+          "name": "GitHub Pages aktivieren",
+          "success": true,
+          "url": "https://NastyFFM.github.io/pulse-app-deploy-test/",
+          "output": "{\"message\":\"Invalid request.\\n\\nInvalid input: data matches no possible input. See `documentation_url`.\",\"documentation_url\":\"https://docs.github.com/rest/pages/pages#create-a-apiname-pages-site\",\"status\":\"422\"}{\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/pages/pages#update-information-about-a-apiname-pages-site\",\"status\":\"404\"}pages-already-enabled\n"
+        }
+      ],
+      "source": "https://github.com/NastyFFM/pulse-app-deploy-test",
+      "publishedAt": "2026-04-07T08:59:10.014Z",
+      "pagesUrl": "https://NastyFFM.github.io/pulse-app-deploy-test/"
+    },
+    {
+      "id": "weather-app-light",
+      "name": "Weather app light",
+      "icon": "W",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 75,
+      "standalone": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/pulse-app-weather-app-light",
+      "template": "frontend"
+    },
+    {
+      "id": "erstelle-eine-wetter-app-mit-live-webcam-bildern-der-ausgew-hlten-st-dte",
+      "name": "erstelle eine wetter app mit live webcam bildern der ausgewählten städte",
+      "icon": "E",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 76,
+      "standalone": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/pulse-app-erstelle-eine-wetter-app-mit-live-webcam-bildern-der-ausgew-hlten-st-dte",
+      "template": "frontend",
+      "source": "https://github.com/NastyFFM/pulse-app-erstelle-eine-wetter-app-mit-live-webcam-bildern-der-ausgew-hlten-st-dte",
+      "publishedAt": "2026-04-06T13:02:59.487Z",
+      "pagesUrl": "https://NastyFFM.github.io/pulse-app-erstelle-eine-wetter-app-mit-live-webcam-bildern-der-ausgew-hlten-st-dte/",
+      "deployResults": [
+        {
+          "action": "github-publish",
+          "name": "GitHub Repo erstellen",
+          "success": true,
+          "url": null,
+          "output": "https://github.com/NastyFFM/pulse-app-erstelle-eine-wetter-app-mit-live-webcam-bildern-der-ausgew-hlten-st-dte\nbranch 'main' set up to track 'origin/main'.\nbranch 'main' set up to track 'origin/main'.\n"
+        },
+        {
+          "action": "github-pages",
+          "name": "GitHub Pages aktivieren",
+          "success": true,
+          "url": "https://NastyFFM.github.io/pulse-app-erstelle-eine-wetter-app-mit-live-webcam-bildern-der-ausgew-hlten-st-dte/",
+          "output": "{\"message\":\"Invalid request.\\n\\nInvalid input: data matches no possible input. See `documentation_url`.\",\"documentation_url\":\"https://docs.github.com/rest/pages/pages#create-a-apiname-pages-site\",\"status\":\"422\"}{\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/pages/pages#update-information-about-a-apiname-pages-site\",\"status\":\"404\"}pages-already-enabled\n"
+        }
+      ]
+    },
+    {
+      "id": "taschenrechner",
+      "name": "Taschenrechner",
+      "icon": "🧮",
+      "color": "#3B82F6",
+      "description": "Einfacher Taschenrechner mit Grundrechenarten",
+      "installed": true,
+      "source": "https://github.com/NastyFFM/pulse-app-taschenrechner",
+      "installedAt": "2026-04-07T09:18:12.781Z",
+      "position": 77,
+      "deployUrl": "https://pulse-app-taschenrechner-production.up.railway.app",
+      "deployDashboardUrl": "https://railway.com/project/",
+      "deployProvider": "railway",
+      "deployedAt": "2026-04-07T09:18:37.180Z"
+    },
+    {
+      "id": "city-visit-adviser",
+      "name": "city visit adviser",
+      "icon": "C",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 78,
+      "standalone": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/pulse-app-city-visit-adviser",
+      "template": "railway-dynamic-template-demo",
+      "source": "https://github.com/NastyFFM/pulse-app-city-visit-adviser",
+      "publishedAt": "2026-04-07T16:00:24.638Z",
+      "pagesUrl": "https://NastyFFM.github.io/pulse-app-city-visit-adviser/",
+      "deployResults": [
+        {
+          "action": "onboarding",
+          "name": "Onboarding: GitHub Token prüfen",
+          "success": true,
+          "note": "manual"
+        },
+        {
+          "action": "onboarding",
+          "name": "Onboarding: Railway Token prüfen",
+          "success": true,
+          "note": "manual"
+        }
+      ],
+      "stacks": [
+        "railway",
+        "github-pages"
+      ]
+    },
+    {
+      "id": "viedo-streaming-app-mit-youtube-videos-im-high-class-ux-ui-style",
+      "name": "viedo streaming app mit youtube videos im high class ux ui style",
+      "icon": "V",
+      "color": "#1a2a3a",
+      "description": "",
+      "installed": true,
+      "created": true,
+      "position": 79,
+      "standalone": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/pulse-app-viedo-streaming-app-mit-youtube-videos-im-high-class-ux-ui-style",
+      "template": "advisor-mnopo26u-57df",
+      "stacks": [
+        "railway"
+      ],
+      "source": "https://github.com/NastyFFM/pulse-app-viedo-streaming-app-mit-youtube-videos-im-high-class-ux-ui-style",
+      "publishedAt": "2026-04-07T15:29:51.481Z",
+      "pagesUrl": "https://NastyFFM.github.io/pulse-app-viedo-streaming-app-mit-youtube-videos-im-high-class-ux-ui-style/",
+      "deployResults": [
+        {
+          "action": "github-publish",
+          "name": "GitHub Repo erstellen",
+          "success": true,
+          "url": null,
+          "output": "https://github.com/NastyFFM/pulse-app-viedo-streaming-app-mit-youtube-videos-im-high-class-ux-ui-style\nbranch 'main' set up to track 'origin/main'.\nbranch 'main' set up to track 'origin/main'.\n"
+        },
+        {
+          "action": "github-pages",
+          "name": "GitHub Pages aktivieren",
+          "success": true,
+          "url": "https://NastyFFM.github.io/pulse-app-viedo-streaming-app-mit-youtube-videos-im-high-class-ux-ui-style/",
+          "output": "{\"url\":\"https://api.github.com/repos/NastyFFM/pulse-app-viedo-streaming-app-mit-youtube-videos-im-high-class-ux-ui-style/pages\",\"status\":null,\"cname\":null,\"custom_404\":false,\"html_url\":\"https://nastyffm.github.io/pulse-app-viedo-streaming-app-mit-youtube-videos-im-high-class-ux-ui-style/\",\"build_type\":\"legacy\",\"source\":{\"branch\":\"main\",\"path\":\"/\"},\"public\":true,\"protected_domain_state\":null,\"pending_domain_unverified_at\":null,\"https_enforced\":true}"
+        },
+        {
+          "action": "railway-deploy",
+          "name": "Railway Deploy",
+          "success": false,
+          "error": "Warning: failed to refresh OAuth token: Token refresh failed: invalid_grant: grant request is invalid. Please run `railway login` again.\nNo linked project found. Run railway link to connect to a project\n"
+        }
+      ]
+    },
+    {
+      "id": "city-adviser",
+      "name": "City Adviser",
+      "icon": "🗺",
+      "color": "#0ea5e9",
+      "description": "Stadtführer und Reiseberater — Sehenswürdigkeiten, Restaurants, Aktivitäten und Geheimtipps"
     }
   ]
 }

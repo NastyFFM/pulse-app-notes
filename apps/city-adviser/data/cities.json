@@ -1,0 +1,149 @@
+{
+  "cities": [
+    {
+      "id": "berlin",
+      "name": "Berlin",
+      "country": "Deutschland",
+      "emoji": "🇩🇪",
+      "description": "Deutschlands pulsierende Hauptstadt — Geschichte, Kultur und Nachtleben pur.",
+      "highlights": ["Historisch", "Kulturell", "Nachtleben", "Street Art"],
+      "sights": [
+        { "name": "Brandenburger Tor", "type": "landmark", "rating": 4.8, "tip": "Morgens besuchen für weniger Touristenandrang. Abends beleuchtet besonders schön." },
+        { "name": "Berliner Mauer / East Side Gallery", "type": "landmark", "rating": 4.7, "tip": "Kostenlos! Ganzes Stück von 1,3 km mit Kunstwerken. Frühmorgens für gute Fotos." },
+        { "name": "Museumsinsel", "type": "museum", "rating": 4.9, "tip": "Kombikarte kaufen! Pergamonmuseum unbedingt vorbuchen — sehr beliebt." },
+        { "name": "Reichstagsgebäude", "type": "landmark", "rating": 4.6, "tip": "Kuppel kostenlos, aber Anmeldung Wochen vorher nötig. Abendslot für Sonnenuntergang." }
+      ],
+      "restaurants": [
+        { "name": "Mustafa's Gemüse Kebap", "type": "street_food", "rating": 4.8, "price": "€", "tip": "Warteschlange ist es wert! Komm kurz nach der Öffnung (12 Uhr). Bester Döner der Stadt." },
+        { "name": "Zur letzten Instanz", "type": "traditional", "rating": 4.5, "price": "€€", "tip": "Ältestes Restaurant Berlins (1621). Berliner Eisbein probieren. Tisch reservieren!" },
+        { "name": "Clärchens Ballhaus", "type": "restaurant_bar", "rating": 4.6, "price": "€€", "tip": "Historischer Tanzsaal mit Restaurant. Sonntags Tanztee — einmaliges Erlebnis." }
+      ],
+      "activities": [
+        { "name": "Mauerpark Flohmarkt", "type": "market", "rating": 4.7, "tip": "Jeden Sonntag! Karaoke im Amphitheater ist kostenlos und legendär. Ab 9 Uhr." },
+        { "name": "Tempelhof Feld", "type": "outdoor", "rating": 4.8, "tip": "Ehemaliger Flughafen, jetzt Stadtpark. Fahrrad ausleihen und über die Landebahn fahren!" },
+        { "name": "Boat Tour Spree", "type": "tour", "rating": 4.5, "tip": "1-Stunden Tour ab Museumsinsel. Abends mit Getränk besonders entspannt." }
+      ],
+      "secrets": [
+        { "name": "Monbijoupark", "tip": "Kleiner Park direkt an der Spree — Berliner entspannen hier, kaum Touristen. Perfekt für Picknick." },
+        { "name": "Klunkerkranich", "tip": "Rooftop-Bar auf dem Neukölln Arcaden Parkdeck. Kostenloser Eintritt, Stadtblick inklusive." },
+        { "name": "Berliner Unterwelten", "tip": "Geheime Bunker-Touren unter Berlin. Online buchen! Zeigt eine völlig andere Seite der Stadt." }
+      ]
+    },
+    {
+      "id": "paris",
+      "name": "Paris",
+      "country": "Frankreich",
+      "emoji": "🇫🇷",
+      "description": "Die Stadt der Liebe — Kunst, Mode, Küche und unvergleichliche Romantik.",
+      "highlights": ["Romantisch", "Kunst", "Kulinarik", "Mode"],
+      "sights": [
+        { "name": "Eiffelturm", "type": "landmark", "rating": 4.7, "tip": "Tickets online buchen (Wochen vorher)! Zweites Stockwerk reicht für den besten Blick. Mitternacht für die Lichtshow." },
+        { "name": "Louvre", "type": "museum", "rating": 4.8, "tip": "Mindestens 4 Stunden einplanen. Mona Lisa ist kleiner als erwartet — geh früh hin für weniger Gedränge." },
+        { "name": "Montmartre & Sacré-Cœur", "type": "landmark", "rating": 4.7, "tip": "Früh morgens für magische Stimmung. Die Treppen hochlaufen lohnt sich mehr als die Seilbahn." },
+        { "name": "Musée d'Orsay", "type": "museum", "rating": 4.9, "tip": "Donnerstags bis 21:45 Uhr geöffnet — weniger Besucher. Impressionisten-Sammlung weltweit beste." }
+      ],
+      "restaurants": [
+        { "name": "L'As du Fallafel", "type": "street_food", "rating": 4.8, "price": "€", "tip": "Im Marais-Viertel. Mittagsschlange akzeptieren — bester Falafel in ganz Paris." },
+        { "name": "Café de Flore", "type": "cafe", "rating": 4.5, "price": "€€€", "tip": "Historisches Café von Sartre und Camus. Für Kaffee und Croissant am Morgen kommen, nicht fürs Mittagessen." },
+        { "name": "Le Comptoir du Relais", "type": "bistro", "rating": 4.6, "price": "€€€", "tip": "Authentisches Pariser Bistro. Wochentags Mittagsmenü viel günstiger. Reservierung Pflicht!" }
+      ],
+      "activities": [
+        { "name": "Vélib Fahrrad Tour", "type": "outdoor", "rating": 4.6, "tip": "Günstiger als Metro für kurze Strecken. Entlang der Seine bis zum Eiffelturm — unvergesslich." },
+        { "name": "Flohmarkt Clignancourt", "type": "market", "rating": 4.5, "tip": "Größter Flohmarkt Europas. Samstags & Sonntags. Preise verhandelbar — komm ohne Scheu." },
+        { "name": "Seine Picknick", "type": "outdoor", "rating": 4.8, "tip": "Wein, Käse, Baguette vom nahen Markt. Pont des Arts oder Quai de Valmy. Das wahre Paris!" }
+      ],
+      "secrets": [
+        { "name": "Promenade Plantée", "tip": "Hochgelegener Grünweg über ehemalige Bahnstrecke — 10 Jahre vor New Yorks High Line! Kaum bekannt." },
+        { "name": "Passage des Panoramas", "tip": "Älteste überdachte Passage Paris. Briefmarken-Händler, günstige Restaurants, Zeitreise ins 19. Jh." },
+        { "name": "Buttes-Chaumont Park", "tip": "Hügelige Anlage mit Tempel im See. Pariser Geheimtipp — keine Touristen, toller Ausblick." }
+      ]
+    },
+    {
+      "id": "tokyo",
+      "name": "Tokyo",
+      "country": "Japan",
+      "emoji": "🇯🇵",
+      "description": "Mega-Metropole der Zukunft — Tradition trifft auf hypermoderne Technologie.",
+      "highlights": ["Modern", "Kulinarik", "Technologie", "Kultur"],
+      "sights": [
+        { "name": "Senso-ji Tempel Asakusa", "type": "temple", "rating": 4.8, "tip": "Vor 8 Uhr kommen! Danach extrem voll. Nakamise-Einkaufsstraße danach erkunden." },
+        { "name": "Shibuya Crossing", "type": "landmark", "rating": 4.7, "tip": "Vom Starbucks 2. Stock fotografieren für Überblick. Abends mit Neonlichtern am schönsten." },
+        { "name": "Shinjuku Gyoen", "type": "park", "rating": 4.8, "tip": "Bester Kirschblüten-Park im März/April. 500 Yen Eintritt — Bento vom Konbini mitbringen!" },
+        { "name": "teamLab Borderless", "type": "museum", "rating": 4.9, "tip": "Digitales Kunstmuseum — surreal! Tickets Wochen vorher buchen. Mindestens 2 Stunden." }
+      ],
+      "restaurants": [
+        { "name": "Ichiran Ramen", "type": "ramen", "rating": 4.8, "price": "€€", "tip": "Solo-Boxen für konzentrierten Ramen-Genuss. 24/7 geöffnet. Spicy level anpassen!" },
+        { "name": "Tsukiji Outer Market", "type": "market", "rating": 4.7, "price": "€€", "tip": "Bestes Sushi zum Frühstück! 7-9 Uhr kommen. Thunfisch-Auktion vorher anmelden." },
+        { "name": "Depachika (Isetan B1)", "type": "food_hall", "rating": 4.9, "price": "€€", "tip": "Untergeschoss-Lebensmittelmarkt im Kaufhaus. Abend-Rabatte ab 19 Uhr. Wagashi probieren!" }
+      ],
+      "activities": [
+        { "name": "Akihabara Electronics Town", "type": "shopping", "rating": 4.7, "tip": "Manga, Anime, Retro-Games. Mehrwertsteuererstattes Einkaufen mit Pass möglich." },
+        { "name": "Onsen Spa Oedo-Monogatari", "type": "wellness", "rating": 4.6, "tip": "Traditionelles Badeerlebnis in Edo-Stil. Abends nach 18 Uhr günstiger. Tattoo-Verbot beachten." },
+        { "name": "Shinkansen Fahrt nach Kyoto", "type": "tour", "rating": 4.9, "tip": "JR Pass lohnt sich ab 3 Reisen. Plätze auf der rechten Seite für Fuji-Blick reservieren!" }
+      ],
+      "secrets": [
+        { "name": "Yanaka Ginza", "tip": "Alte Showa-Ära Einkaufsstraße — kaum Touristen. Katzenfreundliches Viertel mit traditionellen Läden." },
+        { "name": "Nakameguro Kanal", "tip": "Hipster-Viertel mit Cafés am Wasser. Kirschblüte hier romantischer als im Park. Vintage-Shops erkunden." },
+        { "name": "Harmonica Yokocho Alley", "tip": "Mini-Alley in Kichijoji mit Winzigst-Bars für 4 Personen. Nachts lebt die echte Tokyo-Atmosphäre." }
+      ]
+    },
+    {
+      "id": "barcelona",
+      "name": "Barcelona",
+      "country": "Spanien",
+      "emoji": "🇪🇸",
+      "description": "Mediterrane Energie — Gaudí-Architektur, Tapas-Kultur und perfektes Wetter.",
+      "highlights": ["Architektur", "Strand", "Kulinarik", "Nightlife"],
+      "sights": [
+        { "name": "Sagrada Família", "type": "landmark", "rating": 4.9, "tip": "Unbedingt Tickets online vorbuchen! Türme besteigen für Ausblick. Morgens für bestes Licht." },
+        { "name": "Park Güell", "type": "park", "rating": 4.7, "tip": "Terrassenbereich kostet — den Rest kostenlos erkunden. 8 Uhr Öffnung nutzen." },
+        { "name": "La Boqueria", "type": "market", "rating": 4.5, "tip": "Nur schauen und ein Smoothie — Essen dort überteuert. Früh für frische Produkte, nachmittags fast leer." },
+        { "name": "Palau de la Música Catalana", "type": "landmark", "rating": 4.8, "tip": "Modernismus-Juwel! Führung oder Konzert buchen. Farbenfrohe Glasfenster atemberaubend." }
+      ],
+      "restaurants": [
+        { "name": "Bar Cañete", "type": "tapas", "rating": 4.8, "price": "€€€", "tip": "Authentische Tapas ohne Touristenfalle. Langer Tresen — Barhocker nehmen für beste Erfahrung." },
+        { "name": "Cervecería Catalana", "type": "tapas", "rating": 4.6, "price": "€€", "tip": "Beste Patatas Bravas! Komm vor 13 Uhr oder nach 20 Uhr. Schlange vor der Tür oft lohnend." },
+        { "name": "La Pepita", "type": "pintxos", "rating": 4.7, "price": "€€", "tip": "Pintxos-Bar im Eixample — nicht Touristenfalle. Jamon Ibérico und Käse unbedingt probieren." }
+      ],
+      "activities": [
+        { "name": "Barceloneta Strandtag", "type": "beach", "rating": 4.5, "tip": "Früh kommen (vor 10 Uhr) für Platz. Chiringuito-Bars ab 12 Uhr. Wasser im Supermarkt kaufen — Strand teuer." },
+        { "name": "El Born Viertel", "type": "neighborhood", "rating": 4.8, "tip": "Hipsterviertel mit Boutiquen und Bars. Abends belebt. El Born Bar für lokale Atmopsphäre." },
+        { "name": "Tibidabo Freizeitpark", "type": "entertainment", "rating": 4.5, "tip": "Ältester Freizeitpark Spaniens auf dem Hügel. Panoramablick auf ganz Barcelona inklusive!" }
+      ],
+      "secrets": [
+        { "name": "Bunkers del Carmel", "tip": "Bester 360°-Blick auf Barcelona — kaum bekannt! Lohnender als Tibidabo. Sonnenuntergang hier." },
+        { "name": "El Poblenou Beach", "tip": "Locals-Strand neben Barceloneta. Ruhiger, weniger Touristen, bessere Bars. Mit dem Rad erreichbar." },
+        { "name": "Gracia Viertel", "tip": "Dorfartiges Viertel mit Plazas. Einheimische Restaurants, kein Englisch auf Speisekarten — Zeichen der Authentizität!" }
+      ]
+    },
+    {
+      "id": "new-york",
+      "name": "New York City",
+      "country": "USA",
+      "emoji": "🇺🇸",
+      "description": "Die Stadt die niemals schläft — Energie, Diversity und unbegrenzte Möglichkeiten.",
+      "highlights": ["Urban", "Kulinarik", "Shopping", "Kultur"],
+      "sights": [
+        { "name": "Central Park", "type": "park", "rating": 4.9, "tip": "Frühmorgens joggen wie ein New Yorker! Strawberry Fields, Bethesda Fountain, Sheep Meadow erkunden." },
+        { "name": "High Line", "type": "park", "rating": 4.8, "tip": "Elevated Park auf ehemaligem Güterbahn. Kostenlos! Chelsea Galleries danach erkunden." },
+        { "name": "Brooklyn Bridge", "type": "landmark", "rating": 4.7, "tip": "Zu Fuß überqueren dauert 30 Min. Von Brooklyn nach Manhattan läuft man auf die tolle Skyline zu." },
+        { "name": "MoMA", "type": "museum", "rating": 4.8, "tip": "Freitagabend 17-21 Uhr gratis Eintritt! Picasso und van Gogh im 5. Stock." }
+      ],
+      "restaurants": [
+        { "name": "Katz's Delicatessen", "type": "deli", "rating": 4.7, "price": "€€", "tip": "Legendärer Deli seit 1888. Pastrami on Rye ist Pflicht. Cash bevorzugt. Früh kommen!" },
+        { "name": "Xi'an Famous Foods", "type": "chinese", "rating": 4.8, "price": "€", "tip": "Authentic Xi'an Noodles — nicht Standard-Chinesisch. Spicy Lamb Face Noodles probieren." },
+        { "name": "Smorgasburg Williamsburg", "type": "food_market", "rating": 4.7, "price": "€€", "tip": "Outdoor Food Market, Wochenende April-Oktober. Ramen Burger und Pizza viele Optionen." }
+      ],
+      "activities": [
+        { "name": "Staten Island Ferry", "type": "tour", "rating": 4.8, "tip": "KOSTENLOS! Bester Blick auf Freiheitsstatue und Skyline. Rückfahrt auch kostenlos. Außendeck nutzen." },
+        { "name": "Comedy Club Stand-Up", "type": "entertainment", "rating": 4.7, "tip": "Cellar, Gotham, Comedy Cellar — echte NYC-Kultur. 2-Drink Minimum beachten." },
+        { "name": "Governors Island", "type": "outdoor", "rating": 4.6, "tip": "Autofrei, nur Fahrräder. Hammocks mit Skyline-Blick. Fähre von Brooklyn Bridge Park." }
+      ],
+      "secrets": [
+        { "name": "Elevated Acre", "tip": "Geheimer Rooftop-Park auf Wall Street Gebäude. Kaum bekannt, Skyline-Blick inklusive. Gratis Eintritt." },
+        { "name": "The Mmuseumm", "tip": "Kleinstes Museum der Welt in einem Aufzugsschacht (Tribeca). Kurze, surreale Ausstellungen. Stundenweise geöffnet." },
+        { "name": "Arthur Avenue Bronx", "tip": "Echtes Little Italy — nicht das touristische in Manhattan. Familienbetriebe, frische Pasta, 80% günstiger." }
+      ]
+    }
+  ]
+}

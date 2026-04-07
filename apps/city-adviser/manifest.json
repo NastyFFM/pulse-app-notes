@@ -1,0 +1,14 @@
+{
+  "name": "City Adviser",
+  "icon": "🗺",
+  "color": "#0ea5e9",
+  "description": "Stadtführer und Reiseberater — Sehenswürdigkeiten, Restaurants, Aktivitäten und Geheimtipps",
+  "inputs": [
+    { "id": "city", "desc": "Stadtname für automatische Suche" }
+  ],
+  "outputs": [
+    { "id": "selected-place", "desc": "Ausgewählter Ort mit Details" }
+  ],
+  "dataFiles": ["cities", "state"],
+  "pulseSubscriptions": []
+}
