@@ -1,0 +1,18 @@
+{
+  "id": "tas-mnophaey",
+  "status": "active",
+  "phase": "category",
+  "prompt": "SaaS App",
+  "customName": "Mein SaaS Starter",
+  "detectedStacks": [
+    "stripe"
+  ],
+  "selectedCategory": null,
+  "selectedStages": [],
+  "missingStacks": [],
+  "onboardingIndex": 0,
+  "onboardingStackIndex": 0,
+  "onboardingStepIndex": 0,
+  "generatedTemplate": null,
+  "createdAt": "2026-04-07T14:19:49.114Z"
+}

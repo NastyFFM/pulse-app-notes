@@ -1,0 +1,98 @@
+{
+  "id": "tas-mnonmfmc",
+  "status": "done",
+  "phase": "done",
+  "prompt": "Game App",
+  "detectedStacks": [],
+  "selectedCategory": "static-site",
+  "selectedStages": [
+    1
+  ],
+  "missingStacks": [],
+  "onboardingIndex": 0,
+  "onboardingStackIndex": 0,
+  "onboardingStepIndex": 0,
+  "generatedTemplate": {
+    "id": "advisor-mnonmfoj-5r49",
+    "name": "Static Site",
+    "description": "Game App",
+    "icon": "🚀",
+    "stacks": [
+      "github-pages"
+    ],
+    "deploySteps": [
+      {
+        "name": "GitHub Repo erstellen",
+        "action": "github-publish",
+        "stage": 1,
+        "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+        "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+      },
+      {
+        "name": "GitHub Pages aktivieren",
+        "action": "github-pages",
+        "stage": 1,
+        "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+        "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+        "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+      }
+    ],
+    "scaffold": {
+      "files": [
+        "index.html",
+        "manifest.json",
+        "data/state.json"
+      ],
+      "directories": [
+        "data/"
+      ]
+    },
+    "envVars": [],
+    "agents": {
+      "phases": [
+        "planning",
+        "coding",
+        "testing",
+        "review"
+      ],
+      "planAgent": "planner",
+      "codeAgent": "code-generator",
+      "testAgent": "test-writer",
+      "reviewAgent": "code-reviewer",
+      "graph": "advisor-mnonmfoj-5r49"
+    },
+    "git": {
+      "autoBranch": false,
+      "branchPrefix": "feature/",
+      "autoCommit": true,
+      "autoPR": false
+    },
+    "monitoring": {
+      "watchFiles": [
+        "index.html",
+        "manifest.json"
+      ],
+      "logLevel": "normal",
+      "taskPattern": "## Tasks"
+    },
+    "progressiveStage": 1,
+    "progressive": true
+  },
+  "createdAt": "2026-04-07T13:27:49.908Z",
+  "requiredStacks": [
+    "github-pages"
+  ],
+  "readyStacks": [
+    "github-pages"
+  ],
+  "generatedArtifacts": {
+    "skills": [],
+    "agents": [],
+    "graph": {
+      "created": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/PulseOS/data/graphs/graph-advisor-mnonmfoj-5r49.json",
+      "nodeCount": 6,
+      "edgeCount": 5
+    }
+  }
+}

@@ -64,7 +64,7 @@
           "name": "GitHub Pages aktivieren",
           "action": "github-pages",
           "stage": 1,
-          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f source.branch=main -f source.path=/ 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f source.branch=main -f source.path=/ 2>/dev/null || echo pages-already-enabled",
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
           "description": "Aktiviert GitHub Pages — App ist live unter https://${githubUser}.github.io/pulse-app-${appId}/",
           "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
         }
@@ -129,7 +129,7 @@
           "name": "GitHub Pages aktivieren",
           "action": "github-pages",
           "stage": 1,
-          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f source.branch=main -f source.path=/ 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f source.branch=main -f source.path=/ 2>/dev/null || echo pages-already-enabled",
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
           "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
           "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
         }
@@ -584,10 +584,12 @@
       "agents": {
         "phases": [
           "planning",
+          "data-scout",
           "coding",
           "testing",
           "review"
         ],
+        "dataScoutAgent": "data-scout",
         "planAgent": "planner",
         "codeAgent": "code-generator",
         "testAgent": "test-writer",
@@ -623,8 +625,8 @@
       "instructions": "→ data/templates/ich-m-chte-dass-die.md",
       "hasStarter": true,
       "source": "https://github.com/NastyFFM/pulse-template-ich-m-chte-dass-die",
-      "publishedAt": "2026-04-05T15:56:07.632Z",
-      "updatedAt": "2026-04-05T15:55:56.820Z",
+      "publishedAt": "2026-04-06T11:50:57.877Z",
+      "updatedAt": "2026-04-06T14:03:52.393Z",
       "deploySteps": [
         {
           "name": "GitHub Repo erstellen",
@@ -635,11 +637,1346 @@
         {
           "name": "GitHub Pages aktivieren",
           "action": "github-pages",
-          "command": "gh api repos/{owner}/{repo}/pages -X POST -f source.branch=main -f source.path=/",
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
           "description": "Aktiviert GitHub Pages für das Repository",
           "urlPattern": "https://{owner}.github.io/{repo}/"
         }
-      ]
+      ],
+      "progressive": true
+    },
+    {
+      "id": "advisor-mnon7stk-rmf1",
+      "name": "Web Application",
+      "description": "SaaS App mit User Management und Payments",
+      "icon": "🚀",
+      "stacks": [
+        "github-pages",
+        "railway",
+        "supabase",
+        "stripe"
+      ],
+      "deploySteps": [
+        {
+          "name": "GitHub Repo erstellen",
+          "action": "github-publish",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+          "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+        },
+        {
+          "name": "GitHub Pages aktivieren",
+          "action": "github-pages",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+          "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+          "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+        },
+        {
+          "name": "Railway Deploy",
+          "action": "railway-deploy",
+          "stage": 2,
+          "command": "railway up --detach",
+          "description": "App auf Railway deployen",
+          "urlPattern": "https://pulse-app-${appId}-production.up.railway.app"
+        },
+        {
+          "name": "Supabase Setup",
+          "action": "supabase-setup",
+          "stage": 3,
+          "description": "Supabase-Projekt verbinden (URL + Anon Key in Env Vars)"
+        },
+        {
+          "name": "Stripe Integration",
+          "action": "stripe-setup",
+          "stage": 4,
+          "description": "Stripe Webhook + Keys konfigurieren"
+        }
+      ],
+      "scaffold": {
+        "files": [
+          "index.html",
+          "manifest.json",
+          "data/state.json",
+          "package.json",
+          "server.js",
+          "railway.json",
+          "lib/supabase.js"
+        ],
+        "directories": [
+          "data/",
+          "lib/"
+        ]
+      },
+      "envVars": [
+        {
+          "key": "RAILWAY_TOKEN",
+          "required": true,
+          "description": "Railway API Token"
+        },
+        {
+          "key": "SUPABASE_URL",
+          "required": true,
+          "description": "Supabase Project URL"
+        },
+        {
+          "key": "SUPABASE_ANON_KEY",
+          "required": true,
+          "description": "Supabase Anonymous Key"
+        },
+        {
+          "key": "STRIPE_SECRET_KEY",
+          "required": true,
+          "description": "Stripe Secret Key"
+        },
+        {
+          "key": "STRIPE_PUBLISHABLE_KEY",
+          "required": true,
+          "description": "Stripe Publishable Key"
+        }
+      ],
+      "agents": {
+        "phases": [
+          "planning",
+          "coding",
+          "testing",
+          "review"
+        ],
+        "planAgent": "planner",
+        "codeAgent": "code-generator",
+        "testAgent": "test-writer",
+        "reviewAgent": "code-reviewer"
+      },
+      "git": {
+        "autoBranch": true,
+        "branchPrefix": "feature/",
+        "autoCommit": true,
+        "autoPR": true
+      },
+      "monitoring": {
+        "watchFiles": [
+          "index.html",
+          "manifest.json"
+        ],
+        "logLevel": "normal"
+      },
+      "progressiveStage": 4
+    },
+    {
+      "id": "advisor-mnonkxl4-xzm6",
+      "name": "Web Application",
+      "description": "SaaS mit User Auth und Payments",
+      "icon": "🚀",
+      "stacks": [
+        "github-pages",
+        "railway",
+        "supabase",
+        "stripe"
+      ],
+      "deploySteps": [
+        {
+          "name": "GitHub Repo erstellen",
+          "action": "github-publish",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+          "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+        },
+        {
+          "name": "GitHub Pages aktivieren",
+          "action": "github-pages",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+          "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+          "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+        },
+        {
+          "name": "Railway Deploy",
+          "action": "railway-deploy",
+          "stage": 2,
+          "command": "railway up --detach",
+          "description": "App auf Railway deployen",
+          "urlPattern": "https://pulse-app-${appId}-production.up.railway.app"
+        },
+        {
+          "name": "Supabase Setup",
+          "action": "supabase-setup",
+          "stage": 3,
+          "description": "Supabase-Projekt verbinden (URL + Anon Key in Env Vars)"
+        },
+        {
+          "name": "Stripe Integration",
+          "action": "stripe-setup",
+          "stage": 4,
+          "description": "Stripe Webhook + Keys konfigurieren"
+        }
+      ],
+      "scaffold": {
+        "files": [
+          "index.html",
+          "manifest.json",
+          "data/state.json",
+          "package.json",
+          "server.js",
+          "railway.json",
+          "lib/supabase.js"
+        ],
+        "directories": [
+          "data/",
+          "lib/"
+        ]
+      },
+      "envVars": [
+        {
+          "key": "RAILWAY_TOKEN",
+          "required": true,
+          "description": "Railway API Token"
+        },
+        {
+          "key": "SUPABASE_URL",
+          "required": true,
+          "description": "Supabase Project URL"
+        },
+        {
+          "key": "SUPABASE_ANON_KEY",
+          "required": true,
+          "description": "Supabase Anonymous Key"
+        },
+        {
+          "key": "STRIPE_SECRET_KEY",
+          "required": true,
+          "description": "Stripe Secret Key"
+        },
+        {
+          "key": "STRIPE_PUBLISHABLE_KEY",
+          "required": true,
+          "description": "Stripe Publishable Key"
+        }
+      ],
+      "agents": {
+        "phases": [
+          "planning",
+          "coding",
+          "testing",
+          "review"
+        ],
+        "planAgent": "planner",
+        "codeAgent": "code-generator",
+        "testAgent": "test-writer",
+        "reviewAgent": "code-reviewer",
+        "graph": "advisor-mnonkxl4-xzm6"
+      },
+      "git": {
+        "autoBranch": true,
+        "branchPrefix": "feature/",
+        "autoCommit": true,
+        "autoPR": true
+      },
+      "monitoring": {
+        "watchFiles": [
+          "index.html",
+          "manifest.json"
+        ],
+        "logLevel": "normal",
+        "taskPattern": "## Tasks"
+      },
+      "progressiveStage": 4,
+      "progressive": true
+    },
+    {
+      "id": "advisor-mnonl9bx-vi9z",
+      "name": "Web Application",
+      "description": "SaaS mit Auth und Payments",
+      "icon": "🚀",
+      "stacks": [
+        "github-pages",
+        "railway",
+        "supabase",
+        "stripe"
+      ],
+      "deploySteps": [
+        {
+          "name": "GitHub Repo erstellen",
+          "action": "github-publish",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+          "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+        },
+        {
+          "name": "GitHub Pages aktivieren",
+          "action": "github-pages",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+          "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+          "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+        },
+        {
+          "name": "Railway Deploy",
+          "action": "railway-deploy",
+          "stage": 2,
+          "command": "railway up --detach",
+          "description": "App auf Railway deployen",
+          "urlPattern": "https://pulse-app-${appId}-production.up.railway.app"
+        },
+        {
+          "name": "Supabase Setup",
+          "action": "supabase-setup",
+          "stage": 3,
+          "description": "Supabase-Projekt verbinden (URL + Anon Key in Env Vars)"
+        },
+        {
+          "name": "Stripe Integration",
+          "action": "stripe-setup",
+          "stage": 4,
+          "description": "Stripe Webhook + Keys konfigurieren"
+        }
+      ],
+      "scaffold": {
+        "files": [
+          "index.html",
+          "manifest.json",
+          "data/state.json",
+          "package.json",
+          "server.js",
+          "railway.json",
+          "lib/supabase.js"
+        ],
+        "directories": [
+          "data/",
+          "lib/"
+        ]
+      },
+      "envVars": [
+        {
+          "key": "RAILWAY_TOKEN",
+          "required": true,
+          "description": "Railway API Token"
+        },
+        {
+          "key": "SUPABASE_URL",
+          "required": true,
+          "description": "Supabase Project URL"
+        },
+        {
+          "key": "SUPABASE_ANON_KEY",
+          "required": true,
+          "description": "Supabase Anonymous Key"
+        },
+        {
+          "key": "STRIPE_SECRET_KEY",
+          "required": true,
+          "description": "Stripe Secret Key"
+        },
+        {
+          "key": "STRIPE_PUBLISHABLE_KEY",
+          "required": true,
+          "description": "Stripe Publishable Key"
+        }
+      ],
+      "agents": {
+        "phases": [
+          "planning",
+          "coding",
+          "testing",
+          "review"
+        ],
+        "planAgent": "planner",
+        "codeAgent": "code-generator",
+        "testAgent": "test-writer",
+        "reviewAgent": "code-reviewer",
+        "graph": "advisor-mnonl9bx-vi9z"
+      },
+      "git": {
+        "autoBranch": true,
+        "branchPrefix": "feature/",
+        "autoCommit": true,
+        "autoPR": true
+      },
+      "monitoring": {
+        "watchFiles": [
+          "index.html",
+          "manifest.json"
+        ],
+        "logLevel": "normal",
+        "taskPattern": "## Tasks"
+      },
+      "progressiveStage": 4,
+      "progressive": true
+    },
+    {
+      "id": "advisor-mnonlo0n-cl4n",
+      "name": "Web Application",
+      "description": "SaaS mit Auth und Payments",
+      "icon": "🚀",
+      "stacks": [
+        "github-pages",
+        "railway",
+        "supabase",
+        "stripe"
+      ],
+      "deploySteps": [
+        {
+          "name": "GitHub Repo erstellen",
+          "action": "github-publish",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+          "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+        },
+        {
+          "name": "GitHub Pages aktivieren",
+          "action": "github-pages",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+          "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+          "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+        },
+        {
+          "name": "Railway Deploy",
+          "action": "railway-deploy",
+          "stage": 2,
+          "command": "railway up --detach",
+          "description": "App auf Railway deployen",
+          "urlPattern": "https://pulse-app-${appId}-production.up.railway.app"
+        },
+        {
+          "name": "Supabase Setup",
+          "action": "supabase-setup",
+          "stage": 3,
+          "description": "Supabase-Projekt verbinden (URL + Anon Key in Env Vars)"
+        },
+        {
+          "name": "Stripe Integration",
+          "action": "stripe-setup",
+          "stage": 4,
+          "description": "Stripe Webhook + Keys konfigurieren"
+        }
+      ],
+      "scaffold": {
+        "files": [
+          "index.html",
+          "manifest.json",
+          "data/state.json",
+          "package.json",
+          "server.js",
+          "railway.json",
+          "lib/supabase.js"
+        ],
+        "directories": [
+          "data/",
+          "lib/"
+        ]
+      },
+      "envVars": [
+        {
+          "key": "RAILWAY_TOKEN",
+          "required": true,
+          "description": "Railway API Token"
+        },
+        {
+          "key": "SUPABASE_URL",
+          "required": true,
+          "description": "Supabase Project URL"
+        },
+        {
+          "key": "SUPABASE_ANON_KEY",
+          "required": true,
+          "description": "Supabase Anonymous Key"
+        },
+        {
+          "key": "STRIPE_SECRET_KEY",
+          "required": true,
+          "description": "Stripe Secret Key"
+        },
+        {
+          "key": "STRIPE_PUBLISHABLE_KEY",
+          "required": true,
+          "description": "Stripe Publishable Key"
+        }
+      ],
+      "agents": {
+        "phases": [
+          "planning",
+          "coding",
+          "testing",
+          "review"
+        ],
+        "planAgent": "planner",
+        "codeAgent": "code-generator",
+        "testAgent": "test-writer",
+        "reviewAgent": "code-reviewer",
+        "graph": "advisor-mnonlo0n-cl4n"
+      },
+      "git": {
+        "autoBranch": true,
+        "branchPrefix": "feature/",
+        "autoCommit": true,
+        "autoPR": true
+      },
+      "monitoring": {
+        "watchFiles": [
+          "index.html",
+          "manifest.json"
+        ],
+        "logLevel": "normal",
+        "taskPattern": "## Tasks"
+      },
+      "progressiveStage": 4,
+      "progressive": true
+    },
+    {
+      "id": "advisor-mnonmfoj-5r49",
+      "name": "Static Site",
+      "description": "Game App",
+      "icon": "🚀",
+      "stacks": [
+        "github-pages"
+      ],
+      "deploySteps": [
+        {
+          "name": "GitHub Repo erstellen",
+          "action": "github-publish",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+          "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+        },
+        {
+          "name": "GitHub Pages aktivieren",
+          "action": "github-pages",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+          "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+          "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+        }
+      ],
+      "scaffold": {
+        "files": [
+          "index.html",
+          "manifest.json",
+          "data/state.json"
+        ],
+        "directories": [
+          "data/"
+        ]
+      },
+      "envVars": [],
+      "agents": {
+        "phases": [
+          "planning",
+          "coding",
+          "testing",
+          "review"
+        ],
+        "planAgent": "planner",
+        "codeAgent": "code-generator",
+        "testAgent": "test-writer",
+        "reviewAgent": "code-reviewer",
+        "graph": "advisor-mnonmfoj-5r49"
+      },
+      "git": {
+        "autoBranch": false,
+        "branchPrefix": "feature/",
+        "autoCommit": true,
+        "autoPR": false
+      },
+      "monitoring": {
+        "watchFiles": [
+          "index.html",
+          "manifest.json"
+        ],
+        "logLevel": "normal",
+        "taskPattern": "## Tasks"
+      },
+      "progressiveStage": 1,
+      "progressive": true
+    },
+    {
+      "id": "advisor-mnonmt00-c315",
+      "name": "Web Application",
+      "description": "Full SaaS",
+      "icon": "🚀",
+      "stacks": [
+        "github-pages",
+        "railway",
+        "supabase",
+        "stripe"
+      ],
+      "deploySteps": [
+        {
+          "name": "GitHub Repo erstellen",
+          "action": "github-publish",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+          "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+        },
+        {
+          "name": "GitHub Pages aktivieren",
+          "action": "github-pages",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+          "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+          "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+        },
+        {
+          "name": "Railway Deploy",
+          "action": "railway-deploy",
+          "stage": 2,
+          "command": "railway up --detach",
+          "description": "App auf Railway deployen",
+          "urlPattern": "https://pulse-app-${appId}-production.up.railway.app"
+        },
+        {
+          "name": "Supabase Setup",
+          "action": "supabase-setup",
+          "stage": 3,
+          "description": "Supabase-Projekt verbinden (URL + Anon Key in Env Vars)"
+        },
+        {
+          "name": "Stripe Integration",
+          "action": "stripe-setup",
+          "stage": 4,
+          "description": "Stripe Webhook + Keys konfigurieren"
+        }
+      ],
+      "scaffold": {
+        "files": [
+          "index.html",
+          "manifest.json",
+          "data/state.json",
+          "package.json",
+          "server.js",
+          "railway.json",
+          "lib/supabase.js"
+        ],
+        "directories": [
+          "data/",
+          "lib/"
+        ]
+      },
+      "envVars": [
+        {
+          "key": "RAILWAY_TOKEN",
+          "required": true,
+          "description": "Railway API Token"
+        },
+        {
+          "key": "SUPABASE_URL",
+          "required": true,
+          "description": "Supabase Project URL"
+        },
+        {
+          "key": "SUPABASE_ANON_KEY",
+          "required": true,
+          "description": "Supabase Anonymous Key"
+        },
+        {
+          "key": "STRIPE_SECRET_KEY",
+          "required": true,
+          "description": "Stripe Secret Key"
+        },
+        {
+          "key": "STRIPE_PUBLISHABLE_KEY",
+          "required": true,
+          "description": "Stripe Publishable Key"
+        }
+      ],
+      "agents": {
+        "phases": [
+          "planning",
+          "coding",
+          "testing",
+          "review"
+        ],
+        "planAgent": "planner",
+        "codeAgent": "code-generator",
+        "testAgent": "test-writer",
+        "reviewAgent": "code-reviewer",
+        "graph": "advisor-mnonmt00-c315"
+      },
+      "git": {
+        "autoBranch": true,
+        "branchPrefix": "feature/",
+        "autoCommit": true,
+        "autoPR": true
+      },
+      "monitoring": {
+        "watchFiles": [
+          "index.html",
+          "manifest.json"
+        ],
+        "logLevel": "normal",
+        "taskPattern": "## Tasks"
+      },
+      "progressiveStage": 4,
+      "progressive": true
+    },
+    {
+      "id": "advisor-mnopcfa1-j2a1",
+      "name": "Web Application",
+      "description": "Erstelle ein Template",
+      "icon": "🚀",
+      "stacks": [
+        "railway"
+      ],
+      "deploySteps": [
+        {
+          "name": "GitHub Repo erstellen",
+          "action": "github-publish",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+          "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+        },
+        {
+          "name": "GitHub Pages aktivieren",
+          "action": "github-pages",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+          "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+          "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+        },
+        {
+          "name": "Railway Deploy",
+          "action": "railway-deploy",
+          "stage": 2,
+          "command": "railway up --detach",
+          "description": "App auf Railway deployen",
+          "urlPattern": "https://pulse-app-${appId}-production.up.railway.app"
+        }
+      ],
+      "scaffold": {
+        "files": [
+          "index.html",
+          "manifest.json",
+          "data/state.json",
+          "package.json",
+          "server.js",
+          "railway.json"
+        ],
+        "directories": [
+          "data/"
+        ]
+      },
+      "envVars": [
+        {
+          "key": "RAILWAY_TOKEN",
+          "required": true,
+          "description": "Railway API Token"
+        }
+      ],
+      "agents": {
+        "phases": [
+          "planning",
+          "coding",
+          "testing",
+          "review"
+        ],
+        "planAgent": "planner",
+        "codeAgent": "code-generator",
+        "testAgent": "test-writer",
+        "reviewAgent": "code-reviewer",
+        "graph": "advisor-mnopcfa1-j2a1"
+      },
+      "git": {
+        "autoBranch": true,
+        "branchPrefix": "feature/",
+        "autoCommit": true,
+        "autoPR": false
+      },
+      "monitoring": {
+        "watchFiles": [
+          "index.html",
+          "manifest.json"
+        ],
+        "logLevel": "normal",
+        "taskPattern": "## Tasks"
+      },
+      "progressiveStage": 2,
+      "progressive": true
+    },
+    {
+      "id": "advisor-mnopo26u-57df",
+      "name": "Railway Demo",
+      "description": "Es wird eine Webseite mit POS, ganz klar und dann aber in Deployment of Railway",
+      "icon": "🚀",
+      "stacks": [
+        "railway"
+      ],
+      "deploySteps": [
+        {
+          "name": "GitHub Repo erstellen",
+          "action": "github-publish",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+          "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+        },
+        {
+          "name": "GitHub Pages aktivieren",
+          "action": "github-pages",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+          "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+          "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+        },
+        {
+          "name": "Railway Deploy",
+          "action": "railway-deploy",
+          "stage": 2,
+          "command": "railway up --detach",
+          "description": "App auf Railway deployen",
+          "urlPattern": "https://pulse-app-${appId}-production.up.railway.app"
+        }
+      ],
+      "scaffold": {
+        "files": [
+          "index.html",
+          "manifest.json",
+          "data/state.json",
+          "package.json",
+          "server.js",
+          "railway.json"
+        ],
+        "directories": [
+          "data/"
+        ]
+      },
+      "envVars": [
+        {
+          "key": "RAILWAY_TOKEN",
+          "required": true,
+          "description": "Railway API Token"
+        }
+      ],
+      "agents": {
+        "phases": [
+          "planning",
+          "coding",
+          "testing",
+          "review"
+        ],
+        "planAgent": "planner",
+        "codeAgent": "code-generator",
+        "testAgent": "test-writer",
+        "reviewAgent": "code-reviewer",
+        "graph": "advisor-mnopo26u-57df"
+      },
+      "git": {
+        "autoBranch": true,
+        "branchPrefix": "feature/",
+        "autoCommit": true,
+        "autoPR": false
+      },
+      "monitoring": {
+        "watchFiles": [
+          "index.html",
+          "manifest.json"
+        ],
+        "logLevel": "normal",
+        "taskPattern": "## Tasks"
+      },
+      "progressiveStage": 2,
+      "progressive": true
+    },
+    {
+      "id": "advisor-mnosi1ht-s3kv",
+      "name": "Test SaaS",
+      "description": "SaaS",
+      "icon": "🚀",
+      "stacks": [
+        "github-pages",
+        "railway",
+        "supabase",
+        "stripe"
+      ],
+      "deploySteps": [
+        {
+          "name": "GitHub Repo erstellen",
+          "action": "github-publish",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+          "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+        },
+        {
+          "name": "GitHub Pages aktivieren",
+          "action": "github-pages",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+          "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+          "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+        },
+        {
+          "name": "Railway Deploy",
+          "action": "railway-deploy",
+          "stage": 2,
+          "command": "railway up --detach",
+          "description": "App auf Railway deployen",
+          "urlPattern": "https://pulse-app-${appId}-production.up.railway.app"
+        },
+        {
+          "name": "Supabase Setup",
+          "action": "supabase-setup",
+          "stage": 3,
+          "description": "Supabase-Projekt verbinden (URL + Anon Key in Env Vars)"
+        },
+        {
+          "name": "Stripe Integration",
+          "action": "stripe-setup",
+          "stage": 4,
+          "description": "Stripe Webhook + Keys konfigurieren"
+        }
+      ],
+      "scaffold": {
+        "files": [
+          "index.html",
+          "manifest.json",
+          "data/state.json",
+          "package.json",
+          "server.js",
+          "railway.json",
+          "lib/supabase.js"
+        ],
+        "directories": [
+          "data/",
+          "lib/"
+        ]
+      },
+      "envVars": [
+        {
+          "key": "RAILWAY_TOKEN",
+          "required": true,
+          "description": "Railway API Token"
+        },
+        {
+          "key": "SUPABASE_URL",
+          "required": true,
+          "description": "Supabase Project URL"
+        },
+        {
+          "key": "SUPABASE_ANON_KEY",
+          "required": true,
+          "description": "Supabase Anonymous Key"
+        },
+        {
+          "key": "STRIPE_SECRET_KEY",
+          "required": true,
+          "description": "Stripe Secret Key"
+        },
+        {
+          "key": "STRIPE_PUBLISHABLE_KEY",
+          "required": true,
+          "description": "Stripe Publishable Key"
+        }
+      ],
+      "agents": {
+        "phases": [
+          "planning",
+          "coding",
+          "testing",
+          "review"
+        ],
+        "planAgent": "planner",
+        "codeAgent": "code-generator",
+        "testAgent": "test-writer",
+        "reviewAgent": "code-reviewer",
+        "graph": "advisor-mnosi1ht-s3kv"
+      },
+      "git": {
+        "autoBranch": true,
+        "branchPrefix": "feature/",
+        "autoCommit": true,
+        "autoPR": true
+      },
+      "monitoring": {
+        "watchFiles": [
+          "index.html",
+          "manifest.json"
+        ],
+        "logLevel": "normal",
+        "taskPattern": "## Tasks"
+      },
+      "progressiveStage": 4,
+      "progressive": true
+    },
+    {
+      "id": "advisor-mnosmw3k-qx02",
+      "name": "Web Application",
+      "description": "Vercel static. wie immer erst pulse os github repo und github. io. danach online deploy auf vercel",
+      "icon": "🚀",
+      "stacks": [
+        "github-pages",
+        "vercel"
+      ],
+      "deploySteps": [
+        {
+          "name": "GitHub Repo erstellen",
+          "action": "github-publish",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+          "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+        },
+        {
+          "name": "GitHub Pages aktivieren",
+          "action": "github-pages",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+          "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+          "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+        },
+        {
+          "name": "Vercel Deploy",
+          "action": "vercel-deploy",
+          "stage": 2,
+          "command": "vercel --prod --yes --token ${VERCEL_TOKEN}",
+          "description": "Frontend auf Vercel deployen",
+          "urlPattern": "https://pulse-app-${appId}.vercel.app"
+        }
+      ],
+      "scaffold": {
+        "files": [
+          "index.html",
+          "manifest.json",
+          "data/state.json",
+          "package.json",
+          "server.js",
+          "next.config.js",
+          "app/page.tsx",
+          "app/layout.tsx"
+        ],
+        "directories": [
+          "data/",
+          "app/",
+          "public/"
+        ]
+      },
+      "envVars": [
+        {
+          "key": "VERCEL_TOKEN",
+          "required": true,
+          "description": "Vercel API Token"
+        }
+      ],
+      "agents": {
+        "phases": [
+          "planning",
+          "coding",
+          "testing",
+          "review"
+        ],
+        "planAgent": "planner",
+        "codeAgent": "code-generator",
+        "testAgent": "test-writer",
+        "reviewAgent": "code-reviewer"
+      },
+      "git": {
+        "autoBranch": true,
+        "branchPrefix": "feature/",
+        "autoCommit": true,
+        "autoPR": true
+      },
+      "monitoring": {
+        "watchFiles": [
+          "index.html",
+          "manifest.json"
+        ],
+        "logLevel": "normal",
+        "taskPattern": "## Tasks"
+      },
+      "progressiveStage": 1,
+      "progressive": true
+    },
+    {
+      "id": "advisor-mnosoqoo-7t3l",
+      "name": "Web Application",
+      "description": "Vercel static",
+      "icon": "🚀",
+      "stacks": [
+        "railway",
+        "github-pages",
+        "vercel"
+      ],
+      "deploySteps": [
+        {
+          "name": "GitHub Repo erstellen",
+          "action": "github-publish",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+          "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+        },
+        {
+          "name": "GitHub Pages aktivieren",
+          "action": "github-pages",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+          "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+          "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+        },
+        {
+          "name": "Railway Deploy",
+          "action": "railway-deploy",
+          "stage": 2,
+          "command": "railway up --detach",
+          "description": "App auf Railway deployen",
+          "urlPattern": "https://pulse-app-${appId}-production.up.railway.app"
+        }
+      ],
+      "scaffold": {
+        "files": [
+          "index.html",
+          "manifest.json",
+          "data/state.json",
+          "package.json",
+          "server.js",
+          "next.config.js",
+          "app/page.tsx",
+          "app/layout.tsx",
+          "railway.json"
+        ],
+        "directories": [
+          "data/",
+          "app/",
+          "public/"
+        ]
+      },
+      "envVars": [
+        {
+          "key": "RAILWAY_TOKEN",
+          "required": true,
+          "description": "Railway API Token"
+        },
+        {
+          "key": "VERCEL_TOKEN",
+          "required": true,
+          "description": "Vercel API Token"
+        }
+      ],
+      "agents": {
+        "phases": [
+          "planning",
+          "coding",
+          "testing",
+          "review"
+        ],
+        "planAgent": "planner",
+        "codeAgent": "code-generator",
+        "testAgent": "test-writer",
+        "reviewAgent": "code-reviewer",
+        "graph": "advisor-mnosoqoo-7t3l"
+      },
+      "git": {
+        "autoBranch": true,
+        "branchPrefix": "feature/",
+        "autoCommit": true,
+        "autoPR": true
+      },
+      "monitoring": {
+        "watchFiles": [
+          "index.html",
+          "manifest.json"
+        ],
+        "logLevel": "normal",
+        "taskPattern": "## Tasks"
+      },
+      "progressiveStage": 2,
+      "progressive": true
+    },
+    {
+      "name": "Web App + Railway Backend",
+      "description": "Vanilla HTML/CSS/JS Frontend mit Node.js API Server. GitHub Pages für Frontend, Railway für Backend-API. Kein Framework, kein npm-Build-Schritt.",
+      "icon": "🚀",
+      "stacks": [
+        "github-pages",
+        "railway"
+      ],
+      "progressiveStage": 2,
+      "agents": {
+        "phases": [
+          "planning",
+          "coding",
+          "testing",
+          "review"
+        ],
+        "planAgent": "planner",
+        "codeAgent": "code-generator",
+        "testAgent": "test-writer",
+        "reviewAgent": "code-reviewer"
+      },
+      "scaffold": {
+        "files": [
+          "index.html",
+          "manifest.json",
+          "data/state.json",
+          "server.js",
+          "package.json",
+          "railway.json"
+        ],
+        "directories": [
+          "data/"
+        ]
+      },
+      "envVars": [
+        {
+          "key": "RAILWAY_TOKEN",
+          "required": true,
+          "description": "Railway API Token"
+        }
+      ],
+      "git": {
+        "autoBranch": false,
+        "autoCommit": true,
+        "autoPR": false,
+        "branchPrefix": "feature/"
+      },
+      "monitoring": {
+        "watchFiles": [
+          "index.html",
+          "manifest.json",
+          "server.js",
+          "PLAN.md",
+          "PROGRESS.md"
+        ],
+        "taskPattern": "## Tasks",
+        "logLevel": "normal"
+      },
+      "deploySteps": [
+        {
+          "name": "GitHub Repo erstellen",
+          "action": "github-publish",
+          "stage": 1,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+          "description": "Erstellt ein öffentliches GitHub Repo und pusht den Code"
+        },
+        {
+          "name": "GitHub Pages aktivieren",
+          "action": "github-pages",
+          "stage": 1,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+          "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+          "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+        },
+        {
+          "name": "Railway Deploy",
+          "action": "railway-deploy",
+          "stage": 2,
+          "command": "railway up --detach",
+          "description": "Node.js API Server auf Railway deployen",
+          "urlPattern": "https://pulse-app-${appId}-production.up.railway.app"
+        }
+      ],
+      "instructions": "# Web App + Railway Backend Template\n\nVanilla HTML/CSS/JS Frontend mit Node.js API Server.\n\n## Struktur\n```\n├── index.html      ← Frontend (alles in einer Datei)\n├── manifest.json   ← PulseOS Metadaten\n├── server.js       ← Node.js HTTP Server\n├── package.json    ← { main: server.js, scripts: { start: node server.js } }\n├── railway.json    ← { \"$schema\": \"https://railway.app/railway.schema.json\", \"build\": { \"builder\": \"NIXPACKS\" }, \"deploy\": { \"startCommand\": \"node server.js\" } }\n└── data/\n    └── state.json  ← App-Daten\n```\n\n## server.js Muster\n```javascript\nconst http = require('http');\nconst fs = require('fs');\nconst path = require('path');\nconst PORT = process.env.PORT || 3100;\nconst APP_ID = 'DEINE-APP-ID';\n\nhttp.createServer((req, res) => {\n  res.setHeader('Access-Control-Allow-Origin', '*');\n  // Data API: GET/PUT /app/${APP_ID}/api/<dataFile>\n  if (req.url.startsWith(`/app/${APP_ID}/api/`)) { /* ... */ }\n  // Static files\n  const fp = path.join(__dirname, req.url === '/' ? '/index.html' : req.url);\n  // ...\n}).listen(PORT);\n```\n\n## PulseOS SDK\n```html\n<script src=\"/sdk.js\"></script>\n<script>\nPulseOS.onInput('data', data => { /* empfangen */ });\nPulseOS.emit('result', data);\nPulseOS.onDataChanged(() => loadData());\n</script>\n```\n\n## CSS-Variablen\nvar(--bg), var(--text), var(--teal), var(--border), var(--bg-card), var(--text-dim)\n\n## Deploy\n- Stage 1: GitHub Repo + GitHub Pages (statisches Frontend)\n- Stage 2: Railway (Node.js Backend-API)\n\n## Regeln\n- Kein React, kein npm-Build für Frontend\n- server.js nutzt nur Node.js Built-ins (http, fs, path)\n- Data API pattern: GET/PUT /app/<id>/api/<dataFile>\n- railway.json immer mitliefern",
+      "progressive": true,
+      "id": "web-app-railway-backend",
+      "author": "user",
+      "createdAt": "2026-04-07T15:52:43.589Z"
+    },
+    {
+      "id": "railway-dynamic-template-demo",
+      "name": "Railway Dynamic Template Demo",
+      "description": "Node.js App mit GitHub Repo, GitHub Pages (statisches Frontend) und Railway Backend. Robustes Onboarding für alle Services.",
+      "icon": "🚂",
+      "author": "chris",
+      "stacks": [
+        "railway",
+        "github-pages"
+      ],
+      "envVars": [
+        "RAILWAY_TOKEN",
+        "GITHUB_PAGES_TOKEN",
+        "PORT"
+      ],
+      "git": {
+        "autoBranch": true,
+        "branchPrefix": "feature/",
+        "autoCommit": true,
+        "autoPR": true
+      },
+      "scaffold": {
+        "files": [
+          "index.html",
+          "manifest.json",
+          "data/state.json",
+          "package.json",
+          "server.js",
+          "railway.json"
+        ],
+        "directories": [
+          "data/"
+        ]
+      },
+      "agents": {
+        "phases": [
+          "planning",
+          "coding",
+          "testing",
+          "review"
+        ],
+        "planAgent": "planner",
+        "codeAgent": "code-generator",
+        "testAgent": "test-writer",
+        "reviewAgent": "code-reviewer"
+      },
+      "deploySteps": [
+        {
+          "name": "Onboarding: GitHub Token prüfen",
+          "action": "onboarding",
+          "stage": 1,
+          "description": "Prüft ob GitHub Token vorhanden ist. Falls nicht: Wizard mit Link zu github.com/settings/tokens (Scope: repo + pages)",
+          "check": "GITHUB_PAGES_TOKEN",
+          "onboardingUrl": "https://github.com/settings/tokens/new",
+          "onboardingHint": "Token mit Scope: repo, workflow, pages"
+        },
+        {
+          "name": "Onboarding: Railway Token prüfen",
+          "action": "onboarding",
+          "stage": 1,
+          "description": "Prüft ob Railway Token vorhanden ist. Falls nicht: Wizard mit Link zu railway.app/account/tokens",
+          "check": "RAILWAY_TOKEN",
+          "onboardingUrl": "https://railway.app/account/tokens",
+          "onboardingHint": "Token aus Railway Dashboard → Account → Tokens"
+        },
+        {
+          "name": "GitHub Repo erstellen",
+          "action": "github-publish",
+          "stage": 2,
+          "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+          "description": "Erstellt ein öffentliches GitHub Repo und pusht den Code"
+        },
+        {
+          "name": "GitHub Pages aktivieren",
+          "action": "github-pages",
+          "stage": 2,
+          "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+          "description": "Aktiviert GitHub Pages — statisches Frontend unter https://${githubUser}.github.io/pulse-app-${appId}/",
+          "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+        },
+        {
+          "name": "Railway Projekt erstellen & deployen",
+          "action": "railway-deploy",
+          "stage": 3,
+          "command": "cd ${appDir} && railway init --name pulse-app-${appId} && railway up",
+          "description": "Erstellt Railway Projekt und deployt den Backend-Server. Nutzt process.env.PORT.",
+          "envVars": [
+            "RAILWAY_TOKEN"
+          ],
+          "healthCheck": "/"
+        },
+        {
+          "name": "URLs speichern & anzeigen",
+          "action": "finalize",
+          "stage": 4,
+          "description": "Speichert beide URLs in app-config: 🌐 GitHub Pages (Frontend) + 🚂 Railway (Backend/API)",
+          "outputs": [
+            "githubPagesUrl",
+            "railwayUrl"
+          ]
+        }
+      ],
+      "instructions": "# Railway Dynamic Template Demo\n\nDu erstellst eine Node.js App die auf Railway deployt wird.\n\n## App-Struktur\n```\nserver.js        ← Express/HTTP Server, nutzt process.env.PORT\nindex.html       ← Frontend (kann statisch via GitHub Pages gehostet werden)\npackage.json     ← Dependencies\nrailway.json     ← Railway Konfiguration\nmanifest.json    ← PulseOS Metadaten\ndata/state.json  ← App-Daten\n```\n\n## Pflichtregeln\n- server.js MUSS `process.env.PORT || 3000` nutzen\n- Health-Check Endpoint `GET /` muss 200 zurückgeben\n- CORS aktivieren für GitHub Pages Frontend\n- PulseOS SDK in index.html einbinden\n\n## railway.json\n```json\n{\"$schema\":\"https://railway.app/railway.schema.json\",\"build\":{\"builder\":\"NIXPACKS\"},\"deploy\":{\"startCommand\":\"node server.js\",\"healthcheckPath\":\"/\",\"restartPolicyType\":\"ON_FAILURE\"}}\n```",
+      "createdAt": "2026-04-07T16:26:41.070Z",
+      "monitoring": {
+        "watchFiles": [
+          "index.html",
+          "manifest.json"
+        ],
+        "taskPattern": "## Tasks",
+        "logLevel": "normal"
+      },
+      "progressive": true
     }
   ]
 }

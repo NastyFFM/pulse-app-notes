@@ -1,0 +1,129 @@
+{
+  "categories": {
+    "web-application": {
+      "label": "Web Application",
+      "icon": "🌐",
+      "timesChosen": 5,
+      "progressiveStages": [
+        {
+          "stage": 1,
+          "name": "PulseOS + GitHub Repo + GitHub Pages",
+          "stacks": [
+            "github-pages"
+          ],
+          "timesUsed": 3
+        },
+        {
+          "stage": 2,
+          "name": "App Deploy (Backend)",
+          "stacks": [
+            "railway"
+          ],
+          "timesUsed": 4,
+          "altStacks": {
+            "vercel": 0,
+            "cloudflare": 0,
+            "netlify": 0
+          }
+        },
+        {
+          "stage": 3,
+          "name": "User Management + Auth",
+          "stacks": [
+            "supabase"
+          ],
+          "timesUsed": 1
+        },
+        {
+          "stage": 4,
+          "name": "Monetarisierung",
+          "stacks": [
+            "stripe"
+          ],
+          "timesUsed": 1
+        }
+      ]
+    },
+    "static-site": {
+      "label": "Statische Seite",
+      "icon": "📄",
+      "timesChosen": 0,
+      "progressiveStages": [
+        {
+          "stage": 1,
+          "name": "GitHub Pages",
+          "stacks": [
+            "github-pages"
+          ],
+          "timesUsed": 0
+        }
+      ]
+    },
+    "api-backend": {
+      "label": "API / Backend",
+      "icon": "⚡",
+      "timesChosen": 0,
+      "progressiveStages": [
+        {
+          "stage": 1,
+          "name": "PulseOS + GitHub Repo + GitHub Pages",
+          "stacks": [
+            "github-pages"
+          ],
+          "timesUsed": 0
+        },
+        {
+          "stage": 2,
+          "name": "Backend Deploy",
+          "stacks": [
+            "railway"
+          ],
+          "timesUsed": 0
+        }
+      ]
+    }
+  },
+  "userPreferences": {
+    "preferredHosting": "railway",
+    "preferredAuth": "supabase",
+    "preferredPayments": "stripe",
+    "lastUsedCategory": "web-application"
+  },
+  "stackCombinations": [
+    {
+      "stacks": [
+        "github-pages",
+        "railway",
+        "stripe",
+        "supabase"
+      ],
+      "count": 1,
+      "category": "web-application"
+    },
+    {
+      "stacks": [
+        "railway"
+      ],
+      "count": 3,
+      "category": "web-application"
+    },
+    {
+      "stacks": [
+        "github-pages",
+        "vercel"
+      ],
+      "count": 1,
+      "category": "web-application"
+    },
+    {
+      "stacks": [
+        "railway",
+        "github-pages",
+        "vercel"
+      ],
+      "count": 1,
+      "category": "web-application"
+    }
+  ],
+  "suggestedSkills": []
+}

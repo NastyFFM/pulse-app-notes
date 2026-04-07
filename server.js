@@ -2752,7 +2752,12 @@ if (window.PulseOS) {
         // Ensure defaults for any missing fields
         applyTemplateDefaults(data.templates[idx]);
         fs.writeFileSync(templatesFile, JSON.stringify(data, null, 2));
-        jsonRes(res, { ok: true, template: data.templates[idx] });
+        // Check for missing agents
+        const tplAgents = data.templates[idx].agents || {};
+        const agentNames = [tplAgents.planAgent, tplAgents.codeAgent, tplAgents.testAgent, tplAgents.reviewAgent].filter(Boolean);
+        const agentsDir = path.join(ROOT, '.claude', 'agents');
+        const missingAgents = agentNames.filter(n => !fs.existsSync(path.join(agentsDir, n + '.md')));
+        jsonRes(res, { ok: true, template: data.templates[idx], missingAgents: missingAgents.length ? missingAgents : undefined });
       } catch (e) { jsonRes(res, { error: e.message }, 400); }
     });
   }
@@ -3184,6 +3189,19 @@ if (window.PulseOS) {
           };
         }
 
+        // Reuse existing active session for this template if available
+        if (editMode && templateId) {
+          try {
+            const sessionFiles = fs.readdirSync(TM_DIR).filter(f => f.startsWith('tms-') && f.endsWith('.json'));
+            for (const sf of sessionFiles.reverse()) { // newest first
+              const sess = JSON.parse(fs.readFileSync(path.join(TM_DIR, sf), 'utf8'));
+              if (sess.status === 'active' && sess.editMode && sess.draft?.id === templateId && sess.messages?.length > 1) {
+                return jsonRes(res, { ok: true, sessionId: sess.id, draft: sess.draft, editMode: true, reused: true });
+              }
+            }
+          } catch {}
+        }
+
         const sessionId = 'tms-' + Date.now().toString(36);
         const firstMsg = editMode
           ? { from: 'agent', text: '✏️ **Template "' + draft.name + '" bearbeiten**\n\nWas moechtest du aendern? Du kannst z.B. sagen:\n• "Fuege GitHub Pages Deploy hinzu"\n• "Aendere die Stacks auf railway, supabase"\n• "Deploy soll auf GitHub Pages laufen"\n• "Entferne den Test-Step"\n\nOder klicke direkt in die Felder rechts.\n\n[BUTTON:Deploy-Steps bearbeiten] [BUTTON:Stacks aendern] [BUTTON:Fertig]', time: new Date().toISOString() }
@@ -3235,16 +3253,64 @@ if (window.PulseOS) {
             'Env Vars: ' + (draft.envVars || []).map(v => v.key).join(', ') + '\n' +
             'Git: autoBranch=' + (draft.git?.autoBranch) + ' autoCommit=' + (draft.git?.autoCommit) + ' autoPR=' + (draft.git?.autoPR);
 
-          const agentMessage = '[TEMPLATE-EDIT: ' + (draft.id || sessionId) + ']\n' +
-            draftSummary + '\n\n' +
-            'User sagt: ' + text + '\n\n---\n' +
-            'Du bearbeitest das PulseOS Template "' + (draft.name || '') + '".\n' +
-            'Wenn du Aenderungen machst, aktualisiere das Template via:\n' +
-            'curl -s -X PUT http://localhost:3000/api/templates/' + (draft.id || '') + ' -H "Content-Type: application/json" -d \'<updated fields as JSON>\'\n' +
-            'Fuer Deploy-Schritte nutze das "deploySteps" Array im Template. Jeder Step hat: name, action, command, description, urlPattern.\n' +
-            'Bekannte actions: github-publish, github-pages, railway-deploy, vercel-deploy, supabase-setup, stripe-setup.\n' +
-            'GitHub Pages = Code als Repo pushen UND die App live unter https://{user}.github.io/{repo}/ hosten.\n' +
-            'Antworte dem User kurz auf Deutsch was du geaendert hast.';
+          // Load available agents for context
+          let agentsList = '';
+          try {
+            const agentsDir2 = path.join(ROOT, '.claude', 'agents');
+            if (fs.existsSync(agentsDir2)) {
+              agentsList = fs.readdirSync(agentsDir2).filter(f => f.endsWith('.md')).map(f => {
+                const content = fs.readFileSync(path.join(agentsDir2, f), 'utf8');
+                const nameMatch = content.match(/name:\s*(.+)/);
+                const descMatch = content.match(/description:\s*(.+)/);
+                return '- ' + (nameMatch?.[1]?.trim() || f.replace('.md','')) + ': ' + (descMatch?.[1]?.trim() || '').slice(0, 80);
+              }).join('\n');
+            }
+          } catch {}
+
+          // Collect extended context for the Template Maker Agent
+          let skillsList = '';
+          try {
+            const skillsDir = path.join(ROOT, '.claude', 'skills');
+            if (fs.existsSync(skillsDir)) {
+              skillsList = fs.readdirSync(skillsDir).filter(d => {
+                try { return fs.statSync(path.join(skillsDir, d)).isDirectory(); } catch { return false; }
+              }).map(d => '- ' + d).join('\n');
+            }
+          } catch {}
+
+          let stacksStatus = '';
+          try {
+            const env = readGlobalEnv();
+            const stacksData = safeReadJSON(path.join(ROOT, 'data', 'tech-stacks.json'), '{"stacks":[]}');
+            stacksStatus = (stacksData.stacks || []).map(s => {
+              const vars = s.requiredEnvVars || [];
+              const ready = vars.length === 0 || vars.every(v => !!env[v]);
+              return '- ' + s.id + ' (' + s.name + '): ' + (ready ? 'READY' : 'MISSING: ' + vars.filter(v => !env[v]).join(', '));
+            }).join('\n');
+          } catch {}
+
+          let patternsInfo = '';
+          try {
+            const patterns = safeReadJSON(path.join(ROOT, 'data', 'template-advisor', 'patterns.json'), '{}');
+            if (patterns.userPreferences) {
+              patternsInfo = 'Bevorzugtes Hosting: ' + (patterns.userPreferences.preferredHosting || 'keins') +
+                ', Auth: ' + (patterns.userPreferences.preferredAuth || 'keins') +
+                ', Letzte Kategorie: ' + (patterns.userPreferences.lastUsedCategory || 'keine');
+            }
+          } catch {}
+
+          const agentMessage = '[TEMPLATE-MAKER SESSION: ' + (draft.id || sessionId) + ']\n' +
+            'Template-Draft:\n' + draftSummary + '\n' +
+            'Agents-Phasen: ' + (draft.agents?.phases || []).join(' → ') + '\n\n' +
+            'User sagt: ' + text + '\n\n' +
+            '---\n' +
+            'KONTEXT:\n' +
+            'Verfuegbare Agents:\n' + (agentsList || '(keine)') + '\n\n' +
+            'Verfuegbare Skills:\n' + (skillsList || '(keine)') + '\n\n' +
+            'Stack-Status:\n' + (stacksStatus || '(unbekannt)') + '\n\n' +
+            'User-Patterns: ' + (patternsInfo || 'Noch keine Daten') + '\n\n' +
+            'Du bist der Template Maker Agent. Lies deine SKILL.md fuer Details.\n' +
+            'Antworte kurz auf Deutsch. Frage bevor du etwas erstellst.';
 
           const queueFile = path.join(ROOT, 'data', 'chat-queue.json');
           const queue = safeReadJSON(queueFile, { pending: [] });
@@ -3284,6 +3350,891 @@ if (window.PulseOS) {
         return jsonRes(res, { ok: true, step: session.step, status: session.status, messageCount: session.messages.length });
       } catch (e) { return jsonRes(res, { error: e.message }, 500); }
     });
+  }
+
+  // ── Template Advisor — Vollautomatische Template-Erstellung ──
+  const TA_DIR = path.join(ROOT, 'data', 'template-advisor', 'sessions');
+  const TA_PATTERNS_FILE = path.join(ROOT, 'data', 'template-advisor', 'patterns.json');
+  try { fs.mkdirSync(TA_DIR, { recursive: true }); } catch {}
+
+  // Extended stack detection including feature-keywords
+  const taStackFeatureKeywords = {
+    'supabase': ['user management', 'users', 'auth', 'authentication', 'login', 'register', 'signup', 'database', 'db', 'supabase', 'realtime'],
+    'stripe': ['monetization', 'monetisation', 'payment', 'payments', 'billing', 'subscription', 'saas', 'stripe', 'checkout'],
+    'railway': ['railway', 'backend', 'server', 'api', 'node.js', 'node', 'express'],
+    'vercel': ['vercel', 'next.js', 'nextjs', 'next'],
+    'cloudflare': ['cloudflare', 'workers', 'edge'],
+    'netlify': ['netlify', 'serverless'],
+    'github-pages': ['github pages', 'static', 'portfolio', 'landing page', 'frontend only', 'admin']
+  };
+
+  function taDetectStacks(prompt) {
+    const lower = prompt.toLowerCase();
+    const stacks = [];
+    for (const [stack, keywords] of Object.entries(taStackFeatureKeywords)) {
+      if (keywords.some(k => lower.includes(k))) stacks.push(stack);
+    }
+    return [...new Set(stacks)];
+  }
+
+  function autoGenerateDeploySteps(stacks) {
+    const steps = [];
+    // Stage 1: Always GitHub Repo + Pages
+    steps.push(
+      {
+        name: 'GitHub Repo erstellen',
+        action: 'github-publish',
+        stage: 1,
+        command: 'cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)',
+        description: 'Erstellt ein oeffentliches GitHub Repo und pusht den Code'
+      },
+      {
+        name: 'GitHub Pages aktivieren',
+        action: 'github-pages',
+        stage: 1,
+        command: 'gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f "build_type=legacy" -f "source[branch]=main" -f "source[path]=/" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f "build_type=legacy" -f "source[branch]=main" -f "source[path]=/" 2>/dev/null || echo pages-already-enabled',
+        description: 'App live unter https://${githubUser}.github.io/pulse-app-${appId}/',
+        urlPattern: 'https://${githubUser}.github.io/pulse-app-${appId}/'
+      }
+    );
+    // Stage 2: Backend hosting
+    if (stacks.includes('railway')) {
+      steps.push({ name: 'Railway Deploy', action: 'railway-deploy', stage: 2, command: 'railway up --detach', description: 'App auf Railway deployen', urlPattern: 'https://pulse-app-${appId}-production.up.railway.app' });
+    } else if (stacks.includes('vercel')) {
+      steps.push({ name: 'Vercel Deploy', action: 'vercel-deploy', stage: 2, command: 'vercel --prod --yes --token ${VERCEL_TOKEN}', description: 'Frontend auf Vercel deployen', urlPattern: 'https://pulse-app-${appId}.vercel.app' });
+    } else if (stacks.includes('netlify')) {
+      steps.push({ name: 'Netlify Deploy', action: 'netlify-deploy', stage: 2, command: 'netlify deploy --prod --dir=. --auth=${NETLIFY_AUTH_TOKEN}', description: 'Frontend auf Netlify deployen', urlPattern: 'https://pulse-app-${appId}.netlify.app' });
+    } else if (stacks.includes('cloudflare')) {
+      steps.push({ name: 'Cloudflare Deploy', action: 'cloudflare-deploy', stage: 2, command: 'wrangler pages deploy . --project-name=pulse-app-${appId} --commit-dirty=true', description: 'Frontend auf Cloudflare Pages deployen', urlPattern: 'https://pulse-app-${appId}.pages.dev' });
+    }
+    // Stage 3: Auth/DB
+    if (stacks.includes('supabase')) {
+      steps.push({ name: 'Supabase Setup', action: 'supabase-setup', stage: 3, description: 'Supabase-Projekt verbinden (URL + Anon Key in Env Vars)' });
+    }
+    // Stage 4: Payments
+    if (stacks.includes('stripe')) {
+      steps.push({ name: 'Stripe Integration', action: 'stripe-setup', stage: 4, description: 'Stripe Webhook + Keys konfigurieren' });
+    }
+    return steps;
+  }
+
+  function taCheckStacksReady(stacks) {
+    const env = readGlobalEnv();
+    const stacksData = safeReadJSON(path.join(ROOT, 'data', 'tech-stacks.json'), '{"stacks":[]}');
+    const ready = [];
+    const missing = [];
+    for (const stackId of stacks) {
+      const stackDef = (stacksData.stacks || []).find(s => s.id === stackId);
+      if (!stackDef) { ready.push(stackId); continue; } // Unknown stack — assume ok
+      const requiredVars = stackDef.requiredEnvVars || [];
+      const hasAllKeys = requiredVars.length === 0 || requiredVars.every(v => !!env[v]);
+      if (hasAllKeys) {
+        ready.push(stackId);
+      } else {
+        missing.push({ id: stackId, name: stackDef.name, icon: stackDef.icon || '', missingVars: requiredVars.filter(v => !env[v]), onboarding: stackDef.onboarding || [] });
+      }
+    }
+    return { ready, missing };
+  }
+
+  function taDetectTokenInput(text) {
+    // Detect pasted tokens/keys in free text
+    const trimmed = text.trim();
+    if (/^https:\/\/[a-z0-9-]+\.supabase\.co/.test(trimmed)) return { envVar: 'SUPABASE_URL', value: trimmed };
+    if (/^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/.test(trimmed)) return { envVar: 'SUPABASE_ANON_KEY', value: trimmed };
+    if (/^[sp]k_(test|live)_/.test(trimmed)) {
+      if (trimmed.startsWith('sk_')) return { envVar: 'STRIPE_SECRET_KEY', value: trimmed };
+      return { envVar: 'STRIPE_PUBLISHABLE_KEY', value: trimmed };
+    }
+    // Generic long token (Railway, Vercel, etc.) — 20+ alphanumeric chars, no spaces
+    if (/^[A-Za-z0-9_\-]{20,}$/.test(trimmed)) return { envVar: '_TOKEN', value: trimmed };
+    return null;
+  }
+
+  // ── Auto-Generation: Skills, Agents, Graph ──
+
+  function taAutoGenerateSkill(stackId) {
+    const skillDir = path.join(ROOT, '.claude', 'skills', stackId + '-deploy');
+    const skillFile = path.join(skillDir, 'SKILL.md');
+    if (fs.existsSync(skillFile)) return { created: false, path: skillFile };
+
+    const stacksData = safeReadJSON(path.join(ROOT, 'data', 'tech-stacks.json'), '{"stacks":[]}');
+    const stackDef = (stacksData.stacks || []).find(s => s.id === stackId);
+    const name = stackDef?.name || stackId;
+    const desc = stackDef?.description || stackId + ' deployment';
+    const envVars = (stackDef?.requiredEnvVars || []).map(v => '- `' + v + '`').join('\n');
+    const deployCmd = (stackDef?.deploy?.commands || []).join('\n');
+    const installCmd = stackDef?.deploy?.install || '';
+    const onboardingSteps = (stackDef?.onboarding || []).map(s =>
+      '- **' + (s.title || s.step) + '**: ' + (s.instruction || s.url || s.command || '')
+    ).join('\n');
+
+    const content = '---\nname: ' + stackId + '-deploy\n' +
+      'description: ' + name + ' Deployment fuer PulseOS Apps. Aktiviert wenn User ' + name + ' als Deploy-Target waehlt.\n' +
+      '---\n\n# ' + name + ' Deploy Skill\n\n' +
+      '## Wann aktiv\nWenn der User ' + name + ' als Deploy-Target waehlt oder das Template den Stack "' + stackId + '" enthaelt.\n\n' +
+      '## Voraussetzungen\n' +
+      (envVars ? '### Environment Variables\n' + envVars + '\n\n' : '') +
+      (installCmd ? '### CLI Installation\n```bash\n' + installCmd + '\n```\n\n' : '') +
+      '## Deploy-Befehle\n```bash\n' + (deployCmd || '# Kein automatischer Deploy-Befehl definiert') + '\n```\n\n' +
+      '## Onboarding\n' + (onboardingSteps || '- Keine Onboarding-Steps definiert') + '\n\n' +
+      '## WICHTIG\n- Secrets NIEMALS in Code committen\n- Port aus process.env.PORT lesen (wenn Backend)\n- Health-Check Endpoint empfohlen (/api/health)\n';
+
+    try { fs.mkdirSync(skillDir, { recursive: true }); } catch {}
+    fs.writeFileSync(skillFile, content);
+    return { created: true, path: skillFile, stackId };
+  }
+
+  function taAutoGenerateAgent(role, templateId, stacks) {
+    const agentFile = path.join(ROOT, '.claude', 'agents', role + '.md');
+    // Don't overwrite existing agents
+    if (fs.existsSync(agentFile)) return { created: false, path: agentFile };
+
+    const stacksData = safeReadJSON(path.join(ROOT, 'data', 'tech-stacks.json'), '{"stacks":[]}');
+    let content = '';
+
+    if (role === 'onboarder') {
+      const serviceBlocks = stacks.map(stackId => {
+        const def = (stacksData.stacks || []).find(s => s.id === stackId);
+        if (!def || !def.onboarding) return '';
+        return '### ' + (def.name || stackId) + '\n' +
+          (def.onboarding || []).map(s => {
+            if (s.step === 'account') return '1. Account erstellen: [' + (s.url || '') + '](' + (s.url || '') + ')\n   ' + (s.instruction || '');
+            if (s.step === 'paste-token') return '2. Token holen: [' + (s.url || 'Token-Seite') + '](' + (s.url || '') + ')\n   Env-Var: `' + (s.envVar || '') + '`\n   ' + (s.instruction || '');
+            if (s.step === 'cli') return '3. CLI: `' + (s.command || '') + '`';
+            if (s.step === 'cli-login') return '4. Login: `' + (s.command || '') + '`\n   Check: `' + (s.check || '') + '`';
+            return '';
+          }).join('\n');
+      }).filter(Boolean).join('\n\n');
+
+      content = '---\nname: onboarder\n' +
+        'description: Begleitet User durch Service-Anmeldungen. Kennt Signup-URLs, Token-Seiten und CLI-Setups.\n' +
+        'tools:\n  - Read\n  - Write\n  - Edit\n  - Bash\nmodel: haiku\nmaxTurns: 20\n---\n\n' +
+        '# Onboarder Agent\n\nDu begleitest den User durch die Einrichtung von externen Services.\n' +
+        'Fuer jeden Service:\n1. Pruefe ob Token/Keys schon als Env-Var gesetzt sind\n' +
+        '2. Wenn nicht: Zeige Signup-Link, dann Token-Seite\n3. User gibt Token ein → speichere als Env-Var\n' +
+        '4. Bestaetigung + weiter zum naechsten Service\n\n' +
+        '## Services\n\n' + (serviceBlocks || 'Keine Services konfiguriert') + '\n\n' +
+        '## Env-Vars Pruefen\n```bash\ncurl -s http://localhost:3000/api/env\n```\n\n' +
+        '## Env-Vars Setzen\n```bash\ncurl -s -X PUT http://localhost:3000/api/env -H "Content-Type: application/json" -d \'{"KEY":"VALUE"}\'\n```\n';
+    } else if (role === 'template-advisor') {
+      content = '---\nname: template-advisor\n' +
+        'description: Beratet bei Template-Erstellung, lernt aus Entscheidungen, schlaegt Skills vor.\n' +
+        'tools:\n  - Read\n  - Write\n  - Edit\n  - Bash\n  - Glob\n  - Grep\nmodel: sonnet\nmaxTurns: 25\n---\n\n' +
+        '# Template Advisor Agent\n\nDu hilfst Usern Templates zu erstellen.\n\n' +
+        '## Deine Aufgaben\n1. Frage nach Projekt-Kategorie (Web App, Static, API)\n' +
+        '2. Schlage Progressive Stages vor basierend auf gelernten Patterns\n' +
+        '3. Pruefe vorhandene Accounts/Tokens\n4. Delegiere Onboarding an Onboarder Agent\n' +
+        '5. Generiere Template mit Skills, Agents und Graph\n6. Update patterns.json nach jeder Entscheidung\n\n' +
+        '## Patterns\nLies `data/template-advisor/patterns.json` fuer gelernte Vorlieben.\n\n' +
+        '## Skill-Vorschlaege\nAnalysiere Patterns und schlage neue Skills vor wenn Muster erkannt werden.\n';
+    }
+
+    if (!content) return { created: false, reason: 'Unknown role: ' + role };
+    fs.writeFileSync(agentFile, content);
+    return { created: true, path: agentFile, role };
+  }
+
+  function taAutoGenerateGraph(templateId, stacks) {
+    const graphDir = path.join(ROOT, 'data', 'graphs');
+    try { fs.mkdirSync(graphDir, { recursive: true }); } catch {}
+    const graphFile = path.join(graphDir, 'graph-' + templateId + '.json');
+
+    // Build nodes — standard agent pipeline + conditional onboarder
+    const nodes = [
+      { id: 'n-router', appId: '_router', name: 'Router', type: 'router', x: 300, y: 30, inputs: ['message'], outputs: ['intent'] },
+      { id: 'n-planner', appId: '_planner', name: 'Planner', type: 'planner', x: 150, y: 150, inputs: ['task'], outputs: ['plan'] },
+      { id: 'n-coder', appId: '_coder', name: 'Code Generator', type: 'coder', x: 300, y: 270, inputs: ['plan'], outputs: ['code'] },
+      { id: 'n-tester', appId: '_tester', name: 'Test Writer', type: 'tester', x: 300, y: 390, inputs: ['code'], outputs: ['results'] },
+      { id: 'n-reviewer', appId: '_reviewer', name: 'Code Reviewer', type: 'reviewer', x: 300, y: 510, inputs: ['code', 'tests'], outputs: ['verdict'] },
+      { id: 'n-deployer', appId: '_deployer', name: 'Deployer', type: 'deployer', x: 300, y: 630, inputs: ['approved-code'], outputs: ['url'] }
+    ];
+
+    // Add onboarder if there are stacks that need accounts
+    const needsOnboarder = stacks.some(s => ['supabase', 'stripe', 'railway', 'vercel', 'cloudflare', 'netlify'].includes(s));
+    if (needsOnboarder) {
+      nodes.push({ id: 'n-onboarder', appId: '_onboarder', name: 'Onboarder', type: 'onboarder', x: 500, y: 150, inputs: ['missing-services'], outputs: ['ready'] });
+    }
+
+    // Build edges
+    const edges = [
+      { id: 'e-1', from: 'n-router', to: 'n-planner', fromOutput: 'intent', toInput: 'task', condition: 'intent=build' },
+      { id: 'e-2', from: 'n-planner', to: 'n-coder', fromOutput: 'plan', toInput: 'plan' },
+      { id: 'e-3', from: 'n-coder', to: 'n-tester', fromOutput: 'code', toInput: 'code' },
+      { id: 'e-4', from: 'n-tester', to: 'n-reviewer', fromOutput: 'results', toInput: 'tests' },
+      { id: 'e-5', from: 'n-reviewer', to: 'n-deployer', fromOutput: 'verdict', toInput: 'approved-code', condition: 'verdict=GO' }
+    ];
+
+    if (needsOnboarder) {
+      edges.push(
+        { id: 'e-6', from: 'n-router', to: 'n-onboarder', fromOutput: 'intent', toInput: 'missing-services', condition: 'intent=onboard' },
+        { id: 'e-7', from: 'n-onboarder', to: 'n-planner', fromOutput: 'ready', toInput: 'task' }
+      );
+    }
+
+    const graph = {
+      id: templateId,
+      projectId: templateId,
+      name: 'Agent Pipeline — ' + templateId,
+      description: 'Auto-generierter Agent-Graph fuer Template ' + templateId,
+      nodes, edges,
+      triggers: [],
+      created: new Date().toISOString(),
+      updated: new Date().toISOString()
+    };
+
+    fs.writeFileSync(graphFile, JSON.stringify(graph, null, 2));
+    return { created: true, path: graphFile, nodeCount: nodes.length, edgeCount: edges.length };
+  }
+
+  // POST /api/template-advisor/start
+  if (url === '/api/template-advisor/start' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { prompt, templateId, name: customName } = JSON.parse(b || '{}');
+        const patterns = safeReadJSON(TA_PATTERNS_FILE, '{}');
+        const categories = patterns.categories || {};
+        const sessionId = 'tas-' + Date.now().toString(36);
+
+        // ── Edit Mode: edit existing template ──
+        if (templateId) {
+          const tplData = safeReadJSON(templatesFile, '{"templates":[]}');
+          const existing = (tplData.templates || []).find(t => t.id === templateId);
+          if (!existing) return jsonRes(res, { ok: false, error: 'Template not found' }, 404);
+          const session = {
+            id: sessionId, status: 'active', phase: 'edit',
+            prompt: '', editMode: true, templateId,
+            detectedStacks: existing.stacks || [],
+            selectedCategory: null, selectedStages: [],
+            requiredStacks: existing.stacks || [],
+            missingStacks: [], onboardingIndex: 0, onboardingStackIndex: 0, onboardingStepIndex: 0,
+            generatedTemplate: JSON.parse(JSON.stringify(existing)),
+            createdAt: new Date().toISOString()
+          };
+          fs.writeFileSync(path.join(TA_DIR, sessionId + '.json'), JSON.stringify(session, null, 2));
+          return jsonRes(res, {
+            ok: true, sessionId,
+            response: {
+              type: 'question',
+              text: 'Template **"' + existing.name + '"** bearbeiten.\n\nStacks: ' + (existing.stacks || []).join(', ') + '\nDeploy-Steps: ' + (existing.deploySteps || []).length + '\n\nWas moechtest du aendern?',
+              buttons: [
+                { label: 'Name aendern', value: 'edit-name', icon: '' },
+                { label: 'Stacks aendern', value: 'edit-stacks', icon: '' },
+                { label: 'Deploy-Steps aendern', value: 'edit-deploy', icon: '' },
+                { label: 'Skills generieren', value: 'gen-skills', icon: '' },
+                { label: 'Graph generieren', value: 'gen-graph', icon: '' },
+                { label: 'Fertig', value: 'done', icon: '' }
+              ]
+            }
+          });
+        }
+
+        // ── New Template Mode ──
+        const detectedStacks = prompt ? taDetectStacks(prompt) : [];
+
+        // Find recommended category (highest timesChosen)
+        let recommendedCat = null;
+        let maxChosen = -1;
+        for (const [catId, cat] of Object.entries(categories)) {
+          if ((cat.timesChosen || 0) > maxChosen) { maxChosen = cat.timesChosen || 0; recommendedCat = catId; }
+        }
+
+        const buttons = Object.entries(categories).map(([id, cat]) => ({
+          label: cat.label,
+          value: id,
+          icon: cat.icon || '',
+          recommended: id === recommendedCat && maxChosen > 0
+        }));
+        buttons.push({ label: 'Eigene Kategorie...', value: 'custom', icon: '' });
+
+        const session = {
+          id: sessionId,
+          status: 'active',
+          phase: 'category',
+          prompt: prompt || '',
+          customName: customName || '',
+          detectedStacks,
+          selectedCategory: null,
+          selectedStages: [],
+          missingStacks: [],
+          onboardingIndex: 0,
+          onboardingStackIndex: 0,
+          onboardingStepIndex: 0,
+          generatedTemplate: null,
+          createdAt: new Date().toISOString()
+        };
+        fs.writeFileSync(path.join(TA_DIR, sessionId + '.json'), JSON.stringify(session, null, 2));
+
+        return jsonRes(res, {
+          ok: true,
+          sessionId,
+          response: {
+            type: 'question',
+            text: 'Was fuer ein Projekt moechtest du erstellen?',
+            buttons
+          }
+        });
+      } catch (e) { return jsonRes(res, { ok: false, error: e.message }, 500); }
+    });
+  }
+
+  // POST /api/template-advisor/:sessionId/respond
+  const taRespondMatch = url.match(/^\/api\/template-advisor\/(tas-[a-z0-9]+)\/respond$/);
+  if (taRespondMatch && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const body = JSON.parse(b || '{}');
+        const { choice, message } = body;
+        const sessionId = taRespondMatch[1];
+        if (!/^tas-[a-z0-9]+$/.test(sessionId)) return jsonRes(res, { ok: false, error: 'Invalid session ID' }, 400);
+        const sessionFile = path.join(TA_DIR, sessionId + '.json');
+        if (!fs.existsSync(sessionFile)) return jsonRes(res, { ok: false, error: 'Session not found' }, 404);
+        const session = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
+        if (session.status !== 'active') return jsonRes(res, { ok: false, error: 'Session is ' + session.status }, 400);
+
+        const input = (choice || message || '').trim();
+        const patterns = safeReadJSON(TA_PATTERNS_FILE, '{}');
+        const categories = patterns.categories || {};
+        let responsePayload = null;
+
+        // ── Phase: edit (existing template) ──
+        if (session.phase === 'edit') {
+          if (input === 'edit-stacks') {
+            session.phase = 'stages';
+            const cat = categories[session.selectedCategory || 'web-application'] || categories['web-application'] || { progressiveStages: [] };
+            const stages = cat.progressiveStages || [];
+            const stageButtons = stages.map(s => ({
+              label: ((session.requiredStacks || []).some(st => (s.stacks || []).includes(st)) ? '✓ ' : '') + 'Stage ' + s.stage + ': ' + s.name,
+              value: String(s.stage), icon: '',
+              recommended: (session.requiredStacks || []).some(st => (s.stacks || []).includes(st))
+            }));
+            responsePayload = { type: 'question', text: 'Welche Stages soll das Template haben?', buttons: [...stageButtons, { label: 'Alle', value: 'all', icon: '' }, { label: 'Weiter', value: 'done', icon: '' }] };
+          } else if (input === 'edit-deploy') {
+            const tpl = session.generatedTemplate || {};
+            const steps = (tpl.deploySteps || []).map((s, i) => s.name + ' (' + s.action + ')').join('\n• ');
+            responsePayload = { type: 'status', text: 'Aktuelle Deploy-Steps:\n• ' + (steps || 'Keine') + '\n\nTippe was du aendern moechtest, z.B. "Fuege Railway Deploy hinzu" oder "Entferne Vercel".',
+              buttons: [{ label: 'Neu generieren', value: 'regen-deploy', icon: '' }, { label: 'Zurueck', value: 'back-edit', icon: '' }] };
+          } else if (input === 'regen-deploy') {
+            const stacks = session.requiredStacks || session.generatedTemplate?.stacks || [];
+            if (session.generatedTemplate) session.generatedTemplate.deploySteps = autoGenerateDeploySteps(stacks);
+            const tplData = safeReadJSON(templatesFile, '{"templates":[]}');
+            const idx = (tplData.templates || []).findIndex(t => t.id === session.templateId);
+            if (idx >= 0 && session.generatedTemplate) { tplData.templates[idx] = session.generatedTemplate; fs.writeFileSync(templatesFile, JSON.stringify(tplData, null, 2)); }
+            responsePayload = { type: 'status', text: 'Deploy-Steps neu generiert: ' + (session.generatedTemplate?.deploySteps?.length || 0) + ' Steps.',
+              buttons: [{ label: 'Zurueck', value: 'back-edit', icon: '' }] };
+          } else if (input === 'gen-skills') {
+            const stacks = (session.requiredStacks || session.generatedTemplate?.stacks || []).filter(s => s !== 'github-pages');
+            const results = [];
+            for (const s of stacks) { try { const r = taAutoGenerateSkill(s); if (r.created) results.push(s); } catch {} }
+            responsePayload = { type: 'status', text: results.length > 0 ? 'Skills erstellt: ' + results.map(s => s + '-deploy').join(', ') : 'Alle Skills existieren bereits.',
+              buttons: [{ label: 'Zurueck', value: 'back-edit', icon: '' }] };
+          } else if (input === 'gen-graph') {
+            const tpl = session.generatedTemplate;
+            const templateId = tpl?.id || session.templateId;
+            const stacks = session.requiredStacks || tpl?.stacks || [];
+            try {
+              const r = taAutoGenerateGraph(templateId, stacks);
+              if (tpl) { tpl.agents = tpl.agents || {}; tpl.agents.graph = templateId; }
+              responsePayload = { type: 'status', text: 'Graph erstellt: ' + r.nodeCount + ' Nodes, ' + r.edgeCount + ' Edges.',
+                buttons: [{ label: 'Zurueck', value: 'back-edit', icon: '' }] };
+            } catch (e) { responsePayload = { type: 'status', text: 'Graph-Fehler: ' + e.message, buttons: [{ label: 'Zurueck', value: 'back-edit', icon: '' }] }; }
+          } else if (input === 'edit-name') {
+            responsePayload = { type: 'question', text: 'Gib den neuen Namen fuer das Template ein:', buttons: [], placeholder: session.generatedTemplate?.name || '' };
+            session._expectNameInput = true;
+          } else if (session._expectNameInput) {
+            // User typed a new name
+            if (session.generatedTemplate) {
+              session.generatedTemplate.name = input;
+              // Save to templates.json
+              const tplData = safeReadJSON(templatesFile, '{"templates":[]}');
+              const idx = (tplData.templates || []).findIndex(t => t.id === (session.templateId || session.generatedTemplate.id));
+              if (idx >= 0) { tplData.templates[idx].name = input; fs.writeFileSync(templatesFile, JSON.stringify(tplData, null, 2)); }
+            }
+            session._expectNameInput = false;
+            responsePayload = { type: 'status', text: 'Name geaendert: **"' + input + '"**', buttons: [{ label: 'Zurueck', value: 'back-edit', icon: '' }] };
+          } else if (input === 'back-edit') {
+            const tpl = session.generatedTemplate || {};
+            responsePayload = { type: 'question', text: 'Template **"' + (tpl.name || '?') + '"** — was moechtest du aendern?',
+              buttons: [
+                { label: 'Name aendern', value: 'edit-name', icon: '' },
+                { label: 'Stacks aendern', value: 'edit-stacks', icon: '' },
+                { label: 'Deploy-Steps aendern', value: 'edit-deploy', icon: '' },
+                { label: 'Skills generieren', value: 'gen-skills', icon: '' },
+                { label: 'Graph generieren', value: 'gen-graph', icon: '' },
+                { label: 'Fertig', value: 'done', icon: '' }
+              ] };
+          } else if (input === 'done' || input === 'fertig') {
+            session.status = 'done'; session.phase = 'done';
+            responsePayload = { type: 'done', text: 'Template gespeichert.', templateId: session.templateId || session.generatedTemplate?.id };
+          } else {
+            responsePayload = { type: 'question', text: 'Was moechtest du aendern?',
+              buttons: [
+                { label: 'Name aendern', value: 'edit-name', icon: '' },
+                { label: 'Stacks aendern', value: 'edit-stacks', icon: '' },
+                { label: 'Deploy-Steps aendern', value: 'edit-deploy', icon: '' },
+                { label: 'Skills generieren', value: 'gen-skills', icon: '' },
+                { label: 'Graph generieren', value: 'gen-graph', icon: '' },
+                { label: 'Fertig', value: 'done', icon: '' }
+              ] };
+          }
+        }
+
+        // ── Phase: category ──
+        if (session.phase === 'category') {
+          if (input === 'custom') {
+            session.phase = 'category-custom';
+            responsePayload = { type: 'question', text: 'Beschreibe deine Kategorie kurz (z.B. "Mobile App", "Chrome Extension", "Discord Bot"):' };
+          } else if (categories[input]) {
+            session.selectedCategory = input;
+            const cat = categories[input];
+            const stages = cat.progressiveStages || [];
+            const stageButtons = stages.map(s => ({
+              label: 'Stage ' + s.stage + ': ' + s.name,
+              value: String(s.stage),
+              icon: '',
+              recommended: s.stage === 1
+            }));
+            session.phase = 'stages';
+            responsePayload = {
+              type: 'question',
+              text: 'Welche Deployment-Stages moechtest du aktivieren? (Du kannst mehrere waehlen — tippe "fertig" wenn du fertig bist)',
+              buttons: [...stageButtons, { label: 'Alle auswaehlen', value: 'all', icon: '' }, { label: 'Weiter', value: 'done', icon: '' }]
+            };
+          } else {
+            // Treat as freetext category name
+            session.selectedCategory = (input || 'custom').replace(/[^a-z0-9-]/gi, '-').slice(0, 50);
+            session.phase = 'stages';
+            // Default to web-application stages
+            const fallbackCat = categories['web-application'] || { progressiveStages: [{ stage: 1, name: 'GitHub Pages', stacks: ['github-pages'] }] };
+            const stages = fallbackCat.progressiveStages || [];
+            const stageButtons = stages.map(s => ({ label: 'Stage ' + s.stage + ': ' + s.name, value: String(s.stage), icon: '', recommended: s.stage === 1 }));
+            responsePayload = {
+              type: 'question',
+              text: 'Welche Deployment-Stages moechtest du aktivieren?',
+              buttons: [...stageButtons, { label: 'Alle auswaehlen', value: 'all', icon: '' }, { label: 'Weiter', value: 'done', icon: '' }]
+            };
+          }
+        }
+
+        // ── Phase: category-custom ──
+        else if (session.phase === 'category-custom') {
+          session.selectedCategory = (input || 'custom').replace(/[^a-z0-9-]/gi, '-').slice(0, 50);
+          session.phase = 'stages';
+          const fallbackCat = categories['web-application'] || { progressiveStages: [] };
+          const stages = (fallbackCat.progressiveStages || []);
+          const stageButtons = stages.map(s => ({ label: 'Stage ' + s.stage + ': ' + s.name, value: String(s.stage), icon: '', recommended: s.stage === 1 }));
+          responsePayload = {
+            type: 'question',
+            text: 'Welche Deployment-Stages moechtest du aktivieren?',
+            buttons: [...stageButtons, { label: 'Alle auswaehlen', value: 'all', icon: '' }, { label: 'Weiter', value: 'done', icon: '' }]
+          };
+        }
+
+        // ── Phase: stages ──
+        else if (session.phase === 'stages') {
+          if (input === 'all') {
+            const cat = categories[session.selectedCategory] || categories['web-application'] || { progressiveStages: [] };
+            session.selectedStages = (cat.progressiveStages || []).map(s => s.stage);
+          } else if (input === 'done' || input === 'fertig' || input === 'weiter') {
+            // Move to account check with currently selected stages (default to stage 1 if none)
+            if (session.selectedStages.length === 0) session.selectedStages = [1];
+          } else {
+            const stageNum = parseInt(input);
+            if (!isNaN(stageNum)) {
+              if (!session.selectedStages.includes(stageNum)) session.selectedStages.push(stageNum);
+            }
+          }
+
+          if (input === 'done' || input === 'fertig' || input === 'weiter' || input === 'all') {
+            // Determine required stacks from selected stages
+            const cat = categories[session.selectedCategory] || categories['web-application'] || { progressiveStages: [] };
+            const requiredStacks = [];
+            for (const stageNum of session.selectedStages) {
+              const stageDef = (cat.progressiveStages || []).find(s => s.stage === stageNum);
+              if (stageDef) for (const st of (stageDef.stacks || [])) if (!requiredStacks.includes(st)) requiredStacks.push(st);
+            }
+            // Also factor in stacks detected from prompt
+            for (const st of (session.detectedStacks || [])) if (!requiredStacks.includes(st)) requiredStacks.push(st);
+
+            session.requiredStacks = requiredStacks;
+            session.phase = 'account-check';
+
+            const { ready, missing } = taCheckStacksReady(requiredStacks);
+            session.readyStacks = ready;
+            session.missingStacks = missing;
+
+            if (missing.length === 0) {
+              // All stacks ready — fall through to generating phase (handles skills/agents/graph)
+              session.phase = 'generating';
+            } else {
+              // Need onboarding for missing stacks
+              session.onboardingStackIndex = 0;
+              session.onboardingStepIndex = 0;
+              session.phase = 'onboarding';
+              const firstMissing = missing[0];
+              const firstStep = (firstMissing.onboarding || [])[0];
+              const buttons = [];
+              if (firstStep?.url) buttons.push({ label: firstStep.title || 'Account erstellen', value: 'open:' + firstStep.url, icon: '' });
+              buttons.push({ label: 'Ich habe schon einen Account', value: 'has-account', icon: '' });
+
+              responsePayload = {
+                type: 'status',
+                text: 'Folgende Services muessen noch eingerichtet werden:\n' +
+                  missing.map(m => '- ' + (m.icon || '') + ' **' + m.name + '**: ' + m.missingVars.join(', ')).join('\n') + '\n\n' +
+                  '**Starte mit ' + (firstMissing.icon || '') + ' ' + firstMissing.name + ':**\n' +
+                  (firstStep?.instruction || firstStep?.title || 'Account benoetigt'),
+                buttons,
+                readyStacks: ready,
+                missingStacks: missing
+              };
+            }
+          } else {
+            // Stage toggled — show updated selection
+            const cat = categories[session.selectedCategory] || categories['web-application'] || { progressiveStages: [] };
+            const stages = cat.progressiveStages || [];
+            const stageButtons = stages.map(s => ({
+              label: (session.selectedStages.includes(s.stage) ? '✓ ' : '') + 'Stage ' + s.stage + ': ' + s.name,
+              value: String(s.stage),
+              icon: '',
+              recommended: session.selectedStages.includes(s.stage)
+            }));
+            responsePayload = {
+              type: 'question',
+              text: 'Stage ' + input + ' ' + (session.selectedStages.includes(parseInt(input)) ? 'hinzugefuegt' : 'ausgewaehlt') + '. Aktuell: Stage ' + session.selectedStages.join(', ') + '. Weitere auswaehlen oder "Weiter".',
+              buttons: [...stageButtons, { label: 'Alle auswaehlen', value: 'all', icon: '' }, { label: 'Weiter', value: 'done', icon: '' }]
+            };
+          }
+        }
+
+        // ── Phase: onboarding ──
+        else if (session.phase === 'onboarding') {
+          const currentMissing = session.missingStacks[session.onboardingStackIndex];
+          if (!currentMissing) {
+            session.phase = 'generating';
+          } else {
+            const currentStep = (currentMissing.onboarding || [])[session.onboardingStepIndex || 0];
+            const tokenDetected = taDetectTokenInput(input);
+
+            if (tokenDetected && tokenDetected.envVar !== '_TOKEN') {
+              // Save the token to global env (strip newlines to prevent .env injection)
+              const env = readGlobalEnv();
+              env[tokenDetected.envVar] = tokenDetected.value.replace(/[\r\n]/g, '');
+              writeGlobalEnv(env);
+
+              // Advance to next onboarding step
+              session.onboardingStepIndex = (session.onboardingStepIndex || 0) + 1;
+              const nextStep = (currentMissing.onboarding || [])[session.onboardingStepIndex];
+
+              if (!nextStep || session.onboardingStepIndex >= (currentMissing.onboarding || []).length) {
+                // Move to next missing stack
+                session.onboardingStackIndex = (session.onboardingStackIndex || 0) + 1;
+                session.onboardingStepIndex = 0;
+                const nextMissing = session.missingStacks[session.onboardingStackIndex];
+                if (!nextMissing) {
+                  session.phase = 'generating';
+                } else {
+                  const nextFirstStep = (nextMissing.onboarding || [])[0];
+                  const buttons2 = [];
+                  if (nextFirstStep?.url) buttons2.push({ label: nextFirstStep.title || 'Account erstellen', value: 'open:' + nextFirstStep.url, icon: '' });
+                  buttons2.push({ label: 'Weiter', value: 'next', icon: '' });
+                  responsePayload = {
+                    type: 'status',
+                    text: tokenDetected.envVar + ' gespeichert!\n\nWeiter mit ' + (nextMissing.icon || '') + ' **' + nextMissing.name + '**:\n' + (nextFirstStep?.instruction || nextFirstStep?.title || ''),
+                    buttons: buttons2
+                  };
+                }
+              } else {
+                const buttons3 = [];
+                if (nextStep.url) buttons3.push({ label: nextStep.title || 'Weiter', value: 'open:' + nextStep.url, icon: '' });
+                buttons3.push({ label: 'Eingabe', value: 'input', icon: '' });
+                responsePayload = {
+                  type: 'status',
+                  text: tokenDetected.envVar + ' gespeichert! Naechster Schritt:\n\n**' + (nextStep.title || '') + '**\n' + (nextStep.instruction || ''),
+                  buttons: buttons3,
+                  placeholder: nextStep.placeholder || ''
+                };
+              }
+            } else if (tokenDetected && tokenDetected.envVar === '_TOKEN') {
+              // Generic token — need to know which var to use
+              if (currentStep?.envVar && /^[A-Z0-9_]+$/.test(currentStep.envVar)) {
+                const env = readGlobalEnv();
+                env[currentStep.envVar] = tokenDetected.value.replace(/[\r\n]/g, '');
+                writeGlobalEnv(env);
+                session.onboardingStepIndex = (session.onboardingStepIndex || 0) + 1;
+                const nextStep2 = (currentMissing.onboarding || [])[session.onboardingStepIndex];
+                if (!nextStep2 || session.onboardingStepIndex >= (currentMissing.onboarding || []).length) {
+                  session.onboardingStackIndex = (session.onboardingStackIndex || 0) + 1;
+                  session.onboardingStepIndex = 0;
+                  if (!session.missingStacks[session.onboardingStackIndex]) session.phase = 'generating';
+                  else {
+                    const nm = session.missingStacks[session.onboardingStackIndex];
+                    const nfs = (nm.onboarding || [])[0];
+                    const btnx = nfs?.url ? [{ label: nfs.title || 'Account erstellen', value: 'open:' + nfs.url, icon: '' }] : [];
+                    btnx.push({ label: 'Weiter', value: 'next', icon: '' });
+                    responsePayload = { type: 'status', text: currentStep.envVar + ' gespeichert! Weiter mit ' + nm.name, buttons: btnx };
+                  }
+                } else {
+                  responsePayload = { type: 'status', text: currentStep.envVar + ' gespeichert!\n\n' + (nextStep2.instruction || nextStep2.title || ''), buttons: nextStep2.url ? [{ label: nextStep2.title || 'Weiter', value: 'open:' + nextStep2.url, icon: '' }] : [], placeholder: nextStep2.placeholder || '' };
+                }
+              } else {
+                responsePayload = { type: 'question', text: 'Fuer welchen Service ist dieser Token? (Eingabe: VARIABLE_NAME)', buttons: [] };
+              }
+            } else if (input === 'has-account' || input === 'next' || input === 'weiter') {
+              // Skip to next step
+              session.onboardingStepIndex = (session.onboardingStepIndex || 0) + 1;
+              const ns = (currentMissing.onboarding || [])[session.onboardingStepIndex];
+              if (!ns || session.onboardingStepIndex >= (currentMissing.onboarding || []).length) {
+                session.onboardingStackIndex = (session.onboardingStackIndex || 0) + 1;
+                session.onboardingStepIndex = 0;
+                if (!session.missingStacks[session.onboardingStackIndex]) session.phase = 'generating';
+                else {
+                  const nm2 = session.missingStacks[session.onboardingStackIndex];
+                  const nfs2 = (nm2.onboarding || [])[0];
+                  const btn2 = nfs2?.url ? [{ label: nfs2.title || 'Account erstellen', value: 'open:' + nfs2.url, icon: '' }] : [];
+                  btn2.push({ label: 'Weiter', value: 'next', icon: '' });
+                  responsePayload = { type: 'status', text: 'Weiter mit ' + (nm2.icon || '') + ' **' + nm2.name + '**:\n' + (nfs2?.instruction || nfs2?.title || ''), buttons: btn2 };
+                }
+              } else {
+                const stepBtns = ns.url ? [{ label: ns.title || 'Oeffnen', value: 'open:' + ns.url, icon: '' }] : [];
+                if (ns.step === 'paste-token') stepBtns.push({ label: 'Token eingeben', value: 'input', icon: '' });
+                else stepBtns.push({ label: 'Weiter', value: 'next', icon: '' });
+                responsePayload = { type: 'status', text: '**' + (ns.title || '') + '**\n' + (ns.instruction || ''), buttons: stepBtns, placeholder: ns.placeholder || '' };
+              }
+            } else {
+              // Re-show current step
+              const btnsCurrent = [];
+              if (currentStep?.url) btnsCurrent.push({ label: currentStep.title || 'Account erstellen', value: 'open:' + currentStep.url, icon: '' });
+              if (currentStep?.step === 'paste-token') btnsCurrent.push({ label: 'Token eingeben', value: 'input', icon: '' });
+              else btnsCurrent.push({ label: 'Ich habe das erledigt', value: 'next', icon: '' });
+              responsePayload = {
+                type: 'status',
+                text: '**' + (currentStep?.title || currentMissing.name + ' einrichten') + '**\n' + (currentStep?.instruction || '') + (currentStep?.placeholder ? '\n\nBitte Token/Key einfuegen:' : ''),
+                buttons: btnsCurrent,
+                placeholder: currentStep?.placeholder || ''
+              };
+            }
+          }
+        }
+
+        // ── Phase: generating (template only, no skills/agents yet) ──
+        if (session.phase === 'generating' && !responsePayload) {
+          const requiredStacks = session.requiredStacks || [];
+          const deploySteps = autoGenerateDeploySteps(requiredStacks);
+          const templateId = 'advisor-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
+          session.generatedTemplate = {
+            id: templateId,
+            name: session.customName || (session.selectedCategory || 'custom').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+            description: session.prompt || 'Generated by Template Advisor',
+            icon: '🚀',
+            stacks: requiredStacks,
+            deploySteps,
+            scaffold: tmDefaultScaffold(requiredStacks),
+            envVars: tmDefaultEnvVars(requiredStacks),
+            agents: { phases: ['planning', 'coding', 'testing', 'review'], planAgent: 'planner', codeAgent: 'code-generator', testAgent: 'test-writer', reviewAgent: 'code-reviewer' },
+            git: { autoBranch: requiredStacks.some(s => ['railway', 'vercel', 'supabase'].includes(s)), branchPrefix: 'feature/', autoCommit: true, autoPR: requiredStacks.length > 1 },
+            monitoring: { watchFiles: ['index.html', 'manifest.json'], logLevel: 'normal' },
+            progressiveStage: session.selectedStages && session.selectedStages.length > 0 ? Math.max(...session.selectedStages) : 1
+          };
+
+          applyTemplateDefaults(session.generatedTemplate);
+
+          // Save template to templates.json
+          const tplData = safeReadJSON(templatesFile, '{"templates":[]}');
+          if (!tplData.templates) tplData.templates = [];
+          const existIdx = tplData.templates.findIndex(t => t.id === session.generatedTemplate.id);
+          if (existIdx >= 0) tplData.templates[existIdx] = session.generatedTemplate;
+          else tplData.templates.push(session.generatedTemplate);
+          fs.writeFileSync(templatesFile, JSON.stringify(tplData, null, 2));
+
+          // Move to artifacts phase — ask user what to generate
+          session.phase = 'artifacts';
+          const deployableStacks = requiredStacks.filter(s => s !== 'github-pages');
+
+          // Check which skills/agents already exist
+          const existingSkills = deployableStacks.filter(s => {
+            try { return fs.existsSync(path.join(ROOT, '.claude', 'skills', s + '-deploy', 'SKILL.md')); } catch { return false; }
+          });
+          const missingSkills = deployableStacks.filter(s => !existingSkills.includes(s));
+          const hasOnboarder = fs.existsSync(path.join(ROOT, '.claude', 'agents', 'onboarder.md'));
+
+          const artifactButtons = [];
+          if (deployableStacks.length > 0) {
+            artifactButtons.push({
+              label: (missingSkills.length > 0 ? 'Skills erstellen' : 'Skills neu erstellen') + ' (' + deployableStacks.map(s => s + '-deploy').join(', ') + ')',
+              value: 'gen-skills-fresh', icon: ''
+            });
+          }
+          artifactButtons.push({
+            label: (hasOnboarder ? 'Agents neu erstellen' : 'Agents erstellen') + ' (Onboarder, Advisor)',
+            value: 'gen-agents-fresh', icon: ''
+          });
+          artifactButtons.push({ label: 'Agent-Graph erstellen', value: 'gen-graph-fresh', icon: '' });
+          artifactButtons.push({ label: 'Alles erstellen (Skills + Agents + Graph)', value: 'gen-all', icon: '', recommended: true });
+          artifactButtons.push({ label: 'Ueberspringen — nur Template', value: 'skip-artifacts', icon: '' });
+
+          responsePayload = {
+            type: 'question',
+            text: 'Template **"' + session.generatedTemplate.name + '"** erstellt!\n\n' +
+              '**Stacks:** ' + (requiredStacks.join(', ') || 'GitHub Pages') + '\n' +
+              '**Deploy-Steps:** ' + deploySteps.length + '\n\n' +
+              'Sollen frische Skills und Agents fuer dieses Template erstellt werden?\n' +
+              (existingSkills.length > 0 ? '(Bestehende Skills: ' + existingSkills.map(s => s + '-deploy').join(', ') + ' — werden bei "neu erstellen" ueberschrieben)\n' : '') +
+              (missingSkills.length > 0 ? '(Fehlende Skills: ' + missingSkills.map(s => s + '-deploy').join(', ') + ')\n' : ''),
+            buttons: artifactButtons
+          };
+        }
+
+        // ── Phase: artifacts (generate skills/agents/graph on demand) ──
+        else if (session.phase === 'artifacts') {
+          const requiredStacks = session.requiredStacks || [];
+          const deployableStacks = requiredStacks.filter(s => s !== 'github-pages');
+          const templateId = session.generatedTemplate?.id || session.templateId;
+          const generatedArtifacts = session.generatedArtifacts || { skills: [], agents: [], graph: null };
+
+          if (input === 'gen-skills-fresh' || input === 'gen-all') {
+            // Delete existing skills and recreate fresh
+            for (const stackId of deployableStacks) {
+              const skillDir = path.join(ROOT, '.claude', 'skills', stackId + '-deploy');
+              try { if (fs.existsSync(path.join(skillDir, 'SKILL.md'))) fs.unlinkSync(path.join(skillDir, 'SKILL.md')); } catch {}
+              try {
+                const result = taAutoGenerateSkill(stackId);
+                generatedArtifacts.skills.push(result);
+              } catch {}
+            }
+          }
+
+          if (input === 'gen-agents-fresh' || input === 'gen-all') {
+            // Delete existing and recreate fresh
+            for (const agentName of ['onboarder', 'template-advisor']) {
+              const agentFile = path.join(ROOT, '.claude', 'agents', agentName + '.md');
+              try { if (fs.existsSync(agentFile)) fs.unlinkSync(agentFile); } catch {}
+            }
+            try {
+              const r1 = taAutoGenerateAgent('onboarder', templateId, requiredStacks);
+              if (r1.created) generatedArtifacts.agents.push(r1);
+            } catch {}
+            try {
+              const r2 = taAutoGenerateAgent('template-advisor', templateId, requiredStacks);
+              if (r2.created) generatedArtifacts.agents.push(r2);
+            } catch {}
+          }
+
+          if (input === 'gen-graph-fresh' || input === 'gen-all') {
+            // Delete existing graph and recreate
+            const graphFile = path.join(ROOT, 'data', 'graphs', 'graph-' + templateId + '.json');
+            try { if (fs.existsSync(graphFile)) fs.unlinkSync(graphFile); } catch {}
+            try {
+              const r = taAutoGenerateGraph(templateId, requiredStacks);
+              generatedArtifacts.graph = r;
+              if (session.generatedTemplate) { session.generatedTemplate.agents = session.generatedTemplate.agents || {}; session.generatedTemplate.agents.graph = templateId; }
+            } catch {}
+          }
+
+          session.generatedArtifacts = generatedArtifacts;
+
+          if (input === 'skip-artifacts') {
+            session.status = 'done'; session.phase = 'done';
+            responsePayload = {
+              type: 'done',
+              text: 'Template **"' + (session.generatedTemplate?.name || '?') + '"** ist bereit.\nDu kannst es im Dropdown auswaehlen.',
+              templateId
+            };
+          } else if (input === 'gen-all') {
+            // Save updated template with graph ref
+            const tplData2 = safeReadJSON(templatesFile, '{"templates":[]}');
+            const idx2 = (tplData2.templates || []).findIndex(t => t.id === templateId);
+            if (idx2 >= 0 && session.generatedTemplate) { tplData2.templates[idx2] = session.generatedTemplate; fs.writeFileSync(templatesFile, JSON.stringify(tplData2, null, 2)); }
+
+            session.status = 'done'; session.phase = 'done';
+            const parts = ['Template **"' + (session.generatedTemplate?.name || '?') + '"** komplett eingerichtet!\n'];
+            if (generatedArtifacts.skills.length > 0) parts.push('**Skills:** ' + generatedArtifacts.skills.map(s => s.stackId + '-deploy').join(', '));
+            if (generatedArtifacts.agents.length > 0) parts.push('**Agents:** ' + generatedArtifacts.agents.map(a => a.role).join(', '));
+            if (generatedArtifacts.graph) parts.push('**Graph:** ' + generatedArtifacts.graph.nodeCount + ' Nodes, ' + generatedArtifacts.graph.edgeCount + ' Edges');
+            parts.push('\nAlles frisch erstellt und einsatzbereit.');
+            responsePayload = { type: 'done', text: parts.join('\n'), templateId, artifacts: generatedArtifacts };
+          } else {
+            // Single action done — show what was generated and offer more
+            const parts = [];
+            if (generatedArtifacts.skills.length > 0) parts.push('Skills: ' + generatedArtifacts.skills.filter(s => s.created).map(s => s.stackId + '-deploy').join(', '));
+            if (generatedArtifacts.agents.length > 0) parts.push('Agents: ' + generatedArtifacts.agents.filter(a => a.created).map(a => a.role).join(', '));
+            if (generatedArtifacts.graph?.created) parts.push('Graph: ' + generatedArtifacts.graph.nodeCount + ' Nodes');
+
+            responsePayload = {
+              type: 'question',
+              text: (parts.length > 0 ? '✓ Erstellt: ' + parts.join(', ') + '\n\n' : '') + 'Noch etwas generieren?',
+              buttons: [
+                { label: 'Skills neu erstellen', value: 'gen-skills-fresh', icon: '' },
+                { label: 'Agents neu erstellen', value: 'gen-agents-fresh', icon: '' },
+                { label: 'Graph erstellen', value: 'gen-graph-fresh', icon: '' },
+                { label: 'Fertig', value: 'skip-artifacts', icon: '' }
+              ]
+            };
+          }
+        }
+
+        if (!responsePayload) {
+          responsePayload = { type: 'question', text: 'Ich habe das nicht verstanden. Bitte waehle eine Option:', buttons: [] };
+        }
+
+        fs.writeFileSync(sessionFile, JSON.stringify(session, null, 2));
+        return jsonRes(res, { ok: true, response: responsePayload, session: { phase: session.phase, selectedCategory: session.selectedCategory, selectedStages: session.selectedStages, status: session.status } });
+      } catch (e) { return jsonRes(res, { ok: false, error: e.message }, 500); }
+    });
+  }
+
+  // POST /api/template-advisor/learn
+  if (url === '/api/template-advisor/learn' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { sessionId } = JSON.parse(b || '{}');
+        if (!sessionId) return jsonRes(res, { ok: false, error: 'sessionId required' }, 400);
+        const sessionFile = path.join(TA_DIR, sessionId + '.json');
+        if (!fs.existsSync(sessionFile)) return jsonRes(res, { ok: false, error: 'Session not found' }, 404);
+        const session = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
+
+        const patterns = safeReadJSON(TA_PATTERNS_FILE, '{}');
+        if (!patterns.categories) patterns.categories = {};
+        if (!patterns.userPreferences) patterns.userPreferences = { preferredHosting: null, preferredAuth: null, preferredPayments: null, lastUsedCategory: null };
+        if (!patterns.stackCombinations) patterns.stackCombinations = [];
+
+        // Increment timesChosen for selected category
+        const catId = session.selectedCategory;
+        if (catId && patterns.categories[catId]) {
+          patterns.categories[catId].timesChosen = (patterns.categories[catId].timesChosen || 0) + 1;
+        }
+
+        // Increment timesUsed for selected stages
+        if (catId && patterns.categories[catId] && session.selectedStages) {
+          for (const stageNum of session.selectedStages) {
+            const stageDef = (patterns.categories[catId].progressiveStages || []).find(s => s.stage === stageNum);
+            if (stageDef) stageDef.timesUsed = (stageDef.timesUsed || 0) + 1;
+          }
+        }
+
+        // Add stack combination
+        const stacks = session.requiredStacks || [];
+        if (stacks.length > 0) {
+          const existingCombo = patterns.stackCombinations.find(c => JSON.stringify(c.stacks.sort()) === JSON.stringify([...stacks].sort()));
+          if (existingCombo) existingCombo.count = (existingCombo.count || 0) + 1;
+          else patterns.stackCombinations.push({ stacks, count: 1, category: catId });
+        }
+
+        // Update userPreferences
+        patterns.userPreferences.lastUsedCategory = catId;
+        const hostingStacks = stacks.filter(s => ['railway', 'vercel', 'cloudflare', 'netlify'].includes(s));
+        if (hostingStacks.length > 0) patterns.userPreferences.preferredHosting = hostingStacks[0];
+        if (stacks.includes('supabase')) patterns.userPreferences.preferredAuth = 'supabase';
+        if (stacks.includes('stripe')) patterns.userPreferences.preferredPayments = 'stripe';
+
+        fs.writeFileSync(TA_PATTERNS_FILE, JSON.stringify(patterns, null, 2));
+        return jsonRes(res, { ok: true, patterns });
+      } catch (e) { return jsonRes(res, { ok: false, error: e.message }, 500); }
+    });
+  }
+
+  // GET /api/template-advisor/patterns
+  if (url === '/api/template-advisor/patterns' && req.method === 'GET') {
+    return jsonRes(res, safeReadJSON(TA_PATTERNS_FILE, '{}'));
   }
 
   // ── Tech-Stack Registry + Status ──
@@ -3523,7 +4474,7 @@ if (window.PulseOS) {
           repo: repoName, repoName,
           ...envData
         };
-        const sub = (str) => str.replace(/\$\{(\w+)\}/g, (_, k) => vars[k] || '');
+        const sub = (str) => str.replace(/\$?\{(\w+)\}/g, (_, k) => vars[k] || '');
 
         // Filter by progressive stage
         const currentStage = app.progressiveStage || tpl.progressiveStage || 1;
@@ -3578,8 +4529,53 @@ if (window.PulseOS) {
                   app.deployUrl = url;
                 }
               } catch (cmdErr) {
-                results.push({ action: step.action, name: step.name, success: false, error: cmdErr.message.slice(0, 300) });
-                chatMsg('❌ Step ' + stepNum + ': ' + step.name + ' fehlgeschlagen — ' + cmdErr.message.slice(0, 100));
+                const errMsg = (cmdErr.stderr || cmdErr.message || '').slice(0, 300);
+                const isAlreadyExists = /already exists|Name already|already enabled|pages-already|already been|already set/i.test(errMsg);
+                if (isAlreadyExists) {
+                  // "Already exists" is not a real error — treat as success
+                  const url = step.urlPattern ? sub(step.urlPattern) : null;
+                  results.push({ action: step.action, name: step.name, success: true, url, note: 'already exists' });
+                  chatMsg('✅ Step ' + stepNum + ': ' + step.name + ' (existiert bereits)' + (url ? ' → ' + url : ''));
+                  if (step.action === 'github-publish') { app.source = 'https://github.com/' + githubUser + '/' + repoName; }
+                  if (step.action === 'github-pages' && url) { app.pagesUrl = url; }
+                } else {
+                  // Try robust fallback for known actions
+                  let fallbackOk = false;
+                  if (step.action === 'github-publish') {
+                    try {
+                      execSync('cd ' + appDir + ' && git add -A && git diff --cached --quiet || git commit -m "Update from PulseOS" && git push -u origin main --force', { encoding: 'utf8', cwd: appDir, timeout: 60000, env: { ...process.env, PATH: extPath } });
+                      app.source = 'https://github.com/' + githubUser + '/' + repoName;
+                      const url = step.urlPattern ? sub(step.urlPattern) : null;
+                      results.push({ action: step.action, name: step.name, success: true, url, note: 'pushed to existing repo' });
+                      chatMsg('✅ Step ' + stepNum + ': ' + step.name + ' (Update gepusht)');
+                      fallbackOk = true;
+                    } catch {}
+                  }
+                  if (step.action === 'github-pages') {
+                    // Try enabling Pages with correct nested API format
+                    const pagesUrl = 'https://' + githubUser + '.github.io/' + repoName + '/';
+                    try {
+                      execSync('gh api repos/' + githubUser + '/' + repoName + '/pages -X POST -f "build_type=legacy" -f "source[branch]=main" -f "source[path]=/" 2>/dev/null || gh api repos/' + githubUser + '/' + repoName + '/pages -X PUT -f "build_type=legacy" -f "source[branch]=main" -f "source[path]=/" 2>/dev/null || echo ok', { encoding: 'utf8', timeout: 30000, env: { ...process.env, PATH: extPath } });
+                      results.push({ action: step.action, name: step.name, success: true, url: pagesUrl, note: 'enabled via fallback' });
+                      chatMsg('✅ Step ' + stepNum + ': ' + step.name + ' → ' + pagesUrl);
+                      app.pagesUrl = pagesUrl;
+                      fallbackOk = true;
+                    } catch {
+                      // Last resort: check if pages already exists
+                      try {
+                        execSync('gh api repos/' + githubUser + '/' + repoName + '/pages', { encoding: 'utf8', timeout: 10000, env: { ...process.env, PATH: extPath } });
+                        results.push({ action: step.action, name: step.name, success: true, url: pagesUrl, note: 'already enabled' });
+                        chatMsg('✅ Step ' + stepNum + ': ' + step.name + ' (bereits aktiv) → ' + pagesUrl);
+                        app.pagesUrl = pagesUrl;
+                        fallbackOk = true;
+                      } catch {}
+                    }
+                  }
+                  if (!fallbackOk) {
+                    results.push({ action: step.action, name: step.name, success: false, error: errMsg });
+                    chatMsg('❌ Step ' + stepNum + ': ' + step.name + ' — ' + errMsg.slice(0, 100));
+                  }
+                }
               }
             } else {
               // Step without command (manual/info step)
@@ -4546,7 +5542,9 @@ ${recent}`;
       const agents = [];
       if (fs.existsSync(agentsDir)) {
         for (const f of fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'))) {
-          const content = fs.readFileSync(path.join(agentsDir, f), 'utf8');
+          let content = fs.readFileSync(path.join(agentsDir, f), 'utf8');
+          // Strip markdown code fences if present
+          if (content.trimStart().startsWith('```')) content = content.replace(/^```\w*\n/, '').replace(/\n```\s*$/, '').trim();
           const fm = content.match(/^---\n([\s\S]*?)\n---/);
           const body = content.split('---').slice(2).join('---').trim();
           let meta = {};
@@ -4556,10 +5554,173 @@ ${recent}`;
               if (k && v.length) meta[k.trim()] = v.join(':').trim();
             });
           }
-          agents.push({ file: f, ...meta, body: body.substring(0, 500) });
+          if (!meta.name) meta.name = f.replace('.md', '');
+          // Parse skills array from frontmatter
+          const skillsMatch = content.match(/skills:\n((?:\s+-\s+.+\n)*)/);
+          const skills = [];
+          if (skillsMatch) skillsMatch[1].replace(/\s+-\s+(.+)/g, (_, s) => skills.push(s.trim()));
+          agents.push({ file: f, ...meta, skills, body: body.substring(0, 500), fullBody: body });
         }
       }
       return jsonRes(res, { agents });
+    } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+  }
+
+  // GET/PUT single agent
+  const agentMatch = url.match(/^\/api\/agent-system\/agents\/([a-zA-Z0-9_-]+)$/);
+  if (agentMatch && req.method === 'GET') {
+    const agentFile = path.join(ROOT, '.claude', 'agents', agentMatch[1] + '.md');
+    if (!fs.existsSync(agentFile)) return jsonRes(res, { error: 'Agent not found' }, 404);
+    return jsonRes(res, { name: agentMatch[1], content: fs.readFileSync(agentFile, 'utf8') });
+  }
+  if (agentMatch && req.method === 'PUT') {
+    return readBody(req, b => {
+      try {
+        let { content } = JSON.parse(b);
+        if (!content) return jsonRes(res, { error: 'content required' }, 400);
+        // Strip markdown code fences
+        if (content.trimStart().startsWith('```')) content = content.replace(/^```\w*\n/, '').replace(/\n```\s*$/, '').trim();
+        const agentFile = path.join(ROOT, '.claude', 'agents', agentMatch[1] + '.md');
+        fs.writeFileSync(agentFile, content);
+        return jsonRes(res, { ok: true, name: agentMatch[1] });
+      } catch (e) { return jsonRes(res, { error: e.message }, 400); }
+    });
+  }
+  if (agentMatch && req.method === 'DELETE') {
+    const agentName = agentMatch[1];
+    // Check if any template references this agent
+    const tplData = safeReadJSON(path.join(ROOT, 'data', 'templates.json'), '{"templates":[]}');
+    const usedBy = (tplData.templates || []).filter(t => {
+      const a = t.agents || {};
+      return a.planAgent === agentName || a.codeAgent === agentName || a.testAgent === agentName || a.reviewAgent === agentName;
+    }).map(t => t.name || t.id);
+    if (usedBy.length) {
+      return jsonRes(res, { error: 'Agent wird von Templates verwendet', usedBy }, 409);
+    }
+    const agentFile = path.join(ROOT, '.claude', 'agents', agentName + '.md');
+    if (!fs.existsSync(agentFile)) return jsonRes(res, { error: 'Agent not found' }, 404);
+    fs.unlinkSync(agentFile);
+    return jsonRes(res, { ok: true, deleted: agentName });
+  }
+  // POST — create new agent
+  if (url === '/api/agent-system/agents' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { name, description, content } = JSON.parse(b);
+        if (!name) return jsonRes(res, { error: 'name required' }, 400);
+        const safeName = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-|-$/g, '');
+        const agentFile = path.join(ROOT, '.claude', 'agents', safeName + '.md');
+        if (fs.existsSync(agentFile)) return jsonRes(res, { error: 'Agent "' + safeName + '" existiert bereits' }, 409);
+        // Strip markdown code fences if Claude wrapped it
+        if (content && content.trimStart().startsWith('```')) content = content.replace(/^```\w*\n/, '').replace(/\n```\s*$/, '').trim();
+        // If content already has frontmatter (---), use it directly; otherwise wrap
+        const hasFrontmatter = content && content.trimStart().startsWith('---');
+        const md = hasFrontmatter ? content : '---\nname: ' + safeName + '\ndescription: ' + (description || safeName) + '\n---\n\n' + (content || '# ' + name + '\n\nAgent-Instruktionen hier...\n');
+        fs.writeFileSync(agentFile, md);
+        return jsonRes(res, { ok: true, name: safeName });
+      } catch (e) { return jsonRes(res, { error: e.message }, 400); }
+    });
+  }
+
+  // POST /api/agent-system/agents/generate — Spawn Claude CLI to generate agent (streaming)
+  const AGS_DIR = path.join(ROOT, 'data', 'agent-gen-sessions');
+  try { fs.mkdirSync(AGS_DIR, { recursive: true }); } catch {}
+
+  if (url === '/api/agent-system/agents/generate' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { prompt } = JSON.parse(b);
+        if (!prompt) return jsonRes(res, { error: 'prompt required' }, 400);
+
+        // Load existing agents as reference
+        const agentsDir = path.join(ROOT, '.claude', 'agents');
+        let existingAgents = '';
+        try {
+          existingAgents = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md')).slice(0, 3).map(f => {
+            const c = fs.readFileSync(path.join(agentsDir, f), 'utf8');
+            return '--- ' + f + ' ---\n' + c.slice(0, 300) + '\n';
+          }).join('\n');
+        } catch {}
+
+        const words = prompt.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2).slice(0, 3);
+        const suggestedName = words.join('-').toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 30) || 'custom-agent';
+
+        const genPrompt = 'Du erstellst eine Claude Agent-Definition fuer PulseOS.\n\n' +
+          'USER BESCHREIBUNG: ' + prompt + '\n\n' +
+          'VORGESCHLAGENER NAME: ' + suggestedName + '\n\n' +
+          'BESTEHENDE AGENTS (Referenz):\n' + existingAgents + '\n\n' +
+          'VERFUEGBARE TOOLS: Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch, Agent\n' +
+          'VERFUEGBARE MODELS: sonnet (Standard), opus (komplex), haiku (schnell)\n\n' +
+          'Generiere eine KOMPLETTE Agent-Definition im exakten Format:\n\n' +
+          '---\nname: {kebab-case}\ndescription: {einzeilig}\ntools:\n  - {Tool1}\n  - {Tool2}\nmodel: {sonnet|opus|haiku}\nmaxTurns: {5-30}\n---\n\n# {Name}\n\n{Instruktionen}\n\n## Aufgabe\n{Was}\n\n## Regeln\n{Dos/Donts}\n\n## Output\n{Was melden}\n\n' +
+          'WICHTIG: NUR die Markdown-Datei ausgeben, kein Text drumherum. Agent arbeitet im PulseOS Kontext.';
+
+        // Create session
+        const sessionId = 'ags-' + Date.now().toString(36);
+        const sessionFile = path.join(AGS_DIR, sessionId + '.json');
+        fs.writeFileSync(sessionFile, JSON.stringify({ id: sessionId, status: 'running', output: '', result: null, suggestedName, createdAt: new Date().toISOString() }));
+
+        // Spawn Claude CLI with stream-json
+        const claudePath = process.env.CLAUDE_PATH || 'claude';
+        const extPath = process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin:/Users/chris.pohl/.bun/bin';
+        const proc = spawn(claudePath, ['-p', '--output-format', 'stream-json', '--verbose', '--model', 'haiku', '--max-turns', '1', genPrompt], {
+          env: { ...process.env, PATH: extPath },
+          cwd: ROOT,
+          stdio: ['ignore', 'pipe', 'pipe']
+        });
+
+        let output = '';
+        proc.stdout.on('data', (chunk) => {
+          const lines = chunk.toString().split('\n').filter(l => l.trim());
+          for (const line of lines) {
+            try {
+              const evt = JSON.parse(line);
+              if (evt.type === 'assistant' && evt.message?.content) {
+                for (const block of evt.message.content) {
+                  if (block.type === 'text' && block.text) {
+                    output += block.text;
+                  }
+                }
+              }
+              if (evt.type === 'result') {
+                output = evt.result || output;
+              }
+            } catch {}
+          }
+          // Update session file
+          try {
+            const s = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
+            s.output = output;
+            fs.writeFileSync(sessionFile, JSON.stringify(s));
+          } catch {}
+        });
+
+        proc.stderr.on('data', () => {}); // ignore stderr
+
+        proc.on('close', (code) => {
+          try {
+            const s = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
+            s.status = (output.includes('---') && output.includes('name:')) ? 'done' : 'error';
+            s.output = output;
+            s.result = output;
+            if (s.status === 'error' && !output) s.error = 'Claude process exited with code ' + code;
+            fs.writeFileSync(sessionFile, JSON.stringify(s));
+          } catch {}
+        });
+
+        return jsonRes(res, { ok: true, sessionId, suggestedName });
+      } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+    });
+  }
+
+  // GET /api/agent-system/agents/generate/:sessionId — Poll for streaming output
+  const agsMatch = url.match(/^\/api\/agent-system\/agents\/generate\/(ags-[a-z0-9]+)$/);
+  if (agsMatch && req.method === 'GET') {
+    const sessionFile = path.join(AGS_DIR, agsMatch[1] + '.json');
+    if (!fs.existsSync(sessionFile)) return jsonRes(res, { error: 'Session not found' }, 404);
+    try {
+      const s = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
+      return jsonRes(res, s);
     } catch (e) { return jsonRes(res, { error: e.message }, 500); }
   }
 
@@ -4586,6 +5747,111 @@ ${recent}`;
       }
       return jsonRes(res, { skills });
     } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+  }
+
+  // GET/PUT/DELETE single skill
+  const skillMatch = url.match(/^\/api\/agent-system\/skills\/([a-zA-Z0-9_-]+)$/);
+  if (skillMatch && req.method === 'GET') {
+    const skillFile = path.join(ROOT, '.claude', 'skills', skillMatch[1], 'SKILL.md');
+    if (!fs.existsSync(skillFile)) return jsonRes(res, { error: 'Skill not found' }, 404);
+    return jsonRes(res, { name: skillMatch[1], content: fs.readFileSync(skillFile, 'utf8') });
+  }
+  if (skillMatch && req.method === 'PUT') {
+    return readBody(req, b => {
+      try {
+        let { content } = JSON.parse(b);
+        if (!content) return jsonRes(res, { error: 'content required' }, 400);
+        if (content.trimStart().startsWith('```')) content = content.replace(/^```\w*\n/, '').replace(/\n```\s*$/, '').trim();
+        const skillDir = path.join(ROOT, '.claude', 'skills', skillMatch[1]);
+        try { fs.mkdirSync(skillDir, { recursive: true }); } catch {}
+        fs.writeFileSync(path.join(skillDir, 'SKILL.md'), content);
+        return jsonRes(res, { ok: true, name: skillMatch[1] });
+      } catch (e) { return jsonRes(res, { error: e.message }, 400); }
+    });
+  }
+  if (skillMatch && req.method === 'DELETE') {
+    const skillDir = path.join(ROOT, '.claude', 'skills', skillMatch[1]);
+    if (!fs.existsSync(skillDir)) return jsonRes(res, { error: 'Skill not found' }, 404);
+    try { fs.rmSync(skillDir, { recursive: true }); } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+    return jsonRes(res, { ok: true, deleted: skillMatch[1] });
+  }
+  // POST — create new skill
+  if (url === '/api/agent-system/skills' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        let { name, content } = JSON.parse(b);
+        if (!name) return jsonRes(res, { error: 'name required' }, 400);
+        const safeName = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-|-$/g, '');
+        const skillDir = path.join(ROOT, '.claude', 'skills', safeName);
+        if (fs.existsSync(path.join(skillDir, 'SKILL.md'))) return jsonRes(res, { error: 'Skill "' + safeName + '" existiert bereits' }, 409);
+        fs.mkdirSync(skillDir, { recursive: true });
+        if (content && content.trimStart().startsWith('```')) content = content.replace(/^```\w*\n/, '').replace(/\n```\s*$/, '').trim();
+        const hasFrontmatter = content && content.trimStart().startsWith('---');
+        const md = hasFrontmatter ? content : '---\nname: ' + safeName + '\ndescription: ' + (name || safeName) + '\n---\n\n# ' + name + '\n\nSkill-Instruktionen hier...\n';
+        fs.writeFileSync(path.join(skillDir, 'SKILL.md'), md);
+        return jsonRes(res, { ok: true, name: safeName });
+      } catch (e) { return jsonRes(res, { error: e.message }, 400); }
+    });
+  }
+  // POST — generate skill via Claude CLI
+  if (url === '/api/agent-system/skills/generate' && req.method === 'POST') {
+    return readBody(req, b => {
+      try {
+        const { prompt } = JSON.parse(b);
+        if (!prompt) return jsonRes(res, { error: 'prompt required' }, 400);
+        const words = prompt.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2).slice(0, 3);
+        const suggestedName = words.join('-').toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 30) || 'custom-skill';
+
+        const genPrompt = 'Du erstellst eine Claude Code Skill-Definition fuer PulseOS.\n\n' +
+          'USER BESCHREIBUNG: ' + prompt + '\n\n' +
+          'VORGESCHLAGENER NAME: ' + suggestedName + '\n\n' +
+          'Ein Skill ist eine SKILL.md Datei mit Frontmatter und Instruktionen.\n' +
+          'Format:\n\n---\nname: ' + suggestedName + '\ndescription: {einzeilig}\nmodel: {sonnet|opus|haiku}\ntools:\n  - Read\n  - Write\n---\n\n# {Name}\n\n{Was der Skill tut, wann er aktiviert wird, wie er vorgeht}\n\n' +
+          'WICHTIG: NUR die Markdown-Datei ausgeben. Skill arbeitet im PulseOS Kontext. Kein erklaerenden Text drumherum.';
+
+        const sessionId = 'sgs-' + Date.now().toString(36);
+        const sessionFile = path.join(AGS_DIR, sessionId + '.json');
+        fs.writeFileSync(sessionFile, JSON.stringify({ id: sessionId, status: 'running', output: '', result: null, suggestedName, createdAt: new Date().toISOString() }));
+
+        const claudePath = process.env.CLAUDE_PATH || 'claude';
+        const extPath = process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin:/Users/chris.pohl/.bun/bin';
+        const proc = spawn(claudePath, ['-p', '--output-format', 'stream-json', '--verbose', '--model', 'haiku', '--max-turns', '1', genPrompt], {
+          env: { ...process.env, PATH: extPath }, cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe']
+        });
+
+        let output = '';
+        proc.stdout.on('data', (chunk) => {
+          const lines = chunk.toString().split('\n').filter(l => l.trim());
+          for (const line of lines) {
+            try {
+              const evt = JSON.parse(line);
+              if (evt.type === 'assistant' && evt.message?.content) {
+                for (const block of evt.message.content) { if (block.type === 'text' && block.text) output += block.text; }
+              }
+              if (evt.type === 'result') output = evt.result || output;
+            } catch {}
+          }
+          try { const s = JSON.parse(fs.readFileSync(sessionFile, 'utf8')); s.output = output; fs.writeFileSync(sessionFile, JSON.stringify(s)); } catch {}
+        });
+        proc.stderr.on('data', () => {});
+        proc.on('close', () => {
+          try {
+            const s = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
+            s.status = output.includes('---') ? 'done' : 'error';
+            s.output = output; s.result = output;
+            fs.writeFileSync(sessionFile, JSON.stringify(s));
+          } catch {}
+        });
+        return jsonRes(res, { ok: true, sessionId, suggestedName });
+      } catch (e) { return jsonRes(res, { error: e.message }, 500); }
+    });
+  }
+  // GET skill generate session (reuse agent-gen session polling)
+  const sgsMatch = url.match(/^\/api\/agent-system\/skills\/generate\/(sgs-[a-z0-9]+)$/);
+  if (sgsMatch && req.method === 'GET') {
+    const sessionFile = path.join(AGS_DIR, sgsMatch[1] + '.json');
+    if (!fs.existsSync(sessionFile)) return jsonRes(res, { error: 'Session not found' }, 404);
+    return jsonRes(res, JSON.parse(fs.readFileSync(sessionFile, 'utf8')));
   }
 
   if (url === '/api/agent-system/mcp' && req.method === 'GET') {
@@ -9561,7 +10827,27 @@ function copyInstall(repo, btn) {
           // Load agent definitions dynamically from template
           const agentsDir = path.join(ROOT, '.claude', 'agents');
           const loadAgent = (name) => {
-            try { const raw = fs.readFileSync(path.join(agentsDir, name + '.md'), 'utf8'); return raw.split('---').slice(2).join('---').trim(); } catch { return ''; }
+            try {
+              let raw = fs.readFileSync(path.join(agentsDir, name + '.md'), 'utf8');
+              if (raw.trimStart().startsWith('```')) raw = raw.replace(/^```\w*\n/, '').replace(/\n```\s*$/, '').trim();
+              const body = raw.split('---').slice(2).join('---').trim();
+              // Load assigned skills from frontmatter
+              const skillsMatch = raw.match(/skills:\n((?:\s+-\s+.+\n)*)/);
+              let skillContent = '';
+              if (skillsMatch) {
+                const skillNames = [];
+                skillsMatch[1].replace(/\s+-\s+(.+)/g, (_, s) => skillNames.push(s.trim()));
+                for (const sn of skillNames) {
+                  try {
+                    const skillFile = path.join(ROOT, '.claude', 'skills', sn, 'SKILL.md');
+                    const sc = fs.readFileSync(skillFile, 'utf8');
+                    const skillBody = sc.split('---').slice(2).join('---').trim();
+                    if (skillBody) skillContent += '\n\n--- SKILL: ' + sn + ' ---\n' + skillBody + '\n--- ENDE SKILL ---\n';
+                  } catch {}
+                }
+              }
+              return body + skillContent;
+            } catch { return ''; }
           };
 
           // Load template config for this app
@@ -9583,7 +10869,7 @@ function copyInstall(repo, btn) {
           }
 
           const phases = tplConfig.agents.phases || ['planning', 'coding', 'testing', 'review'];
-          const phaseAgentMap = { planning: 'planAgent', coding: 'codeAgent', testing: 'testAgent', review: 'reviewAgent' };
+          const phaseAgentMap = { planning: 'planAgent', coding: 'codeAgent', testing: 'testAgent', review: 'reviewAgent', 'data-scout': 'dataScoutAgent' };
           const totalPhases = phases.length + (tplConfig.deploySteps?.length ? 1 : 0) + 1; // +1 for git, +1 for deploy if steps
 
           // Load agent definitions dynamically
@@ -9635,6 +10921,10 @@ function copyInstall(repo, btn) {
             if (phase === 'planning') {
               phasePrompts += `Erstelle einen Plan fuer die Aufgabe.\n\n`;
               phasePrompts += `1. Erstelle PLAN.md im App-Verzeichnis mit:\n   - Ziel der Aufgabe\n   - Technische Schritte\n   - Dateien die erstellt/geaendert werden\n2. Erstelle PROGRESS.md (leer, wird spaeter befuellt)\n3. Erstelle DECISIONS.md mit Architektur-Entscheidungen\n\n`;
+              if (agentInstructions) phasePrompts += agentInstructions + '\n\n';
+            } else if (phase === 'data-scout' || phase === 'datascout') {
+              phasePrompts += `Finde zuverlaessige, kostenlose Datenquellen fuer diese App.\n\n`;
+              phasePrompts += `1. Analysiere welche externen Daten die App braucht\n2. Suche freie APIs OHNE API-Key (oder mit kostenlosem Key)\n3. TESTE jede API — nur funktionierende Quellen empfehlen\n4. Schreibe die Ergebnisse in ${appDir}/data/sources.json\n5. Liefere dem Coder fertige fetch()-Beispiele\n\nWICHTIG: Nur APIs die WIRKLICH antworten! Teste mit curl/fetch.\n\n`;
               if (agentInstructions) phasePrompts += agentInstructions + '\n\n';
             } else if (phase === 'coding') {
               phasePrompts += appDirContext + '\n\n';

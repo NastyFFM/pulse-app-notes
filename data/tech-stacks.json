@@ -224,6 +224,31 @@
         "urlPattern": "https://${appId}.netlify.app",
         "dashboardUrl": "https://app.netlify.com"
       }
+    },
+    {
+      "id": "github-pages",
+      "name": "GitHub Pages",
+      "icon": "📄",
+      "description": "Statische Seiten via GitHub",
+      "requiredEnvVars": [
+        "GITHUB_PAGES_TOKEN"
+      ],
+      "onboarding": [
+        {
+          "step": "account",
+          "title": "GitHub Pages Account",
+          "url": "https://github.com",
+          "instruction": "Account erstellen oder einloggen."
+        },
+        {
+          "step": "paste-token",
+          "title": "API Token",
+          "url": "",
+          "instruction": "Erstelle einen API Token und fuege ihn hier ein.",
+          "envVar": "GITHUB_PAGES_TOKEN",
+          "placeholder": "Token hier..."
+        }
+      ]
     }
   ]
 }

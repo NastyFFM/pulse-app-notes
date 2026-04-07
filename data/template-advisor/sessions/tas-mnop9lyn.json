@@ -1,0 +1,15 @@
+{
+  "id": "tas-mnop9lyn",
+  "status": "active",
+  "phase": "category",
+  "prompt": "Mobile App",
+  "detectedStacks": [],
+  "selectedCategory": null,
+  "selectedStages": [],
+  "missingStacks": [],
+  "onboardingIndex": 0,
+  "onboardingStackIndex": 0,
+  "onboardingStepIndex": 0,
+  "generatedTemplate": null,
+  "createdAt": "2026-04-07T14:13:50.831Z"
+}

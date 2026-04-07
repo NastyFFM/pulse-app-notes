@@ -1,0 +1,115 @@
+{
+  "id": "tas-mnopbrft",
+  "status": "done",
+  "phase": "done",
+  "prompt": "Erstelle ein Template",
+  "detectedStacks": [],
+  "selectedCategory": "web-application",
+  "selectedStages": [
+    2
+  ],
+  "missingStacks": [],
+  "onboardingIndex": 0,
+  "onboardingStackIndex": 0,
+  "onboardingStepIndex": 0,
+  "generatedTemplate": {
+    "id": "advisor-mnopcfa1-j2a1",
+    "name": "Web Application",
+    "description": "Erstelle ein Template",
+    "icon": "🚀",
+    "stacks": [
+      "railway"
+    ],
+    "deploySteps": [
+      {
+        "name": "GitHub Repo erstellen",
+        "action": "github-publish",
+        "stage": 1,
+        "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+        "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+      },
+      {
+        "name": "GitHub Pages aktivieren",
+        "action": "github-pages",
+        "stage": 1,
+        "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+        "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+        "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+      },
+      {
+        "name": "Railway Deploy",
+        "action": "railway-deploy",
+        "stage": 2,
+        "command": "railway up --detach",
+        "description": "App auf Railway deployen",
+        "urlPattern": "https://pulse-app-${appId}-production.up.railway.app"
+      }
+    ],
+    "scaffold": {
+      "files": [
+        "index.html",
+        "manifest.json",
+        "data/state.json",
+        "package.json",
+        "server.js",
+        "railway.json"
+      ],
+      "directories": [
+        "data/"
+      ]
+    },
+    "envVars": [
+      {
+        "key": "RAILWAY_TOKEN",
+        "required": true,
+        "description": "Railway API Token"
+      }
+    ],
+    "agents": {
+      "phases": [
+        "planning",
+        "coding",
+        "testing",
+        "review"
+      ],
+      "planAgent": "planner",
+      "codeAgent": "code-generator",
+      "testAgent": "test-writer",
+      "reviewAgent": "code-reviewer",
+      "graph": "advisor-mnopcfa1-j2a1"
+    },
+    "git": {
+      "autoBranch": true,
+      "branchPrefix": "feature/",
+      "autoCommit": true,
+      "autoPR": false
+    },
+    "monitoring": {
+      "watchFiles": [
+        "index.html",
+        "manifest.json"
+      ],
+      "logLevel": "normal",
+      "taskPattern": "## Tasks"
+    },
+    "progressiveStage": 2,
+    "progressive": true
+  },
+  "createdAt": "2026-04-07T14:15:31.241Z",
+  "requiredStacks": [
+    "railway"
+  ],
+  "readyStacks": [
+    "railway"
+  ],
+  "generatedArtifacts": {
+    "skills": [],
+    "agents": [],
+    "graph": {
+      "created": true,
+      "path": "/Users/chris.pohl/Documents/GitHub/PulseOS/data/graphs/graph-advisor-mnopcfa1-j2a1.json",
+      "nodeCount": 7,
+      "edgeCount": 7
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "tas-mnooehbu",
+  "status": "active",
+  "phase": "category",
+  "prompt": "erstelle ein template",
+  "detectedStacks": [],
+  "selectedCategory": null,
+  "selectedStages": [],
+  "missingStacks": [],
+  "onboardingIndex": 0,
+  "onboardingStackIndex": 0,
+  "onboardingStepIndex": 0,
+  "generatedTemplate": null,
+  "createdAt": "2026-04-07T13:49:38.490Z"
+}

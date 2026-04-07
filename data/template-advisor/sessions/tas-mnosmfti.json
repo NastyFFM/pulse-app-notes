@@ -1,0 +1,120 @@
+{
+  "id": "tas-mnosmfti",
+  "status": "done",
+  "phase": "done",
+  "prompt": "Vercel static. wie immer erst pulse os github repo und github. io. danach online deploy auf vercel",
+  "customName": "",
+  "detectedStacks": [
+    "vercel",
+    "github-pages"
+  ],
+  "selectedCategory": "web-application",
+  "selectedStages": [
+    1
+  ],
+  "missingStacks": [],
+  "onboardingIndex": 0,
+  "onboardingStackIndex": 0,
+  "onboardingStepIndex": 0,
+  "generatedTemplate": {
+    "id": "advisor-mnosmw3k-qx02",
+    "name": "Web Application",
+    "description": "Vercel static. wie immer erst pulse os github repo und github. io. danach online deploy auf vercel",
+    "icon": "🚀",
+    "stacks": [
+      "github-pages",
+      "vercel"
+    ],
+    "deploySteps": [
+      {
+        "name": "GitHub Repo erstellen",
+        "action": "github-publish",
+        "stage": 1,
+        "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+        "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+      },
+      {
+        "name": "GitHub Pages aktivieren",
+        "action": "github-pages",
+        "stage": 1,
+        "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+        "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+        "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+      },
+      {
+        "name": "Vercel Deploy",
+        "action": "vercel-deploy",
+        "stage": 2,
+        "command": "vercel --prod --yes --token ${VERCEL_TOKEN}",
+        "description": "Frontend auf Vercel deployen",
+        "urlPattern": "https://pulse-app-${appId}.vercel.app"
+      }
+    ],
+    "scaffold": {
+      "files": [
+        "index.html",
+        "manifest.json",
+        "data/state.json",
+        "package.json",
+        "server.js",
+        "next.config.js",
+        "app/page.tsx",
+        "app/layout.tsx"
+      ],
+      "directories": [
+        "data/",
+        "app/",
+        "public/"
+      ]
+    },
+    "envVars": [
+      {
+        "key": "VERCEL_TOKEN",
+        "required": true,
+        "description": "Vercel API Token"
+      }
+    ],
+    "agents": {
+      "phases": [
+        "planning",
+        "coding",
+        "testing",
+        "review"
+      ],
+      "planAgent": "planner",
+      "codeAgent": "code-generator",
+      "testAgent": "test-writer",
+      "reviewAgent": "code-reviewer"
+    },
+    "git": {
+      "autoBranch": true,
+      "branchPrefix": "feature/",
+      "autoCommit": true,
+      "autoPR": true
+    },
+    "monitoring": {
+      "watchFiles": [
+        "index.html",
+        "manifest.json"
+      ],
+      "logLevel": "normal",
+      "taskPattern": "## Tasks"
+    },
+    "progressiveStage": 1,
+    "progressive": true
+  },
+  "createdAt": "2026-04-07T15:47:48.247Z",
+  "requiredStacks": [
+    "github-pages",
+    "vercel"
+  ],
+  "readyStacks": [
+    "github-pages",
+    "vercel"
+  ],
+  "generatedArtifacts": {
+    "skills": [],
+    "agents": [],
+    "graph": null
+  }
+}

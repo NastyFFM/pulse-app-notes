@@ -1,0 +1,151 @@
+{
+  "id": "tas-mnon7ojy",
+  "status": "done",
+  "phase": "generating",
+  "prompt": "SaaS App mit User Management und Payments",
+  "detectedStacks": [
+    "supabase",
+    "stripe"
+  ],
+  "selectedCategory": "web-application",
+  "selectedStages": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "missingStacks": [],
+  "onboardingIndex": 0,
+  "onboardingStackIndex": 0,
+  "onboardingStepIndex": 0,
+  "generatedTemplate": {
+    "id": "advisor-mnon7stk-rmf1",
+    "name": "Web Application",
+    "description": "SaaS App mit User Management und Payments",
+    "icon": "🚀",
+    "stacks": [
+      "github-pages",
+      "railway",
+      "supabase",
+      "stripe"
+    ],
+    "deploySteps": [
+      {
+        "name": "GitHub Repo erstellen",
+        "action": "github-publish",
+        "stage": 1,
+        "command": "cd ${appDir} && (gh repo create ${githubUser}/pulse-app-${appId} --public --source . --push 2>/dev/null || (git remote set-url origin https://github.com/${githubUser}/pulse-app-${appId}.git 2>/dev/null || git remote add origin https://github.com/${githubUser}/pulse-app-${appId}.git) && git push -u origin main --force)",
+        "description": "Erstellt ein oeffentliches GitHub Repo und pusht den Code"
+      },
+      {
+        "name": "GitHub Pages aktivieren",
+        "action": "github-pages",
+        "stage": 1,
+        "command": "gh api repos/${githubUser}/pulse-app-${appId}/pages -X POST -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || gh api repos/${githubUser}/pulse-app-${appId}/pages -X PUT -f \"build_type=legacy\" -f \"source[branch]=main\" -f \"source[path]=/\" 2>/dev/null || echo pages-already-enabled",
+        "description": "App live unter https://${githubUser}.github.io/pulse-app-${appId}/",
+        "urlPattern": "https://${githubUser}.github.io/pulse-app-${appId}/"
+      },
+      {
+        "name": "Railway Deploy",
+        "action": "railway-deploy",
+        "stage": 2,
+        "command": "railway up --detach",
+        "description": "App auf Railway deployen",
+        "urlPattern": "https://pulse-app-${appId}-production.up.railway.app"
+      },
+      {
+        "name": "Supabase Setup",
+        "action": "supabase-setup",
+        "stage": 3,
+        "description": "Supabase-Projekt verbinden (URL + Anon Key in Env Vars)"
+      },
+      {
+        "name": "Stripe Integration",
+        "action": "stripe-setup",
+        "stage": 4,
+        "description": "Stripe Webhook + Keys konfigurieren"
+      }
+    ],
+    "scaffold": {
+      "files": [
+        "index.html",
+        "manifest.json",
+        "data/state.json",
+        "package.json",
+        "server.js",
+        "railway.json",
+        "lib/supabase.js"
+      ],
+      "directories": [
+        "data/",
+        "lib/"
+      ]
+    },
+    "envVars": [
+      {
+        "key": "RAILWAY_TOKEN",
+        "required": true,
+        "description": "Railway API Token"
+      },
+      {
+        "key": "SUPABASE_URL",
+        "required": true,
+        "description": "Supabase Project URL"
+      },
+      {
+        "key": "SUPABASE_ANON_KEY",
+        "required": true,
+        "description": "Supabase Anonymous Key"
+      },
+      {
+        "key": "STRIPE_SECRET_KEY",
+        "required": true,
+        "description": "Stripe Secret Key"
+      },
+      {
+        "key": "STRIPE_PUBLISHABLE_KEY",
+        "required": true,
+        "description": "Stripe Publishable Key"
+      }
+    ],
+    "agents": {
+      "phases": [
+        "planning",
+        "coding",
+        "testing",
+        "review"
+      ],
+      "planAgent": "planner",
+      "codeAgent": "code-generator",
+      "testAgent": "test-writer",
+      "reviewAgent": "code-reviewer"
+    },
+    "git": {
+      "autoBranch": true,
+      "branchPrefix": "feature/",
+      "autoCommit": true,
+      "autoPR": true
+    },
+    "monitoring": {
+      "watchFiles": [
+        "index.html",
+        "manifest.json"
+      ],
+      "logLevel": "normal"
+    },
+    "progressiveStage": 4
+  },
+  "createdAt": "2026-04-07T13:16:21.646Z",
+  "requiredStacks": [
+    "github-pages",
+    "railway",
+    "supabase",
+    "stripe"
+  ],
+  "readyStacks": [
+    "github-pages",
+    "railway",
+    "supabase",
+    "stripe"
+  ]
+}
