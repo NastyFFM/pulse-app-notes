@@ -1,7 +1,7 @@
 {
   "name": "Notes",
   "icon": "📝",
-  "color": "#1a1a2e",
+  "color": "#f97316",
   "description": "Notizen mit Markdown, Suche, Tags, Auto-Save und Backup/Restore",
   "nodeType": null,
   "inputs": [
