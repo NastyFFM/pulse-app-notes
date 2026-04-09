@@ -3,16 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#111111">
+<meta name="theme-color" content="#fffde7">
 <meta name="description" content="Notizen erstellen und verwalten">
-<title>Notes</title>
+<title>Meine Notizen</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
-:root { --font: system-ui, -apple-system, sans-serif }
+:root {
+  --font: system-ui, -apple-system, sans-serif;
+  --bg: #e8f5e9;
+  --bg-card: #c8e6c9;
+  --text: #1b5e20;
+  --text-dim: rgba(27,94,32,.5);
+  --border: rgba(27,94,32,.2);
+  --accent: #2e7d32;
+}
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box }
 
 body {
-  background: var(--bg, #1a0a2e);
+  background: var(--bg, #1a1400);
   color: var(--text, #eee);
   font: 13px/1.5 var(--font);
   height: 100vh;
@@ -28,8 +36,8 @@ body {
   align-items: center;
   gap: 8px;
   padding: 7px 12px;
-  background: var(--bg-card, #2d1b4e);
-  border-bottom: 1px solid var(--border, rgba(255,255,255,.1));
+  background: var(--bg-card, #261e00);
+  border-bottom: 1px solid var(--border, rgba(0,0,0,.1));
   flex-shrink: 0;
 }
 .topbar-title {
@@ -40,8 +48,8 @@ body {
 }
 .topbar-search {
   flex: 1;
-  background: rgba(255,255,255,.06);
-  border: 1px solid var(--border, rgba(255,255,255,.1));
+  background: rgba(0,0,0,.06);
+  border: 1px solid var(--border, rgba(0,0,0,.1));
   border-radius: 6px;
   padding: 4px 10px;
   color: var(--text, #eee);
@@ -50,7 +58,7 @@ body {
   transition: border-color .15s;
   user-select: text;
 }
-.topbar-search:focus { border-color: var(--accent, #38bdf8) }
+.topbar-search:focus { border-color: var(--accent, #eab308) }
 .topbar-search::placeholder { color: var(--text-dim, rgba(255,255,255,.35)) }
 .btn-icon {
   background: none;
@@ -64,9 +72,9 @@ body {
   transition: all .15s;
   flex-shrink: 0;
 }
-.btn-icon:hover { background: rgba(255,255,255,.07); color: var(--text, #eee) }
+.btn-icon:hover { background: rgba(0,0,0,.07); color: var(--text, #eee) }
 .btn-new-note {
-  background: var(--accent, #38bdf8);
+  background: var(--accent, #eab308);
   color: #000;
   border: none;
   padding: 4px 12px;
@@ -89,8 +97,8 @@ body {
 /* ── Sidebar ── */
 .sidebar {
   width: 230px;
-  background: var(--bg-card, #2d1b4e);
-  border-right: 1px solid var(--border, rgba(255,255,255,.1));
+  background: var(--bg-card, #261e00);
+  border-right: 1px solid var(--border, rgba(0,0,0,.1));
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -110,7 +118,7 @@ body {
 .note-count {
   font-weight: 400;
   font-size: 9px;
-  background: rgba(255,255,255,.08);
+  background: rgba(0,0,0,.08);
   padding: 1px 5px;
   border-radius: 8px;
 }
@@ -121,7 +129,7 @@ body {
 }
 .note-list::-webkit-scrollbar { width: 3px }
 .note-list::-webkit-scrollbar-track { background: transparent }
-.note-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px }
+.note-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,.1); border-radius: 3px }
 
 .note-item {
   padding: 8px 12px;
@@ -129,10 +137,10 @@ body {
   border-left: 2px solid transparent;
   transition: all .1s;
 }
-.note-item:hover { background: rgba(255,255,255,.04) }
+.note-item:hover { background: rgba(0,0,0,.04) }
 .note-item.active {
-  background: rgba(249,115,22,.07);
-  border-left-color: var(--accent, #38bdf8);
+  background: rgba(234,179,8,.07);
+  border-left-color: var(--accent, #eab308);
 }
 .note-item-title {
   font-size: 12px;
@@ -142,7 +150,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.note-item.active .note-item-title { color: var(--accent, #38bdf8) }
+.note-item.active .note-item-title { color: var(--accent, #eab308) }
 .note-item-meta {
   font-size: 9px;
   color: var(--text-dim, rgba(255,255,255,.35));
@@ -160,8 +168,8 @@ body {
   white-space: nowrap;
 }
 .tag-badge {
-  background: rgba(249,115,22,.15);
-  color: var(--accent, #38bdf8);
+  background: rgba(234,179,8,.15);
+  color: var(--accent, #eab308);
   font-size: 8px;
   padding: 1px 4px;
   border-radius: 3px;
@@ -174,11 +182,11 @@ body {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
-  border-bottom: 1px solid var(--border, rgba(255,255,255,.08));
+  border-bottom: 1px solid var(--border, rgba(0,0,0,.08));
 }
 .tag-filter-chip {
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(0,0,0,.06);
+  border: 1px solid rgba(0,0,0,.1);
   color: var(--text-dim, rgba(255,255,255,.45));
   font-size: 9px;
   padding: 2px 7px;
@@ -187,16 +195,16 @@ body {
   transition: all .15s;
   white-space: nowrap;
 }
-.tag-filter-chip:hover { border-color: var(--accent, #38bdf8); color: var(--accent, #38bdf8) }
+.tag-filter-chip:hover { border-color: var(--accent, #eab308); color: var(--accent, #eab308) }
 .tag-filter-chip.active {
-  background: rgba(249,115,22,.15);
-  border-color: var(--accent, #38bdf8);
-  color: var(--accent, #38bdf8);
+  background: rgba(234,179,8,.15);
+  border-color: var(--accent, #eab308);
+  color: var(--accent, #eab308);
 }
 
 /* Sort control */
 .sidebar-footer {
-  border-top: 1px solid var(--border, rgba(255,255,255,.08));
+  border-top: 1px solid var(--border, rgba(0,0,0,.08));
   padding: 6px 10px;
   display: flex;
   gap: 6px;
@@ -212,7 +220,7 @@ body {
   border-radius: 3px;
   transition: all .15s;
 }
-.sort-btn.active { color: var(--accent, #38bdf8) }
+.sort-btn.active { color: var(--accent, #eab308) }
 .sort-btn:hover { color: var(--text, #eee) }
 
 /* ── Editor ── */
@@ -225,7 +233,7 @@ body {
 
 .editor-header {
   padding: 10px 16px 8px;
-  border-bottom: 1px solid var(--border, rgba(255,255,255,.08));
+  border-bottom: 1px solid var(--border, rgba(0,0,0,.08));
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -235,7 +243,7 @@ body {
   background: none;
   border: none;
   color: var(--text, #eee);
-  font: 600 18px/1.3 var(--font);
+  font: 600 28px/1.3 var(--font);
   outline: none;
   width: 100%;
   user-select: text;
@@ -257,8 +265,8 @@ body {
   align-items: center;
   gap: 4px;
   padding: 4px 14px;
-  border-bottom: 1px solid var(--border, rgba(255,255,255,.06));
-  background: rgba(255,255,255,.015);
+  border-bottom: 1px solid var(--border, rgba(0,0,0,.06));
+  background: rgba(0,0,0,.03);
   flex-shrink: 0;
 }
 .tb-btn {
@@ -272,9 +280,9 @@ body {
   transition: all .12s;
   line-height: 1.2;
 }
-.tb-btn:hover { background: rgba(255,255,255,.07); color: var(--text, #eee) }
-.tb-btn.active { background: rgba(56,189,248,.12); color: var(--accent, #38bdf8) }
-.tb-sep { width: 1px; height: 14px; background: var(--border, rgba(255,255,255,.1)); margin: 0 2px; flex-shrink: 0 }
+.tb-btn:hover { background: rgba(0,0,0,.07); color: var(--text, #eee) }
+.tb-btn.active { background: rgba(234,179,8,.12); color: var(--accent, #eab308) }
+.tb-sep { width: 1px; height: 14px; background: var(--border, rgba(0,0,0,.1)); margin: 0 2px; flex-shrink: 0 }
 
 .editor-body {
   flex: 1;
@@ -311,23 +319,23 @@ body {
 #content-preview h1,#content-preview h2,#content-preview h3 {
   color: var(--text, #eee); margin: .75em 0 .4em; font-weight: 600;
 }
-#content-preview h1 { font-size: 1.5em; border-bottom: 1px solid var(--border, rgba(255,255,255,.1)); padding-bottom: .3em }
+#content-preview h1 { font-size: 1.5em; border-bottom: 1px solid var(--border, rgba(0,0,0,.1)); padding-bottom: .3em }
 #content-preview h2 { font-size: 1.25em }
 #content-preview h3 { font-size: 1em }
 #content-preview p { margin: .5em 0; color: var(--text, #eee) }
-#content-preview a { color: var(--accent, #38bdf8); text-decoration: none }
+#content-preview a { color: var(--accent, #eab308); text-decoration: none }
 #content-preview a:hover { text-decoration: underline }
 #content-preview code {
-  background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 3px;
-  font-family: monospace; font-size: .9em; color: var(--accent, #38bdf8);
+  background: rgba(0,0,0,.08); padding: 1px 5px; border-radius: 3px;
+  font-family: monospace; font-size: .9em; color: var(--accent, #eab308);
 }
 #content-preview pre {
-  background: rgba(255,255,255,.05); border: 1px solid var(--border, rgba(255,255,255,.1));
+  background: rgba(0,0,0,.05); border: 1px solid var(--border, rgba(0,0,0,.1));
   border-radius: 6px; padding: 10px 14px; overflow-x: auto; margin: .5em 0;
 }
 #content-preview pre code { background: none; padding: 0; color: var(--text, #eee) }
 #content-preview blockquote {
-  border-left: 3px solid var(--accent, #38bdf8); padding-left: 12px;
+  border-left: 3px solid var(--accent, #eab308); padding-left: 12px;
   margin: .5em 0; color: var(--text-dim, rgba(255,255,255,.6));
 }
 #content-preview ul,#content-preview ol { padding-left: 1.5em; margin: .5em 0 }
@@ -339,11 +347,11 @@ body {
 #content-preview th,#content-preview td {
   border: 1px solid var(--border, rgba(255,255,255,.12)); padding: 5px 10px; text-align: left;
 }
-#content-preview th { background: rgba(255,255,255,.04); font-weight: 600 }
+#content-preview th { background: rgba(0,0,0,.04); font-weight: 600 }
 
 .editor-statusbar {
   padding: 3px 16px;
-  border-top: 1px solid var(--border, rgba(255,255,255,.06));
+  border-top: 1px solid var(--border, rgba(0,0,0,.06));
   font-size: 9px;
   color: var(--text-dim, rgba(255,255,255,.3));
   display: flex;
@@ -355,9 +363,9 @@ body {
 .save-indicator { display: flex; align-items: center; gap: 4px }
 .save-dot {
   width: 5px; height: 5px; border-radius: 50%;
-  background: rgba(255,255,255,.2); transition: background .3s;
+  background: rgba(0,0,0,.2); transition: background .3s;
 }
-.save-dot.saved { background: var(--accent, #38bdf8) }
+.save-dot.saved { background: var(--accent, #eab308) }
 .save-dot.unsaved { background: #f59e0b }
 
 /* ── Empty states ── */
@@ -375,19 +383,19 @@ body {
 }
 .empty-editor .empty-icon { font-size: 36px }
 .empty-editor p { font-size: 12px }
-.empty-editor small { font-size: 10px; color: var(--text-dim, rgba(255,255,255,.2)) }
+.empty-editor small { font-size: 10px; color: var(--text-dim, rgba(0,0,0,.2)) }
 
 /* ── Toast ── */
 .toast {
   position: fixed; bottom: 20px; right: 20px;
-  background: var(--bg-card, #2d1b4e);
+  background: var(--bg-card, #261e00);
   border: 1px solid var(--border, rgba(255,255,255,.15));
   color: var(--text, #eee); padding: 8px 14px; border-radius: 6px;
   font-size: 11px; opacity: 0; transform: translateY(8px);
   transition: all .2s; z-index: 1000; pointer-events: none;
 }
 .toast.show { opacity: 1; transform: translateY(0) }
-.toast.success { border-color: var(--accent, #38bdf8) }
+.toast.success { border-color: var(--accent, #eab308) }
 .toast.error { border-color: #ef4444 }
 
 /* ── Confirm dialog ── */
@@ -398,7 +406,7 @@ body {
 }
 .confirm-overlay.show { opacity: 1; pointer-events: auto }
 .confirm-box {
-  background: var(--bg-card, #2d1b4e);
+  background: var(--bg-card, #261e00);
   border: 1px solid var(--border, rgba(255,255,255,.15));
   border-radius: 8px; padding: 20px; width: 280px; text-align: center;
 }
@@ -406,7 +414,7 @@ body {
 .confirm-box .confirm-sub { font-size: 10px; color: var(--text-dim, rgba(255,255,255,.4)); margin-bottom: 16px; display: block }
 .confirm-actions { display: flex; gap: 8px; justify-content: center }
 .btn-cancel {
-  background: rgba(255,255,255,.06); border: 1px solid var(--border, rgba(255,255,255,.12));
+  background: rgba(0,0,0,.06); border: 1px solid var(--border, rgba(255,255,255,.12));
   color: var(--text, #eee); padding: 6px 16px; border-radius: 5px; font: 11px var(--font); cursor: pointer;
 }
 .btn-danger {
@@ -420,7 +428,7 @@ body {
 
 <!-- Topbar -->
 <div class="topbar">
-  <span class="topbar-title">📝 Notes</span>
+  <span class="topbar-title">📝 Meine Notizen</span>
   <input class="topbar-search" id="search-input" type="text" placeholder="Suchen...">
   <button class="btn-icon" id="btn-backup" title="Backup exportieren (JSON)">⬇</button>
   <button class="btn-icon" id="btn-restore" title="Backup importieren">⬆</button>
