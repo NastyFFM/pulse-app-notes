@@ -1,8 +1,21 @@
 {
   "name": "pulse-app-notes",
-  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node server.js"
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p ${PORT:-3100}"
+  },
+  "dependencies": {
+    "next": "^14",
+    "react": "^18",
+    "react-dom": "^18",
+    "marked": "^12"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "typescript": "^5"
   }
 }

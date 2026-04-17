@@ -1,9 +1,9 @@
 {
   "name": "Notes",
   "icon": "📝",
-  "color": "#f97316",
+  "color": "#2f9bff",
   "description": "Notizen mit Markdown, Suche, Tags, Auto-Save und Backup/Restore",
-  "nodeType": null,
+  "type": "frontend",
   "inputs": [
     {"id": "data", "desc": "Notiz-Objekt empfangen: { title, content, body, tags }"}
   ],

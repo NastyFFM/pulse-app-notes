@@ -1,12 +1,32 @@
 {
   "notes": [
     {
+      "id": "note-1776166440000",
+      "title": "Handy-Daten übertragen",
+      "content": "Daten vom alten Handy auf das neue Handy übertragen",
+      "tags": [
+        "todo"
+      ],
+      "created": "2026-04-12T15:14:00.000Z",
+      "updated": "2026-04-12T15:14:00.000Z",
+      "pinned": true
+    },
+    {
+      "id": "note-1775822520000",
+      "title": "Einkaufen gehen",
+      "content": "",
+      "tags": [],
+      "created": "2026-04-10T11:42:00.000Z",
+      "updated": "2026-04-10T11:42:00.000Z"
+    },
+    {
       "id": "note-1775659924531",
-      "title": "",
+      "title": "123",
       "content": "",
       "tags": [],
       "created": "2026-04-08T14:52:04.531Z",
-      "updated": "2026-04-08T14:52:04.533Z"
+      "updated": "2026-04-09T23:28:02.753Z",
+      "pinned": false
     },
     {
       "id": "note-1774348912718",
@@ -21,7 +41,8 @@
       "title": "tolle Neuigkeiten",
       "content": "tolle Neuigkeiten",
       "created": "2026-03-24T02:07:05.671Z",
-      "updated": "2026-03-24T02:07:15.857Z"
+      "updated": "2026-03-24T02:07:15.857Z",
+      "pinned": true
     },
     {
       "id": 1,
@@ -35,7 +56,8 @@
       "content": "Erstellt zum Testen\n1. \n- Punkt## # Überschrift 2",
       "date": "2026-03-24T03:10:00Z",
       "tags": [],
-      "updated": "2026-04-07T08:32:47.280Z"
+      "updated": "2026-04-07T08:32:47.280Z",
+      "pinned": true
     },
     {
       "id": "note-agent-1",
@@ -49,7 +71,8 @@
       "title": "Testnotiz",
       "content": "Erstellt via Telegram am 27.03.2026",
       "created": "2026-03-27T13:58:00.000Z",
-      "updated": "2026-03-27T13:58:00.000Z"
+      "updated": "2026-03-27T13:58:00.000Z",
+      "pinned": true
     }
   ]
 }

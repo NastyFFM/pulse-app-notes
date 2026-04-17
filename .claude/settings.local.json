@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/chris.pohl/Documents/GitHub/PulseOS/**)",
+      "Bash(node server.js)",
+      "Bash(echo \"Server PID: $!\")",
+      "Bash(curl:*)",
+      "Bash(railway --version)",
+      "Bash(railway whoami:*)",
+      "Bash(railway status:*)",
+      "Bash(railway init:*)",
+      "Bash(railway org:*)",
+      "Bash(railway up:*)",
+      "Bash(railway domain:*)"
+    ]
+  }
+}
